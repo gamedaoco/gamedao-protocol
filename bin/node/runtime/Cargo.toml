@@ -21,8 +21,10 @@ static_assertions = "1.1.0"
 hex-literal = { version = "0.3.1", optional = true }
 
 # primitives
-sp-authority-discovery = { version = "2.0.0", default-features = false, path = "../../../primitives/authority-discovery" }
 sp-consensus-babe = { version = "0.8.0", default-features = false, path = "../../../primitives/consensus/babe" }
+sp-consensus-aura = { version = "0.8.0", default-features = false, path = "../../../primitives/consensus/aura" }
+
+sp-authority-discovery = { version = "2.0.0", default-features = false, path = "../../../primitives/authority-discovery" }
 sp-block-builder = { path = "../../../primitives/block-builder", default-features = false, version = "2.0.0"}
 sp-inherents = { version = "2.0.0", default-features = false, path = "../../../primitives/inherents" }
 node-primitives = { version = "2.0.0", default-features = false, path = "../primitives" }
@@ -46,7 +48,10 @@ frame-system-benchmarking = { version = "2.0.0", default-features = false, path 
 frame-system-rpc-runtime-api = { version = "2.0.0", default-features = false, path = "../../../frame/system/rpc/runtime-api/" }
 pallet-authority-discovery = { version = "2.0.0", default-features = false, path = "../../../frame/authority-discovery" }
 pallet-authorship = { version = "2.0.0", default-features = false, path = "../../../frame/authorship" }
+
 pallet-babe = { version = "2.0.0", default-features = false, path = "../../../frame/babe" }
+pallet-aura = { version = "2.0.0", default-features = false, path = "../../../frame/aura" }
+
 pallet-balances = { version = "2.0.0", default-features = false, path = "../../../frame/balances" }
 pallet-collective = { version = "2.0.0", default-features = false, path = "../../../frame/collective" }
 pallet-contracts = { version = "2.0.0", default-features = false, path = "../../../frame/contracts" }
@@ -93,8 +98,13 @@ std = [
 	"sp-authority-discovery/std",
 	"pallet-authority-discovery/std",
 	"pallet-authorship/std",
+
 	"sp-consensus-babe/std",
 	"pallet-babe/std",
+
+	"sp-consensus-aura/std",
+	"pallet-aura/std",
+
 	"pallet-balances/std",
 	"sp-block-builder/std",
 	"codec/std",
