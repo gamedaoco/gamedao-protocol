@@ -25,7 +25,7 @@ use crate::service::{new_partial, new_full_base, NewFullBase};
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Substrate Node".into()
+		"ZΞRO".into()
 	}
 
 	fn impl_version() -> String {
@@ -41,7 +41,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/paritytech/substrate/issues/new".into()
+		"https://github.com/playzero/subzero-node/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
