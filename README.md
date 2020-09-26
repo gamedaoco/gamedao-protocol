@@ -1,17 +1,6 @@
-# Substrate &middot; [![GitHub license](https://img.shields.io/badge/license-GPL3%2FApache2-blue)](LICENSE) [![GitLab Status](https://gitlab.parity.io/parity/substrate/badges/master/pipeline.svg)](https://gitlab.parity.io/parity/substrate/pipelines) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](docs/CONTRIBUTING.adoc)
+# ZΞRO
 
-<p align="center">
-  <img src="/docs/media/sub.gif">
-</p>
-
-
-Substrate is a next-generation framework for blockchain innovation 🚀.
-
-## Trying it out
-
-Simply go to [substrate.dev](https://substrate.dev) and follow the 
-[installation](https://substrate.dev/docs/en/knowledgebase/getting-started/) instructions. You can 
-also try out one of the [tutorials](https://substrate.dev/en/tutorials).
+A Parity Substrate based node for ZERO Network
 
 ## Contributions & Code of Conduct
 
