@@ -67,6 +67,10 @@ pub type ChainSpec = sc_service::GenericChainSpec<
 pub fn flaming_fir_config() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../res/flaming-fir.json")[..])
 }
+/// ZERO testnet generator
+pub fn zero_alphaville_config() -> Result<ChainSpec, String> {
+	ChainSpec::from_json_bytes(&include_bytes!("../res/zero_alphaville.json")[..])
+}
 
 fn session_keys(
 	grandpa: GrandpaId,
@@ -228,10 +232,10 @@ pub fn testnet_genesis(
 			get_account_id_from_seed::<sr25519::Public>("Ferdie"),
 			get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
 			get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-			get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-			get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-			get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-			get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+			// get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+			// get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+			// get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
+			// get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 		]
 	});
 	let num_endowed_accounts = endowed_accounts.len();

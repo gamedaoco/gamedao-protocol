@@ -1,6 +1,6 @@
 {
-  "name": "Flaming Fir2",
-  "id": "flamingfir8",
+  "name": "ZERO",
+  "id": "zero1",
   "chainType": "Live",
   "bootNodes": [
 	"/dns/0.flamingfir.paritytech.net/tcp/30333/p2p/12D3KooWLK2gMLhWsYJzjW3q35zAs9FDDVqfqVfVuskiGZGRSMvR",
@@ -18,11 +18,11 @@
 	  0
 	]
   ],
-  "protocolId": "fir8",
-  "properties": {
-	"tokenDecimals": 15,
-	"tokenSymbol": "FIR"
-  },
+  "protocolId": "z1",
+	"properties": {
+		"tokenDecimals": 18,
+		"tokenSymbol": "ZΞRO"
+	},
   "forkBlocks": null,
   "badBlocks": null,
   "consensusEngine": null,
