@@ -3609,62 +3609,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "node-bench"
-version = "0.8.0"
-dependencies = [
- "derive_more",
- "fs_extra",
- "futures 0.3.5",
- "hash-db",
- "hex",
- "kvdb",
- "kvdb-rocksdb",
- "lazy_static",
- "log",
- "node-primitives",
- "node-runtime",
- "node-testing",
- "parity-db",
- "parity-util-mem",
- "rand 0.7.3",
- "sc-basic-authorship",
- "sc-cli",
- "sc-client-api",
- "sc-transaction-pool",
- "serde",
- "serde_json",
- "sp-consensus",
- "sp-core",
- "sp-finality-tracker",
- "sp-inherents",
- "sp-runtime",
- "sp-state-machine",
- "sp-timestamp",
- "sp-tracing",
- "sp-transaction-pool",
- "sp-trie",
- "structopt",
- "tempfile",
-]
-
-[[package]]
-name = "node-browser-testing"
-version = "2.0.0"
-dependencies = [
- "futures 0.3.5",
- "futures-timer 3.0.2",
- "jsonrpc-core",
- "libp2p",
- "node-cli",
- "sc-rpc-api",
- "serde",
- "serde_json",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-bindgen-test",
-]
-
-[[package]]
 name = "node-cli"
 version = "2.0.0"
 dependencies = [
@@ -3831,19 +3775,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "node-rpc-client"
-version = "2.0.0"
-dependencies = [
- "futures 0.1.29",
- "hyper 0.12.35",
- "jsonrpc-core-client",
- "log",
- "node-primitives",
- "sc-rpc",
- "sp-tracing",
-]
-
-[[package]]
 name = "node-runtime"
 version = "2.0.0"
 dependencies = [
@@ -3911,77 +3842,6 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "static_assertions",
- "substrate-wasm-builder-runner",
-]
-
-[[package]]
-name = "node-template"
-version = "2.0.0"
-dependencies = [
- "frame-benchmarking",
- "frame-benchmarking-cli",
- "jsonrpc-core",
- "node-template-runtime",
- "pallet-transaction-payment-rpc",
- "sc-basic-authorship",
- "sc-cli",
- "sc-client-api",
- "sc-consensus",
- "sc-consensus-aura",
- "sc-executor",
- "sc-finality-grandpa",
- "sc-rpc",
- "sc-rpc-api",
- "sc-service",
- "sc-transaction-pool",
- "sp-api",
- "sp-block-builder",
- "sp-blockchain",
- "sp-consensus",
- "sp-consensus-aura",
- "sp-core",
- "sp-finality-grandpa",
- "sp-inherents",
- "sp-runtime",
- "sp-transaction-pool",
- "structopt",
- "substrate-build-script-utils",
- "substrate-frame-rpc-system",
-]
-
-[[package]]
-name = "node-template-runtime"
-version = "2.0.0"
-dependencies = [
- "frame-benchmarking",
- "frame-executive",
- "frame-support",
- "frame-system",
- "frame-system-benchmarking",
- "frame-system-rpc-runtime-api",
- "hex-literal",
- "pallet-aura",
- "pallet-balances",
- "pallet-grandpa",
- "pallet-randomness-collective-flip",
- "pallet-sudo",
- "pallet-template",
- "pallet-timestamp",
- "pallet-transaction-payment",
- "pallet-transaction-payment-rpc-runtime-api",
- "parity-scale-codec",
- "serde",
- "sp-api",
- "sp-block-builder",
- "sp-consensus-aura",
- "sp-core",
- "sp-inherents",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-std",
- "sp-transaction-pool",
- "sp-version",
  "substrate-wasm-builder-runner",
 ]
 
@@ -4924,18 +4784,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-template"
-version = "2.0.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "sp-core",
- "sp-io",
- "sp-runtime",
 ]
 
 [[package]]
@@ -8840,15 +8688,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "substrate-test-utils-test-crate"
-version = "0.1.0"
-dependencies = [
- "sc-service",
- "substrate-test-utils",
- "tokio 0.2.22",
-]
-
-[[package]]
 name = "substrate-wasm-builder"
 version = "2.0.0"
 dependencies = [
@@ -9742,8 +9581,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0563a9a4b071746dd5aedbc3a28c6fe9be4586fb3fbadb67c400d4f53c6b16c"
 dependencies = [
  "cfg-if",
- "serde",
- "serde_json",
  "wasm-bindgen-macro",
 ]
 
@@ -9802,30 +9639,6 @@ name = "wasm-bindgen-shared"
 version = "0.2.67"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93b162580e34310e5931c4b792560108b10fd14d64915d7fff8ff00180e70092"
-
-[[package]]
-name = "wasm-bindgen-test"
-version = "0.3.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd8e9dad8040e378f0696b017570c6bc929aac373180e06b3d67ac5059c52da3"
-dependencies = [
- "console_error_panic_hook",
- "js-sys",
- "scoped-tls",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-bindgen-test-macro",
-]
-
-[[package]]
-name = "wasm-bindgen-test-macro"
-version = "0.3.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c358c8d2507c1bae25efa069e62ea907aa28700b25c8c33dafb0b15ba4603627"
-dependencies = [
- "proc-macro2",
- "quote",
-]
 
 [[package]]
 name = "wasm-gc-api"
