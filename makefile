@@ -32,8 +32,7 @@ zva:
 	--port 30333 \
 	--ws-port 9944 \
 	--rpc-port 9933 \
-	--rpc-methods unsafe \
-	--telemetry-url 'wss://telemetry.polkadot.io/submit/ 0' \
+	--rpc-methods unsafe
 
 zvb:
 	./target/release/subzero \
@@ -41,12 +40,11 @@ zvb:
 	--chain ./specs/zero_alphaville.json \
 	--base-path ./data/zb \
 	--name count-zero \
-	--bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWE3m1WQznuXJadXtnx9amkrbCyZEgBYk73Ur6hTwz83Ag \
+	--bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWMnmDMUeB1WwwEMM7qPZTn7sxSFHCEjYjasoS6qkaLYbq \
 	--port 30335 \
 	--ws-port 9946 \
 	--rpc-port 9935 \
-	--rpc-methods unsafe \
-	--telemetry-url 'wss://telemetry.polkadot.io/submit/ 0' \
+	--rpc-methods unsafe
 
 
 zvc:
@@ -55,12 +53,23 @@ zvc:
 	--chain ./specs/zero_alphaville.json \
 	--base-path ./data/zc \
 	--name monalisa-overdrive \
-	--bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWE3m1WQznuXJadXtnx9amkrbCyZEgBYk73Ur6hTwz83Ag \
+	--bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWMnmDMUeB1WwwEMM7qPZTn7sxSFHCEjYjasoS6qkaLYbq \
 	--port 30336 \
 	--ws-port 9947 \
 	--rpc-port 9936 \
-	--rpc-methods unsafe \
-	--telemetry-url 'wss://telemetry.polkadot.io/submit/ 0' \
+	--rpc-methods unsafe
+
+zvd:
+	./target/release/subzero \
+	--validator \
+	--chain ./specs/zero_alphaville.json \
+	--base-path ./data/zd \
+	--name burning-chrome \
+	--bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWMnmDMUeB1WwwEMM7qPZTn7sxSFHCEjYjasoS6qkaLYbq \
+	--port 30337 \
+	--ws-port 9948 \
+	--rpc-port 9937 \
+	--rpc-methods unsafe
 
 #
 # preset local testnet
