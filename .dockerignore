@@ -4,3 +4,10 @@ doc
 Dockerfile
 .dockerignore
 .local
+
+data
+tmp
+
+.github
+.builder
+target
