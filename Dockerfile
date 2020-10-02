@@ -1,12 +1,7 @@
-# Note: We don't use Alpine and its packaged Rust/Cargo because they're too often out of date,
-# preventing them from being used to build subzero/Polkadot.
-
-#FROM rustlang/rust:nightly as builder
-#FROM rust:1.45.1 as builder
 FROM phusion/baseimage:0.11 as builder
 
 LABEL maintainer="devops@zero.io"
-LABEL description="This is the build stage for subzero. Here we create the binary."
+LABEL description="This is the build stage for subzero."
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -21,8 +16,6 @@ RUN apt-get update && \
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 	export PATH="$PATH:$HOME/.cargo/bin" && \
-#	rustup toolchain install nightly && \
-#	rustup default stable && \
 	rustup install 1.45.1 && \
 	rustup default 1.45.1-x86_64-unknown-linux-gnu &&\
 	rustup toolchain install nightly-2020-08-19-x86_64-unknown-linux-gnu && \
@@ -47,8 +40,6 @@ RUN mv /usr/share/ca* /tmp && \
 
 COPY --from=builder /subzero/target/$PROFILE/subzero /usr/local/bin
 COPY --from=builder /subzero/target/$PROFILE/subkey /usr/local/bin
-# COPY --from=builder /subzero/target/$PROFILE/node-rpc-client /usr/local/bin
-# COPY --from=builder /subzero/target/$PROFILE/node-template /usr/local/bin
 COPY --from=builder /subzero/target/$PROFILE/chain-spec-builder /usr/local/bin
 
 # checks

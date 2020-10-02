@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+
+  subzero:
+    image: playzero/subzero
+    container_name: "subzero"
+    restart: unless-stopped
+    user: "$UID:$GID"
+    ports:
+      - "${PORT_P2P}:30333"
+      - "${PORT_WSS}:9944"
+#      - "${PORT_RPC}:9933"
+#      - "${PORT_PRO}:9615"
+    volumes:
+      - ${DATA_DIR}:/data
+    command: [
+        "/usr/local/bin/subzero",
+        "--name", "${NAME}",
+        "--validator",
+        "--ws-external",
+#        "--rpc-external",
+#        "--rpc-cors", "all",
+#        "--rpc-methods", "unsafe",
+        "--public-addr","/ip4/${IP}",
+        "--telemetry-url", "wss://telemetry.polkadot.io/submit/ 5",
+        "--bootnodes",
+        "/dns/alphaville-0.zero.io/tcp/30333/p2p/12D3KooWPPkXsaSBtGyuYLcQthJkN7DRAmaNkN38FTZeoMX2kLgh",
+        "/dns/alphaville-0.zero.io/tcp/9944/ws/p2p/12D3KooWPPkXsaSBtGyuYLcQthJkN7DRAmaNkN38FTZeoMX2kLgh",
+        "/dns/alphaville-1.zero.io/tcp/30333/p2p/12D3KooWSJb1iJ5rJdgNzVBasxLhC27BX9fNkNith55ivuqUojNf",
+        "/dns/alphaville-1.zero.io/tcp/9944/ws/p2p/12D3KooWSJb1iJ5rJdgNzVBasxLhC27BX9fNkNith55ivuqUojNf"
+      ]
+    environment:
+      - VIRTUAL_HOST=${DOMAINS}
+      - VIRTUAL_PORT=9944
+      - LETSENCRYPT_HOST=${DOMAINS}
+      - LETSENCRYPT_EMAIL=${EMAIL}

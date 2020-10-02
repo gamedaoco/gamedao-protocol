@@ -3775,6 +3775,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "node-rpc-client"
+version = "2.0.0"
+dependencies = [
+ "futures 0.1.29",
+ "hyper 0.12.35",
+ "jsonrpc-core-client",
+ "log",
+ "node-primitives",
+ "sc-rpc",
+ "sp-tracing",
+]
+
+[[package]]
 name = "node-runtime"
 version = "2.0.0"
 dependencies = [
