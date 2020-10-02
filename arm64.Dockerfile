@@ -1,4 +1,4 @@
-FROM nicksonyap/phusion-baseimage-armhf:latest as builder
+FROM arm64v8/ubuntu as builder
 
 LABEL maintainer="devops@zero.io"
 LABEL description="This is the build stage for subzero."
@@ -25,7 +25,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 
 # ===== SECOND STAGE ======
 
-FROM phusion/baseimage:0.11
+FROM arm64v8/ubuntu
 LABEL maintainer="devops@zero.io"
 LABEL description="This is the 2nd stage: a very small image where we copy the subzero binary."
 ARG PROFILE=release
