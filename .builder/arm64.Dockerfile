@@ -1,4 +1,6 @@
-FROM arm64v8/ubuntu as builder
+# ===== STAGE ONE ======
+
+FROM arm64v8/ubuntu:latest as builder
 
 LABEL maintainer="devops@zero.io"
 LABEL description="This is the build stage for subzero."
@@ -12,7 +14,7 @@ COPY . /subzero
 
 RUN apt-get update && \
 	apt-get dist-upgrade -y -o Dpkg::Options::="--force-confold" && \
-	apt-get install -y cmake pkg-config libssl-dev git clang
+	apt-get install -y curl cmake pkg-config libssl-dev git clang
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 	export PATH="$PATH:$HOME/.cargo/bin" && \
@@ -23,17 +25,14 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 	rustup toolchain list && \
 	cargo build "--$PROFILE"
 
-# ===== SECOND STAGE ======
+# ===== STAGE TWO ======
 
-FROM arm64v8/ubuntu
+FROM arm64v8/ubuntu:latest
 LABEL maintainer="devops@zero.io"
 LABEL description="This is the 2nd stage: a very small image where we copy the subzero binary."
 ARG PROFILE=release
 
-RUN mv /usr/share/ca* /tmp && \
-	rm -rf /usr/share/*  && \
-	mv /tmp/ca-certificates /usr/share/ && \
-	useradd -m -u 1000 -U -s /bin/sh -d /subzero subzero && \
+RUN useradd -m -u 1000 -U -s /bin/sh -d /subzero subzero && \
 	mkdir -p /subzero/.local/share/subzero && \
 	chown -R subzero:subzero /subzero/.local && \
 	ln -s /subzero/.local/share/subzero /data
@@ -42,11 +41,11 @@ COPY --from=builder /subzero/target/$PROFILE/subzero /usr/local/bin
 COPY --from=builder /subzero/target/$PROFILE/subkey /usr/local/bin
 COPY --from=builder /subzero/target/$PROFILE/chain-spec-builder /usr/local/bin
 
-# checks
+# check
 RUN ldd /usr/local/bin/subzero && \
 	/usr/local/bin/subzero --version
 
-# Shrinking
+# shrink
 RUN rm -rf /usr/lib/python* && \
 	rm -rf /usr/bin /usr/sbin /usr/share/man
 
