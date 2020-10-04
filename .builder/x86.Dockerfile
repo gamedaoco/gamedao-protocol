@@ -17,9 +17,9 @@ RUN apt-get update && \
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 	export PATH="$PATH:$HOME/.cargo/bin" && \
 	rustup install 1.45.1 && \
-	rustup default 1.45.1-x86_64-unknown-linux-gnu &&\
-	rustup toolchain install nightly-2020-08-19-x86_64-unknown-linux-gnu && \
-	rustup target add wasm32-unknown-unknown --toolchain nightly-2020-08-19-x86_64-unknown-linux-gnu && \
+	rustup default 1.45.1 &&\
+	rustup toolchain install nightly-2020-08-19 && \
+	rustup target add wasm32-unknown-unknown --toolchain nightly-2020-08-19 && \
 	rustup toolchain list && \
 	cargo build "--$PROFILE"
 

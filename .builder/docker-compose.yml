@@ -3,7 +3,7 @@ version: "3"
 services:
 
   subzero:
-    image: playzero/subzero
+    image: playzero/subzero:latest
     container_name: "subzero"
     restart: unless-stopped
     user: "$UID:$GID"
@@ -17,18 +17,16 @@ services:
     command: [
         "/usr/local/bin/subzero",
         "--name", "${NAME}",
-        "--validator",
+#        "--validator",
         "--ws-external",
 #        "--rpc-external",
 #        "--rpc-cors", "all",
-#        "--rpc-methods", "unsafe",
-        "--public-addr","/ip4/${IP}",
+        "--rpc-methods", "unsafe",
+        "--public-addr","${IP}",
         "--telemetry-url", "wss://telemetry.polkadot.io/submit/ 5",
         "--bootnodes",
-        "/dns/alphaville-0.zero.io/tcp/30333/p2p/12D3KooWPPkXsaSBtGyuYLcQthJkN7DRAmaNkN38FTZeoMX2kLgh",
-        "/dns/alphaville-0.zero.io/tcp/9944/ws/p2p/12D3KooWPPkXsaSBtGyuYLcQthJkN7DRAmaNkN38FTZeoMX2kLgh",
-        "/dns/alphaville-1.zero.io/tcp/30333/p2p/12D3KooWSJb1iJ5rJdgNzVBasxLhC27BX9fNkNith55ivuqUojNf",
-        "/dns/alphaville-1.zero.io/tcp/9944/ws/p2p/12D3KooWSJb1iJ5rJdgNzVBasxLhC27BX9fNkNith55ivuqUojNf"
+        "/dns/alphaville-0.zero.io/tcp/30333/p2p/12D3KooWEcGvfbTbuQ6vDQJ6LUDHa5uvMFVUh67tzWcFEwvxWVwT",
+        "/dns/alphaville-0.zero.io/tcp/9944/ws/p2p/12D3KooWEcGvfbTbuQ6vDQJ6LUDHa5uvMFVUh67tzWcFEwvxWVwT"
       ]
     environment:
       - VIRTUAL_HOST=${DOMAINS}

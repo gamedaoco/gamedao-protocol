@@ -27,3 +27,6 @@ rls*.log
 data/
 tmp/
 .env
+.maintain
+.github
+**/nodekey*
