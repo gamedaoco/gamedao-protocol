@@ -1,6 +1,6 @@
 # ===== STAGE ONE ======
 
-FROM arm64v8/ubuntu:latest as builder
+FROM arm64v8/ubuntu:latest AS builder
 
 LABEL maintainer="devops@zero.io"
 LABEL description="This is the build stage for subzero."

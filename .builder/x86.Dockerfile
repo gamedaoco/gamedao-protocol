@@ -1,4 +1,4 @@
-FROM phusion/baseimage:0.11 as builder
+FROM phusion/baseimage:0.11 AS builder
 
 LABEL maintainer="devops@zero.io"
 LABEL description="This is the build stage for subzero."
