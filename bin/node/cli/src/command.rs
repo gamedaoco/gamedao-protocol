@@ -41,7 +41,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/playzero/subzero-node/issues/new".into()
+		"https://github.com/playzero/subzero/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
