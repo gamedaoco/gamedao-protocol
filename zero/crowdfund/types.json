@@ -1,0 +1,15 @@
+{
+	"ZeroCrowdfunding": {
+		"AccountIdOf": "AccountId",
+		"BalanceOf": "Balance",
+		"CampaignInfoOf": "CampaignInfo",
+		"CampaignInfo": {
+			"beneficiary": "AccountId",
+			"deposit": "Balance",
+			"raised": "Balance",
+			"end": "BlockNumber",
+			"goal": "Balance"
+		},
+		"CampaignIndex": "u32"
+	}
+}
