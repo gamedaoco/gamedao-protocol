@@ -87,9 +87,16 @@ pallet-transaction-payment = { version = "2.0.0", default-features = false, path
 pallet-transaction-payment-rpc-runtime-api = { version = "2.0.0", default-features = false, path = "../../../frame/transaction-payment/rpc/runtime-api/" }
 pallet-vesting = { version = "2.0.0", default-features = false, path = "../../../frame/vesting" }
 
-# custom
+# evm
 
-#
+# pallet-ethereum = { version = "0.1.0", default-features = false, path = "../../../vendors/frontier/frame/ethereum" }
+# pallet-evm = { version = "2.0.0", default-features = false, path = "../../../frame/evm" }
+
+# assets
+
+pallet-assets = { version = "2.0.0", default-features = false, path = "../../../frame/assets" }
+zero-crowdfund = { version = "0.0.1", default-features = false, path = "../../../zero/crowdfund" }
+# zero-crowdfunding = { version = "0.0.1", default-features = false, path = "../../../zero/crowdfunding" }
 
 #
 
@@ -162,6 +169,15 @@ std = [
 	"pallet-society/std",
 	"pallet-recovery/std",
 	"pallet-vesting/std",
+
+	#
+
+	# "pallet-evm/std",
+	# "pallet-ethereum/std",
+
+	"pallet-assets/std",
+	"zero-crowdfund/std",
+
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",
