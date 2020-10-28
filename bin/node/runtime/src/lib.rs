@@ -89,7 +89,9 @@ use sp_runtime::generic::Era;
 mod weights;
 
 /// zero pallets
-use zero_crowdfund;
+use crowdfunding_factory as crowdfunding;
+// use skillz;
+// use pallet_assets as assets;
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -901,6 +903,12 @@ impl pallet_vesting::Trait for Runtime {
 }
 
 //
+//	ASSETS
+//
+
+
+
+//
 // ZERO Pallets
 //
 
@@ -908,15 +916,34 @@ parameter_types! {
 	pub const SubmissionDeposit: u128 = 10;
 	pub const MinContribution: u128 = 10;
 	pub const RetirementPeriod: u32 = 10;
+	pub const Nonce: u64 = 1337;
+	pub const MinLength: usize = 4;
+	pub const MaxLength: usize = 64;
 }
 
-impl zero_crowdfund::Trait for Runtime {
+impl crowdfunding::Trait for Runtime {
 	type Event = Event;
 	type Currency = Balances;
-	type SubmissionDeposit = SubmissionDeposit;
-	type MinContribution = MinContribution;
-	type RetirementPeriod = RetirementPeriod;
+	// creator deposit
+	// type SubmissionDeposit = SubmissionDeposit;
+	// minimum contribution
+	// type MinContribution = MinContribution;
+	// unclaimed funds
+	// type RetirementPeriod = RetirementPeriod;
+	type Nonce = Nonce;
+	// campaign title
+	// TODO: replace with ipfs hash containing all info
+	type MinLength = MinLength;
+	type MaxLength = MaxLength;
+	// randomness provider
+	type Randomness = RandomnessCollectiveFlip;
 }
+
+// impl skillz::Trait for Runtime {
+// 	type Event = Event;
+// 	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+// 	type Currency = pallet_balances::Module<Runtime>;
+// }
 
 //
 //
@@ -962,8 +989,9 @@ construct_runtime!(
 		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
 
 		//
-
-		ZeroCrowdfund: zero_crowdfund::{Module, Call, Storage, Event<T>},
+		// Assets: pallet_assets::{Module, Call, Storage, Event<T>},
+		Crowdfunding: crowdfunding::{Module, Call, Storage, Event<T>},
+		// Skillz: skillz::{Module, Call, Storage, Event<T>},
 
 	}
 );

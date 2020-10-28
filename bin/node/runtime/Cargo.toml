@@ -95,8 +95,9 @@ pallet-vesting = { version = "2.0.0", default-features = false, path = "../../..
 # assets
 
 pallet-assets = { version = "2.0.0", default-features = false, path = "../../../frame/assets" }
-zero-crowdfund = { version = "0.0.1", default-features = false, path = "../../../zero/crowdfund" }
+crowdfunding-factory = { version = "0.0.1", default-features = false, path = "../../../zero/crowdfunding-factory" }
 # zero-crowdfunding = { version = "0.0.1", default-features = false, path = "../../../zero/crowdfunding" }
+# skillz = { version = "0.0.1", default-features = false, path = "../../../zero/skillz" }
 
 #
 
@@ -176,7 +177,8 @@ std = [
 	# "pallet-ethereum/std",
 
 	"pallet-assets/std",
-	"zero-crowdfund/std",
+	"crowdfunding-factory/std",
+	# "skillz/std",
 
 ]
 runtime-benchmarks = [
