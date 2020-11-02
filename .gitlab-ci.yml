@@ -1,0 +1,94 @@
+stages:
+  - check
+  - test
+  - build
+  - post-build-test
+  - docker
+  - chaos
+  - publish
+  - deploy
+  - subzero
+
+variables:                         &default-vars
+  GIT_STRATEGY:                    fetch
+  GIT_DEPTH:                       100
+  CARGO_INCREMENTAL:               0
+  DOCKER_OS:                       "debian:stretch"
+  ARCH:                            "x86_64"
+  # FIXME set to release
+  CARGO_UNLEASH_INSTALL_PARAMS:    "--version 1.0.0-alpha.10"
+  CARGO_UNLEASH_PKG_DEF:           "--skip node node-* pallet-template pallet-example pallet-example-* subkey chain-spec-builder"
+
+default:
+  cache:                           {}
+
+.collect-artifacts:                &collect-artifacts
+  artifacts:
+    name:                          "${CI_JOB_NAME}_${CI_COMMIT_REF_NAME}"
+    when:                          on_success
+    expire_in:                     7 days
+    paths:
+      - artifacts/
+
+.docker-env:                       &docker-env
+  image:                           paritytech/ci-linux:production
+  before_script:
+    - rustup show
+    - cargo --version
+    - sccache -s
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - unknown_failure
+      - api_failure
+  interruptible:                   true
+  tags:
+    - linux-docker
+
+docker:
+  stage: docker
+  image: paritytech/ci-linux:production
+  allow_failure: true
+  script:
+    - echo "build subzero"
+    - docker build -t playzero/subzero:latest -f .builder/x86.Dockerfile .
+
+#
+#
+#
+
+.validator-deploy:                 &validator-deploy
+  <<:                              *build-only
+  stage:                           flaming-fir
+  needs:
+    # script will fail if there is no artifacts/substrate/VERSION
+    - job:                         publish-docker-substrate
+      artifacts:                   true
+  image:                           parity/azure-ansible:v1
+  allow_failure:                   true
+  when:                            manual
+  interruptible:                   true
+  tags:
+    - linux-docker
+
+validator 1 4:
+  <<:                              *validator-deploy
+  script:
+    - ./.maintain/flamingfir-deploy.sh flamingfir-validator1
+
+validator 2 4:
+  <<:                              *validator-deploy
+  script:
+    - ./.maintain/flamingfir-deploy.sh flamingfir-validator2
+
+validator 3 4:
+  <<:                              *validator-deploy
+  script:
+    - ./.maintain/flamingfir-deploy.sh flamingfir-validator3
+
+validator 4 4:
+  <<:                              *validator-deploy
+  script:
+    - ./.maintain/flamingfir-deploy.sh flamingfir-validator4
+
