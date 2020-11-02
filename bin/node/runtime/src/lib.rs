@@ -107,15 +107,15 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 
 /// Runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("node"),
-	impl_name: create_runtime_str!("substrate-node"),
+	spec_name: create_runtime_str!("subzero"),
+	impl_name: create_runtime_str!("zero-alphaville"),
 	authoring_version: 10,
 	// Per convention: if the runtime behavior changes, increment spec_version
 	// and set impl_version to 0. If only runtime
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
-	spec_version: 259,
-	impl_version: 2,
+	spec_version: 1,
+	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
@@ -906,38 +906,36 @@ impl pallet_vesting::Trait for Runtime {
 //	ASSETS
 //
 
-
-
 //
 // ZERO Pallets
 //
 
-parameter_types! {
-	pub const SubmissionDeposit: u128 = 10;
-	pub const MinContribution: u128 = 10;
-	pub const RetirementPeriod: u32 = 10;
-	pub const Nonce: u64 = 1337;
-	pub const MinLength: usize = 4;
-	pub const MaxLength: usize = 64;
-}
+// parameter_types! {
+// 	pub const SubmissionDeposit: u128 = 10;
+// 	pub const MinContribution: u128 = 10;
+// 	pub const RetirementPeriod: u32 = 10;
+// 	pub const Nonce: u64 = 1337;
+// 	pub const MinLength: usize = 4;
+// 	pub const MaxLength: usize = 64;
+// }
 
-impl crowdfunding::Trait for Runtime {
-	type Event = Event;
-	type Currency = Balances;
-	// creator deposit
-	// type SubmissionDeposit = SubmissionDeposit;
-	// minimum contribution
-	// type MinContribution = MinContribution;
-	// unclaimed funds
-	// type RetirementPeriod = RetirementPeriod;
-	type Nonce = Nonce;
-	// campaign title
-	// TODO: replace with ipfs hash containing all info
-	type MinLength = MinLength;
-	type MaxLength = MaxLength;
-	// randomness provider
-	type Randomness = RandomnessCollectiveFlip;
-}
+// impl crowdfunding::Trait for Runtime {
+// 	type Event = Event;
+// 	type Currency = Balances;
+// 	// creator deposit
+// 	// type SubmissionDeposit = SubmissionDeposit;
+// 	// minimum contribution
+// 	// type MinContribution = MinContribution;
+// 	// unclaimed funds
+// 	// type RetirementPeriod = RetirementPeriod;
+// 	type Nonce = Nonce;
+// 	// campaign title
+// 	// TODO: replace with ipfs hash containing all info
+// 	type MinLength = MinLength;
+// 	type MaxLength = MaxLength;
+// 	// randomness provider
+// 	type Randomness = RandomnessCollectiveFlip;
+// }
 
 // impl skillz::Trait for Runtime {
 // 	type Event = Event;
@@ -955,42 +953,60 @@ construct_runtime!(
 		NodeBlock = node_primitives::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
+
+		// v0.1.0
+
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
 		Utility: pallet_utility::{Module, Call, Event},
-		Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
 		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-		Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
 		Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
+		Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
+		Historical: pallet_session_historical::{Module},
+
 		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Module, Storage},
+		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
+
+		Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
+		Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
 		Staking: pallet_staking::{Module, Call, Config<T>, Storage, Event<T>, ValidateUnsigned},
 		Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
-		Democracy: pallet_democracy::{Module, Call, Storage, Config, Event<T>},
-		Council: pallet_collective::<Instance1>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
-		TechnicalCommittee: pallet_collective::<Instance2>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
-		Elections: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>},
-		TechnicalMembership: pallet_membership::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
 		FinalityTracker: pallet_finality_tracker::{Module, Call, Inherent},
 		Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event, ValidateUnsigned},
-		Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>},
-		Contracts: pallet_contracts::{Module, Call, Config, Storage, Event<T>},
-		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 		ImOnline: pallet_im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
 		AuthorityDiscovery: pallet_authority_discovery::{Module, Call, Config},
 		Offences: pallet_offences::{Module, Call, Storage, Event},
-		Historical: pallet_session_historical::{Module},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
+
+		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
+
+		// v0.1.1
+
+		Proxy: pallet_proxy::{Module, Call, Storage, Event<T>},
 		Identity: pallet_identity::{Module, Call, Storage, Event<T>},
-		Society: pallet_society::{Module, Call, Storage, Event<T>, Config<T>},
 		Recovery: pallet_recovery::{Module, Call, Storage, Event<T>},
 		Vesting: pallet_vesting::{Module, Call, Storage, Event<T>, Config<T>},
-		Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
-		Proxy: pallet_proxy::{Module, Call, Storage, Event<T>},
-		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
 
-		//
+		// v0.1.2 - governance
+
+		Society: pallet_society::{Module, Call, Storage, Event<T>, Config<T>},
+		Elections: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>},
+		TechnicalMembership: pallet_membership::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
+
+		Democracy: pallet_democracy::{Module, Call, Storage, Config, Event<T>},
+		Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>},
+		TechnicalCommittee: pallet_collective::<Instance2>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
+		Council: pallet_collective::<Instance1>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
+
+		// v0.1.3
+
+		Contracts: pallet_contracts::{Module, Call, Config, Storage, Event<T>},
+
+		// 0.1.4
+
+		// Crowdfunding: crowdfunding::{Module, Call, Storage, Event<T>},
+
 		// Assets: pallet_assets::{Module, Call, Storage, Event<T>},
-		Crowdfunding: crowdfunding::{Module, Call, Storage, Event<T>},
 		// Skillz: skillz::{Module, Call, Storage, Event<T>},
 
 	}
