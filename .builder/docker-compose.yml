@@ -21,16 +21,16 @@ services:
         "--rpc-external",
         "--rpc-cors", "all",
         "--rpc-methods", "unsafe",
-        "--public-addr","${IP}",
+        # "--public-addr","${IP}",
         "--telemetry-url", "wss://telemetry.polkadot.io/submit/ 5"
       ]
-    environment:
-      - VIRTUAL_HOST=${DOMAINS}
-      - VIRTUAL_PORT=9944
-      - LETSENCRYPT_HOST=${DOMAINS}
-      - LETSENCRYPT_EMAIL=${EMAIL}
+    # environment:
+    #   - VIRTUAL_HOST=${DOMAINS}
+    #   - VIRTUAL_PORT=9944
+    #   - LETSENCRYPT_HOST=${DOMAINS}
+    #   - LETSENCRYPT_EMAIL=${EMAIL}
 
-networks:
-  default:
-    external:
-      name: webproxy
+# networks:
+#   default:
+#     external:
+#       name: webproxy

@@ -1,4 +1,5 @@
 FROM phusion/baseimage:0.11 AS builder
+# FROM paritytech/ci-linux:production AS builder
 
 LABEL maintainer="devops@zero.io"
 LABEL description="This is the build stage for subzero."
@@ -14,20 +15,20 @@ RUN apt-get update && \
 	apt-get dist-upgrade -y -o Dpkg::Options::="--force-confold" && \
 	apt-get install -y cmake pkg-config libssl-dev git clang
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+# RUN rustup show && \
+RUN	curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 	export PATH="$PATH:$HOME/.cargo/bin" && \
-	rustup install 1.45.1 && \
-	rustup default 1.45.1 &&\
-	rustup toolchain install nightly-2020-08-19 && \
-	rustup target add wasm32-unknown-unknown --toolchain nightly-2020-08-19 && \
-	rustup toolchain list && \
+	rustup toolchain install nightly-2020-10-01 && \
+	rustup default nightly-2020-10-01 &&\
+	rustup target add wasm32-unknown-unknown --toolchain nightly-2020-10-01 && \
+	rustup show && \
 	cargo build "--$PROFILE"
 
 # ===== SECOND STAGE ======
 
 FROM phusion/baseimage:0.11
 LABEL maintainer="devops@zero.io"
-LABEL description="This is the 2nd stage: a very small image where we copy the subzero binary."
+LABEL description="This is the 2nd stage: a very smol image where we copy the subzero binary."
 ARG PROFILE=release
 
 RUN mv /usr/share/ca* /tmp && \
