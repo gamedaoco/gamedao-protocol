@@ -89,7 +89,7 @@ use sp_runtime::generic::Era;
 mod weights;
 
 // custom pallets
-// use crowdfunding_factory as crowdfunding;
+use crowdfunding_factory as crowdfunding;
 // use skillz;
 
 // use pallet_assets as assets;
@@ -115,7 +115,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// and set impl_version to 0. If only runtime
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
-	spec_version: 1,
+	spec_version: 2,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -911,32 +911,32 @@ impl pallet_vesting::Trait for Runtime {
 // ZERO Pallets
 //
 
-// parameter_types! {
-// 	pub const SubmissionDeposit: u128 = 10;
-// 	pub const MinContribution: u128 = 10;
-// 	pub const RetirementPeriod: u32 = 10;
-// 	pub const Nonce: u64 = 1337;
-// 	pub const MinLength: usize = 4;
-// 	pub const MaxLength: usize = 64;
-// }
+parameter_types! {
+	pub const SubmissionDeposit: u128 = 10;
+	pub const MinContribution: u128 = 10;
+	pub const RetirementPeriod: u32 = 10;
+	pub const Nonce: u64 = 1337;
+	pub const MinLength: usize = 4;
+	pub const MaxLength: usize = 64;
+}
 
-// impl crowdfunding::Trait for Runtime {
-// 	type Event = Event;
-// 	type Currency = Balances;
-// 	// creator deposit
-// 	// type SubmissionDeposit = SubmissionDeposit;
-// 	// minimum contribution
-// 	// type MinContribution = MinContribution;
-// 	// unclaimed funds
-// 	// type RetirementPeriod = RetirementPeriod;
-// 	type Nonce = Nonce;
-// 	// campaign title
-// 	// TODO: replace with ipfs hash containing all info
-// 	type MinLength = MinLength;
-// 	type MaxLength = MaxLength;
-// 	// randomness provider
-// 	type Randomness = RandomnessCollectiveFlip;
-// }
+impl crowdfunding::Trait for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	// creator deposit
+	// type SubmissionDeposit = SubmissionDeposit;
+	// minimum contribution
+	// type MinContribution = MinContribution;
+	// unclaimed funds
+	// type RetirementPeriod = RetirementPeriod;
+	type Nonce = Nonce;
+	// campaign title
+	// TODO: replace with ipfs hash containing all info
+	type MinLength = MinLength;
+	type MaxLength = MaxLength;
+	// randomness provider
+	type Randomness = RandomnessCollectiveFlip;
+}
 
 // impl skillz::Trait for Runtime {
 // 	type Event = Event;
@@ -1005,7 +1005,7 @@ construct_runtime!(
 
 		// 0.1.7
 
-		// Crowdfunding: crowdfunding::{Module, Call, Storage, Event<T>},
+		Crowdfunding: crowdfunding::{Module, Call, Storage, Event<T>},
 
 		// Assets: pallet_assets::{Module, Call, Storage, Event<T>},
 		// Skillz: skillz::{Module, Call, Storage, Event<T>},
