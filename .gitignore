@@ -30,3 +30,4 @@ tmp/
 .maintain
 .github
 **/nodekey*
+**/bootnodes
