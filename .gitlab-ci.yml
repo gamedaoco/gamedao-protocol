@@ -1,23 +1,7 @@
 stages:
-  - check
-  - test
-  - build
-  - post-build-test
   - docker
-  - chaos
   - publish
   - deploy
-  - subzero
-
-variables:                         &default-vars
-  GIT_STRATEGY:                    fetch
-  GIT_DEPTH:                       100
-  CARGO_INCREMENTAL:               0
-  DOCKER_OS:                       "debian:stretch"
-  ARCH:                            "x86_64"
-  # FIXME set to release
-  CARGO_UNLEASH_INSTALL_PARAMS:    "--version 1.0.0-alpha.10"
-  CARGO_UNLEASH_PKG_DEF:           "--skip node node-* pallet-template pallet-example pallet-example-* subkey chain-spec-builder"
 
 default:
   cache:                           {}
@@ -57,38 +41,3 @@ docker:
 #
 #
 #
-
-.validator-deploy:                 &validator-deploy
-  <<:                              *build-only
-  stage:                           flaming-fir
-  needs:
-    # script will fail if there is no artifacts/substrate/VERSION
-    - job:                         publish-docker-substrate
-      artifacts:                   true
-  image:                           parity/azure-ansible:v1
-  allow_failure:                   true
-  when:                            manual
-  interruptible:                   true
-  tags:
-    - linux-docker
-
-validator 1 4:
-  <<:                              *validator-deploy
-  script:
-    - ./.maintain/flamingfir-deploy.sh flamingfir-validator1
-
-validator 2 4:
-  <<:                              *validator-deploy
-  script:
-    - ./.maintain/flamingfir-deploy.sh flamingfir-validator2
-
-validator 3 4:
-  <<:                              *validator-deploy
-  script:
-    - ./.maintain/flamingfir-deploy.sh flamingfir-validator3
-
-validator 4 4:
-  <<:                              *validator-deploy
-  script:
-    - ./.maintain/flamingfir-deploy.sh flamingfir-validator4
-
