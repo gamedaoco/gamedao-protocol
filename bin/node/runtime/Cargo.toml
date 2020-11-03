@@ -175,9 +175,10 @@ std = [
 
 	# "pallet-evm/std",
 	# "pallet-ethereum/std",
-
 	# "pallet-assets/std",
+
 	# "crowdfunding-factory/std",
+
 	# "skillz/std",
 
 ]

@@ -88,9 +88,10 @@ use sp_runtime::generic::Era;
 /// Weights for pallets used in the runtime.
 mod weights;
 
-/// zero pallets
-use crowdfunding_factory as crowdfunding;
+// custom pallets
+// use crowdfunding_factory as crowdfunding;
 // use skillz;
+
 // use pallet_assets as assets;
 
 // Make the WASM binary available.
@@ -107,7 +108,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 
 /// Runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("subzero"),
+	spec_name: create_runtime_str!("node"),
 	impl_name: create_runtime_str!("zero-alphaville"),
 	authoring_version: 10,
 	// Per convention: if the runtime behavior changes, increment spec_version
@@ -1002,7 +1003,7 @@ construct_runtime!(
 
 		Contracts: pallet_contracts::{Module, Call, Config, Storage, Event<T>},
 
-		// 0.1.4
+		// 0.1.7
 
 		// Crowdfunding: crowdfunding::{Module, Call, Storage, Event<T>},
 
