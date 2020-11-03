@@ -7,7 +7,9 @@ Dockerfile
 
 data
 tmp
+target
 
 .github
 .builder
-target
+.maintain
+
