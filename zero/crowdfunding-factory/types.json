@@ -1,15 +1,14 @@
 {
-	"ZeroCrowdfunding": {
-		"AccountIdOf": "AccountId",
-		"BalanceOf": "Balance",
-		"CampaignInfoOf": "CampaignInfo",
-		"CampaignInfo": {
-			"beneficiary": "AccountId",
+	"Crowdfunding": {
+		"Campaign": {
+			"id": "Hash",
+			"manager": "AccountId",
 			"deposit": "Balance",
-			"raised": "Balance",
-			"end": "BlockNumber",
-			"goal": "Balance"
-		},
-		"CampaignIndex": "u32"
+			"expiry": "BlockNumber",
+			"cap": "Balance",
+			"name": "Vec<u8>",
+			"protocol": "u8",
+			"status": "u8"
+		}
 	}
 }

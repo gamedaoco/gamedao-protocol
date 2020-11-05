@@ -53,8 +53,9 @@ use frame_support::{
 	dispatch::DispatchResult,
 	traits::{
 		Randomness,
-		// Currency,
+		Currency,
 		// EnsureOrigin,
+		ExistenceRequirement,
 		ReservableCurrency,
 		Get
 	}
@@ -80,8 +81,10 @@ use codec::{ Encode, Decode };
 // global identification
 const PALLET_ID: ModuleId = ModuleId(*b"zerocrwd");
 const PALLET_VERSION: &str = "1.0";
+
 // limit simultanous campaign initiation
 const MAX_CONTRIBUTIONS_PER_BLOCK: usize = 5;
+
 // max campaign duration
 const MAX_CAMPAIGN_LENGTH: u64 = 777600;
 
@@ -115,6 +118,11 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber> {
 	protocol: u8,
 	/// status: 0 not started, 1 in progress, 2 success, 3 fail
 	status: u8,
+	// /// token symbol
+	// token_symbol: Vec<u8>,
+	// /// token name
+	// token_name: Vec<u8>,
+
 }
 
 decl_storage! {
@@ -157,8 +165,10 @@ decl_storage! {
 		ContributedCampaignsCount get(fn contributed_campaigns_count): map hasher(blake2_128_concat) T::AccountId => u64;
 		ContributedCampaignsIndex: map hasher(blake2_128_concat) (T::AccountId, T::Hash) => u64;
 
-		// Total contributions per project
-		//
+		// Total contributions per campaign
+		TotalContributions get(fn total_contributions): map hasher(blake2_128_concat) T::Hash => T::Balance;
+
+		// Contributions per user
 		ContributedAmount get(fn contributed_amount): map hasher(blake2_128_concat) (T::Hash, T::AccountId) => T::Balance;
 
 		// Contributor Accounts
@@ -175,12 +185,15 @@ decl_event! {
 		<T as system::Trait>::Hash,
 		<T as system::Trait>::AccountId,
 		<T as balances::Trait>::Balance,
-		<T as system::Trait>::BlockNumber
+		<T as system::Trait>::BlockNumber,
+		EventMessage = Vec<u8>,
 	{
-		Create(Hash, AccountId, Balance, Balance, BlockNumber, Vec<u8>),
-		Contribute(Hash, AccountId, Balance, BlockNumber),
-		Complete(Hash, Balance, BlockNumber, bool),
-		Update(Hash, u8),
+		CampaignCreated(Hash, AccountId, Balance, Balance, BlockNumber, Vec<u8>),
+		CampaignContributed(Hash, AccountId, Balance, BlockNumber),
+		CampaignFinalized(Hash, Balance, BlockNumber, bool),
+		CampaignFailed(Hash, Balance, BlockNumber, bool),
+		CampaignUpdated(Hash, u8),
+		Message(EventMessage),
 	}
 }
 
@@ -354,7 +367,7 @@ decl_module! {
 
 			// deposit the event
 			Self::deposit_event(
-				RawEvent::Create(
+				RawEvent::CampaignCreated(
 					id,
 					creator,
 					target,
@@ -379,19 +392,21 @@ decl_module! {
 		) -> DispatchResult {
 
 			let sender = ensure_signed(origin)?;
+
 			let owner = Self::owner_of(campaign) .ok_or(Error::<T>::OwnerUnknown)?;
 			ensure!( owner != sender, Error::<T>::NoContributionToOwnCampaign );
 
-			// if !<ContributedAmount<T>>::exists((campaign.clone(), sender.clone())) {
-				Self::create_contribution(sender.clone(), campaign.clone(), contribution.clone())?;
+			Self::create_contribution(sender.clone(), campaign.clone(), contribution.clone())?;
+
+			// if !<ContributedAmount<T>>::contains_key((campaign.clone(), sender.clone())) {
 			// } else {
-				// Self::update_contribution(sender.clone(), campaign.clone(), contribution.clone())?;
+			// 	Self::update_contribution(sender.clone(), campaign.clone(), contribution.clone())?;
 			// }
 
 			let now = <system::Module<T>>::block_number();
 
 			Self::deposit_event(
-				RawEvent::Contribute(
+				RawEvent::CampaignContributed(
 					campaign,
 					sender,
 					contribution,
@@ -401,14 +416,99 @@ decl_module! {
 
 			Ok(())
 		}
+
+		fn on_finalize() {
+
+			// get all the contributions of the block
+			let block_number = <system::Module<T>>::block_number();
+			let contribution_hashes = Self::campaign_expire_at(block_number);
+
+			// iterate over hashes
+			for campaign_id in &contribution_hashes {
+
+				let mut campaign = Self::campaign_by_id(campaign_id);
+				let total_contributions = Self::total_contributions(campaign_id);
+				if total_contributions >= campaign.cap {
+
+					// update campaign state to success
+					campaign.status = 2;
+					<Campaigns<T>>::insert(campaign_id.clone(), campaign);
+
+					// get campaign owner
+					let _owner = Self::owner_of(campaign_id);
+
+					match _owner {
+						Some(owner) => {
+
+							// get all contributors
+							let contributors = Self::contributor_accounts(campaign_id);
+							let mut process_complete = true;
+
+							// iterate over contributors
+							// unreserve contribution
+							// transfer contributor to campaign owner
+							'inner: for contributor in &contributors {
+
+								let contributor_balance = Self::contributed_amount((*campaign_id, contributor.clone()));
+								let _ = <balances::Module<T>>::unreserve(&contributor, contributor_balance.clone());
+
+								// if contributor == campaign owner
+								// unreserve the money
+								if contributor == &owner { continue; }
+								let _transfer = <balances::Module<T> as Currency<_>>::transfer(&contributor, &owner, contributor_balance, ExistenceRequirement::AllowDeath);
+
+								match _transfer {
+									Err(_e) => {
+										process_complete = false;
+										break 'inner;
+									},
+									Ok(_v) => {}
+								}
+
+							}
+
+							// If all the processes are right
+							// reserve all money of the funding
+							if process_complete {
+								let _ = <balances::Module<T>>::reserve(&owner, total_contributions);
+								// deposit the event
+								Self::deposit_event(RawEvent::CampaignFinalized(*campaign_id, total_contributions, block_number, true));
+							}
+
+						},
+						None => continue,
+					}
+
+				} else {
+
+					// campaign failed
+					// refund all of the money
+
+					// update camapign state to failed
+					// status: 0 not started, 1 in progress, 2 success, 3 fail
+					campaign.status = 3;
+					<Campaigns<T>>::insert(campaign_id.clone(), campaign);
+
+					// revert all contributions
+					let contributors = Self::contributor_accounts(campaign_id);
+					for account in contributors {
+						let contribution = Self::contributed_amount((*campaign_id, account.clone()));
+						let _ = <balances::Module<T>>::unreserve(&account, contribution);
+					}
+
+					// deposit the event
+					Self::deposit_event(RawEvent::CampaignFailed(*campaign_id, total_contributions, block_number, false));
+
+				}
+			}
+
+		}
+
  	}
 }
 
 impl<T: Trait> Module<T> {
 
-/*
-
- */
 	fn mint(
 		// campaign creator
 		sender: T::AccountId,
@@ -431,46 +531,39 @@ impl<T: Trait> Module<T> {
 	) -> DispatchResult {
 
 		// insert into campaigns map
-
 		<Campaigns<T>>::insert(id.clone(), new_campaign.clone());
 
 		// insert into campaign owners map
-
 		<CampaignOwner<T>>::insert(id.clone(), sender.clone());
 
 		// insert into campaigns by expiration block
-
 		<CampaignsByBlockNumber<T>>::mutate(expiry.clone(), |campaigns| campaigns.push(id.clone()));
 
 		// global campaigns count
-
 		let all_campaigns_count = Self::all_campaigns_count();
 		let update_all_campaigns_count = all_campaigns_count.checked_add(1).ok_or(Error::<T>::AddCampaignOverflow)?;
 
 		// owned campaigns count
-
 		let owned_campaigns_count = Self::owned_campaigns_count(&sender);
 		let update_owned_campaigns_count = owned_campaigns_count.checked_add(1).ok_or(Error::<T>::AddContributionOverflow)?;
 
 		// update global campaign count
-
 		<AllCampaignsArray<T>>::insert(&all_campaigns_count, id.clone());
 		<AllCampaignsCount>::put(update_all_campaigns_count);
 		<AllCampaignsIndex<T>>::insert(id.clone(), all_campaigns_count);
 
 		// update owned campaign count
-
 		<OwnedCampaignsArray<T>>::insert((sender.clone(), owned_campaigns_count.clone()), id.clone());
 		<OwnedCampaignsCount<T>>::insert(&sender, update_owned_campaigns_count);
 		<OwnedCampaignsIndex<T>>::insert((sender.clone(), id.clone()), owned_campaigns_count);
 
 		// write
 
-		// when deposit exceeds available balance,
-		// revert campaign
-
+		// TODO: final check
+		// if deposit exceeds available balance,
+		// revert the campaign
 		// if deposit > Balance::sa(0) {
-		// 	match Self::not_contributed_before(sender.clone(), id.clone(), deposit.clone()){
+		// 	match Self::create_contribution(sender.clone(), id.clone(), deposit.clone()){
 		// 		Err(_e) => {
 		// 			<Campaigns<T>>::remove(id.clone());
 		// 			<CampaignOwner<T>>::remove(id.clone());
@@ -486,7 +579,7 @@ impl<T: Trait> Module<T> {
 		// 	}
 		// }
 
-		// inc nonce
+		// nonce ++
 		Nonce::mutate(|n| *n += 1);
 
 		Ok(())
@@ -498,64 +591,85 @@ impl<T: Trait> Module<T> {
 		contribution: T::Balance
 	) -> DispatchResult {
 
-		let campaign = Self::campaign_by_id(&campaign_key);
-
-		// check
-
 		// campaign exists ?
 		ensure!( <Campaigns<T>>::contains_key(campaign_key), Error::<T>::InvalidId );
+		let campaign = Self::campaign_by_id(&campaign_key);
+
+		// campaign still active ?
+		ensure!(<system::Module<T>>::block_number() < campaign.expiry, Error::<T>::CampaignExpired );
+
 		// contributor has sufficient balance ?
 		ensure!( <balances::Module<T>>::free_balance(sender.clone()) >= contribution, Error::<T>::BalanceTooLow );
-		// campaign still active ?
-		ensure!(
-			<system::Module<T>>::block_number() < campaign.expiry,
-			Error::<T>::CampaignExpired
-		);
 
-		// collect and update meta info
+		// meta data
+		// check if contributor exists
+		// if not, update metadata
+		if !<ContributedAmount<T>>::contains_key((&campaign_key, &sender)) {
 
-		// increase the number of campaigncontributors invested in
-		let contributed_campaigns = Self::contributed_campaigns_count(&sender);
-		let update_contributed_campaigns = contributed_campaigns.checked_add(1).ok_or(Error::<T>::AddContributionOverflow)?;
+			// increase the number of campaigncontributors invested in
+			let contributed_campaigns = Self::contributed_campaigns_count(&sender);
+			let update_contributed_campaigns = contributed_campaigns.checked_add(1).ok_or(Error::<T>::AddContributionOverflow)?;
 
-		// increase the number of contributors into the campaign
-		let contributors = <ContributorAccountsCount<T>>::get(&campaign_key);
-		let update_contributors = contributors.checked_add(1).ok_or(Error::<T>::UpdateContributorOverflow)?;
+			// increase the number of contributors into the campaign
+			let contributors = <ContributorAccountsCount<T>>::get(&campaign_key);
+			let update_contributors = contributors.checked_add(1).ok_or(Error::<T>::UpdateContributorOverflow)?;
 
-		//
-		// contribution
-		//
+			// change the state of invest related fields
+			// <ContributedAmount<T>>::insert((campaign_key.clone(), sender.clone()), contribution.clone());
+			<ContributorAccounts<T>>::mutate(&campaign_key, |accounts| accounts.push(sender.clone()));
 
-		// let _campaign = Self::campaign_by_id(&campaign);
+			// update total contributor count
+			<ContributorAccountsCount<T>>::insert(campaign_key.clone(), update_contributors);
 
+			// update contributed campaigns
+			<ContributedCampaignsArray<T>>::insert((sender.clone(), contributed_campaigns), campaign_key);
+			<ContributedCampaignsCount<T>>::insert(&sender, update_contributed_campaigns);
+			<ContributedCampaignsIndex<T>>::insert((sender.clone(), campaign_key.clone()), contributed_campaigns);
 
+		}
 
 		// reserve
 		<balances::Module<T>>::reserve(&sender, contribution)?;
 
-		// A
-		// change the state of invest related fields
-		<ContributedAmount<T>>::insert((campaign_key.clone(), sender.clone()), contribution.clone());
-
-		<ContributorAccounts<T>>::mutate(&campaign_key, |accounts| accounts.push(sender.clone()));
-
-		// update total contributor count
-		<ContributorAccountsCount<T>>::insert(campaign_key.clone(), update_contributors);
-
-		// update contributed campaigns
-		<ContributedCampaignsArray<T>>::insert((sender.clone(), contributed_campaigns), campaign_key);
-		<ContributedCampaignsCount<T>>::insert(&sender, update_contributed_campaigns);
-		<ContributedCampaignsIndex<T>>::insert((sender.clone(), campaign_key.clone()), contributed_campaigns);
-
-		// write
-
-		// B
-		// update contributions
+		// update contributions to campaign per contributor
 		let total_contributions = Self::contributed_amount((&campaign_key, &sender));
 		let update_total_contributions = total_contributions + contribution;
 		<ContributedAmount<T>>::insert((&campaign_key, &sender), update_total_contributions);
 
+		// update total contributions to campaign
+		let total_campaign_contributions = Self::total_contributions(&campaign_key);
+		let update_campaign_contributions = total_campaign_contributions + contribution;
+		<TotalContributions<T>>::insert(&campaign_key, update_campaign_contributions);
+
 		Ok(())
 	}
+
+	// fn update_contribution(
+	// 	sender: T::AccountId,
+	// 	campaign_key: T::Hash,
+	// 	contribution: T::Balance
+	// ) -> DispatchResult {
+
+	// 	// campaign exists ?
+	// 	ensure!(<Campaigns<T>>::contains_key(campaign_key), Error::<T>::InvalidId );
+	// 	let campaign = Self::campaign_by_id(&campaign_key);
+
+	// 	// contributor has sufficient balance ?
+	// 	ensure!(<balances::Module<T>>::free_balance(sender.clone()) >= contribution, Error::<T>::BalanceTooLow );
+
+	// 	// campaign still active ?
+	// 	ensure!(<system::Module<T>>::block_number() < campaign.expiry, Error::<T>::CampaignExpired );
+
+	// 	// reserve
+	// 	<balances::Module<T>>::reserve(&sender, contribution)?;
+
+	// 	// update contribution
+	// 	let current_contribution = Self::contributed_amount((&campaign_key, &sender));
+	// 	let updated_contribution = current_contribution + contribution;
+	// 	<ContributedAmount<T>>::insert((&campaign_key, &sender), updated_contribution);
+
+	// 	Ok(())
+
+	// }
 
 }
