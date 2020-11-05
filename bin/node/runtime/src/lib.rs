@@ -108,17 +108,13 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 
 /// Runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("node"),
-	impl_name: create_runtime_str!("zero-alphaville"),
-	authoring_version: 10,
-	// Per convention: if the runtime behavior changes, increment spec_version
-	// and set impl_version to 0. If only runtime
-	// implementation changes and behavior does not, then leave spec_version as
-	// is and increment impl_version.
-	spec_version: 2,
-	impl_version: 0,
+	spec_name: create_runtime_str!("subzero"),
+	impl_name: create_runtime_str!("alphaville"),
+	spec_version: 4,
+	impl_version: 1,
+	transaction_version: 4,
+	authoring_version: 75,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 1,
 };
 
 /// Native version.
