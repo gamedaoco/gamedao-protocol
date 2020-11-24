@@ -20,6 +20,20 @@ serde = { version = "1.0.102", optional = true }
 static_assertions = "1.1.0"
 hex-literal = { version = "0.3.1", optional = true }
 
+# orml
+orml-auction = { path = "../../../vendors/orml/auction", default-features = false }
+orml-authority = { path = "../../../vendors/orml/authority", default-features = false }
+orml-benchmarking = { path = "../../../vendors/orml/benchmarking", default-features = false, optional = true }
+orml-currencies = { path = "../../../vendors/orml/currencies", default-features = false }
+orml-oracle = { path = "../../../vendors/orml/oracle", default-features = false }
+orml-oracle-rpc-runtime-api = { path = "../../../vendors/orml/oracle/rpc/runtime-api", default-features = false }
+orml-gradually-update = { path = "../../../vendors/orml/gradually-update", default-features = false }
+orml-tokens = { path = "../../../vendors/orml/tokens", default-features = false }
+orml-traits = { path = "../../../vendors/orml/traits", default-features = false }
+orml-vesting = { path = "../../../vendors/orml/vesting", default-features = false }
+orml-rewards = { path = "../../../vendors/orml/rewards", default-features = false }
+orml-nft= { path = "../../../vendors/orml/nft", default-features = false }
+
 # primitives
 sp-consensus-babe = { version = "0.8.0", default-features = false, path = "../../../primitives/consensus/babe" }
 sp-consensus-aura = { version = "0.8.0", default-features = false, path = "../../../primitives/consensus/aura" }
@@ -94,10 +108,11 @@ pallet-vesting = { version = "2.0.0", default-features = false, path = "../../..
 
 # assets
 
-pallet-assets = { version = "2.0.0", default-features = false, path = "../../../frame/assets" }
-crowdfunding-factory = { version = "0.0.1", default-features = false, path = "../../../zero/crowdfunding-factory" }
-# zero-crowdfunding = { version = "0.0.1", default-features = false, path = "../../../zero/crowdfunding" }
-# skillz = { version = "0.0.1", default-features = false, path = "../../../zero/skillz" }
+# pallet-assets = { version = "2.0.0", default-features = false, path = "../../../frame/assets" }
+crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
+nft = { default-features = false, path = "../../../modules/nft" }
+# zero-crowdfunding = { version = "0.0.1", default-features = false, path = "../../../modules/crowdfunding" }
+# skillz = { version = "0.0.1", default-features = false, path = "../../../modules/skillz" }
 
 #
 
@@ -177,7 +192,7 @@ std = [
 	# "pallet-ethereum/std",
 	# "pallet-assets/std",
 
-	"crowdfunding-factory/std",
+	"crowdfunding/std",
 
 	# "skillz/std",
 
