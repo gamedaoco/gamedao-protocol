@@ -128,27 +128,35 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber> {
 decl_storage! {
 	trait Store for Module<T: Trait> as CrowdfundingFactory {
 
+		// TODO:
+		//
+		// -	statistics:
+		// 		total campaigns
+		// 		total (indiviual?) contributors sum
+		// 		total contributions sum
+		//
+		// -	all / campaigns meta info
+		//
+		// -	allCampaignsArray { contributor hash, contribution amount } =>
+		// -	allCampaignsCount
+		//
+		// - 	ownedCampaigns
+
 		/// Campaigns
-		Campaigns get(fn campaign_by_id):
-		map hasher(blake2_128_concat) T::Hash =>
-		Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber>;
+		Campaigns get(fn campaign_by_id): map hasher(blake2_128_concat) T::Hash => Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber>;
 
 		/// Campaign owner by campaign id
-		CampaignOwner get(fn owner_of):
-		map hasher(blake2_128_concat) T::Hash =>
-		Option<T::AccountId>;
+		CampaignOwner get(fn owner_of): map hasher(blake2_128_concat) T::Hash => Option<T::AccountId>;
 
 		// TODO: fix BlockNumber sa
 		/// Max campaign time limit
-		// CampaignMaxDurationLimit
-		// get(fn campaign_max_duration_limit) config():
-		// T::BlockNumber = T::BlockNumber::sa(MAX_CAMPAIGN_LENGTH);
+		// CampaignMaxDurationLimit get(fn campaign_max_duration_limit) config(): T::BlockNumber = T::BlockNumber::sa(MAX_CAMPAIGN_LENGTH);
 
 		/// Campaigns ending in a block
 		CampaignsByBlockNumber get(fn campaign_expire_at): map hasher(blake2_128_concat) T::BlockNumber => Vec<T::Hash>;
 
 		/// Campaign state
-		CampaignState get(fn campaign_state): map hasher(blake2_128_concat) u8 => T::Hash;
+		CampaignState get(fn campaign_state): map hasher(blake2_128_concat) T::Hash => u8;
 
 		// all campaigns
 		AllCampaignsArray get(fn campaigns_by_index): map hasher(blake2_128_concat) u64 => T::Hash;
@@ -175,7 +183,7 @@ decl_storage! {
 		ContributorAccounts get(fn contributor_accounts): map hasher(blake2_128_concat) T::Hash => Vec<T::AccountId>;
 		ContributorAccountsCount get(fn contributor_accounts_count): map hasher(blake2_128_concat) T::Hash => u64;
 
-		// Campaign nonce
+		// Campaign nonce, increases per created campaign
 		Nonce: u64;
 	}
 }
@@ -192,7 +200,7 @@ decl_event! {
 		CampaignContributed(Hash, AccountId, Balance, BlockNumber),
 		CampaignFinalized(Hash, Balance, BlockNumber, bool),
 		CampaignFailed(Hash, Balance, BlockNumber, bool),
-		CampaignUpdated(Hash, u8),
+		CampaignUpdated(Hash, u8, BlockNumber),
 		Message(EventMessage),
 	}
 }
@@ -255,6 +263,8 @@ decl_error! {
 		NoContributionToOwnCampaign,
 		/// Guru Meditation
 		GuruMeditation,
+		/// Zou are not authorized for this call
+		AuthorizationError,
 
 	}
 }
@@ -266,12 +276,45 @@ decl_module! {
 
 		fn deposit_event() = default;
 
+		// update the campaign status
+	 	// 0 not started, 1 in progress, 2 success, 3 pause, 4 cancel, 5 fail
+	 	// admin can set any status
+	 	// owner can pause, cancel
+		#[weight = 1_000]
+		fn update_status(
+			origin,
+			campaign: T::Hash,
+			status: u8
+		) -> DispatchResult {
+			// campaign exists?
+			let sender = ensure_signed(origin)?;
+			// read status
+			let owner = Self::owner_of(campaign) .ok_or(Error::<T>::OwnerUnknown)?;
+			ensure!( owner == sender, Error::<T>::AuthorizationError );
+			// update status
+			let status = Self::campaign_state(campaign); // ??? .ok_or(Error::<T>::GuruMeditation)?;
+			// write status
+			let now = <system::Module<T>>::block_number();
+			// dispatch event
+			Self::deposit_event(
+				RawEvent::CampaignUpdated(
+					campaign,
+					status,
+					now
+				)
+			);
+
+			Ok(())
+		}
+
 		#[weight = 10_000]
 		fn create(
 			origin,
 			name: Vec<u8>,
 			target: T::Balance,
 			deposit: T::Balance,
+			// TODO: should be duration in days,
+			// not target blocknumber
 			expiry: T::BlockNumber,
 		) {
 
@@ -298,6 +341,11 @@ decl_module! {
 				expiry > now,
 				Error::<T>::EndTooEarly
 			);
+
+
+			// TODO: refactor calculate dest. block
+			// let blocktime = 5;
+			// let target_block_number =
 
 			// TODO: fix BlockNumber sa
 			// ensure!(

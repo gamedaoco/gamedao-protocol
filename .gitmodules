@@ -4,3 +4,9 @@
 [submodule "vendors/orml"]
 	path = vendors/orml
 	url = git@github.com:open-web3-stack/open-runtime-module-library.git
+[submodule "vendors/ink"]
+	path = vendors/ink
+	url = git@github.com:paritytech/ink.git
+[submodule "vendors/Acala"]
+	path = vendors/Acala
+	url = git@github.com:AcalaNetwork/Acala.git
