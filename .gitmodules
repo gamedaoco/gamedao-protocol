@@ -10,3 +10,6 @@
 [submodule "vendors/Acala"]
 	path = vendors/Acala
 	url = git@github.com:AcalaNetwork/Acala.git
+[submodule "vendors/orml-workshop"]
+	path = vendors/orml-workshop
+	url = git@github.com:xlc/orml-workshop.git
