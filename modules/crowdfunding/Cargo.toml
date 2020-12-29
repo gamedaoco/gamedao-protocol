@@ -1,15 +1,15 @@
 [package]
-name = "crowdfunding-factory"
+name = "module-crowdfunding"
 version = "0.0.1"
 authors = ['zero.io','gamedao.co']
 repository = ''
 edition = "2018"
 license = "GPL-3.0-or-later"
-description = "crowdfunding factory"
+description = "module-crowdfunding"
 
 [package.metadata.substrate]
 categories = [
-	"pallet",
+	"module",
 ]
 compatibility_version = "2.0.0"
 
