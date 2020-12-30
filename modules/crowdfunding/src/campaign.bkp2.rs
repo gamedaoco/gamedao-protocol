@@ -44,6 +44,7 @@ use sp_runtime::{
 };
 use sp_core::Hasher;
 use sp_std::prelude::*;
+use sp_arithmetic::From;
 
 use frame_support::{
 	storage::child,

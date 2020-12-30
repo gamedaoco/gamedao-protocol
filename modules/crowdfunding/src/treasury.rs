@@ -1,13 +1,54 @@
-use crate::funding_factory;
-use support::{decl_storage, decl_module, StorageValue, StorageMap,
-			  dispatch::Result, ensure, decl_event, traits::{Currency, ReservableCurrency}};
-use system::ensure_signed;
-use runtime_primitives::traits::{As, Hash, Zero};
-use parity_codec::{Encode, Decode};
-use rstd::prelude::*;
+//
+//           _______________________________ ________
+//           \____    /\_   _____/\______   \\_____  \
+//             /     /  |    __)_  |       _/ /   |   \
+//            /     /_  |        \ |    |   \/    |    \
+//           /_______ \/_______  / |____|_  /\_______  /
+//                   \/        \/         \/         \/
+//           Z  E  R  O  .  I  O     N  E  T  W  O  R  K
+//           © C O P Y R I O T   2 0 7 5 @ Z E R O . I O
+
+// crowdfunding
+// campaign treasury
+
+// 1. request withdrawal (unreserve) as creator from successful campaign
+// 2. approve withdrawals (unreserve) as investor from successfully funded campaigns
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
+// TODO: harden checks on completion
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+// only on nightly
+// #![feature(const_fn_fn_ptr_basics)]
+
+use crate::campaign;
+
+use frame_system::{ self as system, ensure_signed };
+use frame_support::{
+	decl_storage, decl_module, decl_event, decl_error,
+	StorageValue, StorageMap,
+	dispatch::DispatchResult, ensure,
+	traits::{Currency, ReservableCurrency}
+};
+use sp_core::{ Hasher, H256 };
+use sp_std::prelude::*;
+
+use codec::{ Encode, Decode };
+
+// TODO: replace deprecated
+use sp_runtime::traits::{As, Hash, Zero};
+
+// #[cfg_attr(feature = "std", derive(Debug))]
+
+//
+//
+//
+//
+//
 
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
 pub struct Request<Hash, Balance, BlockNumber>{
 	// the only id of a request
 	request_id: Hash,
@@ -23,11 +64,17 @@ pub struct Request<Hash, Balance, BlockNumber>{
 	status: u64,
 }
 
-pub trait Trait: timestamp::Trait + funding_factory::Trait {
+pub trait Trait: timestamp::Trait + campaigns::Trait {
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
 const MAX_REQUESTS_PER_BLOCK: usize = 3;
+
+//
+//
+//
+//
+//
 
 decl_event!(
 	pub enum Event<T>
@@ -42,6 +89,12 @@ decl_event!(
 		RequestFinalized(Hash, u64, BlockNumber, bool),
 	}
 );
+
+//
+//
+//
+//
+//
 
 decl_storage! {
 	trait Store for Module<T: Trait> as FundingRequest {
@@ -85,6 +138,12 @@ decl_storage! {
 		Nonce: u64;
 	}
 }
+
+//
+//
+//
+//
+//
 
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -229,6 +288,12 @@ decl_module! {
 		}
 	}
 }
+
+//
+//
+//
+//
+//
 
 impl<T:Trait> Module<T>{
 	fn can_use_balance(request_id: T::Hash, supported_count: u64) -> Result{

@@ -1,6 +1,6 @@
 [package]
 name = "module-crowdfunding"
-version = "0.0.1"
+version = "0.1.0"
 authors = ['zero.io','gamedao.co']
 repository = ''
 edition = "2018"
@@ -24,7 +24,7 @@ std = [
 	'sp-runtime/std',
 	'sp-std/std',
 	'sp-core/std',
-	'sp-storage/std',
+	'sp-storage/std'
 ]
 
 [dependencies]
