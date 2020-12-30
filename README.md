@@ -1,6 +1,8 @@
-# ZΞRO
-
+# ZERO Network
 A Parity Substrate based node for ZERO Network
+
+## What we do
+ZERO Network is a blockchain multiverse providing layer 1 / layer 2 infrastructure, software and hardware for interconnected videogame economies, which are interacting through standardised asset, finance and governance protocols. Besides a stable / asset reference token $PLAY, ZERO provides payment and identity flows as well as an hypergraph interface and dedicated validator and trusted computation nodes, simplifying building of projects and interacting with any kind of entity on the network.
 
 ## Contributions & Code of Conduct
 
