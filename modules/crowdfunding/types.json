@@ -9,6 +9,14 @@
 			"name": "Vec<u8>",
 			"protocol": "u8",
 			"status": "u8"
+		},
+		"Treasury": {
+			"id": "Hash",
+			"campaign_id": "Hash",
+			"purpose": "Vec<u8>",
+			"amount": "Balance",
+			"expiry": "BlockNumber",
+			"status": "u8",
 		}
 	}
 }

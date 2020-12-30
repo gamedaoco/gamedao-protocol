@@ -1,6 +1,5 @@
-
 #[cfg(test)]
-mod tests{
+mod tests {
 	use super::*;
 
 	use support::{impl_outer_origin, assert_ok, assert_noop};

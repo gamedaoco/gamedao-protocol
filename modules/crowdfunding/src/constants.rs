@@ -1,5 +1,6 @@
 //
 //	constants
+//	TODO: externalise constants from other modules
 //
 
 use sp_runtime::ModuleId;

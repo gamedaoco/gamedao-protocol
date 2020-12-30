@@ -52,16 +52,17 @@ use sp_runtime::traits::{As, Hash, Zero};
 pub struct Request<Hash, Balance, BlockNumber>{
 	// the only id of a request
 	request_id: Hash,
-	// the funding id
-	funding_id: Hash,
+	// the campaign id
+	campaign_id: Hash,
 	// the purpose of the request
 	purpose: Vec<u8>,
 	// needed money
-	cost: Balance,
+	amount: Balance,
 	// the request deadline
 	expiry: BlockNumber,
 	// status
-	status: u64,
+	// 0 open, 1 approved, 2 declined, 3 expired
+	status: u8,
 }
 
 pub trait Trait: timestamp::Trait + campaigns::Trait {
@@ -150,39 +151,39 @@ decl_module! {
 		// Initializing events
 		fn deposit_event<T>() = default;
 
-		fn create_request(origin, funding_id: T::Hash, purpose: Vec<u8>, cost: T::Balance, expiry: T::BlockNumber) -> Result{
+		fn create_request(origin, campaign_id: T::Hash, purpose: Vec<u8>, amount: T::Balance, expiry: T::BlockNumber) -> Result{
 			let sender = ensure_signed(origin)?;
 
 			// Ensure the funding exists
-			ensure!(<funding_factory::Module<T>>::is_funding_exists(funding_id), "The funding does not exist");
+			ensure!(<funding_factory::Module<T>>::is_funding_exists(campaign_id), "The funding does not exist");
 			// Ensure the funding is success
-			ensure!(<funding_factory::Module<T>>::is_funding_success(funding_id) == 1, "The funding does not succeed");
+			ensure!(<funding_factory::Module<T>>::is_funding_success(campaign_id) == 1, "The funding does not succeed");
 			// Ensure the sender is the owner
-			let owner = <funding_factory::Module<T>>::get_funding_owner(funding_id).ok_or("The owner does not exist")?;
+			let owner = <funding_factory::Module<T>>::get_funding_owner(campaign_id).ok_or("The owner does not exist")?;
 			ensure!(sender == owner, "The sender must be the owner of the funding");
 
 			// ensure that the expiry is valid
 			ensure!(expiry > <system::Module<T>>::block_number(), "The expiry has to be greater than the current block number");
 			ensure!(expiry <= <system::Module<T>>::block_number() + Self::request_period_limit(), "The expiry has be lower than the limit block number");
 
-			let used_balance = Self::used_money_of_funding(&funding_id);
-			let total_balance = <funding_factory::Module<T>>::get_funding_total_balance(funding_id);
+			let used_balance = Self::used_money_of_funding(&campaign_id);
+			let total_balance = <funding_factory::Module<T>>::get_funding_total_balance(campaign_id);
 			let remain_balance = total_balance - used_balance;
-			ensure!(remain_balance >= cost, "The remain money is not enough");
+			ensure!(remain_balance >= amount, "The remain money is not enough");
 			// get the nonce to help generate unique id
 			let nonce = <Nonce<T>>::get();
 
 			// generate the unique id
-			let request_id = (<system::Module<T>>::random_seed(), &cost, &sender, nonce)
+			let request_id = (<system::Module<T>>::random_seed(), &amount, &sender, nonce)
 				.using_encoded(<T as system::Trait>::Hashing::hash);
 			// ensure that the request id is unique
-			ensure!(!<Requests<T>>::exists(&funding_id), "Request already exists");
+			ensure!(!<Requests<T>>::exists(&campaign_id), "Request already exists");
 
 			let new_request = Request{
 				request_id,
-				funding_id: funding_id.clone(),
+				campaign_id: campaign_id.clone(),
 				purpose,
-				cost,
+				amount,
 				expiry,
 				status: 0,
 			};
@@ -197,7 +198,7 @@ decl_module! {
 			let new_all_request_count = all_request_count.checked_add(1).ok_or("Overflow adding a new request to total requests")?;
 
 			// Check adding requests of funding count
-			let request_of_funding_count = Self::request_of_funding_count(funding_id);
+			let request_of_funding_count = Self::request_of_funding_count(campaign_id);
 			let new_request_of_funding_count = request_of_funding_count.checked_add(1).ok_or("Overflow adding a new request to the funding's requests")?;
 
 			// Check adding requests of owner count
@@ -216,9 +217,9 @@ decl_module! {
 			<AllRequestIndex<T>>::insert(request_id.clone(), all_request_count);
 
 			// change the state of funding's requests
-			<RequestOfFundingArray<T>>::insert((funding_id.clone(), request_of_funding_count.clone()), request_id.clone());
-			<RequestOfFundingCount<T>>::insert(funding_id.clone(), new_request_of_funding_count);
-			<RequestOfFundingIndex<T>>::insert((funding_id.clone(), request_id.clone()), request_of_funding_count);
+			<RequestOfFundingArray<T>>::insert((campaign_id.clone(), request_of_funding_count.clone()), request_id.clone());
+			<RequestOfFundingCount<T>>::insert(campaign_id.clone(), new_request_of_funding_count);
+			<RequestOfFundingIndex<T>>::insert((campaign_id.clone(), request_id.clone()), request_of_funding_count);
 
 			// change the state of owner's requests
 			<RequestOfOwnerArray<T>>::insert((sender.clone(), request_of_owner_count.clone()), request_id.clone());
@@ -229,7 +230,7 @@ decl_module! {
 			<Nonce<T>>::mutate(|n| *n += 1);
 
 			// deposit the event
-			Self::deposit_event(RawEvent::CreateRequest(sender, funding_id, request_id, cost, expiry));
+			Self::deposit_event(RawEvent::CreateRequest(sender, campaign_id, request_id, amount, expiry));
 			Ok(())
 		}
 
@@ -240,7 +241,7 @@ decl_module! {
 			// Get the request
 			let mut request = Self::requests(&request_id);
 			// Ensure the user is investor
-			ensure!(<funding_factory::Module<T>>::is_investor(request.funding_id, sender.clone()), "You are not the investor");
+			ensure!(<funding_factory::Module<T>>::is_investor(request.campaign_id, sender.clone()), "You are not the investor");
 			// Ensure the investor does not vote before
 			ensure!(!<VotedBefore<T>>::get((sender.clone(), request_id.clone())), "You have voted before");
 			// Ensure the request is not over
@@ -251,7 +252,7 @@ decl_module! {
 			let supported_request_count = Self::supported_of_request(&request_id);
 			let new_supported_request_count = supported_request_count.checked_add(1).ok_or("Overflow adding the number of people who have voted the request")?;
 			// Check if the number is bigger than half
-			let invested_number = <funding_factory::Module<T>>::get_invested_number(request.funding_id);
+			let invested_number = <funding_factory::Module<T>>::get_invested_number(request.campaign_id);
 			let half_number = invested_number.checked_div(2).ok_or("Error when get half of the invested number")?;
 			let supported_count = new_supported_request_count.clone();
 			// If the supported_count is bigger than the half, the request is success
@@ -299,10 +300,10 @@ impl<T:Trait> Module<T>{
 	fn can_use_balance(request_id: T::Hash, supported_count: u64) -> Result{
 		// Get the request
 		let mut request = Self::requests(&request_id);
-		let request_balance = request.cost;
+		let request_balance = request.amount;
 		// Ensure that there is enough money
-		let used_balance = <UsedMoneyOfFunding<T>>::get(request.funding_id);
-		let total_balance = <funding_factory::Module<T>>::get_funding_total_balance(request.funding_id);
+		let used_balance = <UsedMoneyOfFunding<T>>::get(request.campaign_id);
+		let total_balance = <funding_factory::Module<T>>::get_funding_total_balance(request.campaign_id);
 		let remain_balance = total_balance - used_balance.clone();
 		ensure!(remain_balance >= request_balance, "The remain balance is not enough");
 		// Get the owner of the funding
@@ -311,7 +312,7 @@ impl<T:Trait> Module<T>{
 		let _ = <balances::Module<T>>::unreserve(&owner, request_balance.clone());
 		// Change the used amount
 		let new_used_balance = used_balance + request_balance;
-		<UsedMoneyOfFunding<T>>::insert(request.funding_id, new_used_balance);
+		<UsedMoneyOfFunding<T>>::insert(request.campaign_id, new_used_balance);
 		// Change the request status
 		request.status = 1;
 		<Requests<T>>::insert(request_id.clone(), request.clone());
