@@ -65,7 +65,7 @@ pub type ChainSpec = sc_service::GenericChainSpec<
 >;
 /// ZERO alphaville generator
 pub fn zero_alphaville_config() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../res/alphaville_raw.json")[..])
+	ChainSpec::from_json_bytes(&include_bytes!("../res/alphaville.json")[..])
 }
 
 fn session_keys(
