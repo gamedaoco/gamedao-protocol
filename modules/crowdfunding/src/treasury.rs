@@ -24,7 +24,6 @@
 // #![feature(const_fn_fn_ptr_basics)]
 
 use crate::campaign;
-
 use frame_system::{ self as system, ensure_signed };
 use frame_support::{
 	decl_storage, decl_module, decl_event, decl_error,
@@ -34,9 +33,7 @@ use frame_support::{
 };
 use sp_core::{ Hasher, H256 };
 use sp_std::prelude::*;
-
 use codec::{ Encode, Decode };
-
 // TODO: replace deprecated
 use sp_runtime::traits::{As, Hash, Zero};
 
@@ -132,8 +129,8 @@ decl_storage! {
 		// Judge if the user has voted the request
 		VotedBefore get(voted_before): map (T::AccountId, T::Hash) => bool;
 
-		// Get the status of a request: 1-success 2-failure
-//        RequestStatus get(status_of_request): map T::Hash => u64;
+		// Get the status of a request: 0 undecided 1 accepted 2 declined
+       	RequestStatus get(status_of_request): map T::Hash => u8;
 
 		// Record the number of requests
 		Nonce: u64;

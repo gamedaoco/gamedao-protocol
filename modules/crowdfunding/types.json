@@ -11,7 +11,7 @@
 			"status": "u8"
 		},
 		"Treasury": {
-			"id": "Hash",
+			"request_id": "Hash",
 			"campaign_id": "Hash",
 			"purpose": "Vec<u8>",
 			"amount": "Balance",

@@ -1,6 +1,6 @@
 [package]
 name = "module-crowdfunding"
-version = "0.1.0"
+version = "1.0.0-dev"
 authors = ['zero.io','gamedao.co']
 repository = ''
 edition = "2018"
@@ -8,10 +8,21 @@ license = "GPL-3.0-or-later"
 description = "module-crowdfunding"
 
 [package.metadata.substrate]
-categories = [
-	"module",
-]
-compatibility_version = "2.0.0"
+categories = ["module"]
+# compatibility_version = "2.0.0"
+
+[dependencies]
+serde = { version = "1.0.101", optional = true }
+codec = { package = "parity-scale-codec", version = "1.3.6", default-features = false }
+
+frame-support = { version = "2.0.0", default-features = false, path = "../../frame/support" }
+frame-system = { version = "2.0.0", default-features = false, path = "../../frame/system" }
+balances = { package = "pallet-balances", version = "2.0.0", default-features = false, path = "../../frame/balances" }
+
+sp-runtime = { version = "2.0.0", default-features = false, path = "../../primitives/runtime" }
+sp-std = { version = "2.0.0", default-features = false, path = "../../primitives/std" }
+sp-io = { version = "2.0.0", default-features = false, path = "../../primitives/io" }
+sp-core = { version = "2.0.0", default-features = false, path = "../../primitives/core" }
 
 [features]
 default = ['std']
@@ -24,22 +35,4 @@ std = [
 	'sp-runtime/std',
 	'sp-std/std',
 	'sp-core/std',
-	'sp-storage/std'
 ]
-
-[dependencies]
-codec = { package = "parity-scale-codec", version = "1.3.4", default-features = false }
-serde = { version = "1.0.101", optional = true }
-
-sp-runtime = { version = "2.0.0", default-features = false, path = "../../primitives/runtime" }
-sp-storage = { version = "2.0.0", default-features = false, path = "../../primitives/storage" }
-sp-core = { version = "2.0.0", default-features = false, path = "../../primitives/core" }
-sp-std = { version = "2.0.0", default-features = false, path = "../../primitives/std" }
-
-frame-support = { version = "2.0.0", default-features = false, path = "../../frame/support" }
-frame-system = { version = "2.0.0", default-features = false, path = "../../frame/system" }
-balances = { package = "pallet-balances", version = "2.0.0", default-features = false, path = "../../frame/balances" }
-sp-io = { version = "2.0.0", default-features = false, path = "../../primitives/io" }
-
-# [dev-dependencies]
-
