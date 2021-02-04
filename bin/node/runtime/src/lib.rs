@@ -103,7 +103,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 /// Runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// We use semver for versioning the runime:
-	// NETWORK.PATCH.IMPL
+	// NETWORK.PATCH.IMPL == 1.spec.impl
 	// Per convention: if the runtime behavior changes,
 	// increment spec_version and set impl_version to 0.
 	// If only runtime implementation changes and behavior does not,
