@@ -14,6 +14,7 @@
 
 // global primitives
 
+#![feature(trait_alias)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
