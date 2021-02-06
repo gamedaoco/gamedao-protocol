@@ -100,6 +100,16 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 						production chains. Please rebuild with the flag disabled.")
 }
 
+//
+// custom modules and vendors
+//
+
+use module_crowdfunding;
+
+//
+//
+//
+
 /// Runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// We use semver for versioning the runime:
@@ -109,7 +119,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// If only runtime implementation changes and behavior does not,
 	// then leave spec_version as is and increment impl_version. (MINOR)
 	spec_name: create_runtime_str!("subzero"),
-	spec_version: 7,
+	spec_version: 8,
 	impl_name: create_runtime_str!("alphaville"),
 	impl_version: 1,
 	//
@@ -148,6 +158,7 @@ impl OnUnbalanced<NegativeImbalance> for DealWithFees {
 }
 
 const AVERAGE_ON_INITIALIZE_WEIGHT: Perbill = Perbill::from_percent(10);
+
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 2400;
 	/// We allow for 2 seconds of compute with a 6 second average block time.
@@ -892,6 +903,60 @@ impl pallet_vesting::Trait for Runtime {
 	type WeightInfo = weights::pallet_vesting::WeightInfo;
 }
 
+//
+//
+// durations in blocks:
+// 3/block = 20 blocks/MM = 120 blocks/HH = 2880 blocks/DD
+// or: 	pub const Period: BlockNumber = 1 * DAYS;
+//
+
+// type EnsureRootOrGameDAOAdmin = EnsureOneOf<
+// 	AccountId,
+// 	EnsureRoot<AccountId>
+// >;
+
+parameter_types! {
+
+	// TODO: more flexible account admin map
+	// pub const Admin: AccountId = (); //EnsureRootOrGameDAOAdmin = ();
+	pub const SeedNonce: u64 = 1;
+
+	pub const MinLength: usize = 4;
+	pub const MaxLength: usize = 64;
+
+	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
+	pub const MinContribution: Balance = 1 * DOLLARS;
+
+	// pub const MinDuration: BlockNumber = 1 * DAYS;
+	// pub const MaxDuration: BlockNumber = 100 * DAYS;
+}
+
+// impl module_crowdfunding::Trait<module_crowdfunding::Instance1> for Runtime {
+impl module_crowdfunding::Trait for Runtime {
+
+	// campaign admin == root for now
+	// type AdminOrigin = Admin;
+
+	// TODO: decouple for multicurrency
+	type Currency = Balances;
+
+	type Event = Event;
+	type Nonce = SeedNonce;
+	type Randomness = RandomnessCollectiveFlip;
+	type MinLength = MinLength;
+	type MaxLength = MaxLength;
+
+	type MinCreatorDeposit = MinCreatorDeposit;
+	type MinContribution = MinContribution;
+
+	// type MinDuration = MinDuration;
+	// type MaxDuration = MaxDuration;
+}
+
+//
+//
+//
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -930,6 +995,14 @@ construct_runtime!(
 		Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
 		Proxy: pallet_proxy::{Module, Call, Storage, Event<T>},
 		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
+
+		//
+		// custom modules and vendors
+		//
+
+		GameDAOCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
+
+
 	}
 );
 

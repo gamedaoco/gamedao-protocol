@@ -21,11 +21,12 @@ static_assertions = "1.1.0"
 hex-literal = { version = "0.3.1", optional = true }
 
 # primitives
+node-primitives = { version = "2.0.0", default-features = false, path = "../primitives" }
+
 sp-authority-discovery = { version = "2.0.0", default-features = false, path = "../../../primitives/authority-discovery" }
 sp-consensus-babe = { version = "0.8.0", default-features = false, path = "../../../primitives/consensus/babe" }
 sp-block-builder = { path = "../../../primitives/block-builder", default-features = false, version = "2.0.0"}
 sp-inherents = { version = "2.0.0", default-features = false, path = "../../../primitives/inherents" }
-node-primitives = { version = "2.0.0", default-features = false, path = "../primitives" }
 sp-offchain = { version = "2.0.0", default-features = false, path = "../../../primitives/offchain" }
 sp-core = { version = "2.0.0", default-features = false, path = "../../../primitives/core" }
 sp-std = { version = "2.0.0", default-features = false, path = "../../../primitives/std" }
@@ -79,6 +80,12 @@ pallet-utility = { version = "2.0.0", default-features = false, path = "../../..
 pallet-transaction-payment = { version = "2.0.0", default-features = false, path = "../../../frame/transaction-payment" }
 pallet-transaction-payment-rpc-runtime-api = { version = "2.0.0", default-features = false, path = "../../../frame/transaction-payment/rpc/runtime-api/" }
 pallet-vesting = { version = "2.0.0", default-features = false, path = "../../../frame/vesting" }
+
+#
+
+module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
+
+#
 
 [build-dependencies]
 wasm-builder-runner = { version = "1.0.5", package = "substrate-wasm-builder-runner", path = "../../../utils/wasm-builder-runner" }
