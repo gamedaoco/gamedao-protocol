@@ -4,6 +4,12 @@ members = [
 	"bin/utils/chain-spec-builder",
 	"bin/utils/subkey",
 
+	"vendors/orml/traits",
+	"vendors/orml/utilities",
+	"vendors/orml/currencies",
+	"vendors/orml/tokens",
+	"vendors/orml/nft",
+
 	# "bin/node-template/node",
 	# "bin/node-template/pallets/template",
 	# "bin/node-template/runtime",
