@@ -10,6 +10,9 @@ members = [
 	"vendors/orml/tokens",
 	"vendors/orml/nft",
 
+	# "modules/crowdfunding",
+	# "modules/nft",
+
 	# "bin/node-template/node",
 	# "bin/node-template/pallets/template",
 	# "bin/node-template/runtime",

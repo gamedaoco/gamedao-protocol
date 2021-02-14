@@ -109,12 +109,12 @@ const MAX_CONTRIBUTIONS_PER_BLOCK: usize = 5;
 // TODO: take from runtime max campaign duration
 const MAX_CAMPAIGN_LENGTH: u32 = 777600;
 
-pub trait Trait: system::Trait + balances::Trait {
+pub trait Config: system::Config + balances::Config {
 
 	// type AdminOrigin: Get<Self::AccountId>;
 
 	type Currency: ReservableCurrency<Self::AccountId>;
-	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+	type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
 	type Nonce: Get<u64>;
 	type Randomness: Randomness<Self::Hash>;
 
@@ -172,7 +172,7 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber> {
 }
 
 decl_storage! {
-	trait Store for Module<T: Trait> as CrowdfundingFactory {
+	trait Store for Module<T: Config> as CrowdfundingFactory {
 
 		// TODO:
 		//	actually most of the aggregated data only consumes cpu cycles
@@ -241,10 +241,10 @@ decl_storage! {
 
 decl_event! {
 	pub enum Event<T> where
-		<T as system::Trait>::Hash,
-		<T as system::Trait>::AccountId,
-		<T as balances::Trait>::Balance,
-		<T as system::Trait>::BlockNumber,
+		<T as system::Config>::Hash,
+		<T as system::Config>::AccountId,
+		<T as balances::Config>::Balance,
+		<T as system::Config>::BlockNumber,
 		EventMessage = Vec<u8>,
 	{
 		CampaignCreated(Hash, AccountId, AccountId, Balance, Balance, BlockNumber, Vec<u8>),
@@ -259,7 +259,7 @@ decl_event! {
 
 
 decl_module! {
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 
 		type Error = Error<T>;
 
@@ -575,7 +575,7 @@ decl_module! {
  	}
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
 
 	fn set_status( campaign_id: T::Hash, status: u8 ) -> DispatchResult {
 		<CampaignState<T>>::insert(&campaign_id, status );
@@ -738,7 +738,7 @@ impl<T: Trait> Module<T> {
 //
 
 decl_error! {
-	pub enum Error for Module<T: Trait> {
+	pub enum Error for Module<T: Config> {
 
 		//
 		//	general
