@@ -1,19 +1,16 @@
-// This file is part of Substrate.
+//
+//           _______________________________ ________
+//           \____    /\_   _____/\______   \\_____  \
+//             /     /  |    __)_  |       _/ /   |   \
+//            /     /_  |        \ |    |   \/    |    \
+//           /_______ \/_______  / |____|_  /\_______  /
+//                   \/        \/         \/         \/
+//           Z  E  R  O  .  I  O     N  E  T  W  O  R  K
+//           © C O P Y R I O T   2 0 7 5 @ Z E R O . I O
 
-// Copyright (C) 2018-2021 Parity Technologies (UK) Ltd.
+// This file is part of ZERO Network.
+// Copyright (C) 2010-2020 ZERO Collective.
 // SPDX-License-Identifier: Apache-2.0
-
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// 	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
 //! Low-level types used throughout the Substrate code.
 
@@ -30,6 +27,11 @@ pub type BlockNumber = u32;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;
+
+/// Alias to the public key used for this chain, actually a `MultiSigner`. Like
+/// the signature, this also isn't a fixed size when encoded, as different
+/// cryptos have different size public keys.
+pub type AccountPublic = <Signature as Verify>::Signer;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
@@ -93,4 +95,35 @@ pub mod report {
 		type GenericSignature = sp_core::sr25519::Signature;
 		type GenericPublic = sp_core::sr25519::Public;
 	}
+}
+
+/// Opaque, encoded, unchecked extrinsic.
+pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum TokenSymbol {
+	PLAY = 0,
+	ZERO = 1,
+	GAME = 2,
+	DOT = 3,
+	KSM = 4,
+	ZDAI = 5,
+	ZEUR = 6,
+}
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum AirDropCurrencyId {
+	PLAY = 0,
+	ZERO = 1,
+	GAME = 2,
+}
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum AuthoritysOriginId {
+	Root,
+	ZeroTreasury,
+	GameDAOTreasury,
 }

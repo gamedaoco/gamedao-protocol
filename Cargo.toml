@@ -1,6 +1,6 @@
 [workspace]
 members = [
-	"bin/subzero-1/cli",
+	"bin/subzero/cli",
 	"bin/utils/chain-spec-builder",
 	"bin/utils/subkey",
 
