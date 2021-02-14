@@ -1,8 +1,7 @@
 {
-  // "Address": "Multiaddress",
-  // "LookupSource": "Multiaddress",
-  "Address": "IndicesLookupSource",
-  "LookupSource": "IndicesLookupSource",
+  "Address": "MultiAddress",
+  "LookupSource": "MultiAddress",
+  "Crowdfunding": {
     "Campaign": {
       "id": "Hash",
       "manager": "AccountId",
@@ -21,6 +20,7 @@
       "expiry": "BlockNumber",
       "status": "u8"
     },
-    "EventMessage": "Vec<u8>",
-    "Nonce": "u64"
-}
+    "Nonce": "u64",
+    "EventMessage": "Vec<u8>"
+    }
+  }
