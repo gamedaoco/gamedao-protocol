@@ -1,7 +1,8 @@
 [package]
 name = "node-runtime"
 version = "2.0.1"
-authors = ["Parity Technologies <admin@parity.io>"]
+authors = ["zero collective <play@zero.io>"]
+description = "videogames x metaverse"
 edition = "2018"
 build = "build.rs"
 license = "Apache-2.0"
@@ -83,7 +84,7 @@ pallet-transaction-payment = { version = "3.0.0", default-features = false, path
 pallet-transaction-payment-rpc-runtime-api = { version = "3.0.0", default-features = false, path = "../../../frame/transaction-payment/rpc/runtime-api/" }
 pallet-vesting = { version = "3.0.0", default-features = false, path = "../../../frame/vesting" }
 
-# module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
+module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
 # module-nft = { default-features = false, path = "../../../modules/nft" }
 
 [build-dependencies]

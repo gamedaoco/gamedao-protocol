@@ -1009,55 +1009,54 @@ impl pallet_assets::Config for Runtime {
 
 //
 //
-// durations in blocks:
-// 3/block = 20 blocks/MM = 120 blocks/HH = 2880 blocks/DD
-// or: 	pub const Period: BlockNumber = 1 * DAYS;
 //
+
+// CROWDFUNDING
 
 // type EnsureRootOrGameDAOAdmin = EnsureOneOf<
 // 	AccountId,
 // 	EnsureRoot<AccountId>
 // >;
 
-// parameter_types! {
+parameter_types! {
 
-// 	// TODO: more flexible account admin map
-// 	// pub const Admin: AccountId = (); //EnsureRootOrGameDAOAdmin = ();
-// 	pub const SeedNonce: u64 = 1;
+	// TODO: more flexible account admin map
+	// pub const Admin: AccountId = (); //EnsureRootOrGameDAOAdmin = ();
+	pub const SeedNonce: u64 = 1;
 
-// 	pub const MinLength: usize = 4;
-// 	pub const MaxLength: usize = 64;
+	pub const MinLength: usize = 4;
+	pub const MaxLength: usize = 64;
 
-// 	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
-// 	pub const MinContribution: Balance = 1 * DOLLARS;
+	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
+	pub const MinContribution: Balance = 1 * DOLLARS;
 
-// 	// pub const MinDuration: BlockNumber = 1 * DAYS;
-// 	// pub const MaxDuration: BlockNumber = 100 * DAYS;
-// }
+	// pub const MinDuration: BlockNumber = 1 * DAYS;
+	// pub const MaxDuration: BlockNumber = 100 * DAYS;
+}
 
-// // impl module_crowdfunding::Config<module_crowdfunding::Instance1> for Runtime {
-// impl module_crowdfunding::Config for Runtime {
+impl module_crowdfunding::Config for Runtime {
 
-// 	// campaign admin == root for now
-// 	// type AdminOrigin = Admin;
+	// campaign admin == root for now
+	// type AdminOrigin = Admin;
 
-// 	// TODO: decouple for multicurrency
-// 	type Currency = Balances;
+	// TODO: decouple for multicurrency
+	type Currency = Balances;
 
-// 	type Event = Event;
-// 	type Nonce = SeedNonce;
-// 	type Randomness = RandomnessCollectiveFlip;
-// 	type MinLength = MinLength;
-// 	type MaxLength = MaxLength;
+	type Event = Event;
+	type Nonce = SeedNonce;
+	type Randomness = RandomnessCollectiveFlip;
+	type MinLength = MinLength;
+	type MaxLength = MaxLength;
 
-// 	type MinCreatorDeposit = MinCreatorDeposit;
-// 	type MinContribution = MinContribution;
+	type MinCreatorDeposit = MinCreatorDeposit;
+	type MinContribution = MinContribution;
 
-// 	// type MinDuration = MinDuration;
-// 	// type MaxDuration = MaxDuration;
-// }
+	// type MinDuration = MinDuration;
+	// type MaxDuration = MaxDuration;
+}
 
-// Configure the pallet template in pallets/template.
+// IPFS
+
 // impl module_ipfs::Config for Runtime {
 // 	type Event = Event;
 // }
@@ -1113,7 +1112,7 @@ construct_runtime!(
 		// custom modules and vendors
 		//
 
-		// GameDAOCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
+		GameDAOCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
 		// Ipfs: module_ipfs::{Module, Call, Storage, Event<T>},
 
 	}

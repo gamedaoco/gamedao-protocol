@@ -3739,6 +3739,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "module-crowdfunding"
+version = "1.0.0-dev"
+dependencies = [
+ "frame-support 3.0.0",
+ "frame-system 3.0.0",
+ "node-primitives",
+ "pallet-balances 3.0.0",
+ "parity-scale-codec",
+ "serde",
+ "sp-core 3.0.0",
+ "sp-io 3.0.0",
+ "sp-runtime 3.0.0",
+ "sp-std 3.0.0",
+]
+
+[[package]]
 name = "more-asserts"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3972,6 +3988,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal",
+ "module-crowdfunding",
  "node-primitives",
  "pallet-assets",
  "pallet-authority-discovery",
