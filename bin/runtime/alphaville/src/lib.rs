@@ -74,7 +74,7 @@ use static_assertions::const_assert;
 use pallet_contracts::WeightInfo;
 
 use module_crowdfunding;
-// use module_nft;
+use module_nft;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -1055,6 +1055,27 @@ impl module_crowdfunding::Config for Runtime {
 	// type MaxDuration = MaxDuration;
 }
 
+parameter_types! {
+	pub const CreateClassDeposit: Balance = 500 * MILLICENTS;
+	pub const CreateTokenDeposit: Balance = 100 * MILLICENTS;
+}
+
+impl module_nft::Config for Runtime {
+	type Event = Event;
+	type CreateClassDeposit = CreateClassDeposit;
+	type CreateTokenDeposit = CreateTokenDeposit;
+	type ModuleId = NftModuleId;
+	type Currency = Currency<Runtime, GetNativeCurrencyId>;
+	type WeightInfo = weights::nft::WeightInfo<Runtime>;
+}
+
+impl orml_nft::Config for Runtime {
+	type ClassId = u32;
+	type TokenId = u64;
+	type ClassData = module_nft::ClassData;
+	type TokenData = module_nft::TokenData;
+}
+
 // IPFS
 
 // impl module_ipfs::Config for Runtime {
@@ -1113,6 +1134,7 @@ construct_runtime!(
 		//
 
 		GameDAOCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
+		GameDAONFT: module_nft::{Module, Call, Storage, Event<T>},
 		// Ipfs: module_ipfs::{Module, Call, Storage, Event<T>},
 
 	}

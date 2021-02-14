@@ -16,7 +16,6 @@ targets = ["x86_64-unknown-linux-gnu"]
 ansi_term = "0.12.1"
 sc-keystore = { version = "3.0.0", path = "../../../client/keystore" }
 sc-chain-spec = { version = "3.0.0", path = "../../../client/chain-spec" }
-# node-cli = { version = "2.0.0", path = "../../node/cli" }
 node-cli = { package = "subzero-cli", version = "1.0.0", path = "../../subzero-1/cli" }
 sp-core = { version = "3.0.0", path = "../../../primitives/core" }
 sp-keystore = { version = "0.9.0", path = "../../../primitives/keystore" }
