@@ -14,13 +14,20 @@
 
 //! Low-level types used throughout the Substrate code.
 
-#![warn(missing_docs)]
-
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sp_runtime::{
-	generic, traits::{Verify, BlakeTwo256, IdentifyAccount}, OpaqueExtrinsic, MultiSignature
+	generic,
+	traits::{Verify, BlakeTwo256, IdentifyAccount},
+	OpaqueExtrinsic, MultiSignature, RuntimeDebug
 };
+use codec::{ Encode, Decode };
+
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
+#[cfg(test)]
+mod tests;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -31,7 +38,7 @@ pub type Signature = MultiSignature;
 /// Alias to the public key used for this chain, actually a `MultiSigner`. Like
 /// the signature, this also isn't a fixed size when encoded, as different
 /// cryptos have different size public keys.
-pub type AccountPublic = <Signature as Verify>::Signer;
+// pub type AccountPublic = <Signature as Verify>::Signer;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.

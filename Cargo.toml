@@ -4,27 +4,15 @@ members = [
 	"bin/utils/chain-spec-builder",
 	"bin/utils/subkey",
 
-	"vendors/orml/traits",
-	"vendors/orml/utilities",
-	"vendors/orml/currencies",
-	"vendors/orml/tokens",
-	"vendors/orml/nft",
+	# "vendors/orml/traits",
+	# "vendors/orml/utilities",
+	# "vendors/orml/currencies",
+	# "vendors/orml/tokens",
+	# "vendors/orml/nft",
 
+	# "modules/airdrop",
 	# "modules/crowdfunding",
 	# "modules/nft",
-
-	# "bin/node-template/node",
-	# "bin/node-template/pallets/template",
-	# "bin/node-template/runtime",
-
-	# "bin/node/bench",
-	# "bin/node/browser-testing",
-	# "bin/node/executor",
-	# "bin/node/primitives",
-	# "bin/node/rpc",
-	# "bin/node/rpc-client",
-	# "bin/node/runtime",
-	# "bin/node/testing",
 
 ]
 
