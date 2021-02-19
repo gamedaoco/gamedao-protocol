@@ -74,7 +74,7 @@ use static_assertions::const_assert;
 use pallet_contracts::WeightInfo;
 
 use module_crowdfunding;
-use module_nft;
+// use module_nft;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -156,6 +156,29 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 2 seconds of compute with a 6 second average block time.
 const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
+
+//
+// Module accounts of runtime
+//
+
+parameter_types! {
+	pub const ZeroTreasuryModuleId: ModuleId = ModuleId(*b"z/schatz");
+	pub const StakingPoolModuleId: ModuleId = ModuleId(*b"z/sicher");
+	pub const CrowdfundingModuleId: ModuleId = ModuleId(*b"z/krauts");
+	pub const NftModuleId: ModuleId = ModuleId(*b"z/sammla");
+}
+
+pub fn get_all_module_accounts() -> Vec<AccountId> {
+	vec![
+		// ZeroTreasuryModuleId::get().into_account(),
+		// StakingPoolModuleId::get().into_account(),
+		// CrowdfundingModuleId::get().into_account(),
+	]
+}
+
+//
+//
+//
 
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 2400;
@@ -1013,68 +1036,72 @@ impl pallet_assets::Config for Runtime {
 
 // CROWDFUNDING
 
-// type EnsureRootOrGameDAOAdmin = EnsureOneOf<
+// type EnsureRootOrHalfCouncil = EnsureOneOf<
 // 	AccountId,
-// 	EnsureRoot<AccountId>
+// 	EnsureRoot<AccountId>,
+// 	pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>
 // >;
 
 parameter_types! {
 
 	// TODO: more flexible account admin map
-	// pub const Admin: AccountId = (); //EnsureRootOrGameDAOAdmin = ();
+	// pub const Admin: EnsureRootOrGameDAOAdmin = ();
 	pub const SeedNonce: u64 = 1;
-
 	pub const MinLength: usize = 4;
 	pub const MaxLength: usize = 64;
-
+	pub const MaxCampaignsPerAddress: usize = 3;
+	pub const MaxCampaignsPerBlock: usize = 3;
+	pub const MinDuration: BlockNumber = 1 * DAYS;
+	pub const MaxDuration: BlockNumber = 100 * DAYS;
 	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
-
-	// pub const MinDuration: BlockNumber = 1 * DAYS;
-	// pub const MaxDuration: BlockNumber = 100 * DAYS;
 }
 
 impl module_crowdfunding::Config for Runtime {
 
-	// campaign admin == root for now
-	// type AdminOrigin = Admin;
-
-	// TODO: decouple for multicurrency
+	// ensure root or half council as admin role for campaigns.
+	// might need another instance of council as e.g. supervisor
+	type GameDAOAdminOrigin = pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>;
 	type Currency = Balances;
-
 	type Event = Event;
 	type Nonce = SeedNonce;
 	type Randomness = RandomnessCollectiveFlip;
 	type MinLength = MinLength;
 	type MaxLength = MaxLength;
-
+	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
+	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
+	type MinDuration = MinDuration;
+	type MaxDuration = MaxDuration;
 	type MinCreatorDeposit = MinCreatorDeposit;
 	type MinContribution = MinContribution;
 
-	// type MinDuration = MinDuration;
-	// type MaxDuration = MaxDuration;
 }
 
-parameter_types! {
-	pub const CreateClassDeposit: Balance = 500 * MILLICENTS;
-	pub const CreateTokenDeposit: Balance = 100 * MILLICENTS;
-}
+// #[cfg(feature = "with-nft")]
 
-impl module_nft::Config for Runtime {
-	type Event = Event;
-	type CreateClassDeposit = CreateClassDeposit;
-	type CreateTokenDeposit = CreateTokenDeposit;
-	type ModuleId = NftModuleId;
-	type Currency = Currency<Runtime, GetNativeCurrencyId>;
-	type WeightInfo = weights::nft::WeightInfo<Runtime>;
-}
+// parameter_types! {
+// 	pub const CreateClassDeposit: Balance = 500 * MILLICENTS;
+// 	pub const CreateTokenDeposit: Balance = 100 * MILLICENTS;
+// }
 
-impl orml_nft::Config for Runtime {
-	type ClassId = u32;
-	type TokenId = u64;
-	type ClassData = module_nft::ClassData;
-	type TokenData = module_nft::TokenData;
-}
+// #[cfg(feature = "with-nft")]
+
+// impl module_nft::Config for Runtime {
+// 	type Event = Event;
+// 	type CreateClassDeposit = CreateClassDeposit;
+// 	type CreateTokenDeposit = CreateTokenDeposit;
+// 	type ModuleId = NftModuleId;
+// 	type Currency = Currency<Runtime, GetNativeCurrencyId>;
+// 	type WeightInfo = weights::nft::WeightInfo<Runtime>;
+// }
+
+// // #[cfg(feature = "with-nft")]
+// impl orml_nft::Config for Runtime {
+// 	type ClassId = u32;
+// 	type TokenId = u64;
+// 	type ClassData = module_nft::ClassData;
+// 	type TokenData = module_nft::TokenData;
+// }
 
 // IPFS
 
@@ -1097,44 +1124,62 @@ construct_runtime!(
 		Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
 		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
 		Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
+		AuthorityDiscovery: pallet_authority_discovery::{Module, Call, Config},
 		Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
 		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Module, Storage},
+		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
+		Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>},
+
 		Staking: pallet_staking::{Module, Call, Config<T>, Storage, Event<T>, ValidateUnsigned},
 		Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
+		Elections: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>},
+		Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event, ValidateUnsigned},
+		Assets: pallet_assets::{Module, Call, Storage, Event<T>},
+		Offences: pallet_offences::{Module, Call, Storage, Event},
+		Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
+
 		Democracy: pallet_democracy::{Module, Call, Storage, Config, Event<T>},
 		Council: pallet_collective::<Instance1>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
 		TechnicalCommittee: pallet_collective::<Instance2>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
-		Elections: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>},
 		TechnicalMembership: pallet_membership::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
-		Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event, ValidateUnsigned},
-		Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>},
-		Contracts: pallet_contracts::{Module, Call, Config<T>, Storage, Event<T>},
-		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 		ImOnline: pallet_im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
-		AuthorityDiscovery: pallet_authority_discovery::{Module, Call, Config},
-		Offences: pallet_offences::{Module, Call, Storage, Event},
 		Historical: pallet_session_historical::{Module},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
-		Identity: pallet_identity::{Module, Call, Storage, Event<T>},
 		Society: pallet_society::{Module, Call, Storage, Event<T>, Config<T>},
 		Recovery: pallet_recovery::{Module, Call, Storage, Event<T>},
 		Vesting: pallet_vesting::{Module, Call, Storage, Event<T>, Config<T>},
-		Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
-		Proxy: pallet_proxy::{Module, Call, Storage, Event<T>},
-		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
 		Bounties: pallet_bounties::{Module, Call, Storage, Event<T>},
 		Tips: pallet_tips::{Module, Call, Storage, Event<T>},
-		Assets: pallet_assets::{Module, Call, Storage, Event<T>},
 		Mmr: pallet_mmr::{Module, Storage},
 		Lottery: pallet_lottery::{Module, Call, Storage, Event<T>},
+
+		//
+		//
+		//
+
+		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
+
+		//
+		//
+		//
+
+		Proxy: pallet_proxy::{Module, Call, Storage, Event<T>},
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
+		Contracts: pallet_contracts::{Module, Call, Config<T>, Storage, Event<T>},
+		Identity: pallet_identity::{Module, Call, Storage, Event<T>},
+
+		//
+
+		// OrmlNFT: orml_nft::{Module, Storage},
 
 		//
 		// custom modules and vendors
 		//
 
-		GameDAOCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
-		GameDAONFT: module_nft::{Module, Call, Storage, Event<T>},
+		GameDAO: module_crowdfunding::{Module, Call, Storage, Event<T>},
+		// #[cfg(feature = "with-nft")]
+		// GameDAONFT: module_nft::{Module, Call, Storage, Event<T>},
+
 		// Ipfs: module_ipfs::{Module, Call, Storage, Event<T>},
 
 	}
