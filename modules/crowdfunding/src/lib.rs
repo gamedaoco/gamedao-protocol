@@ -57,27 +57,24 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 // only on nightly
-// #![feature(const_fn_fn_ptr_basics)]
-
+#![feature(const_fn_fn_ptr_basics)]
 
 use frame_support::{
 	decl_error, decl_event, decl_module, decl_storage,
 	ensure,
 	dispatch::DispatchResult,
 	traits::{
-		// EnsureOrigin,
+		EnsureOrigin,
 		Randomness,
 		Currency,
 		ExistenceRequirement,
 		ReservableCurrency,
 		Get,
+		Time,
+		UnixTime,
 	},
 	storage::child::exists
 };
-// use primitives::{
-// 	BlockNumber,
-// 	Balance,
-// };
 use frame_system::{ self as system, ensure_signed };
 use sp_core::{ Hasher, H256 };
 use sp_runtime::{
@@ -87,7 +84,8 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use codec::{ Encode, Decode };
 
-use node_primitives::{ Balance };
+use timestamp;
+use primitives::{ Balance };
 
 // TODO: tests
 // #[cfg(test)]
@@ -106,56 +104,66 @@ const PALLET_VERSION: &str = "1.0";
 // TODO: take from runtime limit simultanous campaign initiation
 const MAX_CONTRIBUTIONS_PER_BLOCK: usize = 5;
 
+// TODO: take from runtime
+const MAX_CONTRIBUTIONS_PER_ADDRESS: usize = 3;
+
 // TODO: take from runtime max campaign duration
 const MAX_CAMPAIGN_LENGTH: u32 = 777600;
 
-pub trait Config: system::Config + balances::Config {
+pub trait Config: system::Config + balances::Config + timestamp::Config {
 
 	// type AdminOrigin: Get<Self::AccountId>;
 
 	type Currency: ReservableCurrency<Self::AccountId>;
+
 	type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
 	type Nonce: Get<u64>;
 	type Randomness: Randomness<Self::Hash>;
-
 	type MinLength: Get<usize>;
 	type MaxLength: Get<usize>;
-
+	type MaxCampaignsPerAddress: Get<usize>;
+	type MaxCampaignsPerBlock: Get<usize>;
+	type MinDuration: Get<Self::BlockNumber>;
+	type MaxDuration: Get<Self::BlockNumber>;
 	type MinCreatorDeposit: Get<Self::Balance>;
 	type MinContribution: Get<Self::Balance>;
-
-	// type MinDuration = BlockNumber;
-	// type MaxDuration = BlockNumber;
-
-	// TODO: collect fees and send to treasury
+	// TODO: collect fees for treasury
 	// type CreationFee: Get<T::Balance<Self>>;
 	// type ContributionFee: Get<T::Balance<Self>>;
+
+	/// The origin that is allowed to make judgements.
+	type GameDAOAdminOrigin: EnsureOrigin<Self::Origin>;
+
 }
 
 // TODO: this can be decomposed to improve weight
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Campaign<Hash, AccountId, Balance, BlockNumber> {
+pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp> {
 
 	/// unique hash to identify campaign (generated)
 	id: Hash,
 
 	/// owner account of the campaign (beneficiary)
 	owner: AccountId,
+
 	/// admin account of the campaign (operator)
 	admin: AccountId,
 
 	/// campaign owners deposit
 	deposit: Balance,
+
 	/// blocknumber until campaign has to reach cap
 	expiry: BlockNumber,
+
 	/// minimum amount of token to become a successful campaign
 	cap: Balance,
 
 	/// name
 	name: Vec<u8>,
 
-	/// protocol: 0 grant, 1 prepaid, 2 loan, 3 share
+	/// protocol: 0 grant, 1 prepaid, 2 loan, 3 share, 4 dao
 	protocol: u8,
+
 	/// dao governed after success
 	/// true: payout through governance
 	/// false: 100% payout upon completion
@@ -166,9 +174,12 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber> {
 
 	// /// token symbol
 	// token_symbol: Vec<u8>,
+
 	// /// token name
 	// token_name: Vec<u8>,
-	//
+
+	created: Timestamp, //Vec<u8>,
+
 }
 
 decl_storage! {
@@ -191,7 +202,7 @@ decl_storage! {
 		// - 	ownedCampaigns
 
 		/// Get one or all Campaigns
-		Campaigns get(fn campaign_by_id): map hasher(blake2_128_concat) T::Hash => Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber>;
+		Campaigns get(fn campaign_by_id): map hasher(blake2_128_concat) T::Hash => Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, T::Moment>;
 
 		/// Get Campaign owner by campaign id
 		CampaignOwner get(fn owner_of): map hasher(blake2_128_concat) T::Hash => Option<T::AccountId>;
@@ -256,8 +267,6 @@ decl_event! {
 	}
 }
 
-
-
 decl_module! {
 	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 
@@ -282,9 +291,11 @@ decl_module! {
 			let owner = Self::owner_of(campaign_id).ok_or(Error::<T>::OwnerUnknown)?;
 			let admin = Self::admin_of(campaign_id).ok_or(Error::<T>::AdminUnknown)?;
 			ensure!( sender == admin, Error::<T>::AuthorizationError );
+
 			// expired?
 			let campaign = Self::campaign_by_id(&campaign_id);
 			ensure!(<system::Module<T>>::block_number() < campaign.expiry, Error::<T>::CampaignExpired );
+
 			// not finished or locked?
 			let current_status = Self::state_of(campaign_id);
 			ensure!(current_status < 2, Error::<T>::CampaignExpired );
@@ -315,6 +326,8 @@ decl_module! {
 			// TODO: should be duration in days,
 			// not target blocknumber
 			expiry: T::BlockNumber,
+			protocol: u8,
+			governance: bool
 		) {
 
 			// get the creator
@@ -333,7 +346,11 @@ decl_module! {
 			// get the nonce to help generate unique id
 			let nonce = T::Nonce::get();
 
+			// blocktime
 			let now = <system::Module<T>>::block_number();
+
+			// timestamp
+			let timestamp = <timestamp::Module<T>>::get();
 
 			// ensure campaign expires after now
 			ensure!(
@@ -380,8 +397,8 @@ decl_module! {
 			// 	Error::<T>::ContributionsPerBlockExceeded
 			// );
 
-			let protocol :u8 = 0;
-			let governance: bool = false;
+			// let protocol :u8 = 0;
+			// let governance: bool = false;
 
 			// create a new campaign
 			// id: Hash,
@@ -402,8 +419,9 @@ decl_module! {
 				deposit: deposit.clone(),
 				expiry: expiry,
 				cap: target,
-				protocol: protocol,
-				governance: governance,
+				protocol: protocol.clone(),
+				governance: governance.clone(),
+				created: timestamp
 			};
 
 			// mint the campaign
@@ -600,7 +618,7 @@ impl<T: Config> Module<T> {
 		// happens after successful funding of the campaing
 		// protocol: u8,
 		// campaign object
-		campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber>
+		campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, T::Moment>
 	) -> DispatchResult {
 
 		// campaigns
@@ -730,6 +748,31 @@ impl<T: Config> Module<T> {
 	}
 
 }
+
+//
+//
+//
+//
+//
+
+// TODO
+// Simple ensure origin struct to filter for the founder account.
+// pub struct EnsureFounder<T>(sp_std::marker::PhantomData<T>);
+// impl<T: Config> EnsureOrigin<T::Origin> for EnsureFounder<T> {
+// 	type Success = T::AccountId;
+// 	fn try_origin(o: T::Origin) -> Result<Self::Success, T::Origin> {
+// 		o.into().and_then(|o| match (o, Founder::<T>::get()) {
+// 			(system::RawOrigin::Signed(ref who), Some(ref f)) if who == f => Ok(who.clone()),
+// 			(r, _) => Err(T::Origin::from(r)),
+// 		})
+// 	}
+
+// 	#[cfg(feature = "runtime-benchmarks")]
+// 	fn successful_origin() -> T::Origin {
+// 		let founder = Founder::<T>::get().expect("society founder should exist");
+// 		T::Origin::from(system::RawOrigin::Signed(founder))
+// 	}
+// }
 
 //
 //

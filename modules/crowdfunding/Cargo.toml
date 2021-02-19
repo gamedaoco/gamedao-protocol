@@ -18,14 +18,14 @@ codec = { package = "parity-scale-codec", version = "2.0.0", default-features = 
 frame-support = { version = "3.0.0", default-features = false, path = "../../frame/support" }
 frame-system = { version = "3.0.0", default-features = false, path = "../../frame/system" }
 balances = { package = "pallet-balances", version = "3.0.0", default-features = false, path = "../../frame/balances" }
+timestamp = { package = "pallet-timestamp", version = "3.0.0", default-features = false, path = "../../frame/timestamp" }
 
 sp-runtime = { version = "3.0.0", default-features = false, path = "../../primitives/runtime" }
 sp-std = { version = "3.0.0", default-features = false, path = "../../primitives/std" }
 sp-io = { version = "3.0.0", default-features = false, path = "../../primitives/io" }
 sp-core = { version = "3.0.0", default-features = false, path = "../../primitives/core" }
 
-node-primitives = { default-features = false, path = "../../bin/primitives" }
-# primitives = { package = "zero-primitives", path = "../primitives", default-features = false }
+primitives = { package = "zero-primitives", path = "../../bin/primitives", default-features = false }
 
 [features]
 default = ['std']
@@ -35,6 +35,7 @@ std = [
 	'frame-support/std',
 	'frame-system/std',
 	'balances/std',
+	'timestamp/std',
 	'sp-runtime/std',
 	'sp-std/std',
 	'sp-core/std',
