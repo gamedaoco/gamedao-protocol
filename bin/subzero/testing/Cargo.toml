@@ -23,7 +23,7 @@ pallet-grandpa = { version = "3.0.0", path = "../../../frame/grandpa" }
 pallet-indices = { version = "3.0.0", path = "../../../frame/indices" }
 sp-keyring = { version = "3.0.0", path = "../../../primitives/keyring" }
 node-executor = { version = "2.0.0", path = "../executor" }
-node-primitives = { version = "1.0.0", path = "../../primitives" }
+node-primitives = { package = "zero-primitives", version = "1.0.0", path = "../../primitives" }
 node-runtime = { version = "1.0.0", path = "../../runtime/alphaville" }
 sp-core = { version = "3.0.0", path = "../../../primitives/core" }
 sp-io = { version = "3.0.0", path = "../../../primitives/io" }
