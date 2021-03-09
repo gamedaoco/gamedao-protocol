@@ -1,4 +1,5 @@
-# Note: We don't use Alpine and its packaged Rust/Cargo because they're too often out of date,
+# Note: We don't use Alpine and its packaged Rust/Cargo
+# because they're too often out of date,
 # preventing them from being used to build subzero/Polkadot.
 
 FROM phusion/baseimage:0.11 as builder
@@ -21,7 +22,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 	rustup toolchain install nightly && \
 	rustup target add wasm32-unknown-unknown --toolchain nightly && \
 	rustup default stable && \
-	cargo build "--$PROFILE"
+	cargo +nightly build "--$PROFILE"
 
 # ===== SECOND STAGE ======
 

@@ -3861,7 +3861,6 @@ dependencies = [
  "frame-benchmarking",
  "frame-support 3.0.0",
  "frame-system 3.0.0",
- "node-runtime",
  "node-testing",
  "pallet-balances",
  "pallet-contracts",
@@ -3886,6 +3885,7 @@ dependencies = [
  "trie-root",
  "wat",
  "zero-primitives",
+ "zero-runtime",
 ]
 
 [[package]]
@@ -3909,7 +3909,6 @@ name = "node-rpc"
 version = "2.0.0"
 dependencies = [
  "jsonrpc-core",
- "node-runtime",
  "pallet-contracts-rpc",
  "pallet-transaction-payment-rpc",
  "sc-chain-spec",
@@ -3933,80 +3932,7 @@ dependencies = [
  "sp-transaction-pool",
  "substrate-frame-rpc-system",
  "zero-primitives",
-]
-
-[[package]]
-name = "node-runtime"
-version = "1.10.0"
-dependencies = [
- "frame-benchmarking",
- "frame-executive",
- "frame-support 3.0.0",
- "frame-system 3.0.0",
- "frame-system-benchmarking",
- "frame-system-rpc-runtime-api",
- "hex-literal",
- "module-crowdfunding",
- "orml-nft",
- "pallet-assets",
- "pallet-authority-discovery",
- "pallet-authorship",
- "pallet-babe",
- "pallet-balances",
- "pallet-bounties",
- "pallet-collective",
- "pallet-contracts",
- "pallet-contracts-primitives",
- "pallet-contracts-rpc-runtime-api",
- "pallet-democracy",
- "pallet-elections-phragmen",
- "pallet-grandpa",
- "pallet-identity",
- "pallet-im-online",
- "pallet-indices",
- "pallet-lottery",
- "pallet-membership",
- "pallet-mmr",
- "pallet-multisig",
- "pallet-offences",
- "pallet-offences-benchmarking",
- "pallet-proxy",
- "pallet-randomness-collective-flip",
- "pallet-recovery",
- "pallet-scheduler",
- "pallet-session",
- "pallet-session-benchmarking",
- "pallet-society",
- "pallet-staking",
- "pallet-staking-reward-curve",
- "pallet-sudo",
- "pallet-timestamp",
- "pallet-tips",
- "pallet-transaction-payment",
- "pallet-transaction-payment-rpc-runtime-api",
- "pallet-treasury",
- "pallet-utility",
- "pallet-vesting",
- "parity-scale-codec",
- "serde",
- "sp-api",
- "sp-authority-discovery",
- "sp-block-builder",
- "sp-consensus-babe",
- "sp-core 3.0.0",
- "sp-inherents 3.0.0",
- "sp-io 3.0.0",
- "sp-keyring",
- "sp-offchain",
- "sp-runtime 3.0.0",
- "sp-session",
- "sp-staking 3.0.0",
- "sp-std 3.0.0",
- "sp-transaction-pool",
- "sp-version 3.0.0",
- "static_assertions",
- "substrate-wasm-builder",
- "zero-primitives",
+ "zero-runtime",
 ]
 
 [[package]]
@@ -4020,7 +3946,6 @@ dependencies = [
  "futures 0.3.12",
  "log",
  "node-executor",
- "node-runtime",
  "pallet-balances",
  "pallet-contracts",
  "pallet-grandpa",
@@ -4051,6 +3976,7 @@ dependencies = [
  "substrate-test-client",
  "tempfile",
  "zero-primitives",
+ "zero-runtime",
 ]
 
 [[package]]
@@ -9031,7 +8957,6 @@ dependencies = [
  "node-executor",
  "node-inspect",
  "node-rpc",
- "node-runtime",
  "once_cell",
  "pallet-authority-discovery",
  "pallet-balances",
@@ -9091,6 +9016,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "zero-primitives",
+ "zero-runtime",
 ]
 
 [[package]]
@@ -10423,7 +10349,7 @@ dependencies = [
 
 [[package]]
 name = "zero-primitives"
-version = "1.0.0"
+version = "1.10.0"
 dependencies = [
  "frame-support 3.0.0",
  "frame-system 3.0.0",
@@ -10434,6 +10360,80 @@ dependencies = [
  "sp-io 3.0.0",
  "sp-runtime 3.0.0",
  "sp-std 3.0.0",
+]
+
+[[package]]
+name = "zero-runtime"
+version = "1.10.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-executive",
+ "frame-support 3.0.0",
+ "frame-system 3.0.0",
+ "frame-system-benchmarking",
+ "frame-system-rpc-runtime-api",
+ "hex-literal",
+ "module-crowdfunding",
+ "orml-nft",
+ "pallet-assets",
+ "pallet-authority-discovery",
+ "pallet-authorship",
+ "pallet-babe",
+ "pallet-balances",
+ "pallet-bounties",
+ "pallet-collective",
+ "pallet-contracts",
+ "pallet-contracts-primitives",
+ "pallet-contracts-rpc-runtime-api",
+ "pallet-democracy",
+ "pallet-elections-phragmen",
+ "pallet-grandpa",
+ "pallet-identity",
+ "pallet-im-online",
+ "pallet-indices",
+ "pallet-lottery",
+ "pallet-membership",
+ "pallet-mmr",
+ "pallet-multisig",
+ "pallet-offences",
+ "pallet-offences-benchmarking",
+ "pallet-proxy",
+ "pallet-randomness-collective-flip",
+ "pallet-recovery",
+ "pallet-scheduler",
+ "pallet-session",
+ "pallet-session-benchmarking",
+ "pallet-society",
+ "pallet-staking",
+ "pallet-staking-reward-curve",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-tips",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-treasury",
+ "pallet-utility",
+ "pallet-vesting",
+ "parity-scale-codec",
+ "serde",
+ "sp-api",
+ "sp-authority-discovery",
+ "sp-block-builder",
+ "sp-consensus-babe",
+ "sp-core 3.0.0",
+ "sp-inherents 3.0.0",
+ "sp-io 3.0.0",
+ "sp-keyring",
+ "sp-offchain",
+ "sp-runtime 3.0.0",
+ "sp-session",
+ "sp-staking 3.0.0",
+ "sp-std 3.0.0",
+ "sp-transaction-pool",
+ "sp-version 3.0.0",
+ "static_assertions",
+ "substrate-wasm-builder",
+ "zero-primitives",
 ]
 
 [[package]]

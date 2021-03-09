@@ -4,12 +4,6 @@ members = [
 	"bin/utils/chain-spec-builder",
 	"bin/utils/subkey",
 
-	# "vendors/orml/traits",
-	# "vendors/orml/utilities",
-	# "vendors/orml/currencies",
-	# "vendors/orml/tokens",
-	# "vendors/orml/nft",
-
 	# "modules/airdrop",
 	# "modules/crowdfunding",
 	# "modules/nft",
