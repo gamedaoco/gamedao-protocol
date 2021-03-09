@@ -1,5 +1,5 @@
 [package]
-name = "node-runtime"
+name = "zero-runtime"
 version = "1.10.0"
 authors = ["zero collective <play@zero.io>"]
 description = "videogames x metaverse"
@@ -20,12 +20,13 @@ serde = { version = "1.0.102", optional = true }
 static_assertions = "1.1.0"
 hex-literal = { version = "0.3.1", optional = true }
 
+node-primitives = { package = "zero-primitives", version = "1.10.0", default-features = false, path = "../../primitives" }
+
 # primitives
 sp-authority-discovery = { version = "3.0.0", default-features = false, path = "../../../primitives/authority-discovery" }
 sp-consensus-babe = { version = "0.9.0", default-features = false, path = "../../../primitives/consensus/babe" }
 sp-block-builder = { path = "../../../primitives/block-builder", default-features = false, version = "3.0.0"}
 sp-inherents = { version = "3.0.0", default-features = false, path = "../../../primitives/inherents" }
-node-primitives = { package = "zero-primitives", version = "1.0.0", default-features = false, path = "../../primitives" }
 sp-offchain = { version = "3.0.0", default-features = false, path = "../../../primitives/offchain" }
 sp-core = { version = "3.0.0", default-features = false, path = "../../../primitives/core" }
 sp-std = { version = "3.0.0", default-features = false, path = "../../../primitives/std" }
@@ -84,20 +85,11 @@ pallet-transaction-payment = { version = "3.0.0", default-features = false, path
 pallet-transaction-payment-rpc-runtime-api = { version = "3.0.0", default-features = false, path = "../../../frame/transaction-payment/rpc/runtime-api/" }
 pallet-vesting = { version = "3.0.0", default-features = false, path = "../../../frame/vesting" }
 
-# orml-auction = { path = "../../../vendors/orml/auction", default-features = false }
-# orml-authority = { path = "../../../vendors/orml/authority", default-features = false }
-# orml-benchmarking = { path = "../../../vendors/orml/benchmarking", default-features = false, optional = true }
-# orml-oracle = { path = "../../../vendors/orml/oracle", default-features = false }
-# orml-oracle-rpc-runtime-api = { path = "../../../vendors/orml/oracle/rpc/runtime-api", default-features = false }
-# orml-gradually-update = { path = "../../../vendors/orml/gradually-update", default-features = false }
-# orml-tokens = { path = "../../../vendors/orml/tokens", default-features = false }
-# orml-traits = { path = "../../../vendors/orml/traits", default-features = false }
-# orml-vesting = { path = "../../../vendors/orml/vesting", default-features = false }
-# orml-rewards = { path = "../../../vendors/orml/rewards", default-features = false }
 orml-nft = { path = "../../../vendors/orml/nft", default-features = false }
 
-# module-airdrop = { default-features = false, path = "../../../modules/airdrop" }
 module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
+# module-tcr = { default-features = false, path = "../../../modules/tcr" }
+# module-airdrop = { default-features = false, path = "../../../modules/airdrop" }
 # module-nft = { default-features = false, path = "../../../modules/nft" }
 
 [build-dependencies]
