@@ -2,6 +2,11 @@
 reset:
 	cargo clean
 
+test:
+	cargo +nightly test
+test-mod:
+	cargo +nightly test -p $(mod)
+
 # release
 
 build:

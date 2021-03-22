@@ -88,8 +88,8 @@ use timestamp;
 use primitives::{ Balance };
 
 // TODO: tests
-// #[cfg(test)]
-// mod campaign_tests;
+#[cfg(test)]
+mod campaign_tests;
 
 // TODO: pallet benchmarking
 // mod benchmarking;
@@ -100,11 +100,9 @@ use primitives::{ Balance };
 // TODO: externalise error messages
 // mod errors;
 
-// module header
+// TODO: take constants from runtime
 const PALLET_ID: ModuleId = ModuleId(*b"GAMEcrwd");
 const PALLET_VERSION: &str = "1.0";
-
-// TODO: take from runtime
 const MAX_CONTRIBUTIONS_PER_BLOCK: usize = 5;
 const MAX_CONTRIBUTIONS_PER_ADDRESS: usize = 3;
 const MAX_CAMPAIGN_DURATION: u32 = 777600;
