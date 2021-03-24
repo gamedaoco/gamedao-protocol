@@ -81,44 +81,47 @@ mod tests {
 			assert_eq!(Campaigns::campaigns_owned_count(5), 1);
 
 			// check that account #0 is admin
-			let hash = Campaigns::campaign_by_id(0);
-			assert_eq!(Campaigns::campaign_admin(hash), 0);
+			let admin_hash = Campaigns::campaign_by_id(0);
+			assert_eq!(Campaigns::campaign_admin(admin_hash), 0);
 
 			// check that some random account #3 does not own a Campaign
 			assert_eq!(Campaigns::campaigns_owned_count(3), 0);
 
 			// check that this Campaign is specifically owned by account #6
-			let hash = Campaigns::campaign_by_id(0);
-			assert_eq!(Campaigns::campaign_owner(hash), Some(5));
+			let owner_hash = Campaigns::campaign_by_id(0);
+			assert_eq!(Campaigns::campaign_owner(owner_hash), Some(5));
 
 			let other_hash = Campaigns::campaigns_owned_index(5, 0);
 			assert_eq!(hash, other_hash);
+
 		})
 	}
 
-// 	// #[test]
-// 	// fn contribute_to_campaign_should_work() {
-// 	// 	with_externalities(&mut build_ext(), || {
+	#[test]
+	fn contribute_to_campaign_should_work() {
+		with_externalities(&mut build_ext(), || {
 
-// 	// 		// create a Campaign with account #5.
-// 	// 		assert_ok!(Campaigns::create(Origin::signed(5), vec![12,56], 20000, 0, 1000));
+			// create a Campaign with account #5.
+			assert_ok!(Campaigns::create(Origin::signed(5), vec![12,56], 20000, 0, 1000));
 
-// 	// 		// check that there are now 1 Campaigns in storage
-// 	// 		assert_eq!(Campaigns::all_campaigns_count(), 1);
+			// check that there are now 1 Campaigns in storage
+			assert_eq!(Campaigns::all_campaigns_count(), 1);
 
-// 	// 		// check that account #6 owns 1 Campaign
-// 	// 		assert_eq!(Campaigns::owned_campaigns_count(5), 1);
+			// check that account #6 owns 1 Campaign
+			assert_eq!(Campaigns::owned_campaigns_count(5), 1);
 
-// 	// 		// check that some random account #3 does not own a Campaign
-// 	// 		assert_eq!(Campaigns::owned_campaigns_count(3), 0);
+			// check that some random account #3 does not own a Campaign
+			assert_eq!(Campaigns::owned_campaigns_count(3), 0);
 
-// 	// 		// check that this Campaign is specifically owned by account #6
-// 	// 		let hash = Campaigns::campaign_by_id(0);
-// 	// 		assert_eq!(Campaigns::owner_of(hash), Some(5));
+			// check that this Campaign is specifically owned by account #6
+			let hash = Campaigns::campaign_by_id(0);
+			assert_eq!(Campaigns::owner_of(hash), Some(5));
 
-// 	// 		let other_hash = Campaigns::owned_campaigns_by_index(5, 0));
-// 	// 		assert_eq!(hash, other_hash);
-// 	// 	})
-// 	// }
+			let other_hash = Campaigns::owned_campaigns_by_index(5, 0));
+			assert_eq!(hash, other_hash);
+			1337f0rl1f3!
 
-// }
+		})
+	}
+
+}

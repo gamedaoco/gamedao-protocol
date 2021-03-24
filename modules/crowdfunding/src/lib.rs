@@ -1,3 +1,5 @@
+
+
 //
 //           _______________________________ ________
 //           \____    /\_   _____/\______   \\_____  \
@@ -76,12 +78,14 @@ use frame_support::{
 	storage::child::exists
 };
 use frame_system::{ self as system, ensure_signed };
+
 use sp_core::{ Hasher, H256 };
 use sp_runtime::{
 	traits::{ Hash, TrailingZeroInput },
 	ModuleId,
 };
 use sp_std::prelude::*;
+
 use codec::{ Encode, Decode };
 
 use timestamp;
@@ -101,8 +105,8 @@ mod campaign_tests;
 // mod errors;
 
 // TODO: take constants from runtime
-const PALLET_ID: ModuleId = ModuleId(*b"GAMEcrwd");
-const PALLET_VERSION: &str = "1.0";
+const MODULE_ID: ModuleId = ModuleId(*b"GAMEcrwd");
+const MODULE_VERSION: &str = "1.0";
 const MAX_CONTRIBUTIONS_PER_BLOCK: usize = 5;
 const MAX_CONTRIBUTIONS_PER_ADDRESS: usize = 3;
 const MAX_CAMPAIGN_DURATION: u32 = 777600;
@@ -122,6 +126,8 @@ pub trait Config: system::Config + balances::Config + timestamp::Config {
 
 	type MaxCampaignsPerAddress: Get<usize>;
 	type MaxCampaignsPerBlock: Get<usize>;
+	type MaxContributionsPerBlock: Get<usize>;
+
 	type MinDuration: Get<Self::BlockNumber>;
 	type MaxDuration: Get<Self::BlockNumber>;
 	type MinCreatorDeposit: Get<Self::Balance>;
@@ -864,4 +870,3 @@ decl_error! {
 
 	}
 }
-
