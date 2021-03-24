@@ -1,6 +1,6 @@
 [package]
 name = "zero-runtime"
-version = "1.10.0"
+version = "1.10.1"
 authors = ["zero collective <play@zero.io>"]
 description = "videogames x metaverse"
 edition = "2018"
@@ -85,9 +85,11 @@ pallet-transaction-payment = { version = "3.0.0", default-features = false, path
 pallet-transaction-payment-rpc-runtime-api = { version = "3.0.0", default-features = false, path = "../../../frame/transaction-payment/rpc/runtime-api/" }
 pallet-vesting = { version = "3.0.0", default-features = false, path = "../../../frame/vesting" }
 
-# orml-nft = { path = "../../../vendors/orml/nft", default-features = false }
+# orml-nft = { default-features = false }
 
 module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
+module-governance = { default-features = false, path = "../../../modules/governance" }
+
 # module-tcr = { default-features = false, path = "../../../modules/tcr" }
 # module-airdrop = { default-features = false, path = "../../../modules/airdrop" }
 # module-nft = { default-features = false, path = "../../../modules/nft" }

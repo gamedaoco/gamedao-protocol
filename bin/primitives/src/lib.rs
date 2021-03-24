@@ -14,31 +14,28 @@
 
 //! Low-level types used throughout the Substrate code.
 
+// #![warn(missing_docs)]
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sp_runtime::{
 	generic,
-	traits::{Verify, BlakeTwo256, IdentifyAccount},
-	OpaqueExtrinsic, MultiSignature, RuntimeDebug
+	traits::{ Verify, BlakeTwo256, IdentifyAccount },
+	OpaqueExtrinsic, MultiSignature, RuntimeDebug,
 };
-use codec::{ Encode, Decode };
+// use codec::{ Encode, Decode };
+// use sp_runtime::serde::{
+// 	Deserialize, Serialize
+// };
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
 /// An index to a block.
 pub type BlockNumber = u32;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;
-
-/// Alias to the public key used for this chain, actually a `MultiSigner`. Like
-/// the signature, this also isn't a fixed size when encoded, as different
-/// cryptos have different size public keys.
-// pub type AccountPublic = <Signature as Verify>::Signer;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
@@ -104,33 +101,33 @@ pub mod report {
 	}
 }
 
-/// Opaque, encoded, unchecked extrinsic.
-pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
+// /// Opaque, encoded, unchecked extrinsic.
+// pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
-#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub enum TokenSymbol {
-	PLAY = 0,
-	ZERO = 1,
-	GAME = 2,
-	DOT = 3,
-	KSM = 4,
-	ZDAI = 5,
-	ZEUR = 6,
-}
+// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+// pub enum TokenSymbol {
+// 	PLAY = 0,
+// 	ZERO = 1,
+// 	GAME = 2,
+// 	DOT = 3,
+// 	KSM = 4,
+// 	ZDAI = 5,
+// 	ZEUR = 6,
+// }
 
-#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub enum AirDropCurrencyId {
-	PLAY = 0,
-	ZERO = 1,
-	GAME = 2,
-}
+// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+// pub enum AirDropCurrencyId {
+// 	PLAY = 0,
+// 	ZERO = 1,
+// 	GAME = 2,
+// }
 
-#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub enum AuthoritysOriginId {
-	Root,
-	ZeroTreasury,
-	GameDAOTreasury,
-}
+// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+// pub enum AuthoritysOriginId {
+// 	Root,
+// 	ZeroTreasury,
+// 	GameDAOTreasury,
+// }

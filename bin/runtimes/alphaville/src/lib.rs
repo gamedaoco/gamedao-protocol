@@ -74,6 +74,7 @@ use static_assertions::const_assert;
 use pallet_contracts::WeightInfo;
 
 use module_crowdfunding;
+use module_governance;
 // use module_nft;
 
 #[cfg(any(feature = "std", test))]
@@ -116,7 +117,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
 	spec_version: 10,
-	impl_version: 0,
+	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
@@ -1047,14 +1048,24 @@ parameter_types! {
 	// TODO: more flexible account admin map
 	// pub const Admin: EnsureRootOrGameDAOAdmin = ();
 	pub const SeedNonce: u64 = 1;
+
 	pub const MinLength: usize = 4;
 	pub const MaxLength: usize = 64;
+
 	pub const MaxCampaignsPerAddress: usize = 3;
 	pub const MaxCampaignsPerBlock: usize = 3;
+	pub const MaxContributionsPerBlock: usize = 3;
+
 	pub const MinDuration: BlockNumber = 1 * DAYS;
 	pub const MaxDuration: BlockNumber = 100 * DAYS;
+
 	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
+
+	// TODO: fees
+	pub const CreationFee: Balance = 1 * DOLLARS;
+
+
 }
 
 impl module_crowdfunding::Config for Runtime {
@@ -1066,14 +1077,34 @@ impl module_crowdfunding::Config for Runtime {
 	type Event = Event;
 	type Nonce = SeedNonce;
 	type Randomness = RandomnessCollectiveFlip;
+
 	type MinLength = MinLength;
 	type MaxLength = MaxLength;
+
 	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
+	type MaxContributionsPerBlock = MaxContributionsPerBlock;
+
 	type MinDuration = MinDuration;
 	type MaxDuration = MaxDuration;
 	type MinCreatorDeposit = MinCreatorDeposit;
 	type MinContribution = MinContribution;
+
+}
+
+parameter_types! {
+
+	pub const MaxProposalsPerBlock: usize = 3;
+
+}
+
+impl module_governance::Config for Runtime {
+
+	type Currency = Balances;
+	type Event = Event;
+	type Nonce = SeedNonce;
+	type Randomness = RandomnessCollectiveFlip;
+	type MaxProposalsPerBlock = MaxContributionsPerBlock;
 
 }
 
@@ -1176,7 +1207,8 @@ construct_runtime!(
 		// custom modules and vendors
 		//
 
-		GameDAO: module_crowdfunding::{Module, Call, Storage, Event<T>},
+		GameDAOCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
+		GameDAOGovernance: module_governance::{Module, Call, Storage, Event<T>},
 		// #[cfg(feature = "with-nft")]
 		// GameDAONFT: module_nft::{Module, Call, Storage, Event<T>},
 
