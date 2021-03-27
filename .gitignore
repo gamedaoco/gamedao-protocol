@@ -31,3 +31,5 @@ tmp/
 .github
 **/nodekey*
 **/bootnodes
+
+**/*.local*
