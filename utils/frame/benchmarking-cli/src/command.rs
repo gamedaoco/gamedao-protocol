@@ -1,6 +1,6 @@
 // This file is part of Substrate.
 
-// Copyright (C) 2020 Parity Technologies (UK) Ltd.
+// Copyright (C) 2020-2021 Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
 use crate::BenchmarkCmd;
 use codec::{Decode, Encode};
 use frame_benchmarking::{Analysis, BenchmarkBatch, BenchmarkSelector};
@@ -25,10 +26,10 @@ use sp_state_machine::StateMachine;
 use sp_externalities::Extensions;
 use sc_service::{Configuration, NativeExecutionDispatch};
 use sp_runtime::traits::{Block as BlockT, Header as HeaderT, NumberFor};
-use sp_core::{
+use sp_core::offchain::{OffchainExt, testing::TestOffchainExt};
+use sp_keystore::{
+	SyncCryptoStorePtr, KeystoreExt,
 	testing::KeyStore,
-	traits::KeystoreExt,
-	offchain::{OffchainExt, testing::TestOffchainExt},
 };
 use std::fmt::Debug;
 
@@ -42,11 +43,17 @@ impl BenchmarkCmd {
 		ExecDispatch: NativeExecutionDispatch + 'static,
 	{
 		if let Some(output_path) = &self.output {
-			if !output_path.is_dir() { return Err("Output path is invalid!".into()) };
+			if !output_path.is_dir() && output_path.file_name().is_none() {
+				return Err("Output file or path is invalid!".into())
+			}
 		}
 
 		if let Some(header_file) = &self.header {
 			if !header_file.is_file() { return Err("Header file is invalid!".into()) };
+		}
+
+		if let Some(handlebars_template_file) = &self.template {
+			if !handlebars_template_file.is_file() { return Err("Handlebars template file is invalid!".into()) };
 		}
 
 		let spec = config.chain_spec;
@@ -55,7 +62,6 @@ impl BenchmarkCmd {
 
 		let genesis_storage = spec.build_storage()?;
 		let mut changes = Default::default();
-		let mut offchain_changes = Default::default();
 		let cache_size = Some(self.database_cache_size as usize);
 		let state = BenchmarkingState::<BB>::new(genesis_storage, cache_size)?;
 		let executor = NativeExecutor::<ExecDispatch>::new(
@@ -65,7 +71,7 @@ impl BenchmarkCmd {
 		);
 
 		let mut extensions = Extensions::default();
-		extensions.register(KeystoreExt(KeyStore::new()));
+		extensions.register(KeystoreExt(Arc::new(KeyStore::new()) as SyncCryptoStorePtr));
 		let (offchain, _) = TestOffchainExt::new();
 		extensions.register(OffchainExt::new(offchain));
 
@@ -73,7 +79,6 @@ impl BenchmarkCmd {
 			&state,
 			None,
 			&mut changes,
-			&mut offchain_changes,
 			&executor,
 			"Benchmark_dispatch_benchmark",
 			&(
@@ -98,24 +103,8 @@ impl BenchmarkCmd {
 
 		match results {
 			Ok(batches) => {
-				// If we are going to output results to a file...
 				if let Some(output_path) = &self.output {
-					if self.trait_def {
-						crate::writer::write_trait(&batches, output_path, &self.r#trait, self.spaces)?;
-					} else {
-						crate::writer::write_results(
-							&batches,
-							output_path,
-							&self.lowest_range_values,
-							&self.highest_range_values,
-							&self.steps,
-							self.repeat,
-							&self.header,
-							&self.r#struct,
-							&self.r#trait,
-							self.spaces
-						)?;
-					}
+					crate::writer::write_results(&batches, output_path, self)?;
 				}
 
 				for batch in batches.into_iter() {
@@ -183,7 +172,7 @@ impl BenchmarkCmd {
 					}
 				}
 			},
-			Err(error) => eprintln!("Error: {:?}", error),
+			Err(error) => eprintln!("Error: {}", error),
 		}
 
 		Ok(())

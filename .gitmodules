@@ -1,15 +1,3 @@
-[submodule "vendors/frontier"]
-	path = vendors/frontier
-	url = git@github.com:paritytech/frontier.git
 [submodule "vendors/orml"]
 	path = vendors/orml
 	url = git@github.com:open-web3-stack/open-runtime-module-library.git
-[submodule "vendors/ink"]
-	path = vendors/ink
-	url = git@github.com:paritytech/ink.git
-[submodule "vendors/Acala"]
-	path = vendors/Acala
-	url = git@github.com:AcalaNetwork/Acala.git
-[submodule "vendors/orml-workshop"]
-	path = vendors/orml-workshop
-	url = git@github.com:xlc/orml-workshop.git
