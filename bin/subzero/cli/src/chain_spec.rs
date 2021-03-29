@@ -65,7 +65,7 @@ pub type ChainSpec = sc_service::GenericChainSpec<
 >;
 /// Flaming Fir testnet generator
 pub fn alphaville_config() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../res/alphaville.json")[..])
+	ChainSpec::from_json_bytes(&include_bytes!("../../../res/alphaville.json")[..])
 }
 
 fn session_keys(
