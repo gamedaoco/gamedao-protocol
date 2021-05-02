@@ -1,26 +1,35 @@
 {
   "Address": "MultiAddress",
   "LookupSource": "MultiAddress",
-  "Crowdfunding": {
-    "Campaign": {
-      "id": "Hash",
-      "manager": "AccountId",
-      "deposit": "Balance",
-      "expiry": "BlockNumber",
-      "cap": "Balance",
-      "name": "Vec<u8>",
-      "protocol": "u8",
-      "status": "u8"
-    },
-    "Treasury": {
-      "id": "Hash",
-      "campaign_id": "Hash",
-      "purpose": "Vec<u8>",
-      "amount": "Balance",
-      "expiry": "BlockNumber",
-      "status": "u8"
-    },
-    "Nonce": "u64",
-    "EventMessage": "Vec<u8>"
-    }
+  "Campaign": {
+    "id": "Hash",
+    "owner": "AccountId",
+    "admin": "AccountId",
+    "deposit": "Balance",
+    "expiry": "BlockNumber",
+    "cap": "Balance",
+    "name": "Vec<u8>",
+    "protocol": "u8",
+    "governance": "u8",
+    "cid": "Vec<u8>",
+    "created": "Timestamp"
+  },
+  "EventMessage": "Vec<u8>",
+  "Nonce": "u64",
+  "Proposal": {
+    "proposal_id": "Hash",
+    "campaign_id": "Hash",
+    "purpose": "Vec<u8>",
+    "cid": "Vec<u8>",
+    "amount": "Balance",
+    "expiry": "BlockNumber",
+    "status": "u8"
+  },
+  "Entity": {
+    "account":"AccountId",
+    "index":"u128",
+    "cid":"Vec<u8>",
+    "created":"BlockNumber",
+    "mutated":"BlockNumber"
   }
+}

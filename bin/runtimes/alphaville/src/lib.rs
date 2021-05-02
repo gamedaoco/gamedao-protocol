@@ -73,9 +73,11 @@ use sp_inherents::{InherentData, CheckInherentsResult};
 use static_assertions::const_assert;
 use pallet_contracts::WeightInfo;
 
+use module_sense;
 use module_crowdfunding;
 use module_governance;
-// use module_nft;
+// use module_commodities;
+// use module_collectibles;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -165,7 +167,7 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 parameter_types! {
 	pub const ZeroTreasuryModuleId: ModuleId = ModuleId(*b"z/schatz");
 	pub const StakingPoolModuleId: ModuleId = ModuleId(*b"z/sicher");
-	pub const CrowdfundingModuleId: ModuleId = ModuleId(*b"z/krauts");
+	pub const CrowdfundingModuleId: ModuleId = ModuleId(*b"g/krauts");
 	pub const NftModuleId: ModuleId = ModuleId(*b"z/sammla");
 }
 
@@ -1032,6 +1034,15 @@ impl pallet_assets::Config for Runtime {
 }
 
 //
+//	module sense
+//
+
+impl module_sense::Config for Runtime {
+	type Event = Event;
+	type ForceOrigin = EnsureRoot<AccountId>;
+}
+
+//
 //
 //
 
@@ -1072,6 +1083,9 @@ impl module_crowdfunding::Config for Runtime {
 
 	// ensure root or half council as admin role for campaigns.
 	// might need another instance of council as e.g. supervisor
+
+	// type ModuleAdmin = frame_system::EnsureRoot<AccountId>;
+
 	type GameDAOAdminOrigin = pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>;
 	type Currency = Balances;
 	type Event = Event;
@@ -1100,6 +1114,8 @@ parameter_types! {
 
 impl module_governance::Config for Runtime {
 
+	// type ModuleAdmin = frame_system::EnsureRoot<AccountId>;
+
 	type Currency = Balances;
 	type Event = Event;
 	type Nonce = SeedNonce;
@@ -1107,6 +1123,61 @@ impl module_governance::Config for Runtime {
 	type MaxProposalsPerBlock = MaxContributionsPerBlock;
 
 }
+
+//
+//
+//
+
+// parameter_types! {
+
+// 	// realms
+//     pub const MaxRealms: u128 = 2^16;
+//     pub const MaxRealmsPerUser: u64 = 4;
+
+//     // classes
+//     pub const MaxClassesPerRealm: u128 = 2^32;
+//     pub const MaxClassesPerUser: u64 = 16;
+
+//     // assets
+//     pub const MaxAssets: u128 = 2^64;
+//     pub const MaxAssetsPerUser: u64 = 256;
+
+// }
+
+// impl module_commodities::Config for Runtime {
+
+//     type CommodityAdmin = frame_system::EnsureRoot<AccountId>;
+//     type CommodityInfo = module_collectibles::CollectibleInfo<Hash, Moment>;
+//     type CommodityLimit = MaxAssets;
+//     type UserCommodityLimit = MaxAssetsPerUser;
+//     type Event = Event;
+
+// }
+
+// parameter_types! {
+
+//     pub const BasePrice: Balance = 1 * DOLLARS;
+
+// }
+
+// impl module_collectibles::Config for Runtime {
+
+//     type Assets = module_commodities::Module<Runtime>;
+//     type Time = pallet_timestamp::Module<Runtime>;
+
+//     type Randomness = RandomnessCollectiveFlip; // pallet_randomness_collective_flip::Module<Runtime>;
+//     type Currency = Balances; // pallet_balances::Module<Runtime>;
+
+//     type BasePrice = BasePrice;
+//     type Event = Event;
+
+// }
+
+//
+//
+//
+
+
 
 // #[cfg(feature = "with-nft")]
 
@@ -1183,37 +1254,24 @@ construct_runtime!(
 		Tips: pallet_tips::{Module, Call, Storage, Event<T>},
 		Mmr: pallet_mmr::{Module, Storage},
 		Lottery: pallet_lottery::{Module, Call, Storage, Event<T>},
+		Proxy: pallet_proxy::{Module, Call, Storage, Event<T>},
 
-		//
-		//
-		//
-
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
+		Contracts: pallet_contracts::{Module, Call, Config<T>, Storage, Event<T>},
+		Identity: pallet_identity::{Module, Call, Storage, Event<T>},
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 
 		//
 		//
 		//
 
-		Proxy: pallet_proxy::{Module, Call, Storage, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
-		Contracts: pallet_contracts::{Module, Call, Config<T>, Storage, Event<T>},
-		Identity: pallet_identity::{Module, Call, Storage, Event<T>},
-
-		//
-
-		// OrmlNFT: orml_nft::{Module, Storage},
-
-		//
-		// custom modules and vendors
-		//
+		ZeroSense: module_sense::{Module, Call, Storage, Event<T>},
 
 		GameDAOCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
 		GameDAOGovernance: module_governance::{Module, Call, Storage, Event<T>},
-		// #[cfg(feature = "with-nft")]
-		// GameDAONFT: module_nft::{Module, Call, Storage, Event<T>},
 
-		// Ipfs: module_ipfs::{Module, Call, Storage, Event<T>},
-
+		// ZeroCommodities: module_commodities::{Module, Call, Storage, Event<T>},
+		// ZeroCollectibles: module_collectibles::{Module, Call, Storage, Event<T>},
 	}
 );
 
