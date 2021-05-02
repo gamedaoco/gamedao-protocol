@@ -23,13 +23,16 @@ use sp_runtime::{
 	traits::{ Verify, BlakeTwo256, IdentifyAccount },
 	OpaqueExtrinsic, MultiSignature, RuntimeDebug,
 };
-// use codec::{ Encode, Decode };
-// use sp_runtime::serde::{
-// 	Deserialize, Serialize
-// };
+
+#[cfg(feature = "std")]
+use serde::{ Deserialize, Serialize };
+use codec::{ Encode, Decode };
 
 // #[cfg(test)]
 // mod tests;
+
+// metadata
+// pub type CID = sp_std::vec::Vec<u8>;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -73,61 +76,85 @@ pub type BlockId = generic::BlockId<Block>;
 /// App-specific crypto used for reporting equivocation/misbehavior in BABE and
 /// GRANDPA. Any rewards for misbehavior reporting will be paid out to this
 /// account.
-pub mod report {
-	use super::{Signature, Verify};
-	use frame_system::offchain::AppCrypto;
-	use sp_core::crypto::{key_types, KeyTypeId};
 
-	/// Key type for the reporting module. Used for reporting BABE and GRANDPA
-	/// equivocations.
-	pub const KEY_TYPE: KeyTypeId = key_types::REPORTING;
+// pub mod report {
+// 	use super::{Signature, Verify};
+// 	use frame_system::offchain::AppCrypto;
+// 	use sp_core::crypto::{key_types, KeyTypeId};
 
-	mod app {
-		use sp_application_crypto::{app_crypto, sr25519};
-		app_crypto!(sr25519, super::KEY_TYPE);
-	}
+// 	/// Key type for the reporting module. Used for reporting BABE and GRANDPA
+// 	/// equivocations.
+// 	pub const KEY_TYPE: KeyTypeId = key_types::REPORTING;
 
-	/// Identity of the equivocation/misbehavior reporter.
-	pub type ReporterId = app::Public;
+// 	mod app {
+// 		use sp_application_crypto::{app_crypto, sr25519};
+// 		app_crypto!(sr25519, super::KEY_TYPE);
+// 	}
 
-	/// An `AppCrypto` type to allow submitting signed transactions using the reporting
-	/// application key as signer.
-	pub struct ReporterAppCrypto;
+// 	/// Identity of the equivocation/misbehavior reporter.
+// 	pub type ReporterId = app::Public;
 
-	impl AppCrypto<<Signature as Verify>::Signer, Signature> for ReporterAppCrypto {
-		type RuntimeAppPublic = ReporterId;
-		type GenericSignature = sp_core::sr25519::Signature;
-		type GenericPublic = sp_core::sr25519::Public;
-	}
-}
+// 	/// An `AppCrypto` type to allow submitting signed transactions using the reporting
+// 	/// application key as signer.
+// 	pub struct ReporterAppCrypto;
+
+// 	impl AppCrypto<<Signature as Verify>::Signer, Signature> for ReporterAppCrypto {
+// 		type RuntimeAppPublic = ReporterId;
+// 		type GenericSignature = sp_core::sr25519::Signature;
+// 		type GenericPublic = sp_core::sr25519::Public;
+// 	}
+// }
 
 // /// Opaque, encoded, unchecked extrinsic.
 // pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
-// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-// pub enum TokenSymbol {
-// 	PLAY = 0,
-// 	ZERO = 1,
-// 	GAME = 2,
-// 	DOT = 3,
-// 	KSM = 4,
-// 	ZDAI = 5,
-// 	ZEUR = 6,
-// }
+//
+// currencies
+//
 
-// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-// pub enum AirDropCurrencyId {
-// 	PLAY = 0,
-// 	ZERO = 1,
-// 	GAME = 2,
-// }
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum TokenSymbol {
+	ZERO  = 0,
+	PLAY  = 1,
+	GAME  = 2,
+	DOT   = 3,
+	KSM   = 4,
+	DAI   = 5,
+	EUR   = 6,
+}
 
-// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-// pub enum AuthoritysOriginId {
-// 	Root,
-// 	ZeroTreasury,
-// 	GameDAOTreasury,
-// }
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum AirDropCurrencyId {
+	ZERO = 0,
+	PLAY = 1,
+	GAME = 2,
+}
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum AuthoritysOriginId {
+	Root,
+	ZeroTreasury,
+	GameDAOTreasury,
+	SenseNet,
+}
+
+//
+//	sense
+//
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum SenseProps {
+	XP    = 0,
+	REP   = 1,
+	TRUST = 2,
+}
+
+//
+//
+//
+
+pub type NFTBalance = u128;
