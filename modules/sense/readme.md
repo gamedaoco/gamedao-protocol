@@ -1,6 +1,6 @@
-# ZERO SENSE
+# zero sensenet
 
-1.6 Identity
+## Identity and Reputation
 
 Every entity in ZERO METAVERSE needs to provide initial identity information to create an ecosystem wide decentralised identity (DID). This allows for platform operation in a legal manner, provides transparency and guarantees for the community.
 
@@ -17,3 +17,10 @@ Identity comes with additional features for the ecosystems connected to ZERO, na
 - Social feedback of other ecosystem participants, contributing to the reputation (REP) of an identity
 
 These all together, T, XP, REP and the opaque identity provide increased trust and protection of the user base, enabling barrier free interaction, in case of GameDAO for coordination and fundraising.
+
+## Status
+
+[x] create entity
+[x] mutate xp, rep, trust
+[ ] more granular access control
+[ ] event subscription for on chain identity events

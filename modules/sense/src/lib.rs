@@ -18,39 +18,19 @@ pub mod module {
 		decl_error, decl_event, decl_module, decl_storage,
 		ensure,
 		dispatch::DispatchResult,
-		traits::{
-			Currency,
-			EnsureOrigin,
-			ReservableCurrency,
-			Get
-		},
-		storage::child::exists,
+		traits::{ EnsureOrigin },
 	};
-	use frame_system::{ self as system, ensure_signed, ensure_root };
+	use frame_system::{ self as system, ensure_root };
 	use codec::{ Encode, Decode };
-	use sp_runtime::{
-		ModuleId,
-		traits::{ Hash, Zero }
-	};
-
-	use sp_runtime::{
-		traits::{ Verify, BlakeTwo256, IdentifyAccount },
-		MultiSignature
-	};
-
+	use sp_runtime::{ ModuleId };
 	use sp_std::prelude::*;
 	use pallet_balances::{ self as balances };
-	use primitives::{
-		Balance,
-		AccountId,
-		SenseProps
-	};
 
 	//
 	//
 	//
 
-	pub const MODULE_ID: ModuleId = ModuleId(*b"modsense");
+	pub const MODULE_ID: ModuleId = ModuleId(*b"sensenet");
 	pub const MODULE_VERSION: &str = "1.0";
 
 	//
@@ -58,11 +38,13 @@ pub mod module {
 	//
 
 	pub trait Config: system::Config + balances::Config {
+		// TODO: decide module name int or ext
+		// type ModuleId: Get<ModuleId>;
 		/// the goode olde event
 		type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
 		///
 		type ForceOrigin: EnsureOrigin<Self::Origin>;
-		//TODO:
+		// TODO:
 		// Weight information for extrinsics in this module.
 		// type WeightInfo: WeightInfo;
 	}
@@ -71,15 +53,22 @@ pub mod module {
 	//
 	//
 
-	type AccountOf<T> = <T as system::Config>::AccountId;
-
+	/// SenseNet Entity
 	#[derive(Encode, Decode, Default, PartialEq, Eq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
-	pub struct Entity<AccountOf, BlockNumber> {
-		account: AccountOf,
+	pub struct Entity<AccountId, BlockNumber> {
+		account: AccountId,
 		index:   u128,
 		cid:     Vec<u8>,
 		created: BlockNumber,
+		mutated: BlockNumber,
+	}
+
+	/// SenseNet Entity Property
+	#[derive(Encode, Decode, Default, PartialEq, Eq)]
+	#[cfg_attr(feature = "std", derive(Debug))]
+	pub struct EntityProperty<BlockNumber> {
+		value:   u64,
 		mutated: BlockNumber,
 	}
 
@@ -89,11 +78,14 @@ pub mod module {
 
 	decl_storage! {
 		trait Store for Module<T: Config> as Sense {
-			/// entity xp,rep,trust are public. metadata is private.
+			/// A Sense Entity
 			Sense get(fn entity): map hasher(blake2_128_concat) T::AccountId => Entity<T::AccountId,T::BlockNumber>;
-			SenseXP get(fn xp): map hasher(blake2_128_concat) T::AccountId => u64;
-			SenseREP get(fn rep): map hasher(blake2_128_concat) T::AccountId => u64;
-			SenseTrust get(fn trust): map hasher(blake2_128_concat) T::AccountId => u64;
+			/// XP across the metaverse
+			SenseXP get(fn xp): map hasher(blake2_128_concat) T::AccountId => EntityProperty<T::BlockNumber>;
+			/// REP across the metaverse
+			SenseREP get(fn rep): map hasher(blake2_128_concat) T::AccountId => EntityProperty<T::BlockNumber>;
+			/// Trust score across the metaverse
+			SenseTrust get(fn trust): map hasher(blake2_128_concat) T::AccountId => EntityProperty<T::BlockNumber>;
 
 			// propose judgements account, value, deposit
 			// if judgement successful, value will be applied and deposit returned
@@ -110,11 +102,13 @@ pub mod module {
 
 	decl_event! {
 		pub enum Event<T> where
-			Account = AccountOf<T>,
+			<T as system::Config>::AccountId,
 			<T as system::Config>::BlockNumber,
 		{
-			EntityInit(Account, BlockNumber),
-			EntityMutate(Account, BlockNumber),
+			EntityInit(AccountId, BlockNumber),
+			EntityMutateXP(AccountId, BlockNumber),
+			EntityMutateREP(AccountId, BlockNumber),
+			EntityMutateTrust(AccountId, BlockNumber),
 		}
 	}
 
@@ -124,7 +118,7 @@ pub mod module {
 
 	decl_error! {
 		pub enum Error for Module<T: Config> {
-			/// Entity exists.
+			/// Entity Exists
 			EntityExists,
 			/// Entity Unknown
 			EntityUnknown,
@@ -151,11 +145,12 @@ pub mod module {
 				cid:     Vec<u8>,
 			) -> DispatchResult {
 
-				let creator = ensure_signed(origin)?;
-				let now = <system::Module<T>>::block_number();
-				let index = Nonce::get();
+				ensure_root(origin)?;
+				ensure!( !<Sense<T>>::contains_key(&account), Error::<T>::EntityExists );
 
-				let data = Entity {
+				let now   = <system::Module<T>>::block_number();
+				let index = Nonce::get();
+				let data  = Entity {
 					account:  account.clone(),
 					cid:      cid,
 					index:    index.clone(),
@@ -163,9 +158,13 @@ pub mod module {
 					mutated:  now.clone(),
 				};
 
-				<SenseXP<T>>::insert( account.clone(), 0 );
-				<SenseREP<T>>::insert( account.clone(), 0 );
-				<SenseTrust<T>>::insert( account.clone(), 0 );
+				let xp    = EntityProperty { value: 0, mutated: now.clone() };
+				let rep   = EntityProperty { value: 0, mutated: now.clone() };
+				let trust = EntityProperty { value: 0, mutated: now.clone() };
+
+				<SenseXP<T>>::insert( account.clone(), xp );
+				<SenseREP<T>>::insert( account.clone(), rep );
+				<SenseTrust<T>>::insert( account.clone(), trust );
 				<Sense<T>>::insert( account.clone(), data );
 
 				Nonce::mutate(|n| *n += 1);
@@ -177,7 +176,8 @@ pub mod module {
 
 			}
 
-			// mutation of values is restricted
+			// TODO:
+			// mutation of values should be restricted
 			// certain roles are allowed to mutate values
 			// xp:    realm
 			// rep:   social
@@ -192,21 +192,80 @@ pub mod module {
 				value:   u8, // allow for a maximum of u8 to change
 			) -> DispatchResult {
 
-				let creator = ensure_signed(origin)?;
+				ensure_root(origin)?;
+				ensure!( <Sense<T>>::contains_key(&account), Error::<T>::EntityUnknown );
+
 				let now = <system::Module<T>>::block_number();
 
 				let v = u64::from(value);
-				let current_xp = Self::xp(&account);
-				let updated_xp = current_xp.checked_add(v).ok_or(Error::<T>::GuruMeditation)?;
-				<SenseXP<T>>::insert( account.clone(), updated_xp );
+				let current = Self::xp(&account);
+				let updated = EntityProperty {
+					value: current.value.checked_add(v).ok_or(Error::<T>::GuruMeditation)?,
+					mutated: now
+				};
+
+				<SenseXP<T>>::insert( account.clone(), updated );
 
 				Self::deposit_event(
-					RawEvent::EntityMutate(account, now)
+					RawEvent::EntityMutateXP(account, now)
 				);
 				Ok(())
 
 			}
 
+			#[weight = 1_000]
+			fn mod_rep(
+				origin,
+				account: T::AccountId,
+				value:   u8, // allow for a maximum of u8 to change
+			) -> DispatchResult {
+
+				ensure_root(origin)?;
+				ensure!( <Sense<T>>::contains_key(&account), Error::<T>::EntityUnknown );
+
+				let now = <system::Module<T>>::block_number();
+				let v = u64::from(value);
+				let current = Self::rep(&account);
+				let updated = EntityProperty {
+					value: current.value.checked_add(v).ok_or(Error::<T>::GuruMeditation)?,
+					mutated: now
+				};
+
+				<SenseREP<T>>::insert( account.clone(), updated );
+
+				Self::deposit_event(
+					RawEvent::EntityMutateREP(account, now)
+				);
+				Ok(())
+
+			}
+
+			#[weight = 1_000]
+			fn mod_trust(
+				origin,
+				account: T::AccountId,
+				value:   u8, // allow for a maximum of u8 to change
+			) -> DispatchResult {
+
+				ensure_root(origin)?;
+				ensure!( <Sense<T>>::contains_key(&account), Error::<T>::EntityUnknown );
+
+				let now = <system::Module<T>>::block_number();
+				let v = u64::from(value);
+				let current = Self::trust(&account);
+				let updated = EntityProperty {
+					value: current.value.checked_add(v).ok_or(Error::<T>::GuruMeditation)?,
+					mutated: now
+				};
+
+				<SenseTrust<T>>::insert( account.clone(), updated );
+
+				Self::deposit_event(
+					RawEvent::EntityMutateTrust(account, now)
+				);
+				Ok(())
+
+			}
 
 			// TODO:
 			// generic mod for all properties
@@ -235,13 +294,6 @@ pub mod module {
 			// }
 
 		}
-	}
-
-	//
-	//
-	//
-
-	impl<T: Config> Module<T> {
 	}
 
 }
