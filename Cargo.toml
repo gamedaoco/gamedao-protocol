@@ -4,10 +4,15 @@ members = [
 	"bin/utils/chain-spec-builder",
 	"bin/utils/subkey",
 
+	# "bin/primitives",
 	# "modules/crowdfunding",
 	# "modules/governance",
-	# "modules/airdrop",
+	"modules/sense",
 	# "modules/nft",
+
+	# "modules/airdrop",
+	# "modules/exchange",
+	# "vendors/pallet-nft",
 
 ]
 
