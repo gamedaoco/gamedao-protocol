@@ -1,35 +1,10 @@
-{
   "Address": "MultiAddress",
   "LookupSource": "MultiAddress",
-  "Campaign": {
-    "id": "Hash",
-    "owner": "AccountId",
-    "admin": "AccountId",
-    "deposit": "Balance",
-    "expiry": "BlockNumber",
-    "cap": "Balance",
-    "name": "Vec<u8>",
-    "protocol": "u8",
-    "governance": "u8",
-    "cid": "Vec<u8>",
-    "created": "Timestamp"
-  },
-  "EventMessage": "Vec<u8>",
-  "Nonce": "u64",
-  "Proposal": {
-    "proposal_id": "Hash",
-    "campaign_id": "Hash",
-    "purpose": "Vec<u8>",
-    "cid": "Vec<u8>",
-    "amount": "Balance",
-    "expiry": "BlockNumber",
-    "status": "u8"
-  },
-  "Entity": {
-    "account":"AccountId",
-    "index":"u128",
-    "cid":"Vec<u8>",
-    "created":"BlockNumber",
-    "mutated":"BlockNumber"
+
+  "AccountInfo": "AccountInfoWithTripleRefCount",
+  "AccountInfoWithDualRefCount": {
+    "nonce": "Index",
+    "consumers": "RefCount",
+    "providers": "RefCount",
+    "data": "AccountData"
   }
-}

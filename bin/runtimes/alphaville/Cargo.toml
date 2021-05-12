@@ -1,6 +1,6 @@
 [package]
 name = "zero-runtime"
-version = "1.10.1"
+version = "1.11.3"
 authors = ["zero collective <play@zero.io>"]
 description = "videogames x metaverse"
 edition = "2018"
@@ -86,13 +86,11 @@ pallet-transaction-payment-rpc-runtime-api = { version = "3.0.0", default-featur
 pallet-vesting = { version = "3.0.0", default-features = false, path = "../../../frame/vesting" }
 
 module-sense = { default-features = false, path = "../../../modules/sense" }
-
+# module-kilt = { default-features = false, path = "../../../modules/kilt" }
+module-uniq = { default-features = false, path = "../../../modules/uniq" }
+module-hypaspace = { default-features = false, path = "../../../modules/hypaspace" }
 module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
 module-governance = { default-features = false, path = "../../../modules/governance" }
-
-module-commodities = { default-features = false, path = "../../../modules/commodities" }
-module-collectibles = { default-features = false, path = "../../../modules/collectibles" }
-
 # module-tcr = { default-features = false, path = "../../../modules/tcr" }
 # module-airdrop = { default-features = false, path = "../../../modules/airdrop" }
 
