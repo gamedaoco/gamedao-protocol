@@ -105,7 +105,7 @@ mod campaign_tests;
 // mod errors;
 
 // TODO: take constants from runtime
-const MODULE_ID: ModuleId = ModuleId(*b"GAMEcrwd");
+const MODULE_ID: ModuleId = ModuleId(*b"modraise");
 const MODULE_VERSION: &str = "1.0";
 const MAX_CONTRIBUTIONS_PER_BLOCK: usize = 5;
 const MAX_CONTRIBUTIONS_PER_ADDRESS: usize = 3;
@@ -694,12 +694,12 @@ impl<T: Config> Module<T> {
 		// 			<Campaigns<T>>::remove(id.clone());
 		// 			<CampaignOwner<T>>::remove(id.clone());
 		// 			<CampaignsByBlockNumber<T>>::mutate(expiry,|campaigns| campaigns.pop());
-		// 			<AllCampaignsArray<T>>::remove(&all_campaigns_count);
-		// 			<AllCampaignsCount>::put(all_campaigns_count.clone());
+		// 			<CampaignsArray<T>>::remove(&all_campaigns_count);
+		// 			<CampaignsIndex>::put(all_campaigns_count.clone());
 		// 			<AllCampaignsIndex<T>>::remove(id.clone());
-		// 			<OwnedCampaignsArray<T>>::remove((sender.clone(), owned_campaigns_count.clone()));
-		// 			<OwnedCampaignsCount<T>>::remove(&sender);
-		// 			<OwnedCampaignsIndex<T>>::remove((sender.clone(), id.clone()));
+		// 			<CampaignsOwnedArray<T>>::remove((sender.clone(), owned_campaigns_count.clone()));
+		// 			<CampaignsOwnedCount<T>>::remove(&sender);
+		// 			<CampaignsOwnedIndex<T>>::remove((sender.clone(), id.clone()));
 		// 		},
 		// 		Ok(_v) => {}
 		// 	}
