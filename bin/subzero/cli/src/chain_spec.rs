@@ -63,7 +63,8 @@ pub type ChainSpec = sc_service::GenericChainSpec<
 	GenesisConfig,
 	Extensions,
 >;
-/// Flaming Fir testnet generator
+
+/// alphaville testnet generator
 pub fn alphaville_config() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../../res/alphaville.json")[..])
 }
