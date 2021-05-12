@@ -1,0 +1,10 @@
+  "Commodity": {
+    "CommodityId": "CommodityId",
+    "CommodityInfo": "CommodityInfo"
+  },
+  "CommodityId": "Hash",
+  "CommodityInfo": {
+    "dob": "u64",
+    "dna": "Hash"
+  },
+  "CID": "Vec<u8>",
