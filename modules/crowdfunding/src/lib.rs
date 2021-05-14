@@ -58,8 +58,9 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 #![allow(unused_variables)]
+
 // only on nightly
-#![feature(const_fn_fn_ptr_basics)]
+// #![feature(const_fn_fn_ptr_basics)]
 
 use frame_support::{
 	decl_error, decl_event, decl_module, decl_storage,
