@@ -87,7 +87,7 @@ pallet-vesting = { version = "3.0.0", default-features = false, path = "../../..
 
 module-sense = { default-features = false, path = "../../../modules/sense" }
 # module-kilt = { default-features = false, path = "../../../modules/kilt" }
-module-uniq = { default-features = false, path = "../../../modules/uniq" }
+module-item = { default-features = false, path = "../../../modules/item" }
 module-hypaspace = { default-features = false, path = "../../../modules/hypaspace" }
 module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
 module-governance = { default-features = false, path = "../../../modules/governance" }

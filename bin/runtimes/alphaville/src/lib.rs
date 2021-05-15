@@ -80,7 +80,7 @@ use module_sense;
 // use module_airdrop;
 use module_crowdfunding;
 use module_governance;
-use module_uniq;
+use module_item;
 use module_hypaspace;
 
 #[cfg(any(feature = "std", test))]
@@ -122,7 +122,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// and set impl_version to 0. If only runtime
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
-	spec_version: 13,
+	spec_version: 14,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -1206,11 +1206,11 @@ parameter_types! {
     pub const MaxAssetsPerUser: u64 = 1024;
 }
 
-impl module_uniq::Config for Runtime {
-    type CommodityAdmin = frame_system::EnsureRoot<AccountId>;
-    type CommodityInfo = module_hypaspace::HypaspaceInfo<Hash, Moment>;
-    type CommodityLimit = MaxAssets;
-    type UserCommodityLimit = MaxAssetsPerUser;
+impl module_item::Config for Runtime {
+    type ItemAdmin = frame_system::EnsureRoot<AccountId>;
+    type ItemInfo = module_hypaspace::HypaspaceInfo<Hash, Moment>;
+    type ItemLimit = MaxAssets;
+    type UserItemLimit = MaxAssetsPerUser;
     type Event = Event;
 }
 
@@ -1220,7 +1220,7 @@ parameter_types! {
 
 impl module_hypaspace::Config for Runtime {
 
-    type Spaces = module_uniq::Module<Runtime>;
+    type Spaces = module_item::Module<Runtime>;
     type Time = pallet_timestamp::Module<Runtime>;
 
     type Randomness = RandomnessCollectiveFlip;
@@ -1323,7 +1323,7 @@ construct_runtime!(
 
 		//
 		ZeroSense: module_sense::{Module, Call, Storage, Event<T>},
-		ZeroUniq: module_uniq::{Module, Call, Storage, Event<T>},
+		ZeroItem: module_item::{Module, Call, Storage, Event<T>},
 		//
 		GameDAOCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
 		GameDAOGovernance: module_governance::{Module, Call, Storage, Event<T>},
