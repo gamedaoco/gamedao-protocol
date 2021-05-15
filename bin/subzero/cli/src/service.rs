@@ -222,8 +222,8 @@ pub fn new_full_base(
 	let force_authoring = config.force_authoring;
 	// To be more tolerant when fluctuating validators,
 	// we set this to "none" for now based on andresilva
-	// let backoff_authoring_blocks = Some(sc_consensus_slots::BackoffAuthoringOnFinalizedHeadLagging::default());
-	let backoff_authoring_blocks = Option::<()>::None;
+	// let backoff_authoring_blocks = Option::<()>::None;
+	let backoff_authoring_blocks = Some(sc_consensus_slots::BackoffAuthoringOnFinalizedHeadLagging::default());
 	let name = config.network.node_name.clone();
 	let enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
