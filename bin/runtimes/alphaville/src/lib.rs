@@ -73,9 +73,15 @@ use sp_inherents::{InherentData, CheckInherentsResult};
 use static_assertions::const_assert;
 use pallet_contracts::WeightInfo;
 
+use module_sense;
+// use module_kilt;
+// use module_payment;
+// use module_currencies;
+// use module_airdrop;
 use module_crowdfunding;
 use module_governance;
-// use module_nft;
+use module_item;
+use module_hypaspace;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -116,8 +122,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// and set impl_version to 0. If only runtime
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
-	spec_version: 11,
-	impl_version: 2,
+	spec_version: 15,
+	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
@@ -162,20 +168,21 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 // Module accounts of runtime
 //
 
-parameter_types! {
-	pub const ZeroTreasuryModuleId: ModuleId = ModuleId(*b"z/schatz");
-	pub const StakingPoolModuleId: ModuleId = ModuleId(*b"z/sicher");
-	pub const CrowdfundingModuleId: ModuleId = ModuleId(*b"z/krauts");
-	pub const NftModuleId: ModuleId = ModuleId(*b"z/sammla");
-}
+// parameter_types! {
+// 	// pub const ZeroTreasuryModuleId: ModuleId = ModuleId(*b"z/schatz");
+// 	// pub const StakingPoolModuleId: ModuleId = ModuleId(*b"z/sicher");
+// 	pub const CrowdfundingModuleId: ModuleId = ModuleId(*b"modraise");
+// 	pub const GovernanceModuleId: ModuleId = ModuleId(*b"modchord");
+// 	pub const SenseModuleId: ModuleId = ModuleId(*b"modsense");
+// }
 
-pub fn get_all_module_accounts() -> Vec<AccountId> {
-	vec![
-		// ZeroTreasuryModuleId::get().into_account(),
-		// StakingPoolModuleId::get().into_account(),
-		// CrowdfundingModuleId::get().into_account(),
-	]
-}
+// pub fn get_all_module_accounts() -> Vec<AccountId> {
+// 	vec![
+// 		CrowdfundingModuleId::get().into_account(),
+// 		GovernanceModuleId::get().into_account(),
+// 		SenseModuleId::get().into_account(),
+// 	]
+// }
 
 //
 //
@@ -1032,16 +1039,33 @@ impl pallet_assets::Config for Runtime {
 }
 
 //
-//
+//	sense
+//	a rating layer for network actors
+//	TODO
+//	SenseModuleId::get().into_account(),
 //
 
-// CROWDFUNDING
+parameter_types! {
+	// pub const SenseModuleId: ModuleId = ModuleId(*b"modsense");
+}
 
-// type EnsureRootOrHalfCouncil = EnsureOneOf<
-// 	AccountId,
-// 	EnsureRoot<AccountId>,
-// 	pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>
-// >;
+impl module_sense::Config for Runtime {
+	// TODO: tbd
+	// type ModuleId = SenseModuleId;
+	type Event = Event;
+	type ForceOrigin = EnsureRoot<AccountId>;
+}
+
+//
+//	crowdfunding
+//	fundraising module
+//
+//	TODO
+//	type EnsureRootOrHalfCouncil = EnsureOneOf<
+// 		AccountId,
+// 		EnsureRoot<AccountId>,
+// 		pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>
+//	>;
 
 parameter_types! {
 
@@ -1065,13 +1089,14 @@ parameter_types! {
 	// TODO: fees
 	pub const CreationFee: Balance = 1 * DOLLARS;
 
-
 }
 
 impl module_crowdfunding::Config for Runtime {
 
 	// ensure root or half council as admin role for campaigns.
 	// might need another instance of council as e.g. supervisor
+	// type ModuleAdmin = frame_system::EnsureRoot<AccountId>;
+
 	type GameDAOAdminOrigin = pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>;
 	type Currency = Balances;
 	type Event = Event;
@@ -1092,13 +1117,18 @@ impl module_crowdfunding::Config for Runtime {
 
 }
 
+//
+//	governance
+//	coordinated withdrawal
+//
+
 parameter_types! {
-
 	pub const MaxProposalsPerBlock: usize = 3;
-
 }
 
 impl module_governance::Config for Runtime {
+
+	// type ModuleAdmin = frame_system::EnsureRoot<AccountId>;
 
 	type Currency = Balances;
 	type Event = Event;
@@ -1107,6 +1137,103 @@ impl module_governance::Config for Runtime {
 	type MaxProposalsPerBlock = MaxContributionsPerBlock;
 
 }
+
+//
+//	unique
+//	general unique assets bounds and params
+//
+
+// parameter_types! {
+
+// 	//	quantity bounds
+// 	//	maximum realms
+//     pub const MaxRealms: u128 = 2^16;
+//     //	maxium realms governed by one address
+//     pub const MaxRealmsPerAddress: u64 = 4;
+//     //	maximum classes contained in a realm
+//     pub const MaxClassesPerRealm: u128 = 2^32;
+//     //	maximum classes governed by an address
+//     pub const MaxClassesPerAddress: u64 = 16;
+//     //	max total number of assets
+//     pub const MaxAssets: u128 = 2^64
+//     //	max assets held hostage by an address
+//     pub const MaxAssetsPerAddress: u64 = 256;
+//     //	max assets per class
+//     pub const MaxAssetsPerClass: u128 = 2^32;
+
+//     //	special case bundles
+//     //	max assets in a bundle
+//     pub const MaxAssetsPerBundle: u128 = 1024;
+//     //	max bundles held by an address
+//     pub const MaxBundlesPerAddress: u64 = 256;
+
+//     //
+// 	pub const BasePrice: Balance = 1 * DOLLARS;
+
+// }
+
+// impl module_asset::Config for Runtime {
+
+// 	type SuperAdmin = frame_system::EnsureRoot<AccountId>;
+
+// 	type Time = pallet_timestamp::Module<Runtime>;
+// 	type Randomness = RandomnessCollectiveFlip;
+// 	type Currency = Balances;
+
+// 	type BasePrice = BasePrice;
+// 	type Event = Event;
+
+// 	type MaxRealms = MaxRealms;
+// 	type MaxRealmsPerAddress = MaxRealmsPerAddress;
+
+// 	type MaxClassesPerRealm = MaxClassesPerRealm;
+// 	type MaxClassesPerAddress = MaxClassesPerAddress;
+
+// 	type MaxAssets = MaxAssets;
+// 	type MaxAssetsPerAddress = MaxAssetsPerAddress;
+// 	type MaxAssetsPerClass = MaxAssetsPerClass;
+// 	type MaxAssetsPerBundle = MaxAssetsPerBundle;
+
+// 	type MaxBundlesPerAddress = MaxBundlesPerAddress;
+
+// }
+
+
+// implementation borrowed from dan forbes
+
+parameter_types! {
+    pub const MaxAssets: u128 = 2^64;
+    pub const MaxAssetsPerUser: u64 = 1024;
+}
+
+impl module_item::Config for Runtime {
+    type ItemAdmin = frame_system::EnsureRoot<AccountId>;
+    type ItemInfo = module_hypaspace::HypaspaceInfo<Hash, Moment>;
+    type ItemLimit = MaxAssets;
+    type UserItemLimit = MaxAssetsPerUser;
+    type Event = Event;
+}
+
+parameter_types! {
+    pub const BasePrice: Balance = 1 * DOLLARS;
+}
+
+impl module_hypaspace::Config for Runtime {
+
+    type Spaces = module_item::Module<Runtime>;
+    type Time = pallet_timestamp::Module<Runtime>;
+
+    type Randomness = RandomnessCollectiveFlip;
+    type Currency = Balances;
+
+    type BasePrice = BasePrice;
+    type Event = Event;
+
+}
+
+//
+//
+//
 
 // #[cfg(feature = "with-nft")]
 
@@ -1183,37 +1310,25 @@ construct_runtime!(
 		Tips: pallet_tips::{Module, Call, Storage, Event<T>},
 		Mmr: pallet_mmr::{Module, Storage},
 		Lottery: pallet_lottery::{Module, Call, Storage, Event<T>},
+		Proxy: pallet_proxy::{Module, Call, Storage, Event<T>},
 
-		//
-		//
-		//
-
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
+		Contracts: pallet_contracts::{Module, Call, Config<T>, Storage, Event<T>},
+		Identity: pallet_identity::{Module, Call, Storage, Event<T>},
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 
 		//
 		//
 		//
 
-		Proxy: pallet_proxy::{Module, Call, Storage, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
-		Contracts: pallet_contracts::{Module, Call, Config<T>, Storage, Event<T>},
-		Identity: pallet_identity::{Module, Call, Storage, Event<T>},
-
 		//
-
-		// OrmlNFT: orml_nft::{Module, Storage},
-
+		ZeroSense: module_sense::{Module, Call, Storage, Event<T>},
+		ZeroItem: module_item::{Module, Call, Storage, Event<T>},
 		//
-		// custom modules and vendors
-		//
-
 		GameDAOCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
 		GameDAOGovernance: module_governance::{Module, Call, Storage, Event<T>},
-		// #[cfg(feature = "with-nft")]
-		// GameDAONFT: module_nft::{Module, Call, Storage, Event<T>},
-
-		// Ipfs: module_ipfs::{Module, Call, Storage, Event<T>},
-
+		//
+		Hypaspace: module_hypaspace::{Module, Call, Storage, Event<T>},
 	}
 );
 

@@ -2,15 +2,10 @@
 # because they're too often out of date,
 # preventing them from being used to build subzero/Polkadot.
 
-FROM phusion/baseimage:0.11 as builder
-LABEL maintainer="devops@zero.io"
-LABEL description="This is the build stage for subzero. Here we create the binary."
-
+FROM phusion/baseimage:0.11 as baseimage
 ENV DEBIAN_FRONTEND=noninteractive
 
-ARG PROFILE=release
 WORKDIR /subzero
-
 COPY . /subzero
 
 RUN apt-get update && \
@@ -21,10 +16,17 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 	export PATH="$PATH:$HOME/.cargo/bin" && \
 	rustup toolchain install nightly && \
 	rustup target add wasm32-unknown-unknown --toolchain nightly && \
-	rustup default stable && \
-	cargo +nightly build "--$PROFILE"
+	rustup default stable
 
-# ===== SECOND STAGE ======
+# ===== STAGE 2 ======
+
+FROM baseimage as builder
+ARG PROFILE=release
+
+RUN	export PATH="$PATH:$HOME/.cargo/bin" && \
+	cargo build "--$PROFILE"
+
+# ===== STAGE 3 ======
 
 FROM phusion/baseimage:0.11
 LABEL maintainer="devops@zero.io"

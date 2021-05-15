@@ -1,0 +1,44 @@
+version: "3"
+
+services:
+
+  subzero-a:
+    image: playzero/subzero:local
+    user: "$UID:$GID"
+    ports:
+      - "30335:30333"
+      - "9945:9944"
+    volumes:
+      - ./data-a:/data
+    command: [
+        "/usr/local/bin/subzero",
+        "--name", "lab-${NAME}",
+        "--alice",
+        "--ws-external",
+        "--rpc-external",
+        "--rpc-cors", "all",
+        "--rpc-methods", "unsafe",
+        "--telemetry-url", "wss://telemetry.polkadot.io/submit/ 5"
+      ]
+
+  subzero-b:
+    image: playzero/subzero:local
+    user: "$UID:$GID"
+    ports:
+      - "30336:30333"
+      - "9946:9944"
+    volumes:
+      - ./data-b/lab-bob:/data
+    command: [
+        "/usr/local/bin/subzero",
+        "--name", "lab-${NAME}",
+        "--bob",
+        "--ws-external",
+        "--rpc-external",
+        "--rpc-cors", "all",
+        "--rpc-methods", "unsafe",
+        "--telemetry-url", "wss://telemetry.polkadot.io/submit/ 5"
+      ]
+
+volumes:
+  data:

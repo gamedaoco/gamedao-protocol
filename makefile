@@ -30,7 +30,17 @@ dev-purge:
 docker-build:
 	docker build -t playzero/subzero:local .
 docker-run:
-	docker run playzero/subzero:local /usr/local/bin/subzero --name hello-joy
+	docker run \
+	-p 9944:9944 \
+	-p 30333:30333 \
+	playzero/subzero:local \
+	/usr/local/bin/subzero \
+	--dev --name hello-joy \
+	--ws-external \
+	--rpc-external \
+	--rpc-cors all \
+	--rpc-methods unsafe
+
 docker-release:
 	# 	TODO:
 	# 	1 bump versions of
@@ -41,3 +51,16 @@ docker-release:
 	# 	3 build docker
 	# 	4 tag docker
 	# 	5 push docker tag + latest
+
+docker-run-latest:
+	docker run \
+	-p 9944:9944 \
+	-p 30333:30333 \
+	playzero/subzero:latest \
+	/usr/local/bin/subzero \
+	--dev \
+	--name hello-joy \
+	--ws-external \
+	--rpc-external \
+	--rpc-cors all \
+	--rpc-methods unsafe

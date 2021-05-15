@@ -1,0 +1,33 @@
+[package]
+name = 'module-hypaspace'
+version = '1.0.0'
+
+edition = '2018'
+license = 'Unlicense'
+
+[package.metadata.docs.rs]
+targets = ['x86_64-unknown-linux-gnu']
+
+[dependencies]
+codec = { default-features = false, features = ['derive'], package = 'parity-scale-codec', version = '2.0.0' }
+
+frame-support = { version = "3.0.0", default-features = false, path = "../../frame/support" }
+frame-system = { version = "3.0.0", default-features = false, path = "../../frame/system" }
+sp-runtime = { version = "3.0.0", default-features = false, path = "../../primitives/runtime" }
+sp-std = { version = "3.0.0", default-features = false, path = "../../primitives/std" }
+sp-core = { version = "3.0.0", default-features = false, path = "../../primitives/core" }
+sp-io = { version = "3.0.0", default-features = false, path = "../../primitives/io" }
+
+module-item = { path = "../item", default-features = false, version = '1.0.0' }
+
+[features]
+default = ['std']
+std = [
+    'codec/std',
+    'frame-support/std',
+    'frame-system/std',
+    'module-item/std',
+    'sp-core/std',
+    'sp-runtime/std',
+    'sp-std/std',
+]

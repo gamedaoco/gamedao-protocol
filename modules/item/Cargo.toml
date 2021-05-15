@@ -1,0 +1,44 @@
+[package]
+edition = '2018'
+name = 'module-item'
+description = 'a unique item interface.'
+version = '1.0.0'
+authors = [
+	'2075@zero.io',
+	'Dan Forbes <dan@parity.io>'
+]
+license = 'Unlicense'
+homepage = 'https://github.com/danforbes/pallet-nft'
+repository = 'https://github.com/danforbes/pallet-nft'
+readme = 'README.md'
+keywords = ['substrate', 'frame', 'nft', 'blockchain', 'asset']
+categories = ['cryptography::cryptocurrencies', 'data-structures', 'no-std']
+
+[package.metadata.docs.rs]
+targets = ['x86_64-unknown-linux-gnu']
+
+[dependencies]
+serde = { version = "1.0.116", optional = true }
+
+# Substrate dependencies
+codec = { default-features = false, features = ['derive'], package = 'parity-scale-codec', version = '2.0.0' }
+
+frame-support = { version = "3.0.0", default-features = false, path = "../../frame/support" }
+frame-system = { version = "3.0.0", default-features = false, path = "../../frame/system" }
+sp-runtime = { version = "3.0.0", default-features = false, path = "../../primitives/runtime" }
+sp-std = { version = "3.0.0", default-features = false, path = "../../primitives/std" }
+
+[dev-dependencies]
+sp-core = { version = "3.0.0", default-features = false, path = "../../primitives/core" }
+sp-io = { version = "3.0.0", default-features = false, path = "../../primitives/io" }
+
+[features]
+default = ['std']
+std = [
+    'serde',
+    'codec/std',
+    'frame-support/std',
+    'frame-system/std',
+    'sp-runtime/std',
+    'sp-std/std',
+]
