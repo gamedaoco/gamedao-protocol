@@ -62,10 +62,10 @@ pub struct Test;
 
 impl Config for Test {
     type Event = ();
-    type CommodityAdmin = frame_system::EnsureRoot<Self::AccountId>;
-    type CommodityInfo = Vec<u8>;
-    type CommodityLimit = MaxCommodities;
-    type UserCommodityLimit = MaxCommoditiesPerUser;
+    type ItemAdmin = frame_system::EnsureRoot<Self::AccountId>;
+    type ItemInfo = Vec<u8>;
+    type ItemLimit = MaxCommodities;
+    type UserItemLimit = MaxCommoditiesPerUser;
 }
 
 // system under test

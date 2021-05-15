@@ -1,7 +1,7 @@
 // Tests to be written here
 
 use crate::mock::*;
-use crate::nft::UniqueAssets;
+use crate::nft::UniqueItems;
 use crate::*;
 use frame_support::{assert_err, assert_ok, Hashable};
 use sp_core::H256;
@@ -11,30 +11,30 @@ fn mint() {
     new_test_ext().execute_with(|| {
         assert_eq!(SUT::total(), 0);
         assert_eq!(SUT::total_for_account(1), 0);
-        assert_eq!(<SUT as UniqueAssets<_>>::total(), 0);
-        assert_eq!(<SUT as UniqueAssets<_>>::total_for_account(&1), 0);
+        assert_eq!(<SUT as UniqueItems<_>>::total(), 0);
+        assert_eq!(<SUT as UniqueItems<_>>::total_for_account(&1), 0);
         assert_eq!(
-            SUT::account_for_commodity::<H256>(Vec::<u8>::default().blake2_256().into()),
+            SUT::account_for_item::<H256>(Vec::<u8>::default().blake2_256().into()),
             0
         );
 
         assert_ok!(SUT::mint(Origin::root(), 1, Vec::<u8>::default()));
 
         assert_eq!(SUT::total(), 1);
-        assert_eq!(<SUT as UniqueAssets<_>>::total(), 1);
+        assert_eq!(<SUT as UniqueItems<_>>::total(), 1);
         assert_eq!(SUT::burned(), 0);
-        assert_eq!(<SUT as UniqueAssets<_>>::burned(), 0);
+        assert_eq!(<SUT as UniqueItems<_>>::burned(), 0);
         assert_eq!(SUT::total_for_account(1), 1);
-        assert_eq!(<SUT as UniqueAssets<_>>::total_for_account(&1), 1);
-        let commodities_for_account = SUT::commodities_for_account::<u64>(1);
-        assert_eq!(commodities_for_account.len(), 1);
+        assert_eq!(<SUT as UniqueItems<_>>::total_for_account(&1), 1);
+        let items_for_account = SUT::items_for_account::<u64>(1);
+        assert_eq!(items_for_account.len(), 1);
         assert_eq!(
-            commodities_for_account[0].0,
+            items_for_account[0].0,
             Vec::<u8>::default().blake2_256().into()
         );
-        assert_eq!(commodities_for_account[0].1, Vec::<u8>::default());
+        assert_eq!(items_for_account[0].1, Vec::<u8>::default());
         assert_eq!(
-            SUT::account_for_commodity::<H256>(Vec::<u8>::default().blake2_256().into()),
+            SUT::account_for_item::<H256>(Vec::<u8>::default().blake2_256().into()),
             1
         );
     });
@@ -103,9 +103,9 @@ fn burn() {
         assert_eq!(SUT::total(), 0);
         assert_eq!(SUT::burned(), 1);
         assert_eq!(SUT::total_for_account(1), 0);
-        assert_eq!(SUT::commodities_for_account::<u64>(1), vec![]);
+        assert_eq!(SUT::items_for_account::<u64>(1), vec![]);
         assert_eq!(
-            SUT::account_for_commodity::<H256>(Vec::<u8>::default().blake2_256().into()),
+            SUT::account_for_item::<H256>(Vec::<u8>::default().blake2_256().into()),
             0
         );
     });
@@ -147,16 +147,16 @@ fn transfer() {
         assert_eq!(SUT::burned(), 0);
         assert_eq!(SUT::total_for_account(1), 0);
         assert_eq!(SUT::total_for_account(2), 1);
-        assert_eq!(SUT::commodities_for_account::<u64>(1), vec![]);
-        let commodities_for_account = SUT::commodities_for_account::<u64>(2);
-        assert_eq!(commodities_for_account.len(), 1);
+        assert_eq!(SUT::items_for_account::<u64>(1), vec![]);
+        let items_for_account = SUT::items_for_account::<u64>(2);
+        assert_eq!(items_for_account.len(), 1);
         assert_eq!(
-            commodities_for_account[0].0,
+            items_for_account[0].0,
             Vec::<u8>::default().blake2_256().into()
         );
-        assert_eq!(commodities_for_account[0].1, Vec::<u8>::default());
+        assert_eq!(items_for_account[0].1, Vec::<u8>::default());
         assert_eq!(
-            SUT::account_for_commodity::<H256>(Vec::<u8>::default().blake2_256().into()),
+            SUT::account_for_item::<H256>(Vec::<u8>::default().blake2_256().into()),
             2
         );
     });
@@ -199,7 +199,7 @@ fn transfer_err_max_user() {
         assert_ok!(SUT::mint(Origin::root(), 1, vec![1]));
         assert_ok!(SUT::mint(Origin::root(), 2, Vec::<u8>::default()));
         assert_eq!(
-            SUT::account_for_commodity::<H256>(Vec::<u8>::default().blake2_256().into()),
+            SUT::account_for_item::<H256>(Vec::<u8>::default().blake2_256().into()),
             2
         );
 
