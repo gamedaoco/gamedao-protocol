@@ -7,12 +7,13 @@ members = [
 	# "bin/primitives",
 	# "modules/crowdfunding",
 	# "modules/governance",
-	"modules/sense",
-	# "modules/nft",
-
+	# "modules/sense",
+	# "modules/item",
+	# "modules/hypaspace",
+	# "modules/horizon",
+	# "modules/kilt",
 	# "modules/airdrop",
 	# "modules/exchange",
-	# "vendors/pallet-nft",
 
 ]
 

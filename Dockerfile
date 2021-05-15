@@ -3,14 +3,9 @@
 # preventing them from being used to build subzero/Polkadot.
 
 FROM phusion/baseimage:0.11 as baseimage
-LABEL maintainer="devops@zero.io"
-LABEL description="This is the build stage for subzero. Here we create the binary."
-
 ENV DEBIAN_FRONTEND=noninteractive
 
-ARG PROFILE=release
 WORKDIR /subzero
-
 COPY . /subzero
 
 RUN apt-get update && \
@@ -29,7 +24,7 @@ FROM baseimage as builder
 ARG PROFILE=release
 
 RUN	export PATH="$PATH:$HOME/.cargo/bin" && \
-	cargo +nightly build "--$PROFILE"
+	cargo build "--$PROFILE"
 
 # ===== STAGE 3 ======
 
