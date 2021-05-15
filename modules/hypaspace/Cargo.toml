@@ -18,7 +18,7 @@ sp-std = { version = "3.0.0", default-features = false, path = "../../primitives
 sp-core = { version = "3.0.0", default-features = false, path = "../../primitives/core" }
 sp-io = { version = "3.0.0", default-features = false, path = "../../primitives/io" }
 
-module-uniq = { path = "../uniq", default-features = false, version = '1.0.0' }
+module-item = { path = "../item", default-features = false, version = '1.0.0' }
 
 [features]
 default = ['std']
@@ -26,7 +26,7 @@ std = [
     'codec/std',
     'frame-support/std',
     'frame-system/std',
-    'module-uniq/std',
+    'module-item/std',
     'sp-core/std',
     'sp-runtime/std',
     'sp-std/std',

@@ -14,7 +14,11 @@ use frame_system::ensure_signed;
 use sp_core::RuntimeDebug;
 use sp_std::vec::Vec;
 
-use module_uniq::nft::UniqueAssets;
+use module_item::nft::UniqueItems;
+
+//
+//
+//
 
 #[cfg(test)]
 mod mock;
@@ -22,7 +26,15 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-const MODULE_ID: LockIdentifier = *b"hyperspc";
+//
+//
+//
+
+const MODULE_ID: LockIdentifier = *b"hypaspce";
+
+//
+//
+//
 
 /// unique properties
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Default, RuntimeDebug)]
@@ -37,6 +49,10 @@ pub struct HypaspaceMetadata {
     name: Vec<u8>,
 }
 
+//
+//
+//
+
 type BalanceOf<T> =
     <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 type HypaspaceInfoOf<T> =
@@ -44,10 +60,10 @@ type HypaspaceInfoOf<T> =
 
 pub trait Config: frame_system::Config {
 
-    type Spaces: module_uniq::nft::UniqueAssets<
+    type Spaces: UniqueItems<
         Self::AccountId,
-        AssetId = Self::Hash,
-        AssetInfo = HypaspaceInfoOf<Self>,
+        ItemId = Self::Hash,
+        ItemInfo = HypaspaceInfoOf<Self>,
     >;
     type BasePrice: Get<BalanceOf<Self>>;
     type Time: frame_support::traits::Time;
@@ -57,11 +73,21 @@ pub trait Config: frame_system::Config {
 
 }
 
+//
+//
+//
+
 decl_storage! {
     trait Store for Module<T: Config> as Hypaspace {
+
         MetadataForSpace get(fn metadata_for_space): map hasher(identity) T::Hash => HypaspaceMetadata;
+
     }
 }
+
+//
+//
+//
 
 decl_event!(
     pub enum Event<T>
@@ -69,15 +95,30 @@ decl_event!(
         SpaceId = <T as frame_system::Config>::Hash,
         AccountId = <T as frame_system::Config>::AccountId,
     {
-        Conjured(SpaceId, AccountId),
+        Materialize(SpaceId, AccountId),
     }
 );
 
+//
+//
+//
+
 decl_error! {
-    pub enum Error for Module<T: Config> {
-        // SpaceConjureFailure,
-    }
+	pub enum Error for Module<T: Config> {
+		/// Materialization of Space failed.
+		MaterializationFailed,
+		/// Entity Exists
+		SpaceExists,
+		/// Entity Unknown
+		SpaceUnknown,
+		/// Guru Meditation
+		GuruMeditation,
+	}
 }
+
+//
+//
+//
 
 decl_module! {
     pub struct Module<T: Config> for enum Call where origin: T::Origin {
@@ -89,7 +130,7 @@ decl_module! {
         // /
         // / The dispatch origin for this call must be Signed.
         // #[weight = 10_000]
-        // pub fn conjure(origin, name: Vec<u8>) -> dispatch::DispatchResult {
+        // pub fn materialize(origin, name: Vec<u8>) -> dispatch::DispatchResult {
         //     let who = ensure_signed(origin)?;
         //     T::Currency::set_lock(MODULE_ID, &who, T::BasePrice::get(), WithdrawReasons::Fee | WithdrawReasons::Reserve);
         //     match T::Spaces::mint(&who, HypaspaceInfo{dob: T::Time::now(), dna: T::Randomness::random(&MODULE_ID)}) {
