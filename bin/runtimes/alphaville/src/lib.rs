@@ -122,8 +122,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// and set impl_version to 0. If only runtime
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
-	spec_version: 15,
-	impl_version: 0,
+	spec_version: 16,
+	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
@@ -1139,7 +1139,7 @@ impl module_governance::Config for Runtime {
 }
 
 //
-//	unique
+//	i t e m
 //	general unique assets bounds and params
 //
 
@@ -1199,7 +1199,11 @@ impl module_governance::Config for Runtime {
 // }
 
 
-// implementation borrowed from dan forbes
+// basic implementation borrowed from dan forbes nft
+// TODO
+// add classes
+// add realms
+// add currencies
 
 parameter_types! {
     pub const MaxAssets: u128 = 2^64;
@@ -1207,11 +1211,16 @@ parameter_types! {
 }
 
 impl module_item::Config for Runtime {
+
     type ItemAdmin = frame_system::EnsureRoot<AccountId>;
+// 	type Currency = Currency<Runtime, GetNativeCurrencyId>;
+// 	type WeightInfo = weights::module_item::WeightInfo<Runtime>;
+
     type ItemInfo = module_hypaspace::HypaspaceInfo<Hash, Moment>;
     type ItemLimit = MaxAssets;
     type UserItemLimit = MaxAssetsPerUser;
     type Event = Event;
+// 	type WeightInfo = weights::module_item::WeightInfo<Runtime>;
 }
 
 parameter_types! {
@@ -1221,13 +1230,14 @@ parameter_types! {
 impl module_hypaspace::Config for Runtime {
 
     type Spaces = module_item::Module<Runtime>;
-    type Time = pallet_timestamp::Module<Runtime>;
 
+    type Time = pallet_timestamp::Module<Runtime>;
     type Randomness = RandomnessCollectiveFlip;
     type Currency = Balances;
-
+// 	type Currency = Currency<Runtime, GetNativeCurrencyId>;
     type BasePrice = BasePrice;
     type Event = Event;
+// 	type WeightInfo = weights::module_item::WeightInfo<Runtime>;
 
 }
 
@@ -1323,12 +1333,17 @@ construct_runtime!(
 
 		//
 		ZeroSense: module_sense::{Module, Call, Storage, Event<T>},
-		ZeroItem: module_item::{Module, Call, Storage, Event<T>},
+		// ZeroCurrencies: module_currencies::{Module, Call, Storage, Event<T>},
+		// ZeroAirdrop: module_airdrop::{Module, Call, Storage, Event<T>},
+
 		//
-		GameDAOCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
-		GameDAOGovernance: module_governance::{Module, Call, Storage, Event<T>},
+		GameDaoCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
+		GameDaoGovernance: module_governance::{Module, Call, Storage, Event<T>},
+
 		//
+		HypaspaceItems: module_item::{Module, Call, Storage, Event<T>},
 		Hypaspace: module_hypaspace::{Module, Call, Storage, Event<T>},
+
 	}
 );
 
