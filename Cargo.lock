@@ -774,20 +774,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "chain-spec-builder"
-version = "2.0.0"
-dependencies = [
- "ansi_term 0.12.1",
- "rand 0.7.3",
- "sc-chain-spec",
- "sc-keystore",
- "sp-core",
- "sp-keystore",
- "structopt",
- "subzero-cli",
-]
-
-[[package]]
 name = "chrono"
 version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3664,6 +3650,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9f1c5b025cda876f66ef43a113f91ebc9f4ccef34843000e0adf6ebbab84e21"
 dependencies = [
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "module-control"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-balances",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "sp-storage",
+ "zero-primitives",
 ]
 
 [[package]]
@@ -8394,14 +8398,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "subkey"
-version = "2.0.0"
-dependencies = [
- "sc-cli",
- "structopt",
-]
-
-[[package]]
 name = "substrate-bip39"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8649,7 +8645,7 @@ checksum = "1e81da0851ada1f3e9d4312c704aa4f8806f0f9d69faaf8df2f3464b4a9437c2"
 
 [[package]]
 name = "subzero-cli"
-version = "1.15.0"
+version = "1.17.0"
 dependencies = [
  "assert_cmd",
  "frame-benchmarking-cli",
@@ -10057,7 +10053,7 @@ dependencies = [
 
 [[package]]
 name = "zero-primitives"
-version = "1.10.1"
+version = "1.15.0"
 dependencies = [
  "frame-system",
  "parity-scale-codec",
@@ -10071,7 +10067,7 @@ dependencies = [
 
 [[package]]
 name = "zero-runtime"
-version = "1.15.0"
+version = "1.17.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -10080,6 +10076,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal",
+ "module-control",
  "module-crowdfunding",
  "module-governance",
  "module-hypaspace",

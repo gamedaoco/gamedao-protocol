@@ -1,19 +1,26 @@
 [workspace]
 members = [
 	"bin/subzero/cli",
-	"bin/utils/chain-spec-builder",
-	"bin/utils/subkey",
+	# "bin/utils/chain-spec-builder",
+	# "bin/utils/subkey",
 
-	# "bin/primitives",
-	# "modules/crowdfunding",
-	# "modules/governance",
-	# "modules/sense",
-	# "modules/item",
-	# "modules/hypaspace",
+	"bin/primitives",
+
+	"modules/sense",
+	"modules/item",
 	# "modules/horizon",
 	# "modules/kilt",
 	# "modules/airdrop",
 	# "modules/exchange",
+
+	# dao
+	"modules/control",
+	"modules/crowdfunding",
+	"modules/governance",
+	# "modules/scout",
+
+	# hypa
+	"modules/hypaspace",
 
 ]
 
