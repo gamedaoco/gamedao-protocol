@@ -89,7 +89,7 @@ pub trait Config: timestamp::Config + crowdfunding::Config {
 }
 
 // TODO replace with config
-const MAX_REQUESTS_PER_BLOCK: usize = 3;
+const MAX_PROPOSALS_PER_BLOCK: usize = 3;
 const MAX_PROPOSAL_DURATION: u32 = 60480;
 
 //
@@ -232,7 +232,7 @@ decl_module! {
 			// ending in target block
 			// does not exceed maximum
 			let proposals = Self::proposals_by_block(expiry);
-			ensure!(proposals.len() < MAX_REQUESTS_PER_BLOCK, "Maximum number of proposals is reached for the target block, try another block");
+			ensure!(proposals.len() < MAX_PROPOSALS_PER_BLOCK, "Maximum number of proposals is reached for the target block, try another block");
 
 			// check add
 			let proposals_count = Self::proposals_count();
