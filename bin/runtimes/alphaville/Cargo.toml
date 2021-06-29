@@ -1,6 +1,6 @@
 [package]
 name = "zero-runtime"
-version = "1.15.0"
+version = "1.17.0"
 authors = ["zero collective <play@zero.io>"]
 description = "videogames x metaverse"
 edition = "2018"
@@ -85,14 +85,21 @@ pallet-transaction-payment = { version = "3.0.0", default-features = false, path
 pallet-transaction-payment-rpc-runtime-api = { version = "3.0.0", default-features = false, path = "../../../frame/transaction-payment/rpc/runtime-api/" }
 pallet-vesting = { version = "3.0.0", default-features = false, path = "../../../frame/vesting" }
 
+# zero core
 module-sense = { default-features = false, path = "../../../modules/sense" }
+# module-currencies = { default-features = false, path = "../../../modules/currencies" }
+# module-scout = { default-features = false, path = "../../../modules/scout" }
+# module-airdrop = { default-features = false, path = "../../../modules/airdrop" }
 # module-kilt = { default-features = false, path = "../../../modules/kilt" }
-module-item = { default-features = false, path = "../../../modules/item" }
-module-hypaspace = { default-features = false, path = "../../../modules/hypaspace" }
+
+# gamedao
+module-control = { default-features = false, path = "../../../modules/control" }
 module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
 module-governance = { default-features = false, path = "../../../modules/governance" }
-# module-tcr = { default-features = false, path = "../../../modules/tcr" }
-# module-airdrop = { default-features = false, path = "../../../modules/airdrop" }
+
+# hypaspace
+module-item = { default-features = false, path = "../../../modules/item" }
+module-hypaspace = { default-features = false, path = "../../../modules/hypaspace" }
 
 [build-dependencies]
 substrate-wasm-builder = { version = "4.0.0", path = "../../../utils/wasm-builder" }
@@ -162,6 +169,13 @@ std = [
 	"pallet-society/std",
 	"pallet-recovery/std",
 	"pallet-vesting/std",
+	#
+	"module-crowdfunding/std",
+	"module-governance/std",
+	"module-sense/std",
+	"module-item/std",
+	"module-hypaspace/std",
+
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",

@@ -1,7 +1,7 @@
   "Address": "MultiAddress",
   "LookupSource": "MultiAddress",
 
-  "AccountInfo": "AccountInfoWithTripleRefCount",
+  "AccountInfo": "AccountInfoWithDualRefCount",
   "AccountInfoWithDualRefCount": {
     "nonce": "Index",
     "consumers": "RefCount",

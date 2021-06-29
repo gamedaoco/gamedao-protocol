@@ -122,8 +122,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// and set impl_version to 0. If only runtime
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
-	spec_version: 16,
-	impl_version: 1,
+	spec_version: 17,
+	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
@@ -1057,6 +1057,33 @@ impl module_sense::Config for Runtime {
 }
 
 //
+//	control
+//	dao body
+//
+
+parameter_types! {
+	pub const Fee: Balance = 10 * DOLLARS;
+	pub const MaxBodiesPerAccount: usize = 10;
+	pub const MaxCreationsPerBlock: usize = 3;
+}
+
+impl module_control::Config for Runtime {
+
+	type ForceOrigin = EnsureRoot<AccountId>;
+
+	type Currency = Balances;
+	type CreationFee = Fee;
+
+	type MaxBodiesPerAccount = MaxBodiesPerAccount;
+	type MaxCreationsPerBlock = MaxCreationsPerBlock;
+
+	type Event = Event;
+	type Randomness = RandomnessCollectiveFlip;
+
+}
+
+
+//
 //	crowdfunding
 //	fundraising module
 //
@@ -1337,6 +1364,7 @@ construct_runtime!(
 		// ZeroAirdrop: module_airdrop::{Module, Call, Storage, Event<T>},
 
 		//
+		GameDaoControl: module_control::{Module, Call, Storage, Event<T>},
 		GameDaoCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
 		GameDaoGovernance: module_governance::{Module, Call, Storage, Event<T>},
 
