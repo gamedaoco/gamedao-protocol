@@ -10,7 +10,7 @@ test-mod:
 # release
 
 build:
-	cargo +nightly build --release
+	cargo build --release
 run:
 	./target/release/subzero --tmp --name local-node
 purge:
@@ -31,6 +31,7 @@ docker-build:
 	docker build -t playzero/subzero:local .
 docker-run:
 	docker run \
+	-p 9933:9933 \
 	-p 9944:9944 \
 	-p 30333:30333 \
 	playzero/subzero:local \
@@ -54,6 +55,7 @@ docker-release:
 
 docker-run-latest:
 	docker run \
+	-p 9933:9933 \
 	-p 9944:9944 \
 	-p 30333:30333 \
 	playzero/subzero:latest \

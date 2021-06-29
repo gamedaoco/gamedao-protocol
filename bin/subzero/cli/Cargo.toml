@@ -3,7 +3,7 @@ name = "subzero-cli"
 # this is the base version of subzero
 # we use semver for versioning cli and the runime:
 # NETWORK.PATCH.IMPL == 1.spec.impl
-version = "1.15.0"
+version = "1.17.0"
 authors = ["zero collective <play@zero.io>"]
 description = "videogames x metaverse"
 build = "build.rs"
@@ -99,7 +99,7 @@ pallet-staking = { version = "3.0.0", path = "../../../frame/staking" }
 pallet-grandpa = { version = "3.0.0", path = "../../../frame/grandpa" }
 
 # node-specific dependencies
-node-runtime = { package = "zero-runtime", version = "1.10.0", path = "../../runtimes/alphaville" }
+node-runtime = { package = "zero-runtime", version = "1.15.0", path = "../../runtimes/alphaville" }
 node-primitives = { package = "zero-primitives", version = "1.10.0", path = "../../primitives" }
 
 node-rpc = { version = "2.0.0", path = "../rpc" }
