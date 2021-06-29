@@ -132,6 +132,26 @@ pub enum AirDropCurrencyId {
 	GAME = 2,
 }
 
+// bodies
+
+// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+// pub enum BodyType {
+// 	INDIVIDUAL = 0, // individual address
+// 	COMPANY = 1,    // ...with a legal body
+// 	DAO = 2,        // ...governed by a dao
+// }
+
+// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+// pub enum BodyState {
+// 	INACTIVE = 0,
+// 	ACTIVE = 1,
+// 	LOCKED = 2,
+// }
+
+// roles
+
 #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum AuthoritysOriginId {
