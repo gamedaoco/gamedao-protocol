@@ -111,25 +111,26 @@ pub mod module {
 		id: Hash,                // general hash
 		index: u128,             // nonce
 		creator: AccountId,      // creator
-		controller: AccountId,   // current controller
-		treasury: AccountId,     // treasury
+		// controller: AccountId,   // current controller
+		// treasury: AccountId,     // treasury
 		name: Vec<u8>,           // body name
 		cid: Vec<u8>,            // cid -> ipfs
 		body: u8,                // individual | legal body | dao
-		state: u8,               // inactive | active | locked
-		currency: Vec<u8>,       // control assets to empower actors
+		asset: u8,               // control assets to empower actors
 		created: BlockNumber,
 		mutated: BlockNumber,
 	}
 
-	// /// Body Actors
-	// #[derive(Encode, Decode, Default, PartialEq, Eq)]
-	// #[cfg_attr(feature = "std", derive(Debug))]
-	// pub struct BodyActors<Hash,AccountId> {
-	// 	id: Hash,
-	// 	members: Vec<AccountId>, // members
-
-	// }
+	/// Body Config
+	// TODO: refactor to bits
+	#[derive(Encode, Decode, Default, PartialEq, Eq)]
+	#[cfg_attr(feature = "std", derive(Debug))]
+	pub struct BConfig<Balance> {
+		model:   u8,        // only TX by OS | fees are reserved | fees are moved to treasury
+		fee:    Balance,       // plain fee amount
+		asset:  u8,        // local asset id
+		limit:  u64,       // max members allowed
+	}
 
 	//
 	//	storage should be optimized to offload these maps to a graph / where more efficient
@@ -169,9 +170,8 @@ pub mod module {
 			/// Accessmodel of a body
 			/// 0 open, 1 invite by members, 2 invite by controller
 			BodyAccess get(fn body_access): map hasher(blake2_128_concat) T::Hash => u8;
-			/// Feemodel of a body
-			/// 0 tx only, 1 reserve, 2 transfer
-			BodyConfig get(fn body_config): map hasher(blake2_128_concat) T::Hash => u8;
+			/// Config
+			BodyConfig get(fn body_config): map hasher(blake2_128_concat) T::Hash => BConfig<T::Balance>;
 
 			/// the goode olde nonce
 			Nonce: u128;
@@ -203,7 +203,8 @@ pub mod module {
 				access: u8,                 // anybody can join | only member can add | only controller can add
 				model: u8,                   // only TX by OS | fees are reserved | fees are moved to treasury
 				fee: T::Balance,
-				currency: Vec<u8>,          // control assets to empower actors
+				asset: u8,                  // control assets to empower actors
+				limit: u64,                 // max members
 			) -> DispatchResult {
 
 				let creation_fee = T::CreationFee::get();
@@ -224,15 +225,14 @@ pub mod module {
 					index:    index.clone(),
 
 					creator:  creator.clone(),
-					controller:    controller.clone(),
-					treasury: treasury.clone(),
+					// controller:    controller.clone(),
+					// treasury: treasury.clone(),
 
 					name:     name.clone(),
 
 					cid:      cid,
 					body:     body.clone(),
-					state:    state.clone(),
-					currency: currency.clone(),
+					asset:    asset.clone(),
 
 					created:  now.clone(),
 					mutated:  now.clone(),
@@ -246,9 +246,17 @@ pub mod module {
 				<BodyController<T>>::insert( hash.clone(), controller.clone() );
 				<BodyTreasury<T>>::insert( hash.clone(), treasury.clone() );
 
-				// access + fees
+				// config
+				let config  = BConfig {
+					model:  model.clone(),
+					fee:   fee.clone(),
+					asset: asset.clone(),
+					limit: limit.clone(),
+				};
+				// TODO: Self::update_config
+				<BodyConfig<T>>::insert( hash.clone(), config );
+				// access control
 				<BodyAccess<T>>::insert( hash.clone(), access );
-				<BodyFees<T>>::insert( hash.clone(), (model, fee) );
 
 				// initiate member registry
 				Self::add( hash.clone(), creator.clone() );
@@ -335,13 +343,14 @@ pub mod module {
 			// TODO: access model
 
 			let config = Self::body_config(hash);
-			let model = config[0]
-			let fee = config[1]
 
 			if config.model != 0 {
 
-				// can pay fees
-				ensure!( <balances::Module<T>>::free_balance(account.clone()) >= config.fee, Error::<T>::BalanceTooLow );
+				// TODO: respect asset id
+
+				// can pay fees?
+				let fee = config.fee;
+				ensure!( <balances::Module<T>>::free_balance(account.clone()) >= fee, Error::<T>::BalanceTooLow );
 
 				if config.model == 1 {
 					// when fees==1 reserve fees until exit
@@ -349,7 +358,7 @@ pub mod module {
 				} else {
 					// when fees==2 send fee to treasury
 					let treasury = BodyTreasury::<T>::get(hash);
-					let _transfer = <balances::Module<T> as Currency<_>>::transfer(
+					let transfer = <balances::Module<T> as Currency<_>>::transfer(
 						&account,
 						&treasury,
 						config.fee,
