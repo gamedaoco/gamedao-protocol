@@ -1,0 +1,15 @@
+
+"Body": {
+    "id": "Hash",
+    "index": "u128",
+    "creator": "AccountId",
+    "owner": "AccountId",
+    "treasury": "AccountId",
+    "name": "Vec<u8>",
+    "cid": "Vec<u8>",
+    "body": "u8",
+    "state": "u8",
+    "currency": "Vec<u8>",
+    "created": "BlockNumber",
+    "mutated": "BlockNumber"
+  }
