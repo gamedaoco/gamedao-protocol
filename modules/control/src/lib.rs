@@ -85,7 +85,10 @@ pub mod module {
 		// supervision
 		type ForceOrigin: EnsureOrigin<Self::Origin>;
 
-		// base currency
+		// treasury, fees
+		// connect to individual gamedao treasury
+		// to separate fee collection from net
+		// type Treasury: Get<Self::AccountId>;
 		type Currency: ReservableCurrency<Self::AccountId>;
 		type CreationFee: Get<Self::Balance>;
 
@@ -111,12 +114,9 @@ pub mod module {
 		id: Hash,                // general hash
 		index: u128,             // nonce
 		creator: AccountId,      // creator
-		// controller: AccountId,   // current controller
-		// treasury: AccountId,     // treasury
 		name: Vec<u8>,           // body name
 		cid: Vec<u8>,            // cid -> ipfs
 		body: u8,                // individual | legal body | dao
-		asset: u8,               // control assets to empower actors
 		created: BlockNumber,
 		mutated: BlockNumber,
 	}
@@ -126,11 +126,14 @@ pub mod module {
 	#[derive(Encode, Decode, Default, PartialEq, Eq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct BConfig<Balance> {
-		model:   u8,        // only TX by OS | fees are reserved | fees are moved to treasury
-		fee:    Balance,       // plain fee amount
-		asset:  u8,        // local asset id
-		limit:  u64,       // max members allowed
+		fee_model: u8,     // only TX by OS | fees are reserved | fees are moved to treasury
+		fee: Balance,      // plain fee amount
+		gov_asset: u8,     // gov
+		pay_asset: u8,     // pay
+		access: u8,        // 0 open, 1 invite by members, 2 invite by controller
+		member_limit: u64, // max members allowed
 	}
+
 
 	//
 	//	storage should be optimized to offload these maps to a graph / where more efficient
@@ -139,19 +142,16 @@ pub mod module {
 	decl_storage! {
 		trait Store for Module<T: Config> as Control {
 
-			/// Body
+			/// Body by hash
 			Bodies get(fn body_by_hash): map hasher(blake2_128_concat) T::Hash => Body<T::Hash, T::AccountId, T::BlockNumber>;
 
-			/// Get a Body for specific Nonce
+			/// Bodies by creator
+			CreatedBodies get(fn by_creator): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
+			/// Bodies by treasury
+			ControlledBodies get(fn by_controller): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
+
+			/// Body by Nonce
 			BodyByNonce get(fn body_by_nonce): map hasher(blake2_128_concat) u128 => T::Hash;
-
-			/// Get Created Bodies for an AccountId
-			CreatedBodies get(fn get_bodies_created): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
-			/// Get Owned Bodies for an AccountId
-			OwnedBodies get(fn get_bodies_owned): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
-
-			/// Current Balance from Treasury
-			BodyBalance get(fn body_balance): map hasher(blake2_128_concat) T::Hash => T::Balance;
 			/// Body State
 			BodyState get(fn body_state): map hasher(blake2_128_concat) T::Hash => u8;
 
@@ -159,6 +159,8 @@ pub mod module {
 			BodyMembers get(fn body_members): map hasher(blake2_128_concat) T::Hash => Vec<T::AccountId>;
 			/// Member count
 			BodyMemberCount get(fn body_member_count): map hasher(blake2_128_concat) T::Hash => u64;
+			/// Member state 0 inactive | 1 active | 2 pending | 3 kicked | 4 banned | 5 exited
+			BodyMemberState get(fn body_member_state): map hasher(blake2_128_concat) (T::Hash, T::AccountId) => u8;
 
 			/// Creator of a body
 			BodyCreator get(fn body_creator): map hasher(blake2_128_concat) T::Hash => T::AccountId;
@@ -170,7 +172,7 @@ pub mod module {
 			/// Accessmodel of a body
 			/// 0 open, 1 invite by members, 2 invite by controller
 			BodyAccess get(fn body_access): map hasher(blake2_128_concat) T::Hash => u8;
-			/// Config
+			/// Config -> struct
 			BodyConfig get(fn body_config): map hasher(blake2_128_concat) T::Hash => BConfig<T::Balance>;
 
 			/// the goode olde nonce
@@ -198,67 +200,66 @@ pub mod module {
 				treasury: T::AccountId,     // treasury
 				name: Vec<u8>,              // body name
 				cid: Vec<u8>,               // cid -> ipfs
-
 				body: u8,                   // individual | legal body | dao
 				access: u8,                 // anybody can join | only member can add | only controller can add
-				model: u8,                   // only TX by OS | fees are reserved | fees are moved to treasury
+				fee_model: u8,                   // only TX by OS | fees are reserved | fees are moved to treasury
 				fee: T::Balance,
-				asset: u8,                  // control assets to empower actors
-				limit: u64,                 // max members
+				gov_asset: u8,                  // control assets to empower actors
+				pay_asset: u8,
+				member_limit: u64,                 // max members, if 0 == no limit
 			) -> DispatchResult {
 
+				// set up fee
 				let creation_fee = T::CreationFee::get();
-
-				// creator can pay fees?
+				// creator can pay fees
 				ensure!( <balances::Module<T>>::free_balance(creator.clone()) >= creation_fee, Error::<T>::BalanceTooLow );
 
 				let now   = <system::Module<T>>::block_number();
 				let index = Nonce::get();
-				let state = 1;
+				let state = 1; // live
 
 				let phrase = name.clone();
 				let hash = T::Randomness::random(&phrase);
 
-				// create body
-				let data  = Body {
+				// body
+
+				let data = Body {
 					id:       hash.clone(),
 					index:    index.clone(),
-
 					creator:  creator.clone(),
-					// controller:    controller.clone(),
-					// treasury: treasury.clone(),
-
 					name:     name.clone(),
-
 					cid:      cid,
 					body:     body.clone(),
-					asset:    asset.clone(),
-
 					created:  now.clone(),
 					mutated:  now.clone(),
 				};
 
 				<Bodies<T>>::insert( hash.clone(), data );
+
+				// config
+
+				let config = BConfig {
+					fee_model: fee_model.clone(),
+					fee: fee.clone(),
+					gov_asset: gov_asset.clone(),
+					pay_asset: pay_asset.clone(),
+					member_limit: member_limit.clone(),
+					access: access.clone()
+				};
+
+				// TODO: Self::update_config
+				<BodyConfig<T>>::insert( hash.clone(), config );
+
+				//
+
 				<BodyByNonce<T>>::insert( index.clone(), hash.clone() );
 				<BodyState<T>>::insert( hash.clone(), state );
-
+				<BodyAccess<T>>::insert( hash.clone(), access.clone() );
 				<BodyCreator<T>>::insert( hash.clone(), creator.clone() );
 				<BodyController<T>>::insert( hash.clone(), controller.clone() );
 				<BodyTreasury<T>>::insert( hash.clone(), treasury.clone() );
 
-				// config
-				let config  = BConfig {
-					model:  model.clone(),
-					fee:   fee.clone(),
-					asset: asset.clone(),
-					limit: limit.clone(),
-				};
-				// TODO: Self::update_config
-				<BodyConfig<T>>::insert( hash.clone(), config );
-				// access control
-				<BodyAccess<T>>::insert( hash.clone(), access );
-
-				// initiate member registry
+				// initiate member registry -> consumes fees
 				Self::add( hash.clone(), creator.clone() );
 				Self::add( hash.clone(), controller.clone() );
 				Self::add( hash.clone(), treasury.clone() );
@@ -279,11 +280,17 @@ pub mod module {
 			fn add_member(
 				origin,
 				hash: T::Hash,
-				account: T::AccountId,
-			) {
+				account: T::AccountId
+			) -> DispatchResult {
 
 				let sender = ensure_signed(origin)?;
-				Self::add( hash.clone(), account.clone());
+				Self::add( hash.clone(), account.clone() );
+
+				let now = <system::Module<T>>::block_number();
+				Self::deposit_event(
+					RawEvent::AddMember(hash, account, now)
+				);
+				Ok(())
 
 			}
 
@@ -332,31 +339,60 @@ pub mod module {
 
 		// }
 
-		fn add(
+		fn set_member_state(
 			hash: T::Hash,
 			account: T::AccountId,
+			state: u8
 		) -> DispatchResult {
 
-			// existence
+			ensure!( <Bodies<T>>::contains_key(&hash), Error::<T>::BodyUnknown );
+			let config = Self::body_config(hash);
+			let current_state = Self::body_member_state(( &hash, &account ));
+			let new_state = match config.access {
+				0 => state, // when open use desired state
+				_ => 2, // else pending
+			};
+
+			Ok(())
+
+		}
+
+		fn add(
+			hash: T::Hash,
+			account: T::AccountId
+		) -> DispatchResult {
+
+			// 1. body exists
+
 			ensure!( <Bodies<T>>::contains_key(&hash), Error::<T>::BodyUnknown );
 
-			// TODO: access model
+			// 2. member limit
+
+			let mut members = BodyMembers::<T>::get(hash);
+			let max_members = T::MaxMembersPerBody::get();
+			ensure!(members.len() < max_members, Error::<T>::MembershipLimitReached);
+
+			// 3. initial state
 
 			let config = Self::body_config(hash);
+			let state = match config.access {
+				0 => 1, // active
+				_ => 2, // pending
+ 			};
 
-			if config.model != 0 {
+ 			// 4. apply fees
 
-				// TODO: respect asset id
+			if config.fee_model != 0 {
 
-				// can pay fees?
 				let fee = config.fee;
 				ensure!( <balances::Module<T>>::free_balance(account.clone()) >= fee, Error::<T>::BalanceTooLow );
 
-				if config.model == 1 {
-					// when fees==1 reserve fees until exit
+				// when fees==1 reserve fees until exit
+				if config.fee_model == 1 {
 					<balances::Module<T>>::reserve(&account, config.fee)?;
-				} else {
-					// when fees==2 send fee to treasury
+				}
+				// when fees==2 send fee to treasury
+				else {
 					let treasury = BodyTreasury::<T>::get(hash);
 					let transfer = <balances::Module<T> as Currency<_>>::transfer(
 						&account,
@@ -368,27 +404,27 @@ pub mod module {
 
 			}
 
-			let mut members = BodyMembers::<T>::get(hash);
-			let max_members = T::MaxMembersPerBody::get();
-			ensure!(members.len() < max_members, Error::<T>::MembershipLimitReached);
+			// 5. add
 
 			match members.binary_search(&account) {
 
-				// If the search succeeds, the caller is already a member, so just return
+				// already a member, return
 				Ok(_) => Err(Error::<T>::MemberExists.into()),
-				// If the search fails, the caller is not a member and
-				// we learned the index where they should be inserted
+
+				// not a member, insert at index
 				Err(index) => {
 
 					members.insert(index, account.clone());
-					// which is more efficient?
 					// BodyMembers::<T>::mutate( &hash, |members| members.push(account.clone()) );
-					BodyMembers::<T>::insert( &hash, members );
+					BodyMembers::<T>::insert( &hash, members.clone() );
 
-					let now = <system::Module<T>>::block_number();
-					Self::deposit_event(
-						RawEvent::AddMember(hash, account, now)
-					);
+					// counter
+					let count = members.len();
+					BodyMemberCount::<T>::insert( &hash, count as u64 );
+
+					// state
+					BodyMemberState::<T>::insert(( &hash, account ), state);
+
 					Ok(())
 				}
 
@@ -451,6 +487,7 @@ pub mod module {
 			BodyTransferred( AccountId, Hash, BlockNumber),
 			AddMember( Hash, AccountId, BlockNumber),
 			RemoveMember( Hash, AccountId, BlockNumber),
+			UpdateMember( Hash, AccountId, BlockNumber),
 		}
 	}
 

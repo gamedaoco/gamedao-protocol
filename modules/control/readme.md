@@ -14,14 +14,26 @@
 v0.1.0
 
 	- name
-	- caller is creator
-	- caller is owner
-	- caller is treasurer
+	- creator
+	- controller
+	- treasurer
+
 	- tx fees paid by OS
-	- creation requires staking -> reserve and payment -> OS of n credits
+
+	- creation requires reserve or payment to OS of n credits
+		1. when body consumes fees from members,
+		creation and TX fee will be collected by OS
+		2. when membership requires reserve only,
+		full amount gets repaid on exit
+
 	- initial treasury balance -> filled by creator
 
 ### destroy body
+
+### add member
+when body takes fees
+### remove member
+
 
 ## Status
 
