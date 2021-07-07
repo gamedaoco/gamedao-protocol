@@ -122,7 +122,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// and set impl_version to 0. If only runtime
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
-	spec_version: 17,
+	spec_version: 18,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -1045,13 +1045,7 @@ impl pallet_assets::Config for Runtime {
 //	SenseModuleId::get().into_account(),
 //
 
-parameter_types! {
-	// pub const SenseModuleId: ModuleId = ModuleId(*b"modsense");
-}
-
 impl module_sense::Config for Runtime {
-	// TODO: tbd
-	// type ModuleId = SenseModuleId;
 	type Event = Event;
 	type ForceOrigin = EnsureRoot<AccountId>;
 }
@@ -1061,14 +1055,24 @@ impl module_sense::Config for Runtime {
 //	dao body
 //
 
+// empowered supervisors
+// type EnsureRootOrHalfCouncil = EnsureOneOf<
+// 	AccountId,
+// 	EnsureRoot<AccountId>,
+// 	pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>
+// >;
+
 parameter_types! {
-	pub const Fee: Balance = 10 * DOLLARS;
+	pub const Treasury: AccountId =
+	pub const Fee: Balance = 100 * DOLLARS;
 	pub const MaxBodiesPerAccount: usize = 10;
 	pub const MaxCreationsPerBlock: usize = 3;
+	pub const MaxMembersPerBody: usize = 1024;
 }
 
 impl module_control::Config for Runtime {
 
+	type Treasury = Treasury;
 	type ForceOrigin = EnsureRoot<AccountId>;
 
 	type Currency = Balances;
@@ -1076,6 +1080,7 @@ impl module_control::Config for Runtime {
 
 	type MaxBodiesPerAccount = MaxBodiesPerAccount;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
+	type MaxMembersPerBody = MaxMembersPerBody;
 
 	type Event = Event;
 	type Randomness = RandomnessCollectiveFlip;
