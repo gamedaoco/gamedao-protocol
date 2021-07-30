@@ -25,6 +25,8 @@ sp-core = { version = "3.0.0", default-features = false, path = "../../primitive
 
 primitives = { package = "zero-primitives", path = "../../bin/primitives", default-features = false }
 
+control = { package = "module-control", path = "../control", default-features = false }
+
 [features]
 default = ['std']
 std = [

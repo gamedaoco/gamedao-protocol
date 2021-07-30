@@ -3,7 +3,7 @@
     "id": "Hash",
     "index": "u128",
     "creator": "AccountId",
-    "owner": "AccountId",
+    "controller": "AccountId",
     "treasury": "AccountId",
     "name": "Vec<u8>",
     "cid": "Vec<u8>",

@@ -92,7 +92,7 @@ use primitives::{ Balance };
 
 // TODO: tests
 #[cfg(test)]
-mod campaign_tests;
+mod tests;
 
 // TODO: pallet benchmarking
 // mod benchmarking;
@@ -110,7 +110,7 @@ const MAX_CONTRIBUTIONS_PER_BLOCK: usize = 5;
 const MAX_CONTRIBUTIONS_PER_ADDRESS: usize = 3;
 const MAX_CAMPAIGN_DURATION: u32 = 777600;
 
-pub trait Config: system::Config + balances::Config + timestamp::Config {
+pub trait Config: system::Config + balances::Config + timestamp::Config + control::Config {
 
 	/// The origin that is allowed to make judgements.
 	type GameDAOAdminOrigin: EnsureOrigin<Self::Origin>;
@@ -145,7 +145,16 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp> {
 	/// unique hash to identify campaign (generated)
 	id: Hash,
 
-	/// owner account of the campaign (beneficiary)
+	// /// owner account of the campaign (beneficiary)
+	// owner: AccountId,
+
+	/// hash of the overarching body from module-control
+	org: Hash,
+
+	// for now we keep controller attached to owner
+	// to keep refactor footprint small...
+	// needs work
+	/// controller account -> must match body controller
 	owner: AccountId,
 
 	/// admin account of the campaign (operator)
@@ -206,12 +215,13 @@ decl_storage! {
 		//
 		// - 	ownedCampaigns
 
-		/// Get one or all Campaigns
+		/// Campaign
 		Campaigns get(fn campaign_by_id): map hasher(blake2_128_concat) T::Hash => Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, T::Moment>;
+		/// Associated Body
+		CampaignOrg get(fn campaign_org): map hasher(blake2_128_concat) T::Hash => T::Hash;
 
 		/// Get Campaign owner by campaign id
 		CampaignOwner get(fn campaign_owner): map hasher(blake2_128_concat) T::Hash => Option<T::AccountId>;
-
 		/// Get Campaign Admin by campaign id
 		CampaignAdmin get(fn campaign_admin): map hasher(blake2_128_concat) T::Hash => Option<T::AccountId>;
 
@@ -281,8 +291,8 @@ decl_module! {
 
 		// update the campaign status
 		// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
-	 	// admin can set any status
-	 	// owner can pause, cancel
+		// admin can set any status
+		// owner can pause, cancel
 		#[weight = 1_000]
 		fn update_status(
 			origin,
@@ -324,21 +334,21 @@ decl_module! {
 		#[weight = 10_000]
 		fn create(
 			origin,
+			org: T::Hash,
 			admin: T::AccountId,
 			name: Vec<u8>,
 			target: T::Balance,
 			deposit: T::Balance,
-			// TODO: should be duration in days,
-			// not target blocknumber
 			expiry: T::BlockNumber,
 			protocol: u8,
 			governance: u8,
-			// ipfs content hash
 			cid: Vec<u8>,
 		) {
 
 			// get the creator
 			let creator = ensure_signed(origin)?;
+
+			// TODO: ensure origin is controller of org
 
 			// check name length boundary
 			ensure!(
@@ -365,7 +375,6 @@ decl_module! {
 				Error::<T>::EndTooEarly
 			);
 
-
 			// TODO: refactor calculate dest. block
 			// let blocktime = 5;
 			// let target_block_number =
@@ -378,7 +387,7 @@ decl_module! {
 
 			// generate the unique campaign id
 			let phrase = b"crowdfunding_campaign";
-			let id = T::Randomness::random(phrase);
+			let id = <T as Config>::Randomness::random(phrase);
 
 			// TODO: check for correct padding
 			// let seed = <[u8; 32]>::decode(&mut TrailingZeroInput::new(seed.as_ref()))
@@ -418,8 +427,10 @@ decl_module! {
 			// protocol: u8
 			// governance: bool
 			// status: u8,
+
 			let new_campaign = Campaign {
 				id: id.clone(),
+				org: org.clone(),
 				name: name.clone(),
 				owner: creator.clone(),
 				admin: admin.clone(),
@@ -612,14 +623,13 @@ decl_module! {
 
 		}
 
- 	}
+	}
 }
 
 impl<T: Config> Module<T> {
 
-	fn set_status( campaign_id: T::Hash, status: u8 ) -> DispatchResult {
-		<CampaignState<T>>::insert(&campaign_id, status );
-		Ok(())
+	fn set_status( campaign_id: T::Hash, status: u8 ) {
+		CampaignState::<T>::insert(&campaign_id, status );
 	}
 
 	fn mint(
@@ -645,6 +655,9 @@ impl<T: Config> Module<T> {
 
 		// campaigns
 		<Campaigns<T>>::insert(campaign.id.clone(), campaign.clone());
+
+		// add org to index
+		CampaignOrg::<T>::insert(campaign.id.clone(), campaign.org.clone());
 
 		// owners
 		<CampaignOwner<T>>::insert(campaign.id.clone(), campaign.owner.clone());

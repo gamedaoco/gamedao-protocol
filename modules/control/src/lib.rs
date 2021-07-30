@@ -142,25 +142,19 @@ pub mod module {
 	decl_storage! {
 		trait Store for Module<T: Config> as Control {
 
+			// general
+
 			/// Body by hash
 			Bodies get(fn body_by_hash): map hasher(blake2_128_concat) T::Hash => Body<T::Hash, T::AccountId, T::BlockNumber>;
-
-			/// Bodies by creator
-			CreatedBodies get(fn by_creator): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
-			/// Bodies by treasury
-			ControlledBodies get(fn by_controller): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
-
 			/// Body by Nonce
 			BodyByNonce get(fn body_by_nonce): map hasher(blake2_128_concat) u128 => T::Hash;
 			/// Body State
+			/// 0 inactive 1 active 2 system lock 3 supervisor lock
 			BodyState get(fn body_state): map hasher(blake2_128_concat) T::Hash => u8;
+			/// Config -> struct
+			BodyConfig get(fn body_config): map hasher(blake2_128_concat) T::Hash => BConfig<T::Balance>;
 
-			/// Members of a body
-			BodyMembers get(fn body_members): map hasher(blake2_128_concat) T::Hash => Vec<T::AccountId>;
-			/// Member count
-			BodyMemberCount get(fn body_member_count): map hasher(blake2_128_concat) T::Hash => u64;
-			/// Member state 0 inactive | 1 active | 2 pending | 3 kicked | 4 banned | 5 exited
-			BodyMemberState get(fn body_member_state): map hasher(blake2_128_concat) (T::Hash, T::AccountId) => u8;
+			// significant accounts
 
 			/// Creator of a body
 			BodyCreator get(fn body_creator): map hasher(blake2_128_concat) T::Hash => T::AccountId;
@@ -168,12 +162,22 @@ pub mod module {
 			BodyController get(fn body_controller): map hasher(blake2_128_concat) T::Hash => T::AccountId;
 			/// Treasury of a body
 			BodyTreasury get(fn body_treasury): map hasher(blake2_128_concat) T::Hash => T::AccountId;
+			/// All bodies created by account
+			CreatedBodies get(fn by_creator): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
+			/// All bodies controlled by account
+			ControlledBodies get(fn by_controller): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
+
+			// membership
 
 			/// Accessmodel of a body
 			/// 0 open, 1 invite by members, 2 invite by controller
 			BodyAccess get(fn body_access): map hasher(blake2_128_concat) T::Hash => u8;
-			/// Config -> struct
-			BodyConfig get(fn body_config): map hasher(blake2_128_concat) T::Hash => BConfig<T::Balance>;
+			/// Get all members of a body
+			BodyMembers get(fn body_members): map hasher(blake2_128_concat) T::Hash => Vec<T::AccountId>;
+			/// Get the member count
+			BodyMemberCount get(fn body_member_count): map hasher(blake2_128_concat) T::Hash => u64;
+			/// Get the member state 0 inactive | 1 active | 2 pending | 3 kicked | 4 banned | 5 exited
+			BodyMemberState get(fn body_member_state): map hasher(blake2_128_concat) (T::Hash, T::AccountId) => u8;
 
 			/// the goode olde nonce
 			Nonce: u128;
@@ -191,6 +195,32 @@ pub mod module {
 			fn deposit_event() = default;
 			type Error = Error<T>;
 
+			// Enable Body
+			#[weight = 5_000]
+			fn enable(
+				origin,
+				hash: T::Hash,
+			) -> DispatchResult {
+				ensure_root(origin)?;
+				<BodyState<T>>::insert( hash.clone(), 1 );
+				let now = <system::Module<T>>::block_number();
+				Self::deposit_event( RawEvent::BodyDisabled( hash ) );
+				Ok(())
+			}
+
+			// Disable Body
+			#[weight = 5_000]
+			fn disable(
+				origin,
+				hash: T::Hash,
+			) -> DispatchResult {
+				ensure_root(origin)?;
+				<BodyState<T>>::insert( hash.clone(), 0 );
+				let now = <system::Module<T>>::block_number();
+				Self::deposit_event( RawEvent::BodyDisabled( hash ) );
+				Ok(())
+			}
+
 			// Create Body
 			#[weight = 10_000]
 			fn create(
@@ -202,11 +232,11 @@ pub mod module {
 				cid: Vec<u8>,               // cid -> ipfs
 				body: u8,                   // individual | legal body | dao
 				access: u8,                 // anybody can join | only member can add | only controller can add
-				fee_model: u8,                   // only TX by OS | fees are reserved | fees are moved to treasury
+				fee_model: u8,              // only TX by OS | fees are reserved | fees are moved to treasury
 				fee: T::Balance,
-				gov_asset: u8,                  // control assets to empower actors
+				gov_asset: u8,              // control assets to empower actors
 				pay_asset: u8,
-				member_limit: u64,                 // max members, if 0 == no limit
+				member_limit: u64,          // max members, if 0 == no limit
 			) -> DispatchResult {
 
 				// set up fee
@@ -222,7 +252,6 @@ pub mod module {
 				let hash = T::Randomness::random(&phrase);
 
 				// body
-
 				let data = Body {
 					id:       hash.clone(),
 					index:    index.clone(),
@@ -234,9 +263,7 @@ pub mod module {
 					mutated:  now.clone(),
 				};
 
-				<Bodies<T>>::insert( hash.clone(), data );
-
-				// config
+				Bodies::<T>::insert( hash.clone(), data );
 
 				let config = BConfig {
 					fee_model: fee_model.clone(),
@@ -248,19 +275,36 @@ pub mod module {
 				};
 
 				// TODO: Self::update_config
-				<BodyConfig<T>>::insert( hash.clone(), config );
+				BodyConfig::<T>::insert( hash.clone(), config );
 
 				//
 
-				<BodyByNonce<T>>::insert( index.clone(), hash.clone() );
-				<BodyState<T>>::insert( hash.clone(), state );
-				<BodyAccess<T>>::insert( hash.clone(), access.clone() );
-				<BodyCreator<T>>::insert( hash.clone(), creator.clone() );
-				<BodyController<T>>::insert( hash.clone(), controller.clone() );
-				<BodyTreasury<T>>::insert( hash.clone(), treasury.clone() );
+				BodyByNonce::<T>::insert( index.clone(), hash.clone() );
+				BodyState::<T>::insert( hash.clone(), state );
+				BodyAccess::<T>::insert( hash.clone(), access.clone() );
+				BodyCreator::<T>::insert( hash.clone(), creator.clone() );
+				BodyController::<T>::insert( hash.clone(), controller.clone() );
+				BodyTreasury::<T>::insert( hash.clone(), treasury.clone() );
+
+				let mut controlled = Self::by_controller(&controller);
+				controlled.push(hash.clone());
+				ControlledBodies::<T>::mutate(
+					&controller,
+					|controlled| controlled.push(hash.clone())
+				);
+
+				let mut created = Self::by_creator(&creator);
+				created.push(hash.clone());
+				ControlledBodies::<T>::mutate(
+					&creator,
+					|created| created.push(hash.clone())
+				);
+
+				// ...creator, controller and treasury shall be members
 
 				// initiate member registry -> consumes fees
 				Self::add( hash.clone(), creator.clone() );
+				// Err(hash) => TransactionType::None
 				Self::add( hash.clone(), controller.clone() );
 				Self::add( hash.clone(), treasury.clone() );
 
@@ -283,7 +327,7 @@ pub mod module {
 				account: T::AccountId
 			) -> DispatchResult {
 
-				let sender = ensure_signed(origin)?;
+				let caller = ensure_signed(origin)?;
 				Self::add( hash.clone(), account.clone() );
 
 				let now = <system::Module<T>>::block_number();
@@ -292,21 +336,22 @@ pub mod module {
 				);
 				Ok(())
 
+
 			}
 
 			// Remove Member from Body
-			// #[weight = 10_000]
-			// fn remove_member(
-			// 	origin,
-			// 	hash: T::Hash,
-			// 	account: T::AccountId,
-			// ) {
+			#[weight = 10_000]
+			fn remove_member(
+				origin,
+				hash: T::Hash,
+				account: T::AccountId,
+			) {
 				// TODO:
 				// when fees==1 unreserve fees
 			// 	let sender = ensure_signed(origin)?;
 			// 	Self::remove( hash.clone(), account.clone());
 
-			// }
+			}
 
 			// Update State of Body
 			// #[weight = 5_000]
@@ -321,7 +366,24 @@ pub mod module {
 
 			// }
 
+			#[weight = 5_000]
+			fn check_membership(
+				origin,
+				hash: T::Hash
+			) -> DispatchResult {
+
+				let caller = ensure_signed(origin)?;
+				let members = BodyMembers::<T>::get(hash);
+				ensure!(members.contains(&caller), Error::<T>::MemberUnknown);
+				// Self::deposit_event();
+				Self::deposit_event(
+					RawEvent::IsAMember(hash,caller)
+				);
+				Ok(())
+			}
+
 		}
+
 	}
 
 	impl<T: Config> Module<T> {
@@ -483,11 +545,12 @@ pub mod module {
 		{
 			BodyCreated( AccountId, Hash, BlockNumber),
 			BodyUpdated( AccountId, Hash, BlockNumber),
-			BodyDestroyed( AccountId, Hash, BlockNumber),
+			BodyDisabled( Hash ),
 			BodyTransferred( AccountId, Hash, BlockNumber),
 			AddMember( Hash, AccountId, BlockNumber),
 			RemoveMember( Hash, AccountId, BlockNumber),
 			UpdateMember( Hash, AccountId, BlockNumber),
+			IsAMember( Hash, AccountId),
 		}
 	}
 
@@ -515,6 +578,8 @@ pub mod module {
 			MemberExists,
 			/// Member Unknonw
 			MemberUnknown,
+			/// Unknown Error
+			UnknownError
 		}
 	}
 
