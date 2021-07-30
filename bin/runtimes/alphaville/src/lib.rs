@@ -1063,7 +1063,7 @@ impl module_sense::Config for Runtime {
 // >;
 
 parameter_types! {
-	pub const Treasury: AccountId =
+	// pub const Treasury: AccountId =
 	pub const Fee: Balance = 100 * DOLLARS;
 	pub const MaxBodiesPerAccount: usize = 10;
 	pub const MaxCreationsPerBlock: usize = 3;
@@ -1072,7 +1072,7 @@ parameter_types! {
 
 impl module_control::Config for Runtime {
 
-	type Treasury = Treasury;
+	// type Treasury = Treasury;
 	type ForceOrigin = EnsureRoot<AccountId>;
 
 	type Currency = Balances;
