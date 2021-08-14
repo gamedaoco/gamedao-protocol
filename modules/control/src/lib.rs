@@ -140,7 +140,7 @@ pub mod module {
 	//
 
 	decl_storage! {
-		trait Store for Module<T: Config> as Control {
+		trait Store for Module<T: Config> as Control1 {
 
 			// general
 
@@ -167,7 +167,8 @@ pub mod module {
 			/// All bodies controlled by account
 			ControlledBodies get(fn by_controller): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
 
-			// membership
+			/// Membership by AccountId
+			Memberships get(fn memberships): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
 
 			/// Accessmodel of a body
 			/// 0 open, 1 invite by members, 2 invite by controller
@@ -382,6 +383,28 @@ pub mod module {
 				Ok(())
 			}
 
+		// /// Set controller. Must be a current member.
+		// ///
+		// /// May only be called from `T::PrimeOrigin`.
+		// #[weight = 50_000_000]
+		// pub fn set_control(origin, who: T::AccountId) {
+		// 	T::PrimeOrigin::ensure_origin(origin)?;
+		// 	Self::members().binary_search(&who).ok().ok_or(Error::<T, I>::NotMember)?;
+		// 	Prime::<T, I>::put(&who);
+		// 	T::MembershipChanged::set_prime(Some(who));
+		// }
+
+		// /// Remove the prime member if it exists.
+		// ///
+		// /// May only be called from `T::PrimeOrigin`.
+		// #[weight = 50_000_000]
+		// pub fn clear_control(origin) {
+		// 	T::PrimeOrigin::ensure_origin(origin)?;
+		// 	Prime::<T, I>::kill();
+		// 	T::MembershipChanged::set_prime(None);
+		// }
+
+
 		}
 
 	}
@@ -484,8 +507,12 @@ pub mod module {
 					let count = members.len();
 					BodyMemberCount::<T>::insert( &hash, count as u64 );
 
+					let mut memberships = Self::memberships(&account);
+					memberships.push( hash.clone() );
+					Memberships::<T>::insert( &account, memberships );
+
 					// state
-					BodyMemberState::<T>::insert(( &hash, account ), state);
+					BodyMemberState::<T>::insert(( hash, account ), state);
 
 					Ok(())
 				}

@@ -3,13 +3,18 @@
     "id": "Hash",
     "index": "u128",
     "creator": "AccountId",
-    "controller": "AccountId",
-    "treasury": "AccountId",
     "name": "Vec<u8>",
     "cid": "Vec<u8>",
     "body": "u8",
-    "state": "u8",
-    "currency": "Vec<u8>",
     "created": "BlockNumber",
     "mutated": "BlockNumber"
-  }
+  },
+
+"BConfig": {
+    "fee_model": "u8",
+    "fee": "Balance",
+    "gov_asset": "u8",
+    "pay_asset": "u8",
+    "access": "u8",
+    "member_limit": "u64"
+}

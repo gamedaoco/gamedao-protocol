@@ -45,6 +45,7 @@ frame-support = { version = "3.0.0", default-features = false, path = "../../fra
 frame-system = { version = "3.0.0", default-features = false, path = "../../frame/system" }
 
 primitives = { package = "zero-primitives", path = "../../bin/primitives", default-features = false }
+tangram = { package = "module-tangram", path = "../tangram", default-features = false }
 
 [dev-dependencies]
 sp-core = { version = "3.0.0", default-features = false, path = "../../primitives/core" }
