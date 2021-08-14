@@ -58,7 +58,13 @@ pub struct Proposal<Hash, Balance, BlockNumber>{
 	proposal_id: Hash,
 
 	// unique campaign id
-	campaign_id: Hash,
+	// campaign_id: Hash,
+	// context id can be either campaign or org
+	context_id: Hash,
+
+	// type describes the related action to a proposal
+	// e.g. simple voting, withdrawal
+	proposal_type: u8,
 
 	// short description
 	purpose: Vec<u8>,
@@ -119,7 +125,7 @@ decl_event!(
 
 decl_storage! {
 
-	trait Store for Module<T: Config> as ProposalProposal {
+	trait Store for Module<T: Config> as Governance1 {
 
 		// Global status
 		Proposals get(fn proposals): map hasher(blake2_128_concat) T::Hash => Proposal<T::Hash, T::Balance, T::BlockNumber>;
@@ -176,10 +182,18 @@ decl_module! {
 
 		fn deposit_event() = default;
 
+		// TODO:
+		// either create separate proposal flows
+		// or differentiate:
+		// 0 general proposal, any member
+		// 1 withdrawal proposal, contributors of respective campaign
+		// ...
+
 		#[weight = 1_000]
 		fn create_proposal(
 			origin,
-			campaign_id: T::Hash,
+			proposal_type: u8, // 0 general, 1 funding related
+			context_id: T::Hash, // if type is 0 context is the org id, if 1 it is the campaing id
 			purpose: Vec<u8>,
 			cid: Vec<u8>,
 			amount: T::Balance,
@@ -189,22 +203,20 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			// Ensure the campaign exists
-			// ensure!(<campaign::Module<T>>::is_campaign_exists(campaign_id), "The campaign does not exist");
-			// ensure!( <campaign::Module<T>>::campaign_by_id(campaign_id), "The campaign does not exist" );
-
+			// ensure!( <crowdfunding::Module<T>>::campaign_by_id(context_id), "The campaign does not exist" );
 			// Ensure the campaign reached its cap
-			ensure!(<crowdfunding::Module<T>>::campaign_state(campaign_id) == 3, "The campaign did not succeed");
+			ensure!( <crowdfunding::Module<T>>::campaign_state(context_id) == 3, "The campaign did not succeed");
 
 			// Ensure the sender is the owner
-			let owner = <crowdfunding::Module<T>>::campaign_owner(campaign_id).ok_or("The owner does not exist")?;
+			let owner = <crowdfunding::Module<T>>::campaign_owner(context_id).ok_or("The owner does not exist")?;
 			ensure!(sender == owner, "The sender must be the owner of the campaign");
 
 			// ensure that the expiry is valid
 			ensure!(expiry > <system::Module<T>>::block_number(), "The expiry has to be greater than the current block number");
 			ensure!(expiry <= <system::Module<T>>::block_number() + Self::proposal_time_limit(), "The expiry has to be lower than the limit");
 
-			let used_balance = Self::used_balance(&campaign_id);
-			let total_balance = <crowdfunding::Module<T>>::campaign_balance(campaign_id);
+			let used_balance = Self::used_balance(&context_id);
+			let total_balance = <crowdfunding::Module<T>>::campaign_balance(context_id);
 			let remaining_balance = total_balance - used_balance;
 			ensure!(remaining_balance >= amount, "The remaining balance is too low");
 
@@ -216,11 +228,12 @@ decl_module! {
 			let proposal_id = <T as Config>::Randomness::random(phrase);
 
 			// ensure that the proposal id is unique
-			ensure!(!<Proposals<T>>::contains_key(&campaign_id), "Proposal id already exists");
+			ensure!(!<Proposals<T>>::contains_key(&context_id), "Proposal id already exists");
 
 			let new_proposal = Proposal{
 				proposal_id,
-				campaign_id: campaign_id.clone(),
+				context_id: context_id.clone(),
+				proposal_type,
 				purpose,
 				cid,
 				amount,
@@ -237,7 +250,7 @@ decl_module! {
 			// check add
 			let proposals_count = Self::proposals_count();
 			let updated_proposals_count = proposals_count.checked_add(1).ok_or("Overflow adding a new proposal to total proposals")?;
-			let proposals_by_campaign_count = Self::proposals_by_campaign_count(campaign_id);
+			let proposals_by_campaign_count = Self::proposals_by_campaign_count(context_id);
 			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or("Overflow adding a new proposal to the campaign's proposals")?;
 			let proposals_by_owner_count = Self::proposals_by_owner_count(&sender);
 			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or("Overflow adding a new proposal to the owner's proposals")?;
@@ -255,9 +268,9 @@ decl_module! {
 			<ProposalsIndex<T>>::insert(proposal_id.clone(), proposals_count);
 
 			// update campaign map
-			<ProposalsByCampaignArray<T>>::insert((campaign_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
-			<ProposalsByCampaignCount<T>>::insert(campaign_id.clone(), updated_proposals_by_campaign_count);
-			<ProposalsByCampaignIndex<T>>::insert((campaign_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
+			<ProposalsByCampaignArray<T>>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
+			<ProposalsByCampaignCount<T>>::insert(context_id.clone(), updated_proposals_by_campaign_count);
+			<ProposalsByCampaignIndex<T>>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
 
 			// update owner map
 			<ProposalsByOwnerArray<T>>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
@@ -271,7 +284,7 @@ decl_module! {
 			Self::deposit_event(
 				RawEvent::ProposalCreated(
 					sender,
-					campaign_id,
+					context_id,
 					proposal_id,
 					amount,
 					expiry
@@ -291,28 +304,28 @@ decl_module! {
 
 			// Ensure the proposal exists
 			ensure!(<Proposals<T>>::contains_key(&proposal_id), "The proposal does not exist");
-
 			// Get the proposal
 			let proposal = Self::proposals(&proposal_id);
-
-			// Ensure the user is a contributor
-			// let sender_balance = <campaign::Module<T>>::campaign_contribution(proposal.campaign_id, sender.clone());
-			// ensure!( sender_balance > T::Balance::from(0), "You are not a contributor of this Campaign");
-
-			// Ensure the investor does not vote before
-			ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), "You have already voted before");
-
 			// Ensure the proposal has not ended
 			ensure!(proposal.status == 0, "The proposal has ended");
-
 			// Ensure the proposal is not expired
 			ensure!(<system::Module<T>>::block_number() < proposal.expiry, "The proposal expired");
+
+			// ensure origin is a contributor
+			// let sender_balance = <campaign::Module<T>>::campaign_contribution(proposal.campaign_id, sender.clone());
+
+			// ensure!( sender_balance > T::Balance::from(0), "You are not a contributor of this Campaign");
+
+			// Ensure the contributor did not vote before
+			ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), "You have already voted before");
+
+
 
 			// Get the number of people who have supported the proposal and add 1
 			let proposal_supporters = Self::proposal_supporters(&proposal_id);
 			let updated_proposal_supporters = proposal_supporters.checked_add(1).ok_or("Overflow adding the number of people who have voted the proposal")?;
 
-			let contributors = <crowdfunding::Module<T>>::campaign_contributors_count(proposal.campaign_id);
+			let contributors = <crowdfunding::Module<T>>::campaign_contributors_count(proposal.context_id);
 			let supporters = updated_proposal_supporters.clone();
 
 			// TODO: make this variable
@@ -411,9 +424,9 @@ impl<T:Config> Module<T> {
 		let proposal_balance = proposal.amount;
 
 		// Ensure sufficient balance
-		let total_balance = <crowdfunding::Module<T>>::campaign_balance(proposal.campaign_id);
-		// let used_balance = Self::balance_used(proposal.campaign_id);
-		let used_balance = <CampaignBalanceUsed<T>>::get(proposal.campaign_id);
+		let total_balance = <crowdfunding::Module<T>>::campaign_balance(proposal.context_id);
+		// let used_balance = Self::balance_used(proposal.context_id);
+		let used_balance = <CampaignBalanceUsed<T>>::get(proposal.context_id);
 		let available_balance = total_balance - used_balance.clone();
 		ensure!(available_balance >= proposal_balance, "The remaining balance is insufficient");
 
@@ -425,7 +438,7 @@ impl<T:Config> Module<T> {
 
 		// Change the used amount
 		let new_used_balance = used_balance + proposal_balance;
-		<CampaignBalanceUsed<T>>::insert(proposal.campaign_id, new_used_balance);
+		<CampaignBalanceUsed<T>>::insert(proposal.context_id, new_used_balance);
 
 		// Change the proposal status
 		proposal.status = 1;
