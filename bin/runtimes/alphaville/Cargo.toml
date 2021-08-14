@@ -85,21 +85,29 @@ pallet-transaction-payment = { version = "3.0.0", default-features = false, path
 pallet-transaction-payment-rpc-runtime-api = { version = "3.0.0", default-features = false, path = "../../../frame/transaction-payment/rpc/runtime-api/" }
 pallet-vesting = { version = "3.0.0", default-features = false, path = "../../../frame/vesting" }
 
-# zero core
+# identity
 module-sense = { default-features = false, path = "../../../modules/sense" }
-# module-currencies = { default-features = false, path = "../../../modules/currencies" }
-# module-scout = { default-features = false, path = "../../../modules/scout" }
-# module-airdrop = { default-features = false, path = "../../../modules/airdrop" }
 # module-kilt = { default-features = false, path = "../../../modules/kilt" }
+
+# assets
+# zero-nft = { default-features = false, path = "../../../modules/zero-nft" }
 
 # gamedao
 module-control = { default-features = false, path = "../../../modules/control" }
 module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
 module-governance = { default-features = false, path = "../../../modules/governance" }
+module-tangram = { default-features = false, path = "../../../modules/tangram" }
 
-# hypaspace
-module-item = { default-features = false, path = "../../../modules/item" }
-module-hypaspace = { default-features = false, path = "../../../modules/hypaspace" }
+#
+#
+
+# orml-nft = { default-features = false, path = "../../../modules/orml-nft" }
+# module-nft = { default-features = false, path = "../../../modules/nft" }
+# module-currencies = { default-features = false, path = "../../../modules/currencies" }
+# module-scout = { default-features = false, path = "../../../modules/scout" }
+# module-airdrop = { default-features = false, path = "../../../modules/airdrop" }
+# projects
+# module-hypaspace = { default-features = false, path = "../../../modules/hypaspace" }
 
 [build-dependencies]
 substrate-wasm-builder = { version = "4.0.0", path = "../../../utils/wasm-builder" }
@@ -169,12 +177,11 @@ std = [
 	"pallet-society/std",
 	"pallet-recovery/std",
 	"pallet-vesting/std",
-	#
+
+	"module-control/std",
 	"module-crowdfunding/std",
 	"module-governance/std",
 	"module-sense/std",
-	"module-item/std",
-	"module-hypaspace/std",
 
 ]
 runtime-benchmarks = [

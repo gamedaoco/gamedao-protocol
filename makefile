@@ -29,6 +29,7 @@ dev-purge:
 
 docker-build:
 	docker build -t playzero/subzero:local .
+
 docker-run:
 	docker run \
 	-p 9933:9933 \
