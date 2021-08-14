@@ -1,4 +1,4 @@
-//! # Unique Items Interface
+//! # Items Interface
 //!
 //! This trait describes an abstraction over a set of unique items, also known as non-fungible
 //! tokens (NFTs).
@@ -20,7 +20,7 @@ use sp_std::vec::Vec;
 /// An interface over a set of unique items.
 /// Items with equivalent attributes (as defined by the ItemInfo type) **must** have an equal ID
 /// and items with different IDs **must not** have equivalent attributes.
-pub trait UniqueItems<AccountId> {
+pub trait Items<AccountId> {
     /// The type used to identify unique items.
     type ItemId;
     /// The attributes that distinguish unique items.

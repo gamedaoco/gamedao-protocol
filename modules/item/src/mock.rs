@@ -60,7 +60,7 @@ parameter_types! {
 #[derive(Clone, Eq, PartialEq)]
 pub struct Test;
 
-impl Config for Test {
+impl Config<I> for Test {
     type Event = ();
     type ItemAdmin = frame_system::EnsureRoot<Self::AccountId>;
     type ItemInfo = Vec<u8>;
@@ -69,7 +69,7 @@ impl Config for Test {
 }
 
 // system under test
-pub type SUT = Module<Test>;
+pub type SUT = Module<Test, I>;
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.

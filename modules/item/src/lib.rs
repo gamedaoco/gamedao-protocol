@@ -1,7 +1,4 @@
 #![allow(warnings)]
-//! # unique
-//! Inspired by various unique items implementations
-//!
 //! This pallet exposes capabilities for managing unique items,
 //! also known as non-fungible tokens (NFTs).
 //!
@@ -19,7 +16,7 @@
 //! own. Items are uniquely identified by the hash of the info that defines
 //! them, as calculated by the runtime system's hashing algorithm.
 //!
-//! This pallet implements the [`UniqueItems`](./nft/trait.UniqueItems.html)
+//! This pallet implements the [`Items`](./nft/trait.Items.html)
 //! trait in a way that is optimized for items that are expected to be traded
 //! frequently.
 //!
@@ -49,7 +46,7 @@ use sp_runtime::traits::{Hash, Member};
 use sp_std::{cmp::Eq, fmt::Debug, vec::Vec};
 
 pub mod nft;
-pub use crate::nft::UniqueItems;
+pub use crate::nft::Items;
 
 #[cfg(test)]
 mod mock;
@@ -57,7 +54,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-pub trait Config<I = DefaultInstance>: frame_system::Config {
+pub trait Config<I=DefaultInstance>: frame_system::Config {
 
 	/// The dispatch origin that is able to mint new instances of this type of item.
 	type ItemAdmin: EnsureOrigin<Self::Origin>;
@@ -82,7 +79,7 @@ pub type ItemId<T> = <T as frame_system::Config>::Hash;
 pub type Item<T, I> = (ItemId<T>, <T as Config<I>>::ItemInfo);
 
 decl_storage! {
-	trait Store for Module<T: Config<I>, I: Instance = DefaultInstance> as Item {
+	trait Store for Module<T: Config<I>, I: Instance=DefaultInstance> as Item {
 		/// The total number of this type of item that exists (minted - burned).
 		Total get(fn total): u128 = 0;
 		/// The total number of this type of item that has been burned (may overflow).
@@ -100,7 +97,7 @@ decl_storage! {
 		build(|config: &GenesisConfig<T, I>| {
 			for (who, items) in config.balances.iter() {
 				for item in items {
-					match <Module::<T, I> as UniqueItems::<T::AccountId>>::mint(who, item.clone()) {
+					match <Module::<T, I> as Items::<T::AccountId>>::mint(who, item.clone()) {
 						Ok(_) => {}
 						Err(err) => { panic!(err) },
 					}
@@ -111,7 +108,7 @@ decl_storage! {
 }
 
 decl_event!(
-	pub enum Event<T, I = DefaultInstance>
+	pub enum Event<T, I=DefaultInstance>
 	where
 		ItemId = <T as frame_system::Config>::Hash,
 		AccountId = <T as frame_system::Config>::AccountId,
@@ -143,7 +140,7 @@ decl_error! {
 }
 
 decl_module! {
-	pub struct Module<T: Config<I>, I: Instance = DefaultInstance> for enum Call where origin: T::Origin {
+	pub struct Module<T: Config<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
 		type Error = Error<T, I>;
 		fn deposit_event() = default;
 
@@ -180,7 +177,7 @@ decl_module! {
 			let who = ensure_signed(origin)?;
 			ensure!(who == Self::account_for_item(&item_id), Error::<T, I>::NotItemOwner);
 
-			<Self as UniqueItems<_>>::burn(&item_id)?;
+			<Self as Items<_>>::burn(&item_id)?;
 			Self::deposit_event(RawEvent::Burned(item_id.clone()));
 			Ok(())
 		}
@@ -200,14 +197,14 @@ decl_module! {
 			let who = ensure_signed(origin)?;
 			ensure!(who == Self::account_for_item(&item_id), Error::<T, I>::NotItemOwner);
 
-			<Self as UniqueItems<_>>::transfer(&dest_account, &item_id)?;
+			<Self as Items<_>>::transfer(&dest_account, &item_id)?;
 			Self::deposit_event(RawEvent::Transferred(item_id.clone(), dest_account.clone()));
 			Ok(())
 		}
 	}
 }
 
-impl<T: Config<I>, I: Instance> UniqueItems<T::AccountId> for Module<T, I> {
+impl<T: Config<I>, I: Instance> Items<T::AccountId> for Module<T, I> {
 	type ItemId = ItemId<T>;
 	type ItemInfo = T::ItemInfo;
 	type ItemLimit = T::ItemLimit;
