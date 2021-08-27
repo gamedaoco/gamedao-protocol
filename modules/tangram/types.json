@@ -1,36 +1,39 @@
-
-"TangramRealm" {
+"RealmIndex":"u64",
+"ClassIndex":"u64",
+"ItemIndex":"u64",
+"TotalIndex":"u128",
+"TangramRealm": {
   "id": "Hash",
   "org": "Hash",
   "index": "u128"
 },
-"TangramRealmMetadata" {
+"TangramRealmMetadata": {
   "id": "Hash",
   "name": "Vec<u8>",
   "cid": "Vec<u8>",
   "created": "BlockNumber",
   "mutated": "BlockNumber"
 },
-"TangramClass" {
+"TangramClass": {
   "id": "Hash",
   "realm": "Hash",
   "org": "Hash",
   "index": "u128",
-  "cid": "Vec<u8>",
+  "cid": "Vec<u8>"
 },
-"TangramClassMetadata" {
+"TangramClassMetadata": {
   "id": "Hash",
   "name": "Vec<u8>",
   "cid": "Vec<u8>",
   "created": "BlockNumber",
-  "mutated": "BlockNumber",
+  "mutated": "BlockNumber"
 },
-"Tangram" {
+"Tangram": {
   "dob": "Moment",
-  "dna": "Hash",
+  "dna": "Hash"
 },
-"TangramMetadata" {
+"TangramMetadata": {
   "name": "Vec<u8>",
   "owner": "AccountId",
-  "cid": "Vec<u8>",
+  "cid": "Vec<u8>"
 }

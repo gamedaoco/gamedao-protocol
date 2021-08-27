@@ -18,7 +18,11 @@ sp-std = { version = "3.0.0", default-features = false, path = "../../primitives
 sp-core = { version = "3.0.0", default-features = false, path = "../../primitives/core" }
 sp-io = { version = "3.0.0", default-features = false, path = "../../primitives/io" }
 
-# orml-nft = { path = "../orml-nft", default-features = false, version = '1.0.0' }
+balances = { package = "pallet-balances", version = "3.0.0", default-features = false, path = "../../frame/balances" }
+
+primitives = { package = "zero-primitives", path = "../../bin/primitives", default-features = false }
+timestamp = { package = "pallet-timestamp", version = "3.0.0", default-features = false, path = "../../frame/timestamp" }
+sense = { package = "module-sense", path = "../sense", default-features = false }
 
 [features]
 default = ['std']
@@ -26,8 +30,9 @@ std = [
     'codec/std',
     'frame-support/std',
     'frame-system/std',
-    # 'module-item/std',
     'sp-core/std',
     'sp-runtime/std',
     'sp-std/std',
+    'balances/std',
+    'sense/std'
 ]

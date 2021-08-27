@@ -8,7 +8,12 @@
 use codec::{Decode, Encode};
 use frame_support::{
 	decl_error, decl_event, decl_module, decl_storage,
-	dispatch::DispatchResult,
+	ensure, dispatch,
+	dispatch::{
+		result::Result,
+		DispatchError,
+		DispatchResult
+	},
 	traits::{
 		Currency,
 		Get,
@@ -19,9 +24,15 @@ use frame_support::{
 		WithdrawReasons
 	},
 };
-use frame_system::ensure_signed;
+use frame_system::{ self as system, ensure_root, ensure_signed };
+use sp_runtime::traits::{Hash, Member};
 use sp_core::RuntimeDebug;
 use sp_std::vec::Vec;
+use primitives::{ Balance };
+
+// use control;
+// use governance;
+// use crowdfunding;
 
 // nft interface
 
@@ -34,18 +45,33 @@ pub use crate::nft::NFTItem;
 // #[cfg(test)]
 // mod tests;
 
-const MODULE_ID: LockIdentifier = *b"creature";
+const MODULE_ID: LockIdentifier = *b"tangram ";
 
 //
+
+pub type RealmIndex = u64;
+pub type ClassIndex = u64;
+pub type ItemIndex = u64;
+pub type TotalIndex = u128;
+pub type BurnedIndex = u128;
+// pub type ItemId = Hash;
+
+type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+type HashOf<T> = <T as frame_system::Config>::Hash;
+type MomentOf<T> = <<T as Config>::Time as Time>::Moment;
+type TangramItemOf<T> = TangramItem< HashOf<T>, MomentOf<T> >;
 
 /// TangramRealm
 /// RealmId, Controller Org, Index
 #[derive(Encode, Decode, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct TangramRealm<Hash> {
+	/// unique hash to indentify the realm
 	id: Hash,
+	/// hash identifying the authority
 	org: Hash,
-	index: u128,
+	/// realm index
+	index: u64,
 }
 
 /// TangramRealmMetadata
@@ -62,12 +88,14 @@ pub struct TangramRealmMetadata<Hash,BlockNumber> {
 /// TangramClass
 #[derive(Encode, Decode, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct TangramClass<Hash> {
-	id: Hash,
-	realm: Hash,
-	org: Hash,
-	index: u128,
-	cid: Vec<u8>,
+pub struct TangramClass<Hash, /*Balance*/> {
+	id: Hash,	// unique class hash
+	realm: RealmIndex,// auth realm
+	index: u64,	// class index
+	max: u64,	// max number of items in class
+	// mint: Balance,	// mint cost
+	// burn: Balance,	// burn cost
+	// strategy: u16,	// cid to strategy
 }
 
 /// TangramClassMetadata
@@ -83,9 +111,9 @@ pub struct TangramClassMetadata<Hash, BlockNumber> {
 
 /// Tangram Immutable + Unique
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Default, RuntimeDebug)]
-pub struct Tangram<Hash, Moment> {
-	dob: Moment,
+pub struct TangramItem<Hash, Moment> {
 	dna: Hash,
+	dob: Moment,
 }
 
 /// Tangram Mutable
@@ -94,81 +122,89 @@ pub struct TangramMetadata<AccountId> {
 	name: Vec<u8>,
 	owner: AccountId,
 	cid: Vec<u8>,
+	realm: RealmIndex,
+	class: ClassIndex
 }
 
 //
 //
 //
 
-type BalanceOf<T> =
-	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub trait Config: frame_system::Config + balances::Config {
 
-type TangramOf<T> =
-	Tangram<<T as frame_system::Config>::Hash, <<T as Config>::Time as Time>::Moment>;
-
-pub trait Config: frame_system::Config {
 	type Time: frame_support::traits::Time;
 	type Randomness: frame_support::traits::Randomness<Self::Hash>;
 	type Currency: frame_support::traits::LockableCurrency<Self::AccountId>;
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
-    type CreateRealmDeposit: Get<BalanceOf<Self>>;
-    type CreateClassDeposit: Get<BalanceOf<Self>>;
-    type CreateTokenDeposit: Get<BalanceOf<Self>>;
+
+	type CreateRealmDeposit: Get<BalanceOf<Self>>;
+	type CreateClassDeposit: Get<BalanceOf<Self>>;
+	type CreateTokenDeposit: Get<BalanceOf<Self>>;
+
+	type MaxRealmsPerOrg: Get<u64>;
+	type MaxClassesPerRealm: Get<u64>;
+	type MaxTokenPerClass: Get<u128>;
+	type MaxTotalToken: Get<u128>;
+
+	type NextRealmIndex;
+	type NextClassIndex;
+	type NextItemIndex;
+	type TotalIndex;
+	type BurnedIndex;
+
 }
+
 
 // creatures < classes < realms
 decl_storage! {
-	trait Store for Module<T: Config> as Tangram1 {
+	trait Store for Module<T: Config> as Tangram {
 
-		/// The next Realm Id
-		NextRealmId: u64 = 0;
-		/// Tangram Realm
-		ItemRealm get(fn item_realm): map hasher(blake2_128_concat) T::Hash => TangramRealm<T::Hash>;
+		// realm
+
+		/// Current Realm Index
+		pub NextRealmIndex get(fn next_realm_index): RealmIndex = 0;
+		/// Get a Realm by its hash
+		pub Realm get(fn realm_by_hash): map hasher(blake2_128_concat) T::Hash => TangramRealm<T::Hash>;
+		/// Get a Realm by its index
+		pub RealmByIndex get(fn realm_by_index): map hasher(blake2_128_concat) RealmIndex => T::Hash;
 		// OwnerForRealm
 		// RealmsForOwner
 		// ClassesForRealm
 
-		NextClassId: u64 = 0;
-		/// Tangram Realm
-		ItemClass get(fn item_class): map hasher(blake2_128_concat) T::Hash => TangramClass<T::Hash>;
+		// class
+
+		/// Current Class Index, individual per Realm
+		pub NextClassIndex get(fn next_class_index): map hasher(blake2_128_concat) RealmIndex => ClassIndex = 0;
+		/// Tangram Class
+		pub ItemClass get(fn tangram_class): map hasher(blake2_128_concat) T::Hash => TangramClass<T::Hash, /*T::Balance*/>;
+		// ItemClassByIndex get(fn tangram_class_by_index): map hasher(blake2_128_concat) (RealmId,ClassIndex) => T::Hash;
 		// OwnerForClass
 		// ClassesForOwner
 		// RealmForClass
 		// ItemsForClass
+		// MaxItemsForClass(fn)
 
-		NextItemId: u64 = 0;
+		// item
+
+		/// Current Item Index, individual per Class in its respective Realm
+		pub NextItemIndex get(fn next_item_index): map hasher(blake2_128_concat) (RealmIndex, ClassIndex) => ItemIndex;
+		/// Max Items for respective Class
+		pub MaxItems get(fn max_items): map hasher(blake2_128_concat) (RealmIndex, ClassIndex) => u64;
+
 		/// Tangram Item
-		// Item get(fn item): map hasher(blake2_128_concat) T::Hash => Tangram<T::Hash, Moment>;
-		ItemById get(fn item_by_id): map hasher(blake2_128_concat) u64 => T::Hash;
-		// OwnerForCreature
-		// CreaturesForOwner
-		ItemMetadata get(fn item_metadata): map hasher(identity) T::Hash => TangramMetadata<T::Hash>;
+		pub Item get(fn item): map hasher(blake2_128_concat) T::Hash => TangramItemOf<T>;
+		/// Retrieve an Item Hash by its indexes
+		pub ItemByIndex get(fn item_by_index): map hasher(blake2_128_concat) (RealmIndex,ClassIndex,ItemIndex) => T::Hash;
+		/// Metadata for an Item
+		pub ItemMetadata get(fn item_metadata): map hasher(identity) T::Hash => TangramMetadata<T::Hash>;
 
-	}
-}
+		// global
 
-decl_event!(
-	pub enum Event<T>
-	where
-		ItemId = <T as frame_system::Config>::Hash,
-		AccountId = <T as frame_system::Config>::AccountId,
-	{
-		RealmCreated(u64),
-		ClassCreated(u64),
-		ItemSpawned( ItemId, AccountId ),
-	}
-);
+		/// Total Token in system
+		pub Total get(fn total_items): TotalIndex;
+		/// Burned Token in system
+		pub Burned get(fn burend_items): BurnedIndex;
 
-decl_error! {
-	pub enum Error for Module<T: Config> {
-		/// Spawning a Creature failed.
-		SpawnFailed,
-		/// Item Exists
-		ItemExists,
-		/// Item Unknown
-		ItemUnknown,
-		/// Guru Meditation
-		GuruMeditation,
 	}
 }
 
@@ -178,89 +214,318 @@ decl_module! {
 		type Error = Error<T>;
 		fn deposit_event() = default;
 
+		// const CreateRealmDeposit: Currency<T> = T::CreateRealmDeposit::get();
+		// const CreateClassDeposit: Currency<T> = T::CreateClassDeposit::get();
+		// const CreateTokenDeposit: Currency<T> = T::CreateTokenDeposit::get();
+
+		const MaxRealmsPerOrg: u64 = T::MaxRealmsPerOrg::get();
+		const MaxClassesPerRealm: u64 = T::MaxClassesPerRealm::get();
+		const MaxTokenPerClass: u128 = T::MaxTokenPerClass::get();
+		const MaxTotalToken: u128 = T::MaxTotalToken::get();
+
 		#[weight = 50_000]
-		fn create_realm( origin, org: T::Hash, name: Vec<u8> ) -> DispatchResult {
+		pub fn create_realm(
+			origin,
+			org: T::Hash
+		) -> DispatchResult {
+			// TODO: ensure origin == controller
 			// TODO: ensure org exists
-			// TODO: ensure origin == org controller
-			let id = NextRealmId::get();
-			// TODO: create realm with name
-			NextRealmId::mutate(|n| *n += 1);
-			Self::deposit_event(RawEvent::RealmCreated(id));
+			// TODO: ensure org does not have a realm yet
+			let index = NextRealmIndex::get();
+			let hash = <T as Config>::Randomness::random(b"rndrealm");
+			let realm = TangramRealm { id: hash.clone(), org: org, index: index.clone() };
+			Realm::<T>::insert( hash.clone(), realm );
+			RealmByIndex::<T>::insert( index.clone(), hash );
+			// unsafe add
+			NextRealmIndex::mutate(|i| *i += 1);
+			Self::deposit_event( RawEvent::RealmCreated( index.clone() ) );
 			Ok(())
 		}
 
 		#[weight = 50_000]
-		fn create_class( origin, id: u64, name: Vec<u8> ) -> DispatchResult {
-			// TODO: ensure realm exists ( id < nextrealmid )
+		pub fn create_class(
+			origin,
+			realm: RealmIndex,	// associated realm
+			name: Vec<u8>,		// class name
+			max: u64,			// max items
+			// mint: T::Balance,	// mint cost
+			// burn: T::Balance,	// burn cost
+			// strategy: u16		// cid for strategy
+		) -> DispatchResult {
 			// TODO: ensure origin == realm controller
-			// TODO: create class with name
-			Self::deposit_event(RawEvent::ClassCreated(id));
+
+			// valid realm
+			let realm_index = NextRealmIndex::get();
+			ensure!( realm < realm_index, Error::<T>::UnknownRealm );
+
+			// max items
+			ensure!( max > 0, Error::<T>::MaxItemsTooSmall );
+			let index = Self::next_class_index(&realm);
+			MaxItems::insert((&realm,&index),max.clone());
+
+			// class
+			let hash = <T as Config>::Randomness::random(b"rndclass ");
+			let new_class = TangramClass {
+				id: hash.clone(),
+				realm: realm.clone(),
+				index: index.clone(),
+				max: max.clone(),
+				// mint: 1,
+				// burn: 1,
+				// strategy: 1
+			};
+			ItemClass::<T>::insert( hash.clone(), new_class );
+			// ClassByIndex::<T>::insert( index.clone(), hash );
+
+			NextItemIndex::insert((&realm,&index),0);
+
+			// ++ class index
+			let mut next_index = index.checked_add(1).ok_or(Error::<T>::Overflow)?;
+			NextClassIndex::insert(&realm,next_index.clone());
+
+			Self::deposit_event(RawEvent::ClassCreated(realm, index, max));
 			Ok(())
 		}
 
 		#[weight = 50_000]
-		fn create_token( origin, class: T::Hash, name: Vec<u8> ) -> DispatchResult {
-			Ok(())
-		}
+		pub fn create_item(
+			origin,
+			realm: RealmIndex, 	// associated realm
+			class: ClassIndex,	// associated class
+			name: Vec<u8>,		// token name
+			cid: Vec<u8>		// ipfs cid
+		) -> DispatchResult {
 
-
-		// Reserve funds from the sender's account before spawning a collectible.
-		//
-		// The dispatch origin for this call must be Signed.
-		#[weight = 10_000]
-		pub fn spawn( origin, name: Vec<u8>, cid: Vec<u8> ) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			// TODO: ensure origin == realm controller
+			// T::ItemAdmin::ensure_origin(origin)?;
+
+			ensure!( realm < NextRealmIndex::get(), Error::<T>::UnknownRealm );
+			ensure!( class < Self::next_class_index(&realm), Error::<T>::UnknownClass );
+			ensure!( Self::next_item_index((&realm,&class)) < Self::max_items((&realm,&class) ), Error::<T>::MaxItemsReached );
+
+			// 1. lock
 			// T::Currency::set_lock(
 			// 	MODULE_ID,
 			// 	&who,
-			// 	CreateTokenDeposit::get(),
+			// 	T::CreateTokenDeposit,
 			// 	WithdrawReasons::Fee | WithdrawReasons::Reserve
 			// );
-			// match T::Item::mint(
-			// 	&who,
-			// 	Tangram{
-			// 		dob: T::Time::now(),
-			// 		dna: T::Randomness::random(&MODULE_ID)
-			// 	}
-			// ) {
-			// 	Ok(id) => {
-			// 		// ItemMetadata::<T>::insert(id, TangramMetadata{
-			// 		// 	name: name.clone(),
-			// 		// 	cid: cid.clone(),
-			// 		// 	owner: who
-			// 		// });
-			// 		Self::deposit_event(RawEvent::ItemSpawned(id, who));
-			// 	},
-			// 	Err(err) => Err(err)?
-			// }
-		    Ok(())
+
+			// 2. generate based on rarity levels
+			// epic mega rare common
+			// 0000+0000+0000+00000000 = 24 bytes
+
+			let epic = "0000";
+			let mega = "0000";
+			let rare = "0000";
+			let high = "0000";
+			let low  = "0000";
+			let mut stream = [
+					epic,
+					mega,
+					rare,
+					high,
+					low,
+				].concat();
+			let hash = &*stream;
+
+			// 3. mint
+			match Self::mint(
+				&who,	// caller == owner
+				TangramItem {
+					dob: T::Time::now(),
+					dna: T::Randomness::random(&MODULE_ID)
+				}
+			) {
+				Ok(id) => {
+					// 4. store metadata
+					// ItemMetadata::<T>::insert(
+					// 	id,
+					// 	TangramMetadata {
+					//		id: id.clone(),		// hash
+					// 		name: name.clone(), // name
+					// 		cid: cid.clone(),	// content
+					// 		owner: who,			// owner
+					// 		realm: realm,		// ref realm
+					// 		class: class,		// ref class
+					// 	}
+					// );
+
+					let itemIndex = Self::next_item_index((&realm,&class));
+					let nextItemIndex = itemIndex.checked_add(1).ok_or(Error::<T>::Overflow)?;
+					NextItemIndex::insert((&realm,&class), nextItemIndex);
+					Total::mutate(|i| *i += 1);
+					Self::deposit_event( RawEvent::Minted( id, who ) );
+				},
+				Err(err) => Err(err)?
+			}
+			Ok(())
 		}
 
-		// TODO: BOOST
-		// power up a collectible by locking more funds
-		// increases power without altering DNA
-		// store as metadata in this pallet
+	}
+}
 
-		// TODO: RECOUP
-		// remove boost and associated lock
+impl<T: Config> Module<T> {
 
-		// TODO: FLIRT
-		// post intent to breed, must have power boost
+	// type ItemId;
 
-		// TODO: BREED
-		// respond to intent to breed, must have power boost
-		// DNA and power derived from parents
-		// each parent randomly contributes power from boost
-		// offspring owner randomly assigned between parent owners
+	// / return the total number of items per class
+	// fn total( class_id: u64 ) -> u128 {
+	//     Self::total()
+	// }
 
-		// TODO: SELL
-		// post intent to sell including price
+	// /// get the total number of items burned per class
+	// fn burned( class_id: u64 ) -> u128 {
+	//     Self::burned()
+	// }
 
-		// TODO: BUY
-		// respond to intent to sell
-		// transfer funds to seller and transfer collectible ownership
+	// fn total_for_account( class_id: u64, account: &T::AccountId) -> u64 {
+	//     Self::total_for_account(account)
+	// }
 
-		// TODO: RELEASE
-		// burn collectible and unlock funds
+	// /// retrieve all items for an account in a class
+	// fn items_for_account( class_id: u64, account: &T::AccountId) -> Vec<Item<T>> {
+	//     Self::items_for_account(account)
+	// }
+
+	// /// retrieve the owner of an item ( in a class, otherwise search to heavy )
+	// fn owner_of( class_id: u64, item_id: &ItemId<T>) -> T::AccountId {
+	//     Self::account_for_item(item_id)
+	// }
+
+	fn mint(
+	    owner_account: &T::AccountId,
+	    item_info: TangramItemOf<T>,
+	) -> dispatch::result::Result< T::Hash, dispatch::DispatchError> {
+
+
+	    let item_id = T::Hashing::hash_of(&item_info);
+
+	//     ensure!(
+	//         !AccountForItem::<T, I>::contains_key(&item_id),
+	//         Error::<T, I>::ItemExists
+	//     );
+
+	//     ensure!(
+	//         Self::total_for_account(owner_account) < T::UserItemLimit::get(),
+	//         Error::<T, I>::TooManyItemsForAccount
+	//     );
+
+	//     ensure!(
+	//         Self::total() < T::ItemLimit::get(),
+	//         Error::<T, I>::TooManyItems
+	//     );
+
+	//     let new_item = (item_id, item_info);
+
+	//     Total::<I>::mutate(|total| *total += 1);
+	//     TotalForAccount::<T, I>::mutate(owner_account, |total| *total += 1);
+	//     ItemsForAccount::<T, T>::mutate(owner_account, |items| {
+	//         match items.binary_search(&new_item) {
+	//             Ok(_pos) => {} // should never happen
+	//             Err(pos) => items.insert(pos, new_item),
+	//         }
+	//     });
+	//     AccountForItem::<T, T>::insert(item_id, &owner_account);
+
+	    Ok(item_id)
+	}
+
+	// fn burn(item_id: &Item<T>) -> dispatch::DispatchResult {
+	//     let owner = Self::owner_of(item_id);
+	//     ensure!(
+	//         owner != T::AccountId::default(),
+	//         Error::<T, I>::NonexistentItem
+	//     );
+
+	//     let burn_item = (*item_id, <T as Config<T>>::ItemInfo::default());
+
+	//     Total::<T>::mutate(|total| *total -= 1);
+	//     Burned::<T>::mutate(|total| *total += 1);
+	//     TotalForAccount::<T, T>::mutate(&owner, |total| *total -= 1);
+	//     ItemsForAccount::<T, T>::mutate(owner, |items| {
+	//         let pos = items
+	//             .binary_search(&burn_item)
+	//             .expect("We already checked that we have the correct owner; qed");
+	//         items.remove(pos);
+	//     });
+	//     AccountForItem::<T, T>::remove(&item_id);
+
+	//     Ok(())
+	// }
+
+	// fn transfer(
+	//     dest_account: &T::AccountId,
+	//     item_id: &Item<T>,
+	// ) -> dispatch::DispatchResult {
+	//     let owner = Self::owner_of(&item_id);
+	//     ensure!(
+	//         owner != T::AccountId::default(),
+	//         Error::<T, I>::NonexistentItem
+	//     );
+
+	//     ensure!(
+	//         Self::total_for_account(dest_account) < T::UserItemLimit::get(),
+	//         Error::<T, I>::TooManyItemsForAccount
+	//     );
+
+	//     let xfer_item = (*item_id, <T as Config<T>>::ItemInfo::default());
+
+	//     TotalForAccount::<T, T>::mutate(&owner, |total| *total -= 1);
+	//     TotalForAccount::<T, T>::mutate(dest_account, |total| *total += 1);
+	//     let item = ItemsForAccount::<T, T>::mutate(owner, |items| {
+	//         let pos = items
+	//             .binary_search(&xfer_item)
+	//             .expect("We already checked that we have the correct owner; qed");
+	//         items.remove(pos)
+	//     });
+	//     ItemsForAccount::<T, T>::mutate(dest_account, |items| {
+	//         match items.binary_search(&item) {
+	//             Ok(_pos) => {} // should never happen
+	//             Err(pos) => items.insert(pos, item),
+	//         }
+	//     });
+	//     AccountForItem::<T, T>::insert(&item_id, &dest_account);
+
+	//     Ok(())
+	// }
+
+}
+
+decl_event!(
+	pub enum Event<T>
+	where
+		ItemId = <T as frame_system::Config>::Hash,
+		AccountId = <T as frame_system::Config>::AccountId,
+	{
+		RealmCreated( u64 ),
+		ClassCreated( u64, u64, u64 ),
+		Minted( ItemId, AccountId ),
+		Burned( ItemId ),
+		Transferred( ItemId, AccountId ),
+	}
+);
+
+decl_error! {
+	pub enum Error for Module<T: Config> {
+		/// Unknown Realm
+		UnknownRealm,
+		/// Unknown Class
+		UnknownClass,
+		/// Unknown Item
+		UnknownItem,
+		/// Maximum Items for Class reached
+		MaxItemsReached,
+		/// Spawning an item failed.
+		SpawnFailed,
+		/// Item Exists
+		ItemExists,
+		/// Overflow
+		Overflow,
+		/// Guru Meditation
+		GuruMeditation,
+		/// MaxItems too small
+		MaxItemsTooSmall,
 	}
 }
