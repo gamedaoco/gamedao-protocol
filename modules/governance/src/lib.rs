@@ -372,8 +372,7 @@ decl_module! {
 
 		fn on_finalize() {
 
-			// i'm still jenny from the the block
-
+			// i'm still jenny from the block
 			let block_number = <system::Module<T>>::block_number();
 			let proposal_hashes = Self::proposals_by_block(block_number);
 

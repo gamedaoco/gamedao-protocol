@@ -648,6 +648,7 @@ impl<T: Config> Module<T> {
 	fn set_status( id: T::Hash, state: u8 ) {
 
 		let current_state = Self::campaign_state( &id );
+		// remove
 		let mut current_state_members = Self::campaigns_by_state( &current_state );
 		match current_state_members.binary_search(&id) {
 			Ok(index) => {
@@ -656,6 +657,7 @@ impl<T: Config> Module<T> {
 			},
 			Err(_) => () //(Error::<T>::IdUnknown)
 		}
+		// add
 		CampaignsByState::<T>::mutate( &state, |campaigns| campaigns.push( id.clone() ) );
 		CampaignState::<T>::insert( id, state );
 
