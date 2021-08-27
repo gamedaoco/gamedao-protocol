@@ -173,8 +173,8 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 //
 
 // parameter_types! {
-// 	// pub const ZeroTreasuryModuleId: ModuleId = ModuleId(*b"z/schatz");
-// 	// pub const StakingPoolModuleId: ModuleId = ModuleId(*b"z/sicher");
+// 	pub const ZeroTreasuryModuleId: ModuleId = ModuleId(*b"z/schatz");
+// 	pub const StakingPoolModuleId: ModuleId = ModuleId(*b"z/sicher");
 // 	pub const CrowdfundingModuleId: ModuleId = ModuleId(*b"modraise");
 // 	pub const GovernanceModuleId: ModuleId = ModuleId(*b"modchord");
 // 	pub const SenseModuleId: ModuleId = ModuleId(*b"modsense");
@@ -1089,6 +1089,8 @@ impl module_control::Config for Runtime {
 	type Event = Event;
 	type Randomness = RandomnessCollectiveFlip;
 
+	// type Tangram = module_tangram::Module<Runtime>;
+
 }
 
 //
@@ -1173,15 +1175,9 @@ impl module_governance::Config for Runtime {
 
 }
 
-//
-//	i t e m
-//	general unique assets bounds and params
-//
-
 // parameter_types! {
-
-// 	//	quantity bounds
-// 	//	maximum realms
+//		//	quantity bounds
+//		//	maximum realms
 //     pub const MaxRealms: u128 = 2^16;
 //     //	maxium realms governed by one address
 //     pub const MaxRealmsPerAddress: u64 = 4;
@@ -1195,126 +1191,24 @@ impl module_governance::Config for Runtime {
 //     pub const MaxAssetsPerAddress: u64 = 256;
 //     //	max assets per class
 //     pub const MaxAssetsPerClass: u128 = 2^32;
-
 //     //	special case bundles
 //     //	max assets in a bundle
 //     pub const MaxAssetsPerBundle: u128 = 1024;
 //     //	max bundles held by an address
 //     pub const MaxBundlesPerAddress: u64 = 256;
-
-//     //
-// 	pub const BasePrice: Balance = 1 * DOLLARS;
-
 // }
 
 // impl module_asset::Config for Runtime {
-
 // 	type SuperAdmin = frame_system::EnsureRoot<AccountId>;
-
-// 	type Time = pallet_timestamp::Module<Runtime>;
-// 	type Randomness = RandomnessCollectiveFlip;
-// 	type Currency = Balances;
-
-// 	type BasePrice = BasePrice;
-// 	type Event = Event;
-
 // 	type MaxRealms = MaxRealms;
 // 	type MaxRealmsPerAddress = MaxRealmsPerAddress;
-
 // 	type MaxClassesPerRealm = MaxClassesPerRealm;
 // 	type MaxClassesPerAddress = MaxClassesPerAddress;
-
 // 	type MaxAssets = MaxAssets;
 // 	type MaxAssetsPerAddress = MaxAssetsPerAddress;
 // 	type MaxAssetsPerClass = MaxAssetsPerClass;
 // 	type MaxAssetsPerBundle = MaxAssetsPerBundle;
-
 // 	type MaxBundlesPerAddress = MaxBundlesPerAddress;
-
-// }
-
-
-// parameter_types! {
-//     pub const MaxAssets: u128 = 2^64;
-//     pub const MaxAssetsPerUser: u64 = 1024;
-// }
-// impl module_item::Config for Runtime {
-//     type ItemAdmin = frame_system::EnsureRoot<AccountId>;
-//     type ItemInfo = module_creatures::CreatureInfo<Hash, Moment>;
-//     type ItemLimit = MaxAssets;
-//     type UserItemLimit = MaxAssetsPerUser;
-//     type Event = Event;
-// }
-// parameter_types! {
-//     pub const BasePrice: Balance = 1 * DOLLARS;
-// }
-// impl module_creatures::Config for Runtime {
-//     type Creatures = module_item::Module<Runtime>;
-//     type Time = pallet_timestamp::Module<Runtime>;
-//     type Randomness = RandomnessCollectiveFlip;
-//     type Currency = Balances;
-//     type BasePrice = BasePrice;
-//     type Event = Event;
-// }
-
-
-
-// basic implementation borrowed from dan forbes nft
-// TODO
-// add classes
-// add realms
-// add currencies
-
-// parameter_types! {
-//     pub const MaxAssets: u128 = 2^64;
-//     pub const MaxAssetsPerUser: u64 = 1024;
-// }
-
-// impl module_item::Config for Runtime {
-
-//     type ItemAdmin = frame_system::EnsureRoot<AccountId>;
-// // 	type Currency = Currency<Runtime, GetNativeCurrencyId>;
-// // 	type WeightInfo = weights::module_item::WeightInfo<Runtime>;
-
-//     type ItemInfo = module_hypaspace::HypaspaceInfo<Hash, Moment>;
-//     type ItemLimit = MaxAssets;
-//     type UserItemLimit = MaxAssetsPerUser;
-//     type Event = Event;
-// // 	type WeightInfo = weights::module_item::WeightInfo<Runtime>;
-// }
-
-// parameter_types! {
-//     pub const BasePrice: Balance = 1 * DOLLARS;
-// }
-
-// impl module_hypaspace::Config for Runtime {
-
-//     type Spaces = module_item::Module<Runtime>;
-
-
-
-
-
-//
-//	zero nft
-//
-
-// parameter_types! {
-// 	pub const CreateClassDeposit: Balance = 500 * MILLICENTS;
-// 	pub const CreateTokenDeposit: Balance = 100 * MILLICENTS;
-// 	pub const NFTModuleId: ModuleId = ModuleId(*b"zeronfty");
-
-// }
-// impl zero_nft::Config for Runtime {
-// 	type Event = Event;
-// 	type Randomness = RandomnessCollectiveFlip;
-// 	type Currency = Currency<Runtime, GetNativeCurrencyId>;
-// 	type CreateClassDeposit = CreateClassDeposit;
-// 	type CreateTokenDeposit = CreateTokenDeposit;
-//     type ClassId = u32;
-//     type TokenId = u64;
-//     type ModuleId = NFTModuleId;
-// 	// type WeightInfo = weights::nft::WeightInfo<Runtime>;
 // }
 
 //
@@ -1325,15 +1219,32 @@ parameter_types! {
 	pub const CreateRealmDeposit: Balance = 1000 * MILLICENTS;
 	pub const CreateClassDeposit: Balance = 500 * MILLICENTS;
 	pub const CreateTokenDeposit: Balance = 10 * MILLICENTS;
+    pub const MaxRealms: u64 = 1;
+    pub const MaxClasses: u64 = 1024;
+    pub const MaxToken: u128 = 2^32;
+    pub const MaxTotalToken: u128 = 2^64;
 }
 impl module_tangram::Config for Runtime {
     type Event = Event;
  	type Currency = Balances;
  	type Randomness = RandomnessCollectiveFlip;
 	type Time = pallet_timestamp::Module<Runtime>;
+
 	type CreateRealmDeposit = CreateRealmDeposit;
 	type CreateClassDeposit = CreateClassDeposit;
 	type CreateTokenDeposit = CreateTokenDeposit;
+
+    type MaxRealmsPerOrg = MaxRealms;
+    type MaxClassesPerRealm = MaxClasses;
+    type MaxTokenPerClass = MaxToken;
+    type MaxTotalToken = MaxTotalToken;
+
+	type NextRealmIndex = u64;
+	type NextClassIndex = u64;
+	type NextItemIndex = u64;
+	type TotalIndex = u128;
+	type BurnedIndex = u128;
+
 // 	type WeightInfo = weights::module_item::WeightInfo<Runtime>;
 }
 
@@ -1401,7 +1312,7 @@ construct_runtime!(
 		GameDaoControl: module_control::{Module, Call, Storage, Event<T>},
 		GameDaoCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
 		GameDaoGovernance: module_governance::{Module, Call, Storage, Event<T>},
-		GameDAOTangram: module_tangram::{Module, Call, Storage, Event<T>},
+		GameDaoTangram: module_tangram::{Module, Call, Storage, Event<T>},
 
 	}
 );
