@@ -28,6 +28,8 @@ std = [
 	"sp-std/std",
 	"sp-storage/std",
 	"sp-runtime/std",
+
+	"tangram/std",
 ]
 
 [dependencies]

@@ -53,6 +53,18 @@ pub mod module {
 		// BodyState
 	};
 
+
+	use tangram;
+	use tangram::Module as Tangram;
+	// use tangram::nft::Items;
+	use tangram::{
+		Call::create_realm,
+		Call::create_class,
+		NextRealmIndex
+	};
+
+	// use tangram::Call::create_class;
+
 	// #[derive(Encode, Decode, PartialEq, Eq)]
 	// #[cfg_attr(feature = "std", derive(Debug))]
 	// pub enum BodyType {
@@ -80,7 +92,7 @@ pub mod module {
 	//
 	//
 
-	pub trait Config: system::Config + balances::Config {
+	pub trait Config: system::Config + balances::Config + tangram::Config {
 
 		// supervision
 		type ForceOrigin: EnsureOrigin<Self::Origin>;
@@ -101,6 +113,13 @@ pub mod module {
 		type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
 		type Randomness: Randomness<Self::Hash>;
 
+		// tangram
+		// type Tangram: From<tangram::Config>;
+		// type Kitties: pallet_commodities::nft::UniqueAssets<
+		// Self::AccountId,
+		// AssetId = Self::Hash,
+		// AssetInfo = KittyInfoOf<Self>,
+		// >;
 	}
 
 	//
@@ -238,6 +257,9 @@ pub mod module {
 				gov_asset: u8,              // control assets to empower actors
 				pay_asset: u8,
 				member_limit: u64,          // max members, if 0 == no limit
+				// mint: T::Balance,
+				// burn: T::Balance,
+				// strategy: u16,
 			) -> DispatchResult {
 
 				// set up fee
@@ -250,7 +272,7 @@ pub mod module {
 				let state = 1; // live
 
 				let phrase = name.clone();
-				let hash = T::Randomness::random(&phrase);
+				let hash = <T as Config>::Randomness::random(&phrase);
 
 				// body
 				let data = Body {
@@ -309,12 +331,47 @@ pub mod module {
 				Self::add( hash.clone(), controller.clone() );
 				Self::add( hash.clone(), treasury.clone() );
 
+
+
+				// generate nft realm
+
+				// get the current realm index
+				// let realm_index = tangram::Module::<T>::next_realm_index();
+				let realm_index = tangram::NextRealmIndex::get();
+
+				// every org receives a token realm by default
+				let realm = tangram::Call::<T>::create_realm(hash.clone());
+				// match tangram::Call::<T>::create_realm(hash.clone()) {
+				// 		Ok(_) => {}
+				// 		Err(err) => { panic!(err) },
+				// }
+
+				// generate a class name
+				let name:Vec<u8> = b"game".to_vec();
+
+				// every org receives a token class for collectables by default
+				let max = 1000; // TODO! externalise max
+
+				tangram::Call::<T>::create_class(
+					realm_index.clone(),
+					name,
+					max,
+					// mint,
+					// burn,
+					// strategy
+				);
+
+				// match tangram::Call::<T>::create_class( realm_index.clone(), name, max ) {
+				// 		Ok(_) => {}
+				// 		Err(err) => { panic!(err) },
+				// }
+
 				// nonce
 				Nonce::mutate(|n| *n += 1);
 
 				// dispatch event
 				Self::deposit_event(
-					RawEvent::BodyCreated(creator, hash, now)
+					RawEvent::BodyCreated(creator, hash, now, realm_index)
 				);
 				Ok(())
 
@@ -327,7 +384,6 @@ pub mod module {
 				hash: T::Hash,
 				account: T::AccountId
 			) -> DispatchResult {
-
 				let caller = ensure_signed(origin)?;
 				Self::add( hash.clone(), account.clone() );
 
@@ -336,8 +392,6 @@ pub mod module {
 					RawEvent::AddMember(hash, account, now)
 				);
 				Ok(())
-
-
 			}
 
 			// Remove Member from Body
@@ -346,12 +400,18 @@ pub mod module {
 				origin,
 				hash: T::Hash,
 				account: T::AccountId,
-			) {
+			) -> DispatchResult {
 				// TODO:
 				// when fees==1 unreserve fees
-			// 	let sender = ensure_signed(origin)?;
-			// 	Self::remove( hash.clone(), account.clone());
 
+				let caller = ensure_signed(origin)?;
+				// Self::remove( hash.clone(), account.clone());
+
+				let now = <system::Module<T>>::block_number();
+				Self::deposit_event(
+					RawEvent::AddMember(hash, account, now)
+				);
+				Ok(())
 			}
 
 			// Update State of Body
@@ -570,7 +630,8 @@ pub mod module {
 			<T as system::Config>::BlockNumber,
 			<T as system::Config>::Hash,
 		{
-			BodyCreated( AccountId, Hash, BlockNumber),
+			Message(Vec<u8>),
+			BodyCreated( AccountId, Hash, BlockNumber, u64),
 			BodyUpdated( AccountId, Hash, BlockNumber),
 			BodyDisabled( Hash ),
 			BodyTransferred( AccountId, Hash, BlockNumber),
@@ -578,6 +639,8 @@ pub mod module {
 			RemoveMember( Hash, AccountId, BlockNumber),
 			UpdateMember( Hash, AccountId, BlockNumber),
 			IsAMember( Hash, AccountId),
+			RealmCreated(),
+			ClassCreated(),
 		}
 	}
 
