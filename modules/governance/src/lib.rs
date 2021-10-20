@@ -1,29 +1,12 @@
-//
-//           _______________________________ ________
-//           \____    /\_   _____/\______   \\_____  \
-//             /     /  |    __)_  |       _/ /   |   \
-//            /     /_  |        \ |    |   \/    |    \
-//           /_______ \/_______  / |____|_  /\_______  /
-//                   \/        \/         \/         \/
-//           Z  E  R  O  .  I  O     N  E  T  W  O  R  K
-//           © C O P Y R I O T   2 0 7 5 @ Z E R O . I O
-
-// crowdcampaign
-// campaign treasury
-
-// 1. proposal withdrawal (unreserve) as creator from successful campaign
-// 2. approve withdrawals (unreserve) as investor from successfully funded campaigns
-
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // TODO: harden checks on completion
 #![allow(dead_code)]
 #![allow(unused_imports)]
 #![allow(unused_variables)]
-// only on nightly
-// #![feature(const_fn_fn_ptr_basics)]
 
 use crowdfunding;
+use control;
 
 use frame_system::{ self as system, ensure_signed };
 use frame_support::{
@@ -40,66 +23,89 @@ use frame_support::{
 use sp_core::{ Hasher, H256 };
 use sp_std::prelude::*;
 use codec::{ Encode, Decode };
-// TODO: replace deprecated
 use sp_runtime::traits::{ Hash, Zero };
+
+#[cfg(feature = "std")]
+use serde::{ Deserialize, Serialize };
 
 // #[cfg_attr(feature = "std", derive(Debug))]
 
+// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, PartialOrd, Ord)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+// pub enum ProposalType {
+// 	PROPOSAL   = 0,
+// 	TREASURY   = 1,
+// 	MEMBERSHIP = 2,
+// }
+
+// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, PartialOrd, Ord)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+// pub enum VotingType {
+// 	WEIGHTED   = 0,
+// 	DEMOCRATIC = 1,
+// 	QUADRATIC  = 2,
+// 	CONVICTION = 3,
+// }
+
+// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, PartialOrd, Ord)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+// pub enum ProposalState {
+// 	LOCK =  0,
+// 	OPEN =  1,
+// 	ACK  =  2,
+// 	NACK =  3,
+// 	TERM =  4,
+// }
+
 //
 //
 //
-//
-//
+
+type TitleText = Vec<u8>;
+type CID = Vec<u8>;
+type ProposalType = u8;
+type ProposalState = u8;
+type VotingType = u8;
 
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
-pub struct Proposal<Hash, Balance, BlockNumber>{
-
+pub struct Proposal<Hash, Balance, BlockNumber, ProposalType, VotingType, ProposalState, TitleText, CID> {
 	// unique proposal id
 	proposal_id: Hash,
-
-	// unique campaign id
-	// campaign_id: Hash,
 	// context id can be either campaign or org
 	context_id: Hash,
-
-	// type describes the related action to a proposal
-	// e.g. simple voting, withdrawal
-	proposal_type: u8,
-
+	// proposal type
+	proposal_type: ProposalType,
+	// voting type
+	voting_type: VotingType,
 	// short description
-	purpose: Vec<u8>,
-
+	title: TitleText,
 	// ipfs content hash
-	cid: Vec<u8>,
-
-	// proposaled funds
+	cid: CID,
+	// requested funds (if type = 1)
 	amount: Balance,
-
 	// expiration block of proposal
 	expiry: BlockNumber,
-
 	// status
-	// 0 open, 1 approved, 2 declined, 3 expired
-	status: u8,
+	status: ProposalState,
 }
 
-pub trait Config: timestamp::Config + crowdfunding::Config {
+//
+//
+//
 
+pub trait Config: timestamp::Config + crowdfunding::Config {
 	type Currency: ReservableCurrency<Self::AccountId>;
 	type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
 	type Nonce: Get<u64>;
 	type Randomness: Randomness<Self::Hash>;
-
 	type MaxProposalsPerBlock: Get<usize>;
-
+	// type MaxDuration: Get<usize>;
 }
 
-// TODO replace with config
+// TODO: replace with config
 const MAX_PROPOSALS_PER_BLOCK: usize = 3;
 const MAX_PROPOSAL_DURATION: u32 = 60480;
 
-//
-//
 //
 //
 //
@@ -111,6 +117,7 @@ decl_event!(
 		<T as balances::Config>::Balance,
 		<T as system::Config>::BlockNumber
 	{
+		Proposal(AccountId, Hash),
 		ProposalCreated(AccountId, Hash, Hash, Balance, BlockNumber),
 		ProposalVoted(AccountId, Hash),
 		ProposalFinalized(Hash, u64, BlockNumber, bool),
@@ -120,57 +127,53 @@ decl_event!(
 //
 //
 //
-//
-//
 
 decl_storage! {
-
 	trait Store for Module<T: Config> as Governance1 {
 
-		// Global status
-		Proposals get(fn proposals): map hasher(blake2_128_concat) T::Hash => Proposal<T::Hash, T::Balance, T::BlockNumber>;
+		/// Global status
+		Proposals get(fn proposals): map hasher(blake2_128_concat) T::Hash => Proposal<T::Hash, T::Balance, T::BlockNumber, ProposalType, ProposalState, VotingType, TitleText, CID>;
+
 		ProposalOwner get(fn proposal_owner): map hasher(blake2_128_concat) T::Hash => Option<T::AccountId>;
 
-		// Maximum time limit for the proposal
+		/// Maximum time limit for a proposal
 		ProposalTimeLimit get(fn proposal_time_limit) config(): T::BlockNumber = T::BlockNumber::from(MAX_PROPOSAL_DURATION);
 
-		// All proposals
+		/// All proposals
 		ProposalsArray get(fn proposals_by_index): map hasher(blake2_128_concat) u64 => T::Hash;
 		ProposalsCount get(fn proposals_count): u64;
 		ProposalsIndex: map hasher(blake2_128_concat) T::Hash => u64;
 
-		// The campaign's proposals
+		/// Proposals by campaign
 		ProposalsByCampaignArray get(fn proposals_by_campaign_by_index): map hasher(blake2_128_concat)  (T::Hash, u64) => T::Hash;
 		ProposalsByCampaignCount get(fn proposals_by_campaign_count): map hasher(blake2_128_concat) T::Hash => u64;
 		ProposalsByCampaignIndex: map hasher(blake2_128_concat) (T::Hash, T::Hash) => u64;
 
-		// The owner's proposals
+		/// Proposals by owner
 		ProposalsByOwnerArray get(fn proposals_by_owner): map hasher(blake2_128_concat) (T::AccountId, u64) => T::Hash;
 		ProposalsByOwnerCount get(fn proposals_by_owner_count): map hasher(blake2_128_concat) T::AccountId => u64;
 		ProposalsByOwnerIndex: map hasher(blake2_128_concat) (T::AccountId, T::Hash) => u64;
 
-		// Proposals ending in a block
+		/// Proposals ending in a block
 		ProposalsByBlock get(fn proposals_by_block): map hasher(blake2_128_concat) T::BlockNumber => Vec<T::Hash>;
 
-		// The amount of currency that the project has used
+		/// The amount of currency that a project has used
 		CampaignBalanceUsed get(fn used_balance): map hasher(blake2_128_concat) T::Hash => T::Balance;
 
-		// The number of people who support the proposal
+		/// The number of people who support a proposal
 		ProposalSupporters get(fn proposal_supporters): map hasher(blake2_128_concat) T::Hash => u64;
 
-		// Judge if the user has voted the proposal
+		/// Judge if the user has voted the proposal
 		VotedBefore get(fn has_voted_before): map hasher(blake2_128_concat) (T::AccountId, T::Hash) => bool;
 
-		// Get the status of a proposal: 0 undecided 1 accepted 2 declined
-       	ProposalStatus get(fn proposal_status): map hasher(blake2_128_concat) T::Hash => u8;
+		/// Get the status of a proposal
+       	ProposalStatus get(fn proposal_status): map hasher(blake2_128_concat) T::Hash => ProposalState;
 
-		// Record the number of proposals
+		/// The total number of proposals
 		Nonce: u64;
 	}
 }
 
-//
-//
 //
 //
 //
@@ -182,70 +185,183 @@ decl_module! {
 
 		fn deposit_event() = default;
 
-		// TODO:
-		// either create separate proposal flows
-		// or differentiate:
-		// 0 general proposal, any member
-		// 1 withdrawal proposal, contributors of respective campaign
-		// ...
-
-		#[weight = 1_000]
-		fn create_proposal(
+		// TODO: general proposal for a DAO
+		#[weight = 10_000]
+		fn general_proposal(
 			origin,
-			proposal_type: u8, // 0 general, 1 funding related
-			context_id: T::Hash, // if type is 0 context is the org id, if 1 it is the campaing id
-			purpose: Vec<u8>,
-			cid: Vec<u8>,
+			context_id: T::Hash,
+			title: TitleText,
+			cid: CID,
+			expiry: T::BlockNumber
+		) -> DispatchResult {
+
+			let sender = ensure_signed(origin)?;
+
+			// active/existing dao?
+			ensure!( <control::Module<T>>::body_state(&context_id) == 1, "DAO invalid" );
+
+			// search by body_member_state:
+			let member = <control::Module<T>>::body_member_state((&context_id,&sender));
+			ensure!( member == 1, "The sender must be an active member");
+
+			// ensure that the expiry is in bounds
+			ensure!(expiry > <system::Module<T>>::block_number(), "The expiration block has to be greater than the current block number");
+			ensure!(expiry <= <system::Module<T>>::block_number() + Self::proposal_time_limit(), "The expiry has to be lower than the limit");
+
+			// ensure that number of proposals
+			// ending in target block
+			// do not exceed the maximum
+			let proposals = Self::proposals_by_block(expiry);
+			ensure!(proposals.len() < MAX_PROPOSALS_PER_BLOCK, "Maximum number of proposals is reached for the target block, try another block");
+
+			//
+
+			let proposal_type = 0;
+			let voting_type = 0;
+			let nonce = Nonce::get();
+
+			// generate unique id
+			let phrase = b"just another proposal";
+			let proposal_id = <T as Config>::Randomness::random(phrase);
+			ensure!(!<Proposals<T>>::contains_key(&context_id), "Proposal id already exists");
+
+			//
+
+			let new_proposal = Proposal {
+				proposal_id,
+				context_id: context_id.clone(),
+				proposal_type,
+				voting_type,
+				title,
+				cid,
+				amount: 0,
+				expiry,
+				status: 0,
+			};
+			//
+			//
+			//
+
+			//
+			//
+			//
+
+			// nonce++
+			Nonce::mutate(|n| *n += 1);
+
+			// deposit event
+			Self::deposit_event(
+				RawEvent::Proposal(
+					sender,
+					context_id
+				)
+			);
+			Ok(())
+		}
+
+//
+//
+//
+
+		// TODO: membership proposal for a DAO
+
+		#[weight = 10_000]
+		fn propose_add(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
+			Ok(())
+
+		}
+
+		#[weight = 10_000]
+		fn propose_kick(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
+			Ok(())
+
+		}
+
+		#[weight = 10_000]
+		fn propose_ban(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
+			Ok(())
+
+		}
+
+//
+//
+//
+
+		// TODO: withdrawal proposal for a campaign
+		#[weight = 10_000]
+		fn withdraw_proposal(
+			origin,
+			context_id: T::Hash,
+			title: TitleText,
+			cid: CID,
 			amount: T::Balance,
 			expiry: T::BlockNumber,
 		) -> DispatchResult {
 
 			let sender = ensure_signed(origin)?;
 
-			// Ensure the campaign exists
+			//
+			//
+			//
+
+			// existing campaign?
 			// ensure!( <crowdfunding::Module<T>>::campaign_by_id(context_id), "The campaign does not exist" );
-			// Ensure the campaign reached its cap
+
+			// successful campaign?
 			ensure!( <crowdfunding::Module<T>>::campaign_state(context_id) == 3, "The campaign did not succeed");
 
-			// Ensure the sender is the owner
+			// DISCUSSION: can proposals be made by contributors?
+			// request by owner?
 			let owner = <crowdfunding::Module<T>>::campaign_owner(context_id).ok_or("The owner does not exist")?;
 			ensure!(sender == owner, "The sender must be the owner of the campaign");
 
-			// ensure that the expiry is valid
-			ensure!(expiry > <system::Module<T>>::block_number(), "The expiry has to be greater than the current block number");
+			// ensure that the expiry is in bounds
+			ensure!(expiry > <system::Module<T>>::block_number(), "The expiration block has to be greater than the current block number");
 			ensure!(expiry <= <system::Module<T>>::block_number() + Self::proposal_time_limit(), "The expiry has to be lower than the limit");
 
+			// balance check
 			let used_balance = Self::used_balance(&context_id);
 			let total_balance = <crowdfunding::Module<T>>::campaign_balance(context_id);
 			let remaining_balance = total_balance - used_balance;
 			ensure!(remaining_balance >= amount, "The remaining balance is too low");
 
+			// ensure that number of proposals
+			// ending in target block
+			// do not exceed the maximum
+			let proposals = Self::proposals_by_block(expiry);
+			ensure!(proposals.len() < MAX_PROPOSALS_PER_BLOCK, "Maximum number of proposals is reached for the target block, try another block");
+
+			//
+
+			let proposal_type = 1; // treasury
+			let voting_type = 0; // votes
+
 			// get the nonce
 			let nonce = Nonce::get();
 
-			// generate the unique id
-			let phrase = b"another proposal";
+			// generate unique id
+			let phrase = b"just another proposal";
 			let proposal_id = <T as Config>::Randomness::random(phrase);
 
 			// ensure that the proposal id is unique
 			ensure!(!<Proposals<T>>::contains_key(&context_id), "Proposal id already exists");
 
-			let new_proposal = Proposal{
+
+			//
+			//
+			//
+
+			let new_proposal = Proposal {
 				proposal_id,
 				context_id: context_id.clone(),
 				proposal_type,
-				purpose,
+				voting_type,
+				title,
 				cid,
 				amount,
 				expiry,
 				status: 0,
 			};
-
-			// ensure that number of proposals
-			// ending in target block
-			// does not exceed maximum
-			let proposals = Self::proposals_by_block(expiry);
-			ensure!(proposals.len() < MAX_PROPOSALS_PER_BLOCK, "Maximum number of proposals is reached for the target block, try another block");
 
 			// check add
 			let proposals_count = Self::proposals_count();
@@ -277,6 +393,10 @@ decl_module! {
 			<ProposalsByOwnerCount<T>>::insert(sender.clone(), updated_proposals_by_owner_count);
 			<ProposalsByOwnerIndex<T>>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
 
+			//
+			//
+			//
+
 			// nonce++
 			Nonce::mutate(|n| *n += 1);
 
@@ -294,113 +414,113 @@ decl_module! {
 
 		}
 
-		#[weight = 1_000]
-		fn support_proposal(
-			origin,
-			proposal_id: T::Hash
-		) -> DispatchResult {
+		// #[weight = 1_000]
+		// fn support_proposal(
+		// 	origin,
+		// 	proposal_id: T::Hash
+		// ) -> DispatchResult {
 
-			let sender = ensure_signed(origin)?;
+		// 	let sender = ensure_signed(origin)?;
 
-			// Ensure the proposal exists
-			ensure!(<Proposals<T>>::contains_key(&proposal_id), "The proposal does not exist");
-			// Get the proposal
-			let proposal = Self::proposals(&proposal_id);
-			// Ensure the proposal has not ended
-			ensure!(proposal.status == 0, "The proposal has ended");
-			// Ensure the proposal is not expired
-			ensure!(<system::Module<T>>::block_number() < proposal.expiry, "The proposal expired");
+		// 	// Ensure the proposal exists
+		// 	ensure!(<Proposals<T>>::contains_key(&proposal_id), "The proposal does not exist");
+		// 	// Get the proposal
+		// 	let proposal = Self::proposals(&proposal_id);
+		// 	// Ensure the proposal has not ended
+		// 	ensure!(proposal.status == 0, "The proposal has ended");
+		// 	// Ensure the proposal is not expired
+		// 	ensure!(<system::Module<T>>::block_number() < proposal.expiry, "The proposal expired");
 
-			// ensure origin is a contributor
-			// let sender_balance = <campaign::Module<T>>::campaign_contribution(proposal.campaign_id, sender.clone());
+		// 	// ensure origin is a contributor
+		// 	// let sender_balance = <campaign::Module<T>>::campaign_contribution(proposal.campaign_id, sender.clone());
 
-			// ensure!( sender_balance > T::Balance::from(0), "You are not a contributor of this Campaign");
+		// 	// ensure!( sender_balance > T::Balance::from(0), "You are not a contributor of this Campaign");
 
-			// Ensure the contributor did not vote before
-			ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), "You have already voted before");
+		// 	// Ensure the contributor did not vote before
+		// 	ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), "You have already voted before");
 
 
 
-			// Get the number of people who have supported the proposal and add 1
-			let proposal_supporters = Self::proposal_supporters(&proposal_id);
-			let updated_proposal_supporters = proposal_supporters.checked_add(1).ok_or("Overflow adding the number of people who have voted the proposal")?;
+		// 	// Get the number of people who have supported the proposal and add 1
+		// 	let proposal_supporters = Self::proposal_supporters(&proposal_id);
+		// 	let updated_proposal_supporters = proposal_supporters.checked_add(1).ok_or("Overflow adding the number of people who have voted the proposal")?;
 
-			let contributors = <crowdfunding::Module<T>>::campaign_contributors_count(proposal.context_id);
-			let supporters = updated_proposal_supporters.clone();
+		// 	let contributors = <crowdfunding::Module<T>>::campaign_contributors_count(proposal.context_id);
+		// 	let supporters = updated_proposal_supporters.clone();
 
-			// TODO: make this variable
-			let fittycent = contributors.checked_div(2).ok_or("Error on division")?;
+		// 	// TODO: make this variable
+		// 	let fittycent = contributors.checked_div(2).ok_or("Error on division")?;
 
-			// If the supporters are more than half the contributors,
-			// the proposal shall pass
-			// and funds will be released
-			if updated_proposal_supporters > fittycent {
+		// 	// If the supporters are more than half the contributors,
+		// 	// the proposal shall pass
+		// 	// and funds will be released
+		// 	if updated_proposal_supporters > fittycent {
 
-				Self::can_use_balance(proposal_id, supporters)?;
+		// 		Self::can_use_balance(proposal_id, supporters)?;
 
-			}
+		// 	}
 
-			// W R I T E
+		// 	// W R I T E
 
-			// Change the investor voting status
-			<VotedBefore<T>>::insert(
-				(
-					sender.clone(),
-					proposal_id.clone()
-				),
-				true
-			);
+		// 	// Change the investor voting status
+		// 	<VotedBefore<T>>::insert(
+		// 		(
+		// 			sender.clone(),
+		// 			proposal_id.clone()
+		// 		),
+		// 		true
+		// 	);
 
-			// Change the number of supporters
+		// 	// Change the number of supporters
 
-			<ProposalSupporters<T>>::insert(
-				proposal_id.clone(),
-				updated_proposal_supporters.clone()
-			);
+		// 	<ProposalSupporters<T>>::insert(
+		// 		proposal_id.clone(),
+		// 		updated_proposal_supporters.clone()
+		// 	);
 
-			// dispatch vote event
+		// 	// dispatch vote event
 
-			Self::deposit_event(
-				RawEvent::ProposalVoted(
-					sender,
-					proposal_id.clone()
-				)
-			);
-			Ok(())
+		// 	Self::deposit_event(
+		// 		RawEvent::ProposalVoted(
+		// 			sender,
+		// 			proposal_id.clone()
+		// 		)
+		// 	);
+		// 	Ok(())
 
-		}
+		// }
 
-		fn on_finalize() {
+		// fn on_finalize() {
 
-			// i'm still jenny from the block
-			let block_number = <system::Module<T>>::block_number();
-			let proposal_hashes = Self::proposals_by_block(block_number);
+		// 	// i'm still jenny from the block
+		// 	let block_number = <system::Module<T>>::block_number();
+		// 	let proposal_hashes = Self::proposals_by_block(block_number);
 
-			for proposal_id in &proposal_hashes {
+		// 	for proposal_id in &proposal_hashes {
 
-				let mut proposal = Self::proposals(proposal_id);
+		// 		let mut proposal = Self::proposals(proposal_id);
 
-				if proposal.status == 1 {
-					continue;
-				}
+		// 		if proposal.status == 1 {
+		// 			continue;
+		// 		}
 
-				proposal.status = 2;
+		// 		proposal.status = 2;
 
-				<Proposals<T>>::insert(proposal_id.clone(), proposal.clone());
+		// 		<Proposals<T>>::insert(proposal_id.clone(), proposal.clone());
 
-				let supporters = <ProposalSupporters<T>>::get(proposal.proposal_id);
+		// 		let supporters = <ProposalSupporters<T>>::get(proposal.proposal_id);
 
-				Self::deposit_event(
-					RawEvent::ProposalFinalized(
-						proposal.proposal_id,
-						supporters,
-						proposal.expiry,
-						false
-					)
-				);
-			}
+		// 		Self::deposit_event(
+		// 			RawEvent::ProposalFinalized(
+		// 				proposal.proposal_id,
+		// 				supporters,
+		// 				proposal.expiry,
+		// 				false
+		// 			)
+		// 		);
+		// 	}
 
-		}
+		// }
 
 	}
 }
@@ -408,11 +528,14 @@ decl_module! {
 //
 //
 //
-//
-//
 
 impl<T:Config> Module<T> {
 
+	// TODO: DISCUSSION
+	// withdrawal proposals are accepted
+	// when the number of supporters is higher
+	// than the number of deniers
+	// accepted / denied >= 1
 	fn can_use_balance(
 		proposal_id: T::Hash,
 		supported_count: u64
@@ -424,6 +547,7 @@ impl<T:Config> Module<T> {
 
 		// Ensure sufficient balance
 		let total_balance = <crowdfunding::Module<T>>::campaign_balance(proposal.context_id);
+
 		// let used_balance = Self::balance_used(proposal.context_id);
 		let used_balance = <CampaignBalanceUsed<T>>::get(proposal.context_id);
 		let available_balance = total_balance - used_balance.clone();
@@ -455,9 +579,15 @@ impl<T:Config> Module<T> {
 	}
 }
 
+//
+//
+//
+
 decl_error! {
 	pub enum Error for Module<T: Config> {
 
+		/// Unknown Error
+		UnknownError,
+
 	}
 }
-

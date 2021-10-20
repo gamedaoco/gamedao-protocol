@@ -1,21 +1,30 @@
-# Module Crowdfunding
+# SIGNAL
 
-Simple Crowdfunding module, supporting multiple campaigns, which are all settled with the platform currency.
+SIGNAL is GameDAOs governance module providing simple interfaces to create proposals and vote on them:
 
-This pallet provides a simple on-chain crowdfunding mechanism:
-- creator can create a campaign with individual length and amount of funds in PLAY to raise
-- investor can invest his funds into one of the running campaigns and become an investor
+## voting mechanisms
 
-Upon finalization:
-- creator can request allocation of funds
-- investors can collectively approve allocation of funds
+- A token weighted voting
+- B democratic voting one account one vote
+- C quadratic voting
+- D conviction voting
 
-TODO:
-- supervisor can lock, cancel campaigns
-...
+## quorum
 
-1. create campaigns with custom funding goal and runtime
-2. invest into open campaigns
+Quorum ratios are required to have a transparent way of settling a proposal.
+- Proposal types might have preset mechanisms and ratios.
+- Custom proposals can have individual voting mechanisms and ratios.
 
-3. request withdrawal (unreserve) as creator from successful campaign
-4. approve withdrawals (unreserve) as investor from successfully funded campaigns
+## delegation
+
+Voting power may or may not be allowed to be delegated
+
+## roadmap
+
+- 1. [ ] create generic proposal for a dao
+- 2. [ ] create proposal to allow withdrawal (unreserve) as creator of a successful campaign
+- 3. [ ] approve withdrawals (unreserve) as contributor of a successfully campaign
+- 4. [ ] get my created proposals
+- 5. [ ] get all proposals for a dao
+- 6. [ ] request membership
+- 7. [ ] request kick / ban
