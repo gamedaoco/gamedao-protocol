@@ -185,79 +185,7 @@ decl_module! {
 
 		fn deposit_event() = default;
 
-		// TODO: general proposal for a DAO
-		#[weight = 10_000]
-		fn general_proposal(
-			origin,
-			context_id: T::Hash,
-			title: TitleText,
-			cid: CID,
-			expiry: T::BlockNumber
-		) -> DispatchResult {
 
-			let sender = ensure_signed(origin)?;
-
-			// active/existing dao?
-			ensure!( <control::Module<T>>::body_state(&context_id) == 1, "DAO invalid" );
-
-			// search by body_member_state:
-			let member = <control::Module<T>>::body_member_state((&context_id,&sender));
-			ensure!( member == 1, "The sender must be an active member");
-
-			// ensure that the expiry is in bounds
-			ensure!(expiry > <system::Module<T>>::block_number(), "The expiration block has to be greater than the current block number");
-			ensure!(expiry <= <system::Module<T>>::block_number() + Self::proposal_time_limit(), "The expiry has to be lower than the limit");
-
-			// ensure that number of proposals
-			// ending in target block
-			// do not exceed the maximum
-			let proposals = Self::proposals_by_block(expiry);
-			ensure!(proposals.len() < MAX_PROPOSALS_PER_BLOCK, "Maximum number of proposals is reached for the target block, try another block");
-
-			//
-
-			let proposal_type = 0;
-			let voting_type = 0;
-			let nonce = Nonce::get();
-
-			// generate unique id
-			let phrase = b"just another proposal";
-			let proposal_id = <T as Config>::Randomness::random(phrase);
-			ensure!(!<Proposals<T>>::contains_key(&context_id), "Proposal id already exists");
-
-			//
-
-			let new_proposal = Proposal {
-				proposal_id,
-				context_id: context_id.clone(),
-				proposal_type,
-				voting_type,
-				title,
-				cid,
-				amount: 0,
-				expiry,
-				status: 0,
-			};
-			//
-			//
-			//
-
-			//
-			//
-			//
-
-			// nonce++
-			Nonce::mutate(|n| *n += 1);
-
-			// deposit event
-			Self::deposit_event(
-				RawEvent::Proposal(
-					sender,
-					context_id
-				)
-			);
-			Ok(())
-		}
 
 //
 //
@@ -268,19 +196,16 @@ decl_module! {
 		#[weight = 10_000]
 		fn propose_add(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
 			Ok(())
-
 		}
 
 		#[weight = 10_000]
 		fn propose_kick(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
 			Ok(())
-
 		}
 
 		#[weight = 10_000]
 		fn propose_ban(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
 			Ok(())
-
 		}
 
 //
