@@ -1,3 +1,7 @@
+# [patch.crates-io]
+# librocksdb-sys = { git = "https://github.com/hdevalence/rust-rocksdb", branch = "master" }
+
+
 [workspace]
 members = [
 	"bin/subzero/cli",
@@ -5,15 +9,23 @@ members = [
 	"bin/utils/subkey",
 
 	# "bin/primitives",
-	# "modules/crowdfunding",
-	# "modules/governance",
+
 	# "modules/sense",
 	# "modules/item",
-	# "modules/hypaspace",
 	# "modules/horizon",
 	# "modules/kilt",
 	# "modules/airdrop",
 	# "modules/exchange",
+
+	# dao
+	# "modules/control",
+	# "modules/crowdfunding",
+	# "modules/governance",
+	# "modules/scout",
+
+	# assets
+	# "modules/zero-nft",
+	# "modules/hypaspace",
 
 ]
 

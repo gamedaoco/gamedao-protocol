@@ -1,5 +1,3 @@
-
-
 //
 //           _______________________________ ________
 //           \____    /\_   _____/\______   \\_____  \
@@ -78,7 +76,7 @@ use frame_support::{
 	},
 	storage::child::exists
 };
-use frame_system::{ self as system, ensure_signed };
+use frame_system::{ self as system, ensure_signed, ensure_root};
 
 use sp_core::{ Hasher, H256 };
 use sp_runtime::{
@@ -94,7 +92,7 @@ use primitives::{ Balance };
 
 // TODO: tests
 #[cfg(test)]
-mod campaign_tests;
+mod tests;
 
 // TODO: pallet benchmarking
 // mod benchmarking;
@@ -112,7 +110,7 @@ const MAX_CONTRIBUTIONS_PER_BLOCK: usize = 5;
 const MAX_CONTRIBUTIONS_PER_ADDRESS: usize = 3;
 const MAX_CAMPAIGN_DURATION: u32 = 777600;
 
-pub trait Config: system::Config + balances::Config + timestamp::Config {
+pub trait Config: system::Config + balances::Config + timestamp::Config + control::Config {
 
 	/// The origin that is allowed to make judgements.
 	type GameDAOAdminOrigin: EnsureOrigin<Self::Origin>;
@@ -146,8 +144,15 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp> {
 
 	/// unique hash to identify campaign (generated)
 	id: Hash,
+	/// hash of the overarching body from module-control
+	org: Hash,
+	/// name
+	name: Vec<u8>,
 
-	/// owner account of the campaign (beneficiary)
+	/// controller account -> must match body controller
+	/// during campaing runtime controller change is not allowed
+	// needs to be revised to avoid campaign attack by starting
+	// a campagin wenn dao wants to remove controller for reasons
 	owner: AccountId,
 
 	/// admin account of the campaign (operator)
@@ -156,41 +161,36 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp> {
 	/// campaign owners deposit
 	deposit: Balance,
 
-	// /// campaign start block
+	// TODO: /// campaign start block
 	// start: BlockNumber,
-
 	/// block until campaign has to reach cap
 	expiry: BlockNumber,
-
 	/// minimum amount of token to become a successful campaign
 	cap: Balance,
 
-	/// name
-	name: Vec<u8>,
-
 	/// protocol: 0 grant, 1 prepaid, 2 loan, 3 share, 4 dao
 	protocol: u8,
-
 	/// dao governed after success
 	/// true: payout through governance
 	/// false: 100% payout upon completion
 	/// 0 nay, 1 aye
 	governance: u8,
 
-	// /// storage
+	/// content storage
 	cid: Vec<u8>,
 
 	// /// token symbol
-	// token_symbol: Vec<u8>,
+	token_symbol: Vec<u8>,
 	// /// token name
-	// token_name: Vec<u8>,
+	token_name: Vec<u8>,
 
 	created: Timestamp, //Vec<u8>,
+
 
 }
 
 decl_storage! {
-	trait Store for Module<T: Config> as CrowdfundingFactory {
+	trait Store for Module<T: Config> as Crowdfunding1 {
 
 		// TODO:
 		//	actually most of the aggregated data only consumes cpu cycles
@@ -208,18 +208,21 @@ decl_storage! {
 		//
 		// - 	ownedCampaigns
 
-		/// Get one or all Campaigns
+		/// Campaign
 		Campaigns get(fn campaign_by_id): map hasher(blake2_128_concat) T::Hash => Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, T::Moment>;
+		/// Associated Body
+		CampaignOrg get(fn campaign_org): map hasher(blake2_128_concat) T::Hash => T::Hash;
 
-		/// Get Campaign owner by campaign id
+		/// Get Campaign Owner (body controller) by campaign id
 		CampaignOwner get(fn campaign_owner): map hasher(blake2_128_concat) T::Hash => Option<T::AccountId>;
-
-		/// Get Campaign Admin by campaign id
+		/// Get Campaign Admin (supervision) by campaign id
 		CampaignAdmin get(fn campaign_admin): map hasher(blake2_128_concat) T::Hash => Option<T::AccountId>;
 
 		/// Campaign state
 		/// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
 		CampaignState get(fn campaign_state): map hasher(blake2_128_concat) T::Hash => u8;
+		/// Get Campaigns for a certain state
+		CampaignsByState get(fn campaigns_by_state): map hasher(blake2_128_concat) u8 => Vec<T::Hash>;
 
 		/// Campaigns ending in block x
 		CampaignsByBlock get(fn campaigns_by_block): map hasher(blake2_128_concat) T::BlockNumber => Vec<T::Hash>;
@@ -233,6 +236,9 @@ decl_storage! {
 		CampaignsOwnedArray get(fn campaigns_owned_index): map hasher(blake2_128_concat) (T::AccountId, u64) => T::Hash;
 		CampaignsOwnedCount get(fn campaigns_owned_count): map hasher(blake2_128_concat) T::AccountId => u64;
 		CampaignsOwnedIndex: map hasher(blake2_128_concat) (T::AccountId, T::Hash) => u64;
+
+		/// campaigns contributed by accountid
+		CampaignsContributed get(fn campaigns_contributed): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
 
 		// caller contributed campaigns -> contributed campaigns
 		CampaignsContributedArray get(fn campaigns_contributed_index): map hasher(blake2_128_concat) (T::AccountId, u64) => T::Hash;
@@ -265,6 +271,7 @@ decl_event! {
 		<T as system::Config>::BlockNumber,
 		EventMessage = Vec<u8>,
 	{
+		CampaignDestroyed(Hash),
 		CampaignCreated(Hash, AccountId, AccountId, Balance, Balance, BlockNumber, Vec<u8>),
 		CampaignContributed(Hash, AccountId, Balance, BlockNumber),
 		CampaignFinalized(Hash, Balance, BlockNumber, bool),
@@ -281,10 +288,20 @@ decl_module! {
 
 		fn deposit_event() = default;
 
+		// possibly this needs to become invalidated vs destroyed
+		#[weight = 50_000]
+		fn destroy( origin, id: T:: Hash ) -> DispatchResult {
+			ensure_root(origin)?;
+			Self::deposit_event(
+				RawEvent::CampaignDestroyed(id)
+			);
+			Ok(())
+		}
+
 		// update the campaign status
 		// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
-	 	// admin can set any status
-	 	// owner can pause, cancel
+		// admin can set any status
+		// owner can pause, cancel
 		#[weight = 1_000]
 		fn update_status(
 			origin,
@@ -326,21 +343,26 @@ decl_module! {
 		#[weight = 10_000]
 		fn create(
 			origin,
-			admin: T::AccountId,
+			org: T::Hash,
+			// controller: T::AccountId, // controller <- creator <- origin
+			admin: T::AccountId, // supervision, should be dao provided!
 			name: Vec<u8>,
 			target: T::Balance,
 			deposit: T::Balance,
-			// TODO: should be duration in days,
-			// not target blocknumber
 			expiry: T::BlockNumber,
 			protocol: u8,
 			governance: u8,
-			// ipfs content hash
-			cid: Vec<u8>,
+			cid: Vec<u8>,           // content cid
+			token_symbol: Vec<u8>,  // up to 5
+			token_name: Vec<u8>,    // cleartext
+			// token_curve_a: u8,      // preset
+			// token_curve_b: Vec<u8>, // custom
 		) {
 
 			// get the creator
 			let creator = ensure_signed(origin)?;
+
+			// TODO: ensure origin is controller of org
 
 			// check name length boundary
 			ensure!(
@@ -367,7 +389,6 @@ decl_module! {
 				Error::<T>::EndTooEarly
 			);
 
-
 			// TODO: refactor calculate dest. block
 			// let blocktime = 5;
 			// let target_block_number =
@@ -380,7 +401,7 @@ decl_module! {
 
 			// generate the unique campaign id
 			let phrase = b"crowdfunding_campaign";
-			let id = T::Randomness::random(phrase);
+			let id = <T as Config>::Randomness::random(phrase);
 
 			// TODO: check for correct padding
 			// let seed = <[u8; 32]>::decode(&mut TrailingZeroInput::new(seed.as_ref()))
@@ -420,8 +441,10 @@ decl_module! {
 			// protocol: u8
 			// governance: bool
 			// status: u8,
+
 			let new_campaign = Campaign {
 				id: id.clone(),
+				org: org.clone(),
 				name: name.clone(),
 				owner: creator.clone(),
 				admin: admin.clone(),
@@ -431,7 +454,10 @@ decl_module! {
 				protocol: protocol.clone(),
 				governance: governance.clone(),
 				cid: cid.clone(),
-				created: timestamp
+				token_symbol: token_symbol.clone(),
+				token_name: token_name.clone(),
+				created: timestamp,
+
 			};
 
 			// mint the campaign
@@ -587,7 +613,7 @@ decl_module! {
 					// campaign failed
 					// refund all of the money
 
-					// update camapign state to failed
+					// update campaign state to failed
 					// campaign.status = 4;
 					Self::set_status(campaign.id,4);
 					<Campaigns<T>>::insert(campaign_id.clone(), campaign);
@@ -614,14 +640,27 @@ decl_module! {
 
 		}
 
- 	}
+	}
 }
 
 impl<T: Config> Module<T> {
 
-	fn set_status( campaign_id: T::Hash, status: u8 ) -> DispatchResult {
-		<CampaignState<T>>::insert(&campaign_id, status );
-		Ok(())
+	fn set_status( id: T::Hash, state: u8 ) {
+
+		let current_state = Self::campaign_state( &id );
+		// remove
+		let mut current_state_members = Self::campaigns_by_state( &current_state );
+		match current_state_members.binary_search(&id) {
+			Ok(index) => {
+				current_state_members.remove(index);
+				CampaignsByState::<T>::insert( &current_state, current_state_members );
+			},
+			Err(_) => () //(Error::<T>::IdUnknown)
+		}
+		// add
+		CampaignsByState::<T>::mutate( &state, |campaigns| campaigns.push( id.clone() ) );
+		CampaignState::<T>::insert( id, state );
+
 	}
 
 	fn mint(
@@ -647,6 +686,9 @@ impl<T: Config> Module<T> {
 
 		// campaigns
 		<Campaigns<T>>::insert(campaign.id.clone(), campaign.clone());
+
+		// add org to index
+		CampaignOrg::<T>::insert(campaign.id.clone(), campaign.org.clone());
 
 		// owners
 		<CampaignOwner<T>>::insert(campaign.id.clone(), campaign.owner.clone());
@@ -748,11 +790,19 @@ impl<T: Config> Module<T> {
 			<CampaignContributors<T>>::mutate(&campaign_id, |accounts| accounts.push(sender.clone()));
 			<CampaignContributorsCount<T>>::insert(campaign_id.clone(), update_contributors);
 
+
 			// update contributed campaigns for contributor
 			<CampaignsContributedArray<T>>::insert((sender.clone(), campaigns_contributed), campaign_id);
 			<CampaignsContributedCount<T>>::insert(&sender, update_campaigns_contributed);
 			<CampaignsContributedIndex<T>>::insert((sender.clone(), campaign_id.clone()), campaigns_contributed);
 
+		}
+
+		// check if campaign is in contributions map of contributor and add
+		let mut campaigns_contributed = Self::campaigns_contributed( &sender );
+		if !campaigns_contributed.contains( &campaign_id ) {
+			campaigns_contributed.push( campaign_id.clone() );
+			CampaignsContributed::<T>::insert( &sender, campaigns_contributed );
 		}
 
 		// reserve contributed amount
@@ -868,6 +918,8 @@ decl_error! {
 		AuthorizationError,
 		/// Contributions not allowed
 		NoContributionsAllowed,
+		/// Id Unknown
+		IdUnknown,
 
 	}
 }

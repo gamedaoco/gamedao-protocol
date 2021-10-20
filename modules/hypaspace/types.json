@@ -1,7 +1,0 @@
-"HypaspaceInfo": {
-  "dob": "Moment",
-  "dna": "Hash",
-}
-"HypaspaceMetadata": {
-  "name": "Vec<u8>"
-}
