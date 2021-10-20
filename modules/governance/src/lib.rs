@@ -192,6 +192,7 @@ decl_module! {
 			context_id: T::Hash,
 			title: TitleText,
 			cid: CID,
+			amount: T::Balance,
 			expiry: T::BlockNumber
 		) -> DispatchResult {
 
@@ -234,7 +235,7 @@ decl_module! {
 				voting_type,
 				title,
 				cid,
-				amount: 0,
+				amount: Zero::zero(),
 				expiry,
 				status: 0,
 			};
@@ -242,6 +243,36 @@ decl_module! {
 			//
 			//
 			//
+
+			// check add
+			let proposals_count = Self::proposals_count();
+			let updated_proposals_count = proposals_count.checked_add(1).ok_or("Overflow adding a new proposal to total proposals")?;
+			let proposals_by_campaign_count = Self::proposals_by_campaign_count(&context_id);
+			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or("Overflow adding a new proposal to the campaign's proposals")?;
+			let proposals_by_owner_count = Self::proposals_by_owner_count(&sender);
+			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or("Overflow adding a new proposal to the owner's proposals")?;
+
+			// insert proposals
+			<Proposals<T>>::insert(proposal_id.clone(), new_proposal.clone());
+			<ProposalOwner<T>>::insert(proposal_id.clone(), sender.clone());
+
+			// update max per block
+			<ProposalsByBlock<T>>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
+
+			// update proposal map
+			<ProposalsArray<T>>::insert(&proposals_count, proposal_id.clone());
+			<ProposalsCount>::put(updated_proposals_count);
+			<ProposalsIndex<T>>::insert(proposal_id.clone(), proposals_count);
+
+			// update campaign map
+			<ProposalsByCampaignArray<T>>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
+			<ProposalsByCampaignCount<T>>::insert(context_id.clone(), updated_proposals_by_campaign_count);
+			<ProposalsByCampaignIndex<T>>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
+
+			// update owner map
+			<ProposalsByOwnerArray<T>>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
+			<ProposalsByOwnerCount<T>>::insert(sender.clone(), updated_proposals_by_owner_count);
+			<ProposalsByOwnerIndex<T>>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
 
 			//
 			//
