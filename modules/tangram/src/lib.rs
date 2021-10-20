@@ -37,7 +37,7 @@ use primitives::{ Balance };
 // nft interface
 
 pub mod nft;
-pub use crate::nft::NFTItem;
+pub use crate::nft::NFTItems;
 
 // #[cfg(test)]
 // mod mock;
@@ -54,12 +54,14 @@ pub type ClassIndex = u64;
 pub type ItemIndex = u64;
 pub type TotalIndex = u128;
 pub type BurnedIndex = u128;
-// pub type ItemId = Hash;
+// pub type ItemId = T::Hash;
 
-type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-type HashOf<T> = <T as frame_system::Config>::Hash;
-type MomentOf<T> = <<T as Config>::Time as Time>::Moment;
-type TangramItemOf<T> = TangramItem< HashOf<T>, MomentOf<T> >;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub type HashOf<T> = <T as frame_system::Config>::Hash;
+pub type MomentOf<T> = <<T as Config>::Time as Time>::Moment;
+pub type TangramItemOf<T> = TangramItem< HashOf<T>, MomentOf<T> >;
+pub type TangramId<T> = HashOf<T>;
+pub type Tangram<T> = ( TangramId<T>, TangramItemOf<T>);
 
 /// TangramRealm
 /// RealmId, Controller Org, Index
@@ -154,8 +156,6 @@ pub trait Config: frame_system::Config + balances::Config {
 
 }
 
-
-// creatures < classes < realms
 decl_storage! {
 	trait Store for Module<T: Config> as Tangram {
 
@@ -193,10 +193,18 @@ decl_storage! {
 
 		/// Tangram Item
 		pub Item get(fn item): map hasher(blake2_128_concat) T::Hash => TangramItemOf<T>;
+		/// All Items associated with an account
+		pub ItemsForAccount get(fn items_for_account): map hasher(blake2_128_concat) T::AccountId => Vec<Tangram<T>>;
+
+		/// Owner of an Item
+		pub AccountForItem get(fn account_for_item): map hasher(blake2_128_concat) T::Hash => T::AccountId;
+
 		/// Retrieve an Item Hash by its indexes
 		pub ItemByIndex get(fn item_by_index): map hasher(blake2_128_concat) (RealmIndex,ClassIndex,ItemIndex) => T::Hash;
 		/// Metadata for an Item
 		pub ItemMetadata get(fn item_metadata): map hasher(identity) T::Hash => TangramMetadata<T::Hash>;
+
+		pub TotalForAccount get(fn total_for_account): map hasher(blake2_128_concat) T::AccountId => u64;
 
 		// global
 
@@ -316,26 +324,29 @@ decl_module! {
 			// epic mega rare common
 			// 0000+0000+0000+00000000 = 24 bytes
 
-			let epic = "0000";
-			let mega = "0000";
-			let rare = "0000";
-			let high = "0000";
-			let low  = "0000";
-			let mut stream = [
-					epic,
-					mega,
-					rare,
-					high,
-					low,
-				].concat();
-			let hash = &*stream;
+			// let epic = "0000";
+			// let mega = "0000";
+			// let rare = "0000";
+			// let high = "0000";
+			// let low  = "0000";
+			// let mut stream = [
+			// 		epic,
+			// 		mega,
+			// 		rare,
+			// 		high,
+			// 		low,
+			// 	].concat();
+			//let bytes: [u8] = stream.iter().map(|c| *c as u8).collect::<Vec<_>>();
+			// let bytes: &str = str::from_utf8(&stream).unwrap();
+
+			let hash = <T as Config>::Randomness::random( &MODULE_ID );
 
 			// 3. mint
 			match Self::mint(
 				&who,	// caller == owner
 				TangramItem {
 					dob: T::Time::now(),
-					dna: T::Randomness::random(&MODULE_ID)
+					dna: hash
 				}
 			) {
 				Ok(id) => {
@@ -355,8 +366,7 @@ decl_module! {
 					let itemIndex = Self::next_item_index((&realm,&class));
 					let nextItemIndex = itemIndex.checked_add(1).ok_or(Error::<T>::Overflow)?;
 					NextItemIndex::insert((&realm,&class), nextItemIndex);
-					Total::mutate(|i| *i += 1);
-					Self::deposit_event( RawEvent::Minted( id, who ) );
+					Self::deposit_event( RawEvent::Minted( id, hash, who ) );
 				},
 				Err(err) => Err(err)?
 			}
@@ -399,37 +409,37 @@ impl<T: Config> Module<T> {
 	    item_info: TangramItemOf<T>,
 	) -> dispatch::result::Result< T::Hash, dispatch::DispatchError> {
 
+		let item_id = T::Hashing::hash_of(&item_info);
 
-	    let item_id = T::Hashing::hash_of(&item_info);
+		//     ensure!(
+		//         !AccountForItem::<T, I>::contains_key(&item_id),
+		//         Error::<T, I>::ItemExists
+		//     );
 
-	//     ensure!(
-	//         !AccountForItem::<T, I>::contains_key(&item_id),
-	//         Error::<T, I>::ItemExists
-	//     );
+		//     ensure!(
+		//         Self::total_for_account(owner_account) < T::UserItemLimit::get(),
+		//         Error::<T, I>::TooManyItemsForAccount
+		//     );
 
-	//     ensure!(
-	//         Self::total_for_account(owner_account) < T::UserItemLimit::get(),
-	//         Error::<T, I>::TooManyItemsForAccount
-	//     );
+		//     ensure!(
+		//         Self::total() < T::ItemLimit::get(),
+		//         Error::<T, I>::TooManyItems
+		//     );
 
-	//     ensure!(
-	//         Self::total() < T::ItemLimit::get(),
-	//         Error::<T, I>::TooManyItems
-	//     );
+		let new_item = (item_id, item_info);
 
-	//     let new_item = (item_id, item_info);
+		AccountForItem::<T>::insert( item_id, &owner_account );
+		Total::mutate(|i| *i += 1);
+		TotalForAccount::<T>::mutate( owner_account, |total| *total += 1 );
+		ItemsForAccount::<T>::mutate( owner_account, |items| {
+			match items.binary_search(&new_item) {
+				Ok(_pos) => {} // should never happen
+				Err(pos) => items.insert(pos, new_item),
+			}
+		});
 
-	//     Total::<I>::mutate(|total| *total += 1);
-	//     TotalForAccount::<T, I>::mutate(owner_account, |total| *total += 1);
-	//     ItemsForAccount::<T, T>::mutate(owner_account, |items| {
-	//         match items.binary_search(&new_item) {
-	//             Ok(_pos) => {} // should never happen
-	//             Err(pos) => items.insert(pos, new_item),
-	//         }
-	//     });
-	//     AccountForItem::<T, T>::insert(item_id, &owner_account);
+		Ok(item_id)
 
-	    Ok(item_id)
 	}
 
 	// fn burn(item_id: &Item<T>) -> dispatch::DispatchResult {
@@ -496,14 +506,14 @@ impl<T: Config> Module<T> {
 decl_event!(
 	pub enum Event<T>
 	where
-		ItemId = <T as frame_system::Config>::Hash,
+		Hash = <T as frame_system::Config>::Hash,
 		AccountId = <T as frame_system::Config>::AccountId,
 	{
 		RealmCreated( u64 ),
 		ClassCreated( u64, u64, u64 ),
-		Minted( ItemId, AccountId ),
-		Burned( ItemId ),
-		Transferred( ItemId, AccountId ),
+		Minted( Hash, Hash, AccountId ),
+		Burned( Hash ),
+		Transferred( Hash, AccountId ),
 	}
 );
 
@@ -517,10 +527,14 @@ decl_error! {
 		UnknownItem,
 		/// Maximum Items for Class reached
 		MaxItemsReached,
-		/// Spawning an item failed.
+		/// Spawning an item failed
 		SpawnFailed,
 		/// Item Exists
 		ItemExists,
+		/// Account Limit Exceeded
+		TooManyItemsForAccount,
+		/// Realm Limit Exceeded
+		TooManyItems,
 		/// Overflow
 		Overflow,
 		/// Guru Meditation

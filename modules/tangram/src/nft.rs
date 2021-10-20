@@ -4,7 +4,7 @@ use frame_support::{
 };
 use sp_std::vec::Vec;
 
-pub trait NFTItem<AccountId> {
+pub trait NFTItems<AccountId> {
 
 	type NextRealmIndex: Get<u64>;
 	type NextClassIndex: Get<u64>;

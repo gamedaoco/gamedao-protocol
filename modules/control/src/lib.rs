@@ -183,8 +183,13 @@ pub mod module {
 			BodyTreasury get(fn body_treasury): map hasher(blake2_128_concat) T::Hash => T::AccountId;
 			/// All bodies created by account
 			CreatedBodies get(fn by_creator): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
+			CreatedBodiesCount get(fn by_creator_count): map hasher(blake2_128_concat) T::AccountId => u64;
+
 			/// All bodies controlled by account
 			ControlledBodies get(fn by_controller): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
+
+			// TODO: add the count to creation...
+			ControlledBodiesCount get(fn by_controller_count): map hasher(blake2_128_concat) T::AccountId => u64;
 
 			/// Membership by AccountId
 			Memberships get(fn memberships): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
@@ -315,6 +320,14 @@ pub mod module {
 					&controller,
 					|controlled| controlled.push(hash.clone())
 				);
+
+				// TODO: this needs a separate add / removal function
+				// whenever the controller of an organisation changes!
+				ControlledBodiesCount::<T>::mutate(
+					&controller,
+					|controlled_count| *controlled_count += 1
+				);
+
 
 				let mut created = Self::by_creator(&creator);
 				created.push(hash.clone());
