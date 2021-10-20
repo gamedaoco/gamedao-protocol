@@ -1,13 +1,13 @@
 [package]
 name = "zero-runtime"
-version = "1.18.0"
+version = "1.22.0"
 authors = ["zero collective <play@zero.io>"]
 description = "videogames x metaverse"
 edition = "2018"
 build = "build.rs"
 license = "Apache-2.0"
-homepage = "https://substrate.dev"
-repository = "https://github.com/paritytech/substrate/"
+homepage = "https://zero.io"
+repository = "https://github.com/playzero/subzero/"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
