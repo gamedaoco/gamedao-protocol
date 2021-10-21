@@ -12,6 +12,10 @@ cache:                           {}
   paths:
     - artifacts/
 
+echo:
+   script:
+     - echo hello
+     
 # docker:
 #   stage: build
 #   image: docker:latest
