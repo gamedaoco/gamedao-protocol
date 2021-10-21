@@ -121,6 +121,7 @@ decl_event!(
 		ProposalCreated(AccountId, Hash, Hash, Balance, BlockNumber),
 		ProposalVoted(AccountId, Hash),
 		ProposalFinalized(Hash, u64, BlockNumber, bool),
+		ProposalError(Hash, Vec<u8>),
 	}
 );
 
@@ -192,7 +193,6 @@ decl_module! {
 			context_id: T::Hash,
 			title: TitleText,
 			cid: CID,
-			amount: T::Balance,
 			expiry: T::BlockNumber
 		) -> DispatchResult {
 
@@ -229,14 +229,14 @@ decl_module! {
 			//
 
 			let new_proposal = Proposal {
-				proposal_id,
+				proposal_id: proposal_id,
 				context_id: context_id.clone(),
-				proposal_type,
-				voting_type,
-				title,
-				cid,
+				proposal_type: proposal_type,
+				voting_type: voting_type,
+				title: title,
+				cid: cid,
 				amount: Zero::zero(),
-				expiry,
+				expiry: expiry,
 				status: 0,
 			};
 
@@ -247,10 +247,12 @@ decl_module! {
 			// check add
 			let proposals_count = Self::proposals_count();
 			let updated_proposals_count = proposals_count.checked_add(1).ok_or("Overflow adding a new proposal to total proposals")?;
+
 			let proposals_by_campaign_count = Self::proposals_by_campaign_count(&context_id);
-			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or("Overflow adding a new proposal to the campaign's proposals")?;
+			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or("Overflow adding a new proposal to an organisation")?;
+
 			let proposals_by_owner_count = Self::proposals_by_owner_count(&sender);
-			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or("Overflow adding a new proposal to the owner's proposals")?;
+			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or("Overflow adding a new proposal to an owner")?;
 
 			// insert proposals
 			<Proposals<T>>::insert(proposal_id.clone(), new_proposal.clone());
@@ -337,7 +339,7 @@ decl_module! {
 			// ensure!( <crowdfunding::Module<T>>::campaign_by_id(context_id), "The campaign does not exist" );
 
 			// successful campaign?
-			ensure!( <crowdfunding::Module<T>>::campaign_state(context_id) == 3, "The campaign did not succeed");
+			// ensure!( <crowdfunding::Module<T>>::campaign_state(context_id) == 3, "The campaign did not succeed");
 
 			// DISCUSSION: can proposals be made by contributors?
 			// request by owner?
@@ -381,14 +383,14 @@ decl_module! {
 			//
 
 			let new_proposal = Proposal {
-				proposal_id,
+				proposal_id: proposal_id,
 				context_id: context_id.clone(),
-				proposal_type,
-				voting_type,
-				title,
-				cid,
-				amount,
-				expiry,
+				proposal_type: proposal_type,
+				voting_type: voting_type,
+				title: title,
+				cid: cid,
+				amount: amount,
+				expiry: expiry,
 				status: 0,
 			};
 
@@ -443,113 +445,123 @@ decl_module! {
 
 		}
 
-		// #[weight = 1_000]
-		// fn support_proposal(
-		// 	origin,
-		// 	proposal_id: T::Hash
-		// ) -> DispatchResult {
+		// TODO:
+		// voting vs staking, e.g.
+		// 1. token weighted and democratic voting require yes/no
+		// 2. conviction voting requires ongoing staking
+		// 3. quadratic voting
 
-		// 	let sender = ensure_signed(origin)?;
+		#[weight = 5_000]
+		fn vote(
+			origin,
+			proposal_id: T::Hash
+		) -> DispatchResult {
 
-		// 	// Ensure the proposal exists
-		// 	ensure!(<Proposals<T>>::contains_key(&proposal_id), "The proposal does not exist");
-		// 	// Get the proposal
-		// 	let proposal = Self::proposals(&proposal_id);
-		// 	// Ensure the proposal has not ended
-		// 	ensure!(proposal.status == 0, "The proposal has ended");
-		// 	// Ensure the proposal is not expired
-		// 	ensure!(<system::Module<T>>::block_number() < proposal.expiry, "The proposal expired");
+			let sender = ensure_signed(origin)?;
 
-		// 	// ensure origin is a contributor
-		// 	// let sender_balance = <campaign::Module<T>>::campaign_contribution(proposal.campaign_id, sender.clone());
+			// Ensure the proposal exists
+			ensure!(<Proposals<T>>::contains_key(&proposal_id), "The requested proposal does not exist");
 
-		// 	// ensure!( sender_balance > T::Balance::from(0), "You are not a contributor of this Campaign");
+			// Get the proposal
+			let proposal = Self::proposals(&proposal_id);
+			// Ensure the proposal has not ended
+			ensure!(proposal.status == 0, "The voting has ended");
+			// Ensure the proposal is not expired
+			ensure!(<system::Module<T>>::block_number() < proposal.expiry, "The proposal expired");
 
-		// 	// Ensure the contributor did not vote before
-		// 	ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), "You have already voted before");
+			// ensure origin is a contributor
+			// let sender_balance = <campaign::Module<T>>::campaign_contribution(proposal.campaign_id, sender.clone());
+
+			// ensure!( sender_balance > T::Balance::from(0), "You are not a contributor of this Campaign");
+
+			// Ensure the contributor did not vote before
+			ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), "You have already voted before");
 
 
 
-		// 	// Get the number of people who have supported the proposal and add 1
-		// 	let proposal_supporters = Self::proposal_supporters(&proposal_id);
-		// 	let updated_proposal_supporters = proposal_supporters.checked_add(1).ok_or("Overflow adding the number of people who have voted the proposal")?;
+			// Get the number of people who have supported the proposal and add 1
+			let proposal_supporters = Self::proposal_supporters(&proposal_id);
+			let updated_proposal_supporters = proposal_supporters.checked_add(1).ok_or("Overflow adding the number of people who have voted the proposal")?;
 
-		// 	let contributors = <crowdfunding::Module<T>>::campaign_contributors_count(proposal.context_id);
-		// 	let supporters = updated_proposal_supporters.clone();
+			let contributors = <crowdfunding::Module<T>>::campaign_contributors_count(proposal.context_id);
+			let supporters = updated_proposal_supporters.clone();
 
-		// 	// TODO: make this variable
-		// 	let fittycent = contributors.checked_div(2).ok_or("Error on division")?;
+			// TODO: make this variable
+			let fittycent = contributors.checked_div(2).ok_or("Error on division")?;
 
-		// 	// If the supporters are more than half the contributors,
-		// 	// the proposal shall pass
-		// 	// and funds will be released
-		// 	if updated_proposal_supporters > fittycent {
+			// If the supporters are more than half the contributors,
+			// the proposal shall pass
+			// and funds will be released
+			if updated_proposal_supporters > fittycent {
 
-		// 		Self::can_use_balance(proposal_id, supporters)?;
+				Self::can_use_balance(proposal_id, supporters)?;
 
-		// 	}
+			}
 
-		// 	// W R I T E
+			// W R I T E
 
-		// 	// Change the investor voting status
-		// 	<VotedBefore<T>>::insert(
-		// 		(
-		// 			sender.clone(),
-		// 			proposal_id.clone()
-		// 		),
-		// 		true
-		// 	);
+			// Change the investor voting status
+			<VotedBefore<T>>::insert(
+				(
+					sender.clone(),
+					proposal_id.clone()
+				),
+				true
+			);
 
-		// 	// Change the number of supporters
+			// Change the number of supporters
 
-		// 	<ProposalSupporters<T>>::insert(
-		// 		proposal_id.clone(),
-		// 		updated_proposal_supporters.clone()
-		// 	);
+			<ProposalSupporters<T>>::insert(
+				proposal_id.clone(),
+				updated_proposal_supporters.clone()
+			);
 
-		// 	// dispatch vote event
+			// dispatch vote event
 
-		// 	Self::deposit_event(
-		// 		RawEvent::ProposalVoted(
-		// 			sender,
-		// 			proposal_id.clone()
-		// 		)
-		// 	);
-		// 	Ok(())
+			Self::deposit_event(
+				RawEvent::ProposalVoted(
+					sender,
+					proposal_id.clone()
+				)
+			);
+			Ok(())
 
-		// }
+		}
 
-		// fn on_finalize() {
+		fn on_finalize() {
 
-		// 	// i'm still jenny from the block
-		// 	let block_number = <system::Module<T>>::block_number();
-		// 	let proposal_hashes = Self::proposals_by_block(block_number);
+			// i'm still jenny from the block
+			let block_number = <system::Module<T>>::block_number();
 
-		// 	for proposal_id in &proposal_hashes {
+			// get hashes of proposals ending here
+			let proposal_hashes = Self::proposals_by_block(block_number);
 
-		// 		let mut proposal = Self::proposals(proposal_id);
+			for proposal_id in &proposal_hashes {
 
-		// 		if proposal.status == 1 {
-		// 			continue;
-		// 		}
+				let mut proposal = Self::proposals(proposal_id);
 
-		// 		proposal.status = 2;
+				// any open voting ending now?
+				if proposal.status == 1 {
+					continue;
+				}
 
-		// 		<Proposals<T>>::insert(proposal_id.clone(), proposal.clone());
+				// DISCUSSION: do we want TERM or NACK/ACK as a final state?
+				proposal.status = 4;
+				<Proposals<T>>::insert(proposal_id.clone(), proposal.clone());
 
-		// 		let supporters = <ProposalSupporters<T>>::get(proposal.proposal_id);
+				let supporters = <ProposalSupporters<T>>::get(proposal.proposal_id.clone());
 
-		// 		Self::deposit_event(
-		// 			RawEvent::ProposalFinalized(
-		// 				proposal.proposal_id,
-		// 				supporters,
-		// 				proposal.expiry,
-		// 				false
-		// 			)
-		// 		);
-		// 	}
+				Self::deposit_event(
+					RawEvent::ProposalFinalized(
+						proposal.proposal_id,
+						supporters,
+						proposal.expiry,
+						false
+					)
+				);
+			}
 
-		// }
+		}
 
 	}
 }
