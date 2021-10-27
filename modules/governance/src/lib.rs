@@ -465,19 +465,45 @@ decl_module! {
 			// Get the proposal
 			let proposal = Self::proposals(&proposal_id);
 			// Ensure the proposal has not ended
-			ensure!(proposal.status == 0, "The voting has ended");
+			ensure!(proposal.status == 1, "The voting has closed");
 			// Ensure the proposal is not expired
 			ensure!(<system::Module<T>>::block_number() < proposal.expiry, "The proposal expired");
-
-			// ensure origin is a contributor
-			// let sender_balance = <campaign::Module<T>>::campaign_contribution(proposal.campaign_id, sender.clone());
-
-			// ensure!( sender_balance > T::Balance::from(0), "You are not a contributor of this Campaign");
 
 			// Ensure the contributor did not vote before
 			ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), "You have already voted before");
 
+			// ensure origin is one of:
+			// a. member when the proposal is general
+			// b. contributor when the proposal is a withdrawal request
 
+			// 0 proposal
+			// 1 treasury
+			// 2 membership
+
+			match proposal.proposal_type {
+				// DAO Democratic Proposal
+				// simply one token one vote yes / no,
+				// TODO: ratio definable, now > 50% majority wins
+				0 | => {
+
+				},
+				// Campaign Token Weighted Proposal
+				// total token balance yes vs no
+				// TODO: ratio definable, now > 50% majority wins
+				1 => {
+
+				},
+				// Membership Voting
+				// simply one token one vote yes / no,
+				// TODO: ratio definable, now > 50% majority wins
+				2 => {
+
+				},
+			}
+
+			//	check voter is contributor
+			// let sender_balance = <campaign::Module<T>>::campaign_contribution(proposal.campaign_id, sender.clone());
+			// ensure!( sender_balance > T::Balance::from(0), "You are not a contributor of this Campaign");
 
 			// Get the number of people who have supported the proposal and add 1
 			let proposal_supporters = Self::proposal_supporters(&proposal_id);
