@@ -1,3 +1,17 @@
+//
+//           _______________________________ ________
+//           \____    /\_   _____/\______   \\_____  \
+//             /     /  |    __)_  |       _/ /   |   \
+//            /     /_  |        \ |    |   \/    |    \
+//           /_______ \/_______  / |____|_  /\_______  /
+//                   \/        \/         \/         \/
+//           Z  E  R  O  .  I  O     N  E  T  W  O  R  K
+//           © C O P Y R I O T   2 0 7 5 @ Z E R O . I O
+
+// This file is part of ZERO Network.
+// Copyright (C) 2010-2020 ZERO Labs.
+// SPDX-License-Identifier: Apache-2.0
+
 use frame_support::{
 	dispatch::{result::Result, DispatchError, DispatchResult},
 	traits::Get,
