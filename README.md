@@ -24,7 +24,7 @@
 <!-- /TOC -->
 
 # 1. Introduction
-ZERO is a Relaychain, Parachain, Multiverse + DAO for next gen videogames. It provides native asset-, finance-, governance protocols, Smart Contracts, a Metaverse Hypergraph, Decentralized Computation at its core. To provide cross economic interoperability between totally different ecosystems. Futhermore it will enable generative creation of games and game economies through algorithms, generators and provision of autonomous agents to drive transition of old economy videogames and creators into a tokenized and decentralized future.
+ZERO is a multichain network, Multiverse + DAO for next generation videogames. It provides native asset-, finance-, governance protocols, Smart Contracts, a Metaverse Hypergraph, Decentralized Computation at its core. To provide cross economic interoperability between totally different ecosystems. Futhermore it will enable generative creation of games and game economies through algorithms, generators and provision of autonomous agents to drive transition of old economy videogames and creators into a tokenized and decentralized future.
 
 - Native currency: $PLAY (EUR backed)
 - on/off ramp currencies:  $KSM, $DOT, FIAT, others t.b.d.
