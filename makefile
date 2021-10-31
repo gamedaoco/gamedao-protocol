@@ -54,6 +54,20 @@ docker-release:
 	# 	4 tag docker
 	# 	5 push docker tag + latest
 
+docker-run-local:
+	docker run \
+	-p 9933:9933 \
+	-p 9944:9944 \
+	-p 30333:30333 \
+	playzero/subzero:local \
+	/usr/local/bin/subzero \
+	--dev \
+	--name hello-joy \
+	--ws-external \
+	--rpc-external \
+	--rpc-cors all \
+	--rpc-methods unsafe
+
 docker-run-latest:
 	docker run \
 	-p 9933:9933 \
