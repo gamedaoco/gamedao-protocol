@@ -44,6 +44,7 @@ pub type AccountIndex = u32;
 
 /// Balance of an account.
 pub type Balance = u128;
+// pub type Balance = <<T as pallet_balances::Config>::Balance;
 
 /// Type used for expressing timestamp.
 pub type Moment = u64;
