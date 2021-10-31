@@ -11,8 +11,8 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 [dependencies]
 log = "0.4.8"
 
-node-primitives = { package = "zero-primitives", version = "1.10.0", path = "../../primitives" }
-node-runtime = { package = "zero-runtime", version = "1.10.0", path = "../../runtimes/alphaville" }
+node-primitives = { package = "zero-primitives", version = "1.10.0", path = "../../../primitives" }
+node-runtime = { package = "zero-runtime", version = "1.10.0", path = "../../../runtimes/alphaville" }
 node-testing = { version = "2.0.0", path = "../testing" }
 
 sc-cli = { version = "0.9.0", path = "../../../../client/cli" }
