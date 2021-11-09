@@ -13,3 +13,23 @@
 // 		assert_eq!(TemplateModule::something(), Some(42));
 // 	});
 // }
+
+// TODO:
+
+// 1 create a realm for an organisation, next index should be 1
+
+// 2 create another realm for an organisation, should throw
+
+// 3 create a class for a realm, next index should be 1
+
+// 4 create an item in a class in a realm, totalminted should be 1
+
+// 5 burn an item by hash, totalburned should be 1, total should be 0
+
+// 6 bootstrap an org, realm index should be +1
+
+// - total items per class 0 should be max members of org
+
+// - each member should have 1 tangram
+
+// 7 bootstrap an org, with same org hash should throw

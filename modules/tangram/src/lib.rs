@@ -167,8 +167,11 @@ decl_storage! {
 		pub Realm get(fn realm_by_hash): map hasher(blake2_128_concat) T::Hash => TangramRealm<T::Hash>;
 		/// Get a Realm by its index
 		pub RealmByIndex get(fn realm_by_index): map hasher(blake2_128_concat) RealmIndex => T::Hash;
-		// OwnerForRealm
+		// OwnerForRealm = organisation hash
+		pub OwnerRealm get(fn owner_for_realm): map hasher(blake2_128_concat) RealmIndex => T::Hash;
 		// RealmsForOwner
+		pub RealmsForOwner get(fn realms_for_owner): map hasher(blake2_128_concat) T::Hash => Vec<T::Hash>;
+		pub RealmsForOwnerCount get(fn realms_for_owner): map hasher(blake2_128_concat) T::Hash => u64;
 		// ClassesForRealm
 
 		// class
@@ -230,6 +233,40 @@ decl_module! {
 		const MaxClassesPerRealm: u64 = T::MaxClassesPerRealm::get();
 		const MaxTokenPerClass: u128 = T::MaxTokenPerClass::get();
 		const MaxTotalToken: u128 = T::MaxTotalToken::get();
+
+		#[weight = 50_000]
+		pub fn bootstrap(
+			origin,
+			org: T::Hash
+		) {
+
+			// ensure caller is controller of org
+			ensure!( <control::Module<T>>::body_controller(origin.clone()) = origin, Error::<T>::Unauthorized );
+			// ensure does not have a realm assigned yet
+			ensure!( )
+
+			let realm_creation_fee = T::CreateRealmDeposit::get();
+			let class_creation_fee = T::CreateClassDeposit::get();
+			let item_creation_fee = T::CreateItemDeposit::get();
+			let creation_fee = realm_creation_fee + class_creation_fee + item_creation_fee;
+
+			// ensure creator can pay fees
+			ensure!( <balances::Module<T>>::free_balance(origin.clone()) >= creation_fee, Error::<T>::BalanceTooLow );
+
+			// take next realm
+			let realm = NextRealmIndex::get();
+			Self::create_realm( origin.clone(), org );
+			// take next class in realm (should be 0 on init anyway)
+			let class = NextClassIndex::get(realm);
+			Self::create_class( origin.clone(), realm, ("my_name_is").as_bytes().to_vec(), 1337 );
+			// the creator nft
+			// TODO: take creator nft from gamedao realm (0,0)
+			Self::create_item( origin, 0, 0, ("kreataww").as_bytes().to_vec(), ("0xb00b5").as_bytes().to_vec() );
+			// mint the member nft
+			// TODO: get the actual member hashes
+			Self::create_item( origin, realm, class, ("my_nft===dollah").as_bytes().to_vec(), ("0xb00b5").as_bytes().to_vec() );
+
+		}
 
 		#[weight = 50_000]
 		pub fn create_realm(
@@ -438,6 +475,12 @@ impl<T: Config> Module<T> {
 			}
 		});
 
+		// TODO:
+		// item by index
+		// TODO:
+		// items for account
+		//
+
 		Ok(item_id)
 
 	}
@@ -541,5 +584,9 @@ decl_error! {
 		GuruMeditation,
 		/// MaxItems too small
 		MaxItemsTooSmall,
+		/// Not enough funds to complete transaction.
+		BalanceTooLow,
+		/// Authorization Error
+		Unauthorized
 	}
 }
