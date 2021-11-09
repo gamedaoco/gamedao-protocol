@@ -1218,7 +1218,7 @@ impl module_governance::Config for Runtime {
 parameter_types! {
 	pub const CreateRealmDeposit: Balance = 1000 * MILLICENTS;
 	pub const CreateClassDeposit: Balance = 500 * MILLICENTS;
-	pub const CreateTokenDeposit: Balance = 10 * MILLICENTS;
+	pub const CreateItemDeposit: Balance = 10 * MILLICENTS;
     pub const MaxRealms: u64 = 1;
     pub const MaxClasses: u64 = 1024;
     pub const MaxToken: u128 = 2^32;
@@ -1232,7 +1232,7 @@ impl module_tangram::Config for Runtime {
 
 	type CreateRealmDeposit = CreateRealmDeposit;
 	type CreateClassDeposit = CreateClassDeposit;
-	type CreateTokenDeposit = CreateTokenDeposit;
+	type CreateItemDeposit = CreateItemDeposit;
 
     type MaxRealmsPerOrg = MaxRealms;
     type MaxClassesPerRealm = MaxClasses;
