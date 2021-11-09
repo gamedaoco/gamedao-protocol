@@ -262,8 +262,8 @@ pub mod module {
 				gov_asset: u8,              // control assets to empower actors
 				pay_asset: u8,
 				member_limit: u64,          // max members, if 0 == no limit
-				// mint: T::Balance,
-				// burn: T::Balance,
+				// mint: T::Balance,		// cost to mint
+				// burn: T::Balance,		// cost to burn
 				// strategy: u16,
 			) -> DispatchResult {
 
@@ -350,34 +350,39 @@ pub mod module {
 
 				// get the current realm index
 				// let realm_index = tangram::Module::<T>::next_realm_index();
-				let realm_index = tangram::NextRealmIndex::get();
+				// let realm_index = tangram::NextRealmIndex::get();
 
 				// every org receives a token realm by default
-				let realm = tangram::Call::<T>::create_realm(hash.clone());
+				// let realm = tangram::Call::<T>::create_realm(hash.clone());
 				// match tangram::Call::<T>::create_realm(hash.clone()) {
 				// 		Ok(_) => {}
 				// 		Err(err) => { panic!(err) },
 				// }
 
 				// generate a class name
-				let name:Vec<u8> = b"game".to_vec();
+				// let name:Vec<u8> = b"game".to_vec();
 
 				// every org receives a token class for collectables by default
-				let max = 1000; // TODO! externalise max
+				// let max = 1000; // TODO: externalise max
 
-				tangram::Call::<T>::create_class(
-					realm_index.clone(),
-					name,
-					max,
-					// mint,
-					// burn,
-					// strategy
-				);
+				// tangram::Call::<T>::create_class(
+				// 	realm_index.clone(),
+				// 	name,
+				// 	max,
+				// 	// mint,
+				// 	// burn,
+				// 	// strategy
+				// );
 
 				// match tangram::Call::<T>::create_class( realm_index.clone(), name, max ) {
 				// 		Ok(_) => {}
 				// 		Err(err) => { panic!(err) },
 				// }
+
+				// get the next realm index...
+				let realm_index = tangram::NextRealmIndex::get();
+				// bootstrap realm, class and a creator nft
+				tangram::Call::<T>::bootstrap(hash.clone());
 
 				// nonce
 				Nonce::mutate(|n| *n += 1);
