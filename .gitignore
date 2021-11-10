@@ -27,3 +27,5 @@ rls*.log
 tmp
 
 **/*.local*
+.builder/berry
+
