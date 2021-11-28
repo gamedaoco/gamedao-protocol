@@ -36,8 +36,10 @@ ZERO Token ($PLAY) features the following utilities, and the value of $PLAY toke
 
 	- Network utility and stability fees
 		-- Asset, Finance and Governance protocols
-		-- Payment, Identity
-		-- Computation, Oracles
+		-- Payment
+		-- Identity
+		-- Computation
+		-- Oracles
 	- Governance: vote for/against risk parameters and network change proposals
 	- Economic Capital: in case of liquidation/defaulting of contracts without sufficient collaterals
 
