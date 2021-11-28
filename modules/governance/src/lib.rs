@@ -78,6 +78,7 @@ pub struct Proposal<Hash, BlockNumber> {
 	context_id: Hash,
 	proposal_type: u8,
 	voting_type: u8,
+	start: BlockNumber,
 	expiry: BlockNumber
 }
 
@@ -194,21 +195,24 @@ decl_module! {
 			context_id: T::Hash,
 			title: Vec<u8>,
 			cid: Vec<u8>,
+			start: T::BlockNumber,
 			expiry: T::BlockNumber
 		) -> DispatchResult {
 
 			let sender = ensure_signed(origin)?;
 
 			// active/existing dao?
-			ensure!( <control::Module<T>>::body_state(&context_id) == 1, "DAO invalid" );
+			ensure!( <control::Module<T>>::body_state(&context_id) == 1, Error::<T>::DAOInactive );
 
 			// search by body_member_state:
 			let member = <control::Module<T>>::body_member_state((&context_id,&sender));
-			ensure!( member == 1, "The sender must be an active member");
+			ensure!( member == 1, Error::<T>::AuthorizationError );
 
-			// ensure that the expiry is in bounds
-			ensure!(expiry > <system::Module<T>>::block_number(), "The expiration block has to be greater than the current block number");
-			ensure!(expiry <= <system::Module<T>>::block_number() + Self::proposal_time_limit(), "The expiry has to be lower than the limit");
+			// ensure that start and expiry are in bounds
+			let current_block = <system::Module<T>>::block_number();
+			ensure!(start > current_block, Error::<T>::OutOfBounds );
+			ensure!(expiry > current_block, Error::<T>::OutOfBounds );
+			ensure!(expiry <= current_block + Self::proposal_time_limit(), Error::<T>::OutOfBounds );
 
 			// ensure that number of proposals
 			// ending in target block
@@ -235,6 +239,7 @@ decl_module! {
 				context_id: context_id.clone(),
 				proposal_type,
 				voting_type,
+				start,
 				expiry,
 			};
 
@@ -335,6 +340,7 @@ decl_module! {
 			title: Vec<u8>,
 			cid: Vec<u8>,
 			amount: T::Balance,
+			start: T::BlockNumber,
 			expiry: T::BlockNumber,
 		) -> DispatchResult {
 
@@ -355,9 +361,11 @@ decl_module! {
 			let owner = <crowdfunding::Module<T>>::campaign_owner(context_id).ok_or("The owner does not exist")?;
 			ensure!(sender == owner, "The sender must be the owner of the campaign");
 
-			// ensure that the expiry is in bounds
-			ensure!(expiry > <system::Module<T>>::block_number(), "The expiration block has to be greater than the current block number");
-			ensure!(expiry <= <system::Module<T>>::block_number() + Self::proposal_time_limit(), "The expiry has to be lower than the limit");
+			// ensure that start and expiry are in bounds
+			let current_block = <system::Module<T>>::block_number();
+			ensure!(start > current_block, Error::<T>::OutOfBounds );
+			ensure!(expiry > current_block, Error::<T>::OutOfBounds );
+			ensure!(expiry <= current_block + Self::proposal_time_limit(), Error::<T>::OutOfBounds );
 
 			// balance check
 			let used_balance = Self::used_balance(&context_id);
@@ -380,7 +388,7 @@ decl_module! {
 			let nonce = Nonce::get();
 
 			// generate unique id
-			let phrase = b"just another proposal";
+			let phrase = b"just another withdrawal";
 			let proposal_id = <T as Config>::Randomness::random(phrase);
 
 			// ensure that the proposal id is unique
@@ -401,6 +409,7 @@ decl_module! {
 				context_id: context_id.clone(),
 				proposal_type,
 				voting_type,
+				start,
 				expiry,
 			};
 
@@ -690,6 +699,14 @@ impl<T:Config> Module<T> {
 decl_error! {
 	pub enum Error for Module<T: Config> {
 
+		/// DAO Inactive
+		DAOInactive,
+		/// Authorization Error
+		AuthorizationError,
+		/// Tangram Creation Failed
+		TangramCreationError,
+		/// Out Of Bounds Error
+		OutOfBounds,
 		/// Unknown Error
 		UnknownError,
 
