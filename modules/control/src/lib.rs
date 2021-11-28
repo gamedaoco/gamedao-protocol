@@ -339,12 +339,18 @@ pub mod module {
 				// ...creator, controller and treasury shall be members
 
 				// initiate member registry -> consumes fees
-				Self::add( hash.clone(), creator.clone() );
-				// Err(hash) => TransactionType::None
-				Self::add( hash.clone(), controller.clone() );
-				Self::add( hash.clone(), treasury.clone() );
-
-
+				match Self::add( hash.clone(), creator.clone() ) {
+						Ok(_) => {}
+						Err(err) => { panic!("{err}") },
+				}
+				match Self::add( hash.clone(), controller.clone() ) {
+						Ok(_) => {}
+						Err(err) => { panic!("{err}") },
+				}
+				match Self::add( hash.clone(), treasury.clone() ) {
+						Ok(_) => {}
+						Err(err) => { panic!("{err}") },
+				}
 
 				// generate nft realm
 
@@ -382,7 +388,7 @@ pub mod module {
 				// get the next realm index...
 				let realm_index = tangram::NextRealmIndex::get();
 				// bootstrap realm, class and a creator nft
-				tangram::Call::<T>::bootstrap(hash.clone());
+				tangram::Call::<T>::bootstrap( hash.clone() );
 
 				// nonce
 				Nonce::mutate(|n| *n += 1);
