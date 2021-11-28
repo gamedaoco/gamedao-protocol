@@ -340,62 +340,81 @@ pub mod module {
 
 				// initiate member registry -> consumes fees
 				match Self::add( hash.clone(), creator.clone() ) {
-						Ok(_) => {}
-						Err(err) => { panic!("{err}") },
-				}
+						Ok(_) => {},
+						Err(err) => { panic!("{err}") }
+				};
 				match Self::add( hash.clone(), controller.clone() ) {
-						Ok(_) => {}
-						Err(err) => { panic!("{err}") },
-				}
+						Ok(_) => {},
+						Err(err) => { panic!("{err}") }
+				};
 				match Self::add( hash.clone(), treasury.clone() ) {
-						Ok(_) => {}
-						Err(err) => { panic!("{err}") },
-				}
+						Ok(_) => {},
+						Err(err) => { panic!("{err}") }
+				};
 
 				// generate nft realm
 
 				// get the current realm index
-				// let realm_index = tangram::Module::<T>::next_realm_index();
-				// let realm_index = tangram::NextRealmIndex::get();
+				let current_realm_index = tangram::NextRealmIndex::get();
 
 				// every org receives a token realm by default
-				// let realm = tangram::Call::<T>::create_realm(hash.clone());
-				// match tangram::Call::<T>::create_realm(hash.clone()) {
-				// 		Ok(_) => {}
-				// 		Err(err) => { panic!(err) },
-				// }
+				let realm = tangram::Module::<T>::create_realm(origin.clone(), hash.clone());
+				let mut realm = match realm {
+						Ok(_) => {},
+						Err(err) => { return Err(err) }
+				};
+
+				// get current class index
+				let current_class_index = tangram::NextClassIndex::get(current_realm_index);
 
 				// generate a class name
-				// let name:Vec<u8> = b"game".to_vec();
-
+				let name:Vec<u8> = b"game".to_vec();
 				// every org receives a token class for collectables by default
-				// let max = 1000; // TODO: externalise max
-
-				// tangram::Call::<T>::create_class(
-				// 	realm_index.clone(),
-				// 	name,
-				// 	max,
-				// 	// mint,
-				// 	// burn,
-				// 	// strategy
-				// );
-
-				// match tangram::Call::<T>::create_class( realm_index.clone(), name, max ) {
-				// 		Ok(_) => {}
-				// 		Err(err) => { panic!(err) },
-				// }
+				let max = 1000; // TODO: externalise max
+				let class = tangram::Module::<T>::create_class(
+					origin.clone(),
+					current_realm_index.clone(),
+					name,
+					max,
+					// mint,
+					// burn,
+					// strategy
+				);
+				let mut class = match class {
+						Ok(_) => {},
+						Err(err) => { return Err(err) }
+				};
 
 				// get the next realm index...
-				let realm_index = tangram::NextRealmIndex::get();
+				let next_realm_index = tangram::NextRealmIndex::get();
+
 				// bootstrap realm, class and a creator nft
-				tangram::Call::<T>::bootstrap( hash.clone() );
+				// let item =
+				// tangram::Call::<T>::bootstrap( hash.clone() );
+
+				let item_name:Vec<u8> = b"creator".to_vec();
+				let item_cid:Vec<u8> = b"0".to_vec();
+				let item = tangram::Module::<T>::create_item(
+					origin.clone(),
+					current_realm_index,
+					current_class_index,
+					item_name,
+					item_cid
+				);
+				let mut item = match item {
+						Ok(_) => {},
+						Err(err) => { return Err(err) }
+				};
+
+				// TODO: send item to creator
+				// TODO: send item to controller
 
 				// nonce
 				Nonce::mutate(|n| *n += 1);
 
 				// dispatch event
 				Self::deposit_event(
-					RawEvent::BodyCreated(creator, hash, now, realm_index)
+					RawEvent::BodyCreated(creator, hash, now, next_realm_index)
 				);
 				Ok(())
 
@@ -409,6 +428,8 @@ pub mod module {
 				account: T::AccountId
 			) -> DispatchResult {
 				let caller = ensure_signed(origin)?;
+				// TODO: ensure not a member yet
+
 				Self::add( hash.clone(), account.clone() );
 
 				let now = <system::Module<T>>::block_number();
