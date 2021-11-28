@@ -133,7 +133,7 @@ pub enum AuthoritysOriginId {
 }
 
 //
-//	sense
+//	s e n s e
 //
 
 #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]

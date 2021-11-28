@@ -37,7 +37,7 @@ crowdfunding = { package = "module-crowdfunding", path = "../crowdfunding", defa
 [features]
 default = ['std']
 std = [
-	'serde/std',
+	'serde',
 	'codec/std',
 	'frame-support/std',
 	'frame-system/std',

@@ -30,36 +30,6 @@ use serde::{ Deserialize, Serialize };
 
 use primitives::{ Balance, BlockNumber, Index, Moment};
 
-// #[cfg_attr(feature = "std", derive(Debug))]
-
-// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, PartialOrd, Ord)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-// pub enum ProposalType {
-// 	PROPOSAL,
-// 	TREASURY,
-// 	MEMBERSHIP,
-// }
-
-// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, PartialOrd, Ord)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-// pub enum VotingType {
-// 	WEIGHTED,
-// 	DEMOCRATIC,
-// 	QUADRATIC,
-// 	CONVICTION,
-// }
-
-// #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, PartialOrd, Ord)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-// pub enum ProposalState {
-// 	LOCK,
-// 	OPEN,
-// 	ACK,
-// 	NACK,
-// 	TERM,
-// 	DONE,
-// }
-
 //
 //
 //
@@ -301,7 +271,7 @@ decl_module! {
 			Self::deposit_event(
 				RawEvent::Proposal(
 					sender,
-					context_id
+					proposal_id
 				)
 			);
 			Ok(())
