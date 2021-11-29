@@ -450,7 +450,7 @@ pub mod module {
 				// when fees==1 unreserve fees
 
 				let caller = ensure_signed(origin)?;
-				// Self::remove( hash.clone(), account.clone());
+				Self::remove( hash.clone(), account.clone());
 
 				let now = <system::Module<T>>::block_number();
 				Self::deposit_event(
@@ -626,42 +626,47 @@ pub mod module {
 
 		}
 
-		// fn remove(
-		// 	hash: T::Hash,
-		// 	account: T::AccountId,
-		// ) -> DispatchResult {
+		fn remove(
+			hash: T::Hash,
+			account: T::AccountId,
+		) -> DispatchResult {
 
-		// 	// existence
-		// 	ensure!( <Bodies<T>>::contains_key(&hash), Error::<T>::BodyUnknown );
+			// existence
+			ensure!( <Bodies<T>>::contains_key(&hash), Error::<T>::BodyUnknown );
 
 
-		// 	let mut members = BodyMembers::<T>::get(hash);
+			let mut members = BodyMembers::<T>::get(hash);
 
-		// 	match members.binary_search(&account) {
+			match members.binary_search(&account) {
 
-		// 		Ok(index) => {
-		// 			members.remove(index);
-		// 			BodyMembers::<T>::insert(&hash,members);
-		// 			let now = <system::Module<T>>::block_number();
-		// 			Self::deposit_event(
-		// 				RawEvent::RemoveMember(hash,account,now)
-		// 			);
-		// 			Ok(())
-		// 		},
+				Ok(index) => {
+					members.remove(index);
+					BodyMembers::<T>::insert(&hash,members.clone());
 
-		// 		Err(_) => Err(Error::<T>::MemberUnknown.into()),
+					// counter
+					let count = members.len();
+					BodyMemberCount::<T>::insert( &hash, count as u64 );
 
-		// 	}
+					let now = <system::Module<T>>::block_number();
+					Self::deposit_event(
+						RawEvent::RemoveMember(hash,account,now)
+					);
+					Ok(())
+				},
 
-		// }
+				Err(_) => Err(Error::<T>::MemberUnknown.into()),
+
+			}
+
+		}
 
 		// transfer control of a body
-		// fn transfer(
-		// 	hash: T::Hash,
-		// 	account: T::AccountId
-		// ) {
+		fn transfer(
+			hash: T::Hash,
+			account: T::AccountId
+		) {
 
-		// }
+		}
 
 	}
 

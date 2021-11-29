@@ -180,7 +180,7 @@ decl_module! {
 
 			// ensure that start and expiry are in bounds
 			let current_block = <system::Module<T>>::block_number();
-			ensure!(start > current_block, Error::<T>::OutOfBounds );
+			// ensure!(start > current_block, Error::<T>::OutOfBounds );
 			ensure!(expiry > current_block, Error::<T>::OutOfBounds );
 			ensure!(expiry <= current_block + Self::proposal_time_limit(), Error::<T>::OutOfBounds );
 
@@ -333,7 +333,7 @@ decl_module! {
 
 			// ensure that start and expiry are in bounds
 			let current_block = <system::Module<T>>::block_number();
-			ensure!(start > current_block, Error::<T>::OutOfBounds );
+			// ensure!(start > current_block, Error::<T>::OutOfBounds );
 			ensure!(expiry > current_block, Error::<T>::OutOfBounds );
 			ensure!(expiry <= current_block + Self::proposal_time_limit(), Error::<T>::OutOfBounds );
 
@@ -453,19 +453,19 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			// Ensure the proposal exists
-			ensure!(<Proposals<T>>::contains_key(&proposal_id), "The requested proposal does not exist");
+			ensure!(<Proposals<T>>::contains_key(&proposal_id), Error::<T>::ProposalUnknown);
 
 			// Ensure the proposal has not ended
 			let proposal_state = Self::proposal_states(&proposal_id);
-			ensure!(proposal_state != 1, "The voting has closed");
+			ensure!(proposal_state == 1, Error::<T>::ProposalEnded);
 
 			// Ensure the contributor did not vote before
-			ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), "You have already voted before");
+			ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), Error::<T>::AlreadyVoted);
 
 			// Get the proposal
 			let proposal = Self::proposals(&proposal_id);
 			// Ensure the proposal is not expired
-			ensure!(<system::Module<T>>::block_number() < proposal.expiry, "The proposal expired");
+			ensure!(<system::Module<T>>::block_number() < proposal.expiry, Error::<T>::ProposalExpired);
 
 			// ensure origin is one of:
 			// a. member when the proposal is general
@@ -475,12 +475,18 @@ decl_module! {
 
 			match proposal.proposal_type {
 				// DAO Democratic Proposal
-				// simply one token one vote yes / no,
+				// simply one member one vote yes / no,
 				// TODO: ratio definable, now > 50% majority wins
 				0 => {
-						let mut votes = Self::proposal_simple_votes(&proposal_id);
-						if vote == true { votes.0.checked_add(1).ok_or("voting overflow")?; }
-						if vote == false { votes.1.checked_add(1).ok_or("voting overflow")?; }
+						let votes = Self::proposal_simple_votes(&proposal_id);
+						let yes = votes.0;
+						let no = votes.1;
+						if vote == true { yes.checked_add(1).ok_or("voting overflow")?; }
+						if vote == false { no.checked_add(1).ok_or("voting overflow")?; }
+						<ProposalSimpleVotes<T>>::insert(
+							proposal_id.clone(),
+							(yes,no)
+						);
 				},
 				// Campaign Token Weighted Proposal
 				// total token balance yes vs no
@@ -669,6 +675,14 @@ impl<T:Config> Module<T> {
 decl_error! {
 	pub enum Error for Module<T: Config> {
 
+		/// Proposal Ended
+		ProposalEnded,
+		/// Proposal Expired
+		ProposalExpired,
+		/// Already Voted
+		AlreadyVoted,
+		/// Proposal Unknown
+		ProposalUnknown,
 		/// DAO Inactive
 		DAOInactive,
 		/// Authorization Error
