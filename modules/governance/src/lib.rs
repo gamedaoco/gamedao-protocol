@@ -74,7 +74,7 @@ pub trait Config: frame_system::Config + balances::Config + timestamp::Config + 
 
 // TODO: replace with config
 const MAX_PROPOSALS_PER_BLOCK: usize = 3;
-const MAX_PROPOSAL_DURATION: u32 = 60480;
+const MAX_PROPOSAL_DURATION: u32 = 864000; // 60 * 60 * 24 * 30 / 3
 
 //
 //
@@ -489,7 +489,7 @@ decl_module! {
 				},
 				// Membership Voting
 				// simply one token one vote yes / no,
-				// TODO: ratio definable, now > simple majority wins
+				// TODO: ratio definable, now simple majority wins
 				2 => {
 
 				},
