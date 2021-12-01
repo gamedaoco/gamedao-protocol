@@ -80,27 +80,8 @@ const MAX_PROPOSAL_DURATION: u32 = 60480;
 //
 //
 
-decl_event!(
-	pub enum Event<T> where
-		<T as system::Config>::AccountId,
-		<T as system::Config>::Hash,
-		<T as balances::Config>::Balance,
-		<T as system::Config>::BlockNumber
-	{
-		Proposal(AccountId, Hash),
-		ProposalCreated(AccountId, Hash, Hash, Balance, BlockNumber),
-		ProposalVoted(AccountId, Hash),
-		ProposalFinalized(Hash, u64, BlockNumber, bool),
-		ProposalError(Hash, Vec<u8>),
-	}
-);
-
-//
-//
-//
-
 decl_storage! {
-	trait Store for Module<T: Config> as Governance22 {
+	trait Store for Module<T: Config> as Governance25 {
 
 		/// Global status
 		Proposals get(fn proposals): map hasher(blake2_128_concat) T::Hash => Proposal<T::Hash, T::BlockNumber>;
@@ -473,20 +454,32 @@ decl_module! {
 			// let sender_balance = <campaign::Module<T>>::campaign_contribution(proposal.campaign_id, sender.clone());
 			// ensure!( sender_balance > T::Balance::from(0), "You are not a contributor of this Campaign");
 
-			match proposal.proposal_type {
+			match &proposal.proposal_type {
 				// DAO Democratic Proposal
 				// simply one member one vote yes / no,
 				// TODO: ratio definable, now > 50% majority wins
 				0 => {
+
 						let votes = Self::proposal_simple_votes(&proposal_id);
 						let yes = votes.0;
-						let no = votes.1;
-						if vote == true { yes.checked_add(1).ok_or("voting overflow")?; }
+						let no  = votes.1;
+						if vote == true  { yes.checked_add(1).ok_or("voting overflow")?; }
 						if vote == false { no.checked_add(1).ok_or("voting overflow")?; }
+						let updated_votes = ( yes, no );
 						<ProposalSimpleVotes<T>>::insert(
 							proposal_id.clone(),
-							(yes,no)
+							updated_votes
 						);
+
+						if vote == true {
+							let proposal_supporters = Self::proposal_supporters(&proposal_id);
+							let updated_proposal_supporters = proposal_supporters.checked_add(1).ok_or("Overflow")?;
+							<ProposalSupporters<T>>::insert(
+								proposal_id.clone(),
+								updated_proposal_supporters.clone()
+							);
+						}
+
 				},
 				// Campaign Token Weighted Proposal
 				// total token balance yes vs no
@@ -496,7 +489,7 @@ decl_module! {
 				},
 				// Membership Voting
 				// simply one token one vote yes / no,
-				// TODO: ratio definable, now > 50% majority wins
+				// TODO: ratio definable, now > simple majority wins
 				2 => {
 
 				},
@@ -539,7 +532,8 @@ decl_module! {
 			Self::deposit_event(
 				RawEvent::ProposalVoted(
 					sender,
-					proposal_id.clone()
+					proposal_id.clone(),
+					proposal.proposal_type
 				)
 			);
 			Ok(())
@@ -627,8 +621,8 @@ impl<T:Config> Module<T> {
 	) -> DispatchResult {
 
 		// Get proposal and metadata
-		let mut proposal = Self::proposals(proposal_id.clone());
-		let mut metadata = Self::metadata(proposal_id.clone());
+		let proposal = Self::proposals(proposal_id.clone());
+		let metadata = Self::metadata(proposal_id.clone());
 		let proposal_balance = metadata.amount;
 
 		// Ensure sufficient balance
@@ -669,7 +663,26 @@ impl<T:Config> Module<T> {
 }
 
 //
+//	e v e n t s
 //
+
+decl_event!(
+	pub enum Event<T> where
+		<T as system::Config>::AccountId,
+		<T as system::Config>::Hash,
+		<T as balances::Config>::Balance,
+		<T as system::Config>::BlockNumber
+	{
+		Proposal(AccountId, Hash),
+		ProposalCreated(AccountId, Hash, Hash, Balance, BlockNumber),
+		ProposalVoted(AccountId, Hash, u8),
+		ProposalFinalized(Hash, u64, BlockNumber, bool),
+		ProposalError(Hash, Vec<u8>),
+	}
+);
+
+//
+//	e r r o r s
 //
 
 decl_error! {
