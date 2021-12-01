@@ -262,8 +262,8 @@ pub mod module {
 				gov_asset: u8,              // control assets to empower actors
 				pay_asset: u8,
 				member_limit: u64,          // max members, if 0 == no limit
-				// mint: T::Balance,
-				// burn: T::Balance,
+				// mint: T::Balance,		// cost to mint
+				// burn: T::Balance,		// cost to burn
 				// strategy: u16,
 			) -> DispatchResult {
 
@@ -339,52 +339,82 @@ pub mod module {
 				// ...creator, controller and treasury shall be members
 
 				// initiate member registry -> consumes fees
-				Self::add( hash.clone(), creator.clone() );
-				// Err(hash) => TransactionType::None
-				Self::add( hash.clone(), controller.clone() );
-				Self::add( hash.clone(), treasury.clone() );
-
-
+				match Self::add( hash.clone(), creator.clone() ) {
+						Ok(_) => {},
+						Err(err) => { panic!("{err}") }
+				};
+				match Self::add( hash.clone(), controller.clone() ) {
+						Ok(_) => {},
+						Err(err) => { panic!("{err}") }
+				};
+				match Self::add( hash.clone(), treasury.clone() ) {
+						Ok(_) => {},
+						Err(err) => { panic!("{err}") }
+				};
 
 				// generate nft realm
 
 				// get the current realm index
-				// let realm_index = tangram::Module::<T>::next_realm_index();
-				let realm_index = tangram::NextRealmIndex::get();
+				let current_realm_index = tangram::NextRealmIndex::get();
 
 				// every org receives a token realm by default
-				let realm = tangram::Call::<T>::create_realm(hash.clone());
-				// match tangram::Call::<T>::create_realm(hash.clone()) {
-				// 		Ok(_) => {}
-				// 		Err(err) => { panic!(err) },
-				// }
+				let realm = tangram::Module::<T>::create_realm(origin.clone(), hash.clone());
+				let mut realm = match realm {
+						Ok(_) => {},
+						Err(err) => { return Err(err) }
+				};
+
+				// get current class index
+				let current_class_index = tangram::NextClassIndex::get(current_realm_index);
 
 				// generate a class name
 				let name:Vec<u8> = b"game".to_vec();
-
 				// every org receives a token class for collectables by default
-				let max = 1000; // TODO! externalise max
-
-				tangram::Call::<T>::create_class(
-					realm_index.clone(),
+				let max = 1000; // TODO: externalise max
+				let class = tangram::Module::<T>::create_class(
+					origin.clone(),
+					current_realm_index.clone(),
 					name,
 					max,
 					// mint,
 					// burn,
 					// strategy
 				);
+				let mut class = match class {
+						Ok(_) => {},
+						Err(err) => { return Err(err) }
+				};
 
-				// match tangram::Call::<T>::create_class( realm_index.clone(), name, max ) {
-				// 		Ok(_) => {}
-				// 		Err(err) => { panic!(err) },
-				// }
+				// get the next realm index...
+				let next_realm_index = tangram::NextRealmIndex::get();
+
+				// bootstrap realm, class and a creator nft
+				// let item =
+				// tangram::Call::<T>::bootstrap( hash.clone() );
+
+				let item_name:Vec<u8> = b"creator".to_vec();
+				let item_cid:Vec<u8> = b"0".to_vec();
+				let item = tangram::Module::<T>::create_item(
+					origin.clone(),
+					current_realm_index,
+					current_class_index,
+					item_name,
+					item_cid
+				);
+				let mut item = match item {
+						Ok(_) => {},
+						Err(err) => { return Err(err) }
+				};
+
+				// TODO: send item to creator
+				// TODO: send item to controller
 
 				// nonce
 				Nonce::mutate(|n| *n += 1);
 
 				// dispatch event
 				Self::deposit_event(
-					RawEvent::BodyCreated(creator, hash, now, realm_index)
+					RawEvent::BodyCreated(creator, hash, now, next_realm_index)
 				);
 				Ok(())
 
@@ -398,6 +428,8 @@ pub mod module {
 				account: T::AccountId
 			) -> DispatchResult {
 				let caller = ensure_signed(origin)?;
+				// TODO: ensure not a member yet
+
 				Self::add( hash.clone(), account.clone() );
 
 				let now = <system::Module<T>>::block_number();
@@ -418,7 +450,7 @@ pub mod module {
 				// when fees==1 unreserve fees
 
 				let caller = ensure_signed(origin)?;
-				// Self::remove( hash.clone(), account.clone());
+				Self::remove( hash.clone(), account.clone());
 
 				let now = <system::Module<T>>::block_number();
 				Self::deposit_event(
@@ -594,42 +626,47 @@ pub mod module {
 
 		}
 
-		// fn remove(
-		// 	hash: T::Hash,
-		// 	account: T::AccountId,
-		// ) -> DispatchResult {
+		fn remove(
+			hash: T::Hash,
+			account: T::AccountId,
+		) -> DispatchResult {
 
-		// 	// existence
-		// 	ensure!( <Bodies<T>>::contains_key(&hash), Error::<T>::BodyUnknown );
+			// existence
+			ensure!( <Bodies<T>>::contains_key(&hash), Error::<T>::BodyUnknown );
 
 
-		// 	let mut members = BodyMembers::<T>::get(hash);
+			let mut members = BodyMembers::<T>::get(hash);
 
-		// 	match members.binary_search(&account) {
+			match members.binary_search(&account) {
 
-		// 		Ok(index) => {
-		// 			members.remove(index);
-		// 			BodyMembers::<T>::insert(&hash,members);
-		// 			let now = <system::Module<T>>::block_number();
-		// 			Self::deposit_event(
-		// 				RawEvent::RemoveMember(hash,account,now)
-		// 			);
-		// 			Ok(())
-		// 		},
+				Ok(index) => {
+					members.remove(index);
+					BodyMembers::<T>::insert(&hash,members.clone());
 
-		// 		Err(_) => Err(Error::<T>::MemberUnknown.into()),
+					// counter
+					let count = members.len();
+					BodyMemberCount::<T>::insert( &hash, count as u64 );
 
-		// 	}
+					let now = <system::Module<T>>::block_number();
+					Self::deposit_event(
+						RawEvent::RemoveMember(hash,account,now)
+					);
+					Ok(())
+				},
 
-		// }
+				Err(_) => Err(Error::<T>::MemberUnknown.into()),
+
+			}
+
+		}
 
 		// transfer control of a body
-		// fn transfer(
-		// 	hash: T::Hash,
-		// 	account: T::AccountId
-		// ) {
+		fn transfer(
+			hash: T::Hash,
+			account: T::AccountId
+		) {
 
-		// }
+		}
 
 	}
 

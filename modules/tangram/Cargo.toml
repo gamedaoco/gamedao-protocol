@@ -22,7 +22,8 @@ balances = { package = "pallet-balances", version = "3.0.0", default-features = 
 
 primitives = { package = "zero-primitives", path = "../../bin/primitives", default-features = false }
 timestamp = { package = "pallet-timestamp", version = "3.0.0", default-features = false, path = "../../frame/timestamp" }
-sense = { package = "module-sense", path = "../sense", default-features = false }
+
+# control = { package = "module-control", path = "../control", default-features = false }
 
 [features]
 default = ['std']
@@ -33,6 +34,5 @@ std = [
     'sp-core/std',
     'sp-runtime/std',
     'sp-std/std',
-    'balances/std',
-    'sense/std'
+    'balances/std'
 ]

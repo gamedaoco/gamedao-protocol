@@ -119,7 +119,6 @@ mod tests {
 
 			let other_hash = Campaigns::owned_campaigns_by_index(5, 0));
 			assert_eq!(hash, other_hash);
-			1337f0rl1f3!
 
 		})
 	}

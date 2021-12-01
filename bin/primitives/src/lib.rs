@@ -133,7 +133,7 @@ pub enum AuthoritysOriginId {
 }
 
 //
-//	sense
+//	s e n s e
 //
 
 #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
@@ -144,38 +144,73 @@ pub enum SenseProps {
 	TRUST = 2,
 }
 
+
 //
+//	g o v e r n a n c e
 //
-//
 
-/// App-specific crypto used for reporting equivocation/misbehavior in BABE and
-/// GRANDPA. Any rewards for misbehavior reporting will be paid out to this
-/// account.
-
-pub mod report {
-	use super::{Signature, Verify};
-	use frame_system::offchain::AppCrypto;
-	use sp_core::crypto::{key_types, KeyTypeId};
-
-	/// Key type for the reporting module. Used for reporting BABE and GRANDPA
-	/// equivocations.
-	pub const KEY_TYPE: KeyTypeId = key_types::REPORTING;
-
-	mod app {
-		use sp_application_crypto::{app_crypto, sr25519};
-		app_crypto!(sr25519, super::KEY_TYPE);
-	}
-
-	/// Identity of the equivocation/misbehavior reporter.
-	pub type ReporterId = app::Public;
-
-	/// An `AppCrypto` type to allow submitting signed transactions using the reporting
-	/// application key as signer.
-	pub struct ReporterAppCrypto;
-
-	impl AppCrypto<<Signature as Verify>::Signer, Signature> for ReporterAppCrypto {
-		type RuntimeAppPublic = ReporterId;
-		type GenericSignature = sp_core::sr25519::Signature;
-		type GenericPublic = sp_core::sr25519::Public;
-	}
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum ProposalType {
+	PROPOSAL = 0,
+	TREASURY = 1,
+	MEMBERSHIP = 2,
 }
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum VotingType {
+	WEIGHTED = 0,
+	DEMOCRATIC = 1,
+	QUADRATIC = 2,
+	CONVICTION = 3,
+}
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum ProposalState {
+	LOCK = 0,
+	OPEN = 1,
+	ACK = 2,
+	NACK = 3,
+	TERM = 4,
+	DONE = 5,
+}
+
+
+
+//
+//
+//
+
+// / App-specific crypto used for reporting equivocation/misbehavior in BABE and
+// / GRANDPA. Any rewards for misbehavior reporting will be paid out to this
+// / account.
+
+// pub mod report {
+// 	use super::{Signature, Verify};
+// 	use frame_system::offchain::AppCrypto;
+// 	use sp_core::crypto::{key_types, KeyTypeId};
+
+// 	/// Key type for the reporting module. Used for reporting BABE and GRANDPA
+// 	/// equivocations.
+// 	pub const KEY_TYPE: KeyTypeId = key_types::REPORTING;
+
+// 	mod app {
+// 		use sp_application_crypto::{app_crypto, sr25519};
+// 		app_crypto!(sr25519, super::KEY_TYPE);
+// 	}
+
+// 	/// Identity of the equivocation/misbehavior reporter.
+// 	pub type ReporterId = app::Public;
+
+// 	/// An `AppCrypto` type to allow submitting signed transactions using the reporting
+// 	/// application key as signer.
+// 	pub struct ReporterAppCrypto;
+
+// 	impl AppCrypto<<Signature as Verify>::Signer, Signature> for ReporterAppCrypto {
+// 		type RuntimeAppPublic = ReporterId;
+// 		type GenericSignature = sp_core::sr25519::Signature;
+// 		type GenericPublic = sp_core::sr25519::Public;
+// 	}
+// }

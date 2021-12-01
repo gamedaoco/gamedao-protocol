@@ -4,6 +4,7 @@
     "purpose": "Vec<u8>",
     "cid": "Vec<u8>",
     "amount": "Balance",
+    "start": "BlockNumber",
     "expiry": "BlockNumber",
     "status": "u8"
   }
