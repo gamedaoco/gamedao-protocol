@@ -114,8 +114,16 @@ decl_storage! {
 		/// The amount of currency that a project has used
 		CampaignBalanceUsed get(fn used_balance): map hasher(blake2_128_concat) T::Hash => T::Balance;
 
-		/// The number of people who support a proposal
-		ProposalSupporters get(fn proposal_supporters): map hasher(blake2_128_concat) T::Hash => u64;
+		/// The number of people who approve a proposal
+		ProposalApprovers get(fn proposal_approvers): map hasher(blake2_128_concat) T::Hash => u64;
+		/// The number of people who deny a proposal
+		ProposalDeniers get(fn proposal_deniers): map hasher(blake2_128_concat) T::Hash => u64;
+
+		// TODO: ProposalTotalVoters
+		// TODO: ProposalTotalEligibleVoters
+		// TODO: ProposalApproversWeight
+		// TODO: ProposalDeniersWeight
+		// TODO: ProposalTotalEligibleWeight
 
 		/// Ack vs Nack
 		ProposalSimpleVotes get(fn proposal_simple_votes): map hasher(blake2_128_concat) T::Hash => (u64,u64);
@@ -463,6 +471,8 @@ decl_module! {
 						let votes = Self::proposal_simple_votes(&proposal_id);
 						let yes = votes.0;
 						let no  = votes.1;
+
+						// a naive attempt to update a tuple
 						if vote == true  { yes.checked_add(1).ok_or("voting overflow")?; }
 						if vote == false { no.checked_add(1).ok_or("voting overflow")?; }
 						let updated_votes = ( yes, no );
@@ -472,14 +482,22 @@ decl_module! {
 						);
 
 						if vote == true {
-							let proposal_supporters = Self::proposal_supporters(&proposal_id);
-							let updated_proposal_supporters = proposal_supporters.checked_add(1).ok_or("Overflow")?;
-							<ProposalSupporters<T>>::insert(
+							let proposal_approvers = Self::proposal_approvers(&proposal_id);
+							let updated_proposal_approvers = proposal_approvers.checked_add(1).ok_or("Overflow")?;
+							<ProposalApprovers<T>>::insert(
 								proposal_id.clone(),
-								updated_proposal_supporters.clone()
+								updated_proposal_approvers.clone()
 							);
 						}
 
+						if vote == false {
+							let proposal_deniers = Self::proposal_deniers(&proposal_id);
+							let updated_proposal_deniers = proposal_deniers.checked_add(1).ok_or("Overflow")?;
+							<ProposalDeniers<T>>::insert(
+								proposal_id.clone(),
+								updated_proposal_deniers.clone()
+							);
+						}
 				},
 				// Campaign Token Weighted Proposal
 				// total token balance yes vs no
@@ -497,25 +515,25 @@ decl_module! {
 				3 => {
 
 					// Get the number of people who have supported the proposal and add 1
-					let proposal_supporters = Self::proposal_supporters(&proposal_id);
-					let updated_proposal_supporters = proposal_supporters.checked_add(1).ok_or("Overflow adding the number of people who have voted the proposal")?;
+					let proposal_approvers = Self::proposal_approvers(&proposal_id);
+					let updated_proposal_approvers = proposal_approvers.checked_add(1).ok_or("Overflow adding the number of people who have voted the proposal")?;
 					let contributors = <crowdfunding::Module<T>>::campaign_contributors_count(proposal.context_id);
-					let supporters = updated_proposal_supporters.clone();
+					let approvers = updated_proposal_approvers.clone();
 					// TODO: make this variable
 					let fittycent = contributors.checked_div(2).ok_or("Error on division")?;
 
-					// If the supporters are more than half the contributors,
+					// If the approvers are more than half the contributors,
 					// the proposal shall pass
 					// and funds will be released
-					if updated_proposal_supporters > fittycent {
-						Self::unlock_balance(proposal_id, supporters)?;
+					if updated_proposal_approvers > fittycent {
+						Self::unlock_balance(proposal_id, approvers)?;
 					}
 
 					// Change the number of supporters
 
-					<ProposalSupporters<T>>::insert(
+					<ProposalApprovers<T>>::insert(
 						proposal_id.clone(),
-						updated_proposal_supporters.clone()
+						updated_proposal_approvers.clone()
 					);
 
 				}
@@ -587,14 +605,14 @@ decl_module! {
 				}
 
 				<ProposalStates<T>>::insert(proposal_id.clone(), proposal_state);
-				let supporters = <ProposalSupporters<T>>::get(proposal_id.clone());
+				// let approvers = <ProposalApprovers<T>>::get(proposal_id.clone());
 
 				// Self::deposit_event(
 				// 	RawEvent::ProposalFinalized(
 				// 		proposal_id,
-				// 		supporters,
-				// 		block_number,
-				// 		false
+				// 		// approvers,
+				// 		// block_number,
+				// 		// false
 				// 	)
 				// );
 			}
