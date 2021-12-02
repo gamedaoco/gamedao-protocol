@@ -359,7 +359,7 @@ pub mod module {
 
 				// every org receives a token realm by default
 				let realm = tangram::Module::<T>::create_realm(origin.clone(), hash.clone());
-				let mut realm = match realm {
+				let realm = match realm {
 						Ok(_) => {},
 						Err(err) => { return Err(err) }
 				};
@@ -380,7 +380,7 @@ pub mod module {
 					// burn,
 					// strategy
 				);
-				let mut class = match class {
+				let class = match class {
 						Ok(_) => {},
 						Err(err) => { return Err(err) }
 				};
@@ -401,7 +401,7 @@ pub mod module {
 					item_name,
 					item_cid
 				);
-				let mut item = match item {
+				let item = match item {
 						Ok(_) => {},
 						Err(err) => { return Err(err) }
 				};
@@ -430,12 +430,11 @@ pub mod module {
 				let caller = ensure_signed(origin)?;
 				// TODO: ensure not a member yet
 
-				Self::add( hash.clone(), account.clone() );
-
-				let now = <system::Module<T>>::block_number();
-				Self::deposit_event(
-					RawEvent::AddMember(hash, account, now)
-				);
+				let add = Self::add( hash.clone(), account.clone() );
+				let add = match add {
+						Ok(_) => {},
+						Err(err) => { return Err(err) }
+				};
 				Ok(())
 			}
 
@@ -450,12 +449,12 @@ pub mod module {
 				// when fees==1 unreserve fees
 
 				let caller = ensure_signed(origin)?;
-				Self::remove( hash.clone(), account.clone());
 
-				let now = <system::Module<T>>::block_number();
-				Self::deposit_event(
-					RawEvent::AddMember(hash, account, now)
-				);
+				let remove = Self::remove( hash.clone(), account.clone());
+				let remove = match remove {
+						Ok(_) => {},
+						Err(err) => { return Err(err) }
+				};
 				Ok(())
 			}
 
@@ -617,8 +616,12 @@ pub mod module {
 					Memberships::<T>::insert( &account, memberships );
 
 					// state
-					BodyMemberState::<T>::insert(( hash, account ), state);
+					BodyMemberState::<T>::insert(( hash.clone(), account.clone() ), state);
 
+					let now = <system::Module<T>>::block_number();
+					Self::deposit_event(
+						RawEvent::AddMember(hash,account,now)
+					);
 					Ok(())
 				}
 
@@ -633,7 +636,6 @@ pub mod module {
 
 			// existence
 			ensure!( <Bodies<T>>::contains_key(&hash), Error::<T>::BodyUnknown );
-
 
 			let mut members = BodyMembers::<T>::get(hash);
 
