@@ -63,7 +63,7 @@ pub struct ProposalMetadata<Balance> {
 //
 //
 
-pub trait Config: frame_system::Config + balances::Config + timestamp::Config + crowdfunding::Config {
+pub trait Config: system::Config + balances::Config + timestamp::Config + crowdfunding::Config + control::Config {
 	type Currency: ReservableCurrency<Self::AccountId>;
 	type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
 	type Nonce: Get<u64>;
@@ -144,7 +144,6 @@ decl_module! {
 	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 
 		type Error = Error<T>;
-
 		fn deposit_event() = default;
 
 		// TODO: general proposal for a DAO
@@ -248,6 +247,9 @@ decl_module! {
 			<ProposalsByOwnerArray<T>>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
 			<ProposalsByOwnerCount<T>>::insert(sender.clone(), updated_proposals_by_owner_count);
 			<ProposalsByOwnerIndex<T>>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
+
+			// init votes
+			<ProposalSimpleVotes<T>>::insert(context_id, (0,0));
 
 			//
 			//
@@ -468,36 +470,57 @@ decl_module! {
 				// TODO: ratio definable, now > 50% majority wins
 				0 => {
 
-						let votes = Self::proposal_simple_votes(&proposal_id);
-						let yes = votes.0;
-						let no  = votes.1;
+						let (mut yes, mut no) = Self::proposal_simple_votes(&proposal_id);
 
-						// a naive attempt to update a tuple
-						if vote == true  { yes.checked_add(1).ok_or("voting overflow")?; }
-						if vote == false { no.checked_add(1).ok_or("voting overflow")?; }
-						let updated_votes = ( yes, no );
-						<ProposalSimpleVotes<T>>::insert(
+						match vote {
+							true => {
+								yes = yes.checked_add(1).ok_or("Overflow")?;
+								let proposal_approvers = Self::proposal_approvers(&proposal_id);
+								let updated_proposal_approvers = proposal_approvers.checked_add(1).ok_or("Overflow")?;
+								ProposalApprovers::<T>::insert(
+									proposal_id.clone(),
+									updated_proposal_approvers.clone()
+								);
+							},
+							false => {
+								no = no.checked_add(1).ok_or("Overflow")?;
+								let proposal_deniers = Self::proposal_deniers(&proposal_id);
+								let updated_proposal_deniers = proposal_deniers.checked_add(1).ok_or("Overflow")?;
+								ProposalDeniers::<T>::insert(
+									proposal_id.clone(),
+									updated_proposal_deniers.clone()
+								);
+							}
+						}
+
+						ProposalSimpleVotes::<T>::insert(
 							proposal_id.clone(),
-							updated_votes
+							(yes,no)
 						);
 
-						if vote == true {
-							let proposal_approvers = Self::proposal_approvers(&proposal_id);
-							let updated_proposal_approvers = proposal_approvers.checked_add(1).ok_or("Overflow")?;
-							<ProposalApprovers<T>>::insert(
-								proposal_id.clone(),
-								updated_proposal_approvers.clone()
-							);
-						}
+						// a naive attempt to update a tuple
+						// if vote == true  { yes.checked_add(1).ok_or("voting overflow")?; }
+						// if vote == false { no.checked_add(1).ok_or("voting overflow")?; }
+						// let updated_votes = ( yes, no );
 
-						if vote == false {
-							let proposal_deniers = Self::proposal_deniers(&proposal_id);
-							let updated_proposal_deniers = proposal_deniers.checked_add(1).ok_or("Overflow")?;
-							<ProposalDeniers<T>>::insert(
-								proposal_id.clone(),
-								updated_proposal_deniers.clone()
-							);
-						}
+						// no worky
+						// ProposalSimpleVotes::<T>::mutate(
+						// 	proposal_id.clone(),
+						// 	|votes| updated_votes
+						// );
+
+						// no worky
+						// <ProposalSimpleVotes<T>>::insert(
+						// 	proposal_id.clone(),
+						// 	updated_votes
+						// );
+
+						// if vote == true {
+						// }
+
+						// if vote == false {
+
+						// }
 				},
 				// Campaign Token Weighted Proposal
 				// total token balance yes vs no
@@ -567,9 +590,7 @@ decl_module! {
 			for proposal_id in &proposal_hashes {
 
 				let mut proposal_state = Self::proposal_states(&proposal_id);
-				if proposal_state != 1 {
-					continue;
-				}
+				if proposal_state != 1 { continue };
 
 				let proposal = Self::proposals(&proposal_id);
 
@@ -583,11 +604,9 @@ decl_module! {
 				match &proposal.proposal_type {
 					0 => {
 						// simple vote
-						let votes = Self::proposal_simple_votes(&proposal_id);
-						let ack = votes.0;
-						let nack = votes.1;
-						if ack > nack { proposal_state = 1; } // accepted
-						if ack < nack { proposal_state = 2; } // rejected
+						let (yes,no) = Self::proposal_simple_votes(&proposal_id);
+						if yes > no { proposal_state = 1; }
+						if yes < no { proposal_state = 2; }
 					},
 					1 => {
 						// treasury
@@ -604,18 +623,25 @@ decl_module! {
 					}
 				}
 
-				<ProposalStates<T>>::insert(proposal_id.clone(), proposal_state);
-				// let approvers = <ProposalApprovers<T>>::get(proposal_id.clone());
+				<ProposalStates<T>>::insert(proposal_id.clone(), proposal_state.clone());
 
-				// Self::deposit_event(
-				// 	RawEvent::ProposalFinalized(
-				// 		proposal_id,
-				// 		// approvers,
-				// 		// block_number,
-				// 		// false
-				// 	)
-				// );
+				match proposal_state {
+					1 => {
+						Self::deposit_event(
+							RawEvent::ProposalApproved(proposal_id.clone())
+						);
+					},
+					2 => {
+						Self::deposit_event(
+							RawEvent::ProposalRejected(proposal_id.clone())
+						);
+					},
+					_ => {}
+				}
+
 			}
+
+
 
 		}
 
@@ -630,8 +656,8 @@ impl<T:Config> Module<T> {
 
 	// TODO: DISCUSSION
 	// withdrawal proposals are accepted
-	// when the number of supporters is higher
-	// than the number of deniers
+	// when the number of approvals is higher
+	// than the number of rejections
 	// accepted / denied >= 1
 	fn unlock_balance(
 		proposal_id: T::Hash,
@@ -668,11 +694,8 @@ impl<T:Config> Module<T> {
 		<Proposals<T>>::insert(proposal_id.clone(), proposal.clone());
 
 		Self::deposit_event(
-			RawEvent::ProposalFinalized(
+			RawEvent::WithdrawalGranted(
 				proposal_id,
-				supported_count,
-				proposal.expiry,
-				true
 			)
 		);
 		Ok(())
@@ -694,8 +717,11 @@ decl_event!(
 		Proposal(AccountId, Hash),
 		ProposalCreated(AccountId, Hash, Hash, Balance, BlockNumber),
 		ProposalVoted(AccountId, Hash, u8),
-		ProposalFinalized(Hash, u64, BlockNumber, bool),
+		ProposalFinalized(Hash, u8),
+		ProposalApproved(Hash),
+		ProposalRejected(Hash),
 		ProposalError(Hash, Vec<u8>),
+		WithdrawalGranted(Hash),
 	}
 );
 
