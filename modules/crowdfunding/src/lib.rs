@@ -190,7 +190,7 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp> {
 }
 
 decl_storage! {
-	trait Store for Module<T: Config> as Crowdfunding1 {
+	trait Store for Module<T: Config> as Crowdfunding27 {
 
 		// TODO:
 		//	actually most of the aggregated data only consumes cpu cycles
