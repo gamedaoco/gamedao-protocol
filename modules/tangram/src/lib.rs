@@ -54,13 +54,13 @@ pub type ClassIndex = u64;
 pub type ItemIndex = u64;
 pub type TotalIndex = u128;
 pub type BurnedIndex = u128;
-// pub type ItemId = T::Hash;
 
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-pub type HashOf<T> = <T as frame_system::Config>::Hash;
+
 pub type MomentOf<T> = <<T as Config>::Time as Time>::Moment;
-pub type TangramItemOf<T> = TangramItem< HashOf<T>, MomentOf<T> >;
-pub type TangramId<T> = HashOf<T>;
+
+pub type TangramId<T> = <T as system::Config>::Hash;
+pub type TangramItemOf<T> = TangramItem< TangramId<T>, MomentOf<T> >;
 pub type Tangram<T> = ( TangramId<T>, TangramItemOf<T>);
 
 /// TangramRealm
@@ -113,26 +113,25 @@ pub struct TangramClassMetadata<Hash, BlockNumber> {
 
 /// Tangram Immutable + Unique
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Default, RuntimeDebug)]
-pub struct TangramItem<Hash, Moment> {
+pub struct TangramItem<Hash, MomentOf> {
 	dna: Hash,
-	dob: Moment,
+	dob: MomentOf,
 }
 
 /// Tangram Mutable
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Default, RuntimeDebug)]
-pub struct TangramMetadata<AccountId> {
-	name: Vec<u8>,
-	owner: AccountId,
-	cid: Vec<u8>,
+pub struct TangramMetadata {
 	realm: RealmIndex,
-	class: ClassIndex
+	class: ClassIndex,
+	name: Vec<u8>,
+	cid: Vec<u8>,
 }
 
 //
 //
 //
 
-pub trait Config: frame_system::Config + balances::Config {
+pub trait Config: frame_system::Config + balances::Config  {
 
 	type Time: frame_support::traits::Time;
 	type Randomness: frame_support::traits::Randomness<Self::Hash>;
@@ -157,7 +156,7 @@ pub trait Config: frame_system::Config + balances::Config {
 }
 
 decl_storage! {
-	trait Store for Module<T: Config> as Tangram {
+	trait Store for Module<T: Config> as Tangram27 {
 
 		// realm
 
@@ -195,22 +194,19 @@ decl_storage! {
 		pub MaxItems get(fn max_items): map hasher(blake2_128_concat) (RealmIndex, ClassIndex) => u64;
 
 		/// Tangram Item
-		pub Item get(fn item): map hasher(blake2_128_concat) T::Hash => TangramItemOf<T>;
-		/// All Items associated with an account
-		pub ItemsForAccount get(fn items_for_account): map hasher(blake2_128_concat) T::AccountId => Vec<Tangram<T>>;
+		pub Item get(fn item): map hasher(blake2_128_concat) T::Hash => TangramItem<T::Hash, MomentOf<T>>;
 
+		/// Metadata for an Item
+		pub ItemMetadata get(fn item_metadata): map hasher(identity) T::Hash => TangramMetadata;
+		/// All Items associated with an account
+		pub ItemsForAccount get(fn items_for_account): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
 		/// Owner of an Item
 		pub AccountForItem get(fn account_for_item): map hasher(blake2_128_concat) T::Hash => T::AccountId;
-
 		/// Retrieve an Item Hash by its indexes
 		pub ItemByIndex get(fn item_by_index): map hasher(blake2_128_concat) (RealmIndex,ClassIndex,ItemIndex) => T::Hash;
-		/// Metadata for an Item
-		pub ItemMetadata get(fn item_metadata): map hasher(identity) T::Hash => TangramMetadata<T::Hash>;
 
+		//
 		pub TotalForAccount get(fn total_for_account): map hasher(blake2_128_concat) T::AccountId => u64;
-
-		// global
-
 		/// Total Token in system
 		pub Total get(fn total_items): TotalIndex;
 		/// Burned Token in system
@@ -233,45 +229,6 @@ decl_module! {
 		const MaxClassesPerRealm: u64 = T::MaxClassesPerRealm::get();
 		const MaxTokenPerClass: u128 = T::MaxTokenPerClass::get();
 		const MaxTotalToken: u128 = T::MaxTotalToken::get();
-
-		#[weight = 50_000]
-		fn bootstrap(
-			origin,
-			org: T::Hash
-		) {
-
-			// ensure caller is controller of org
-			// let controller = <control::Module<T>>::body_controller(origin.clone());
-			// ensure!( controller == origin, Error::<T>::Unauthorized );
-			// TODO: ensure does not have a realm assigned yet
-			// ensure!( )
-
-			let realm_creation_fee = T::CreateRealmDeposit::get();
-			let class_creation_fee = T::CreateClassDeposit::get();
-			let item_creation_fee = T::CreateItemDeposit::get();
-			let creation_fee = realm_creation_fee; // + class_creation_fee + item_creation_fee;
-
-			// ensure creator can pay fees
-			// let free_balance = <balances::Module<T>>::free_balance( origin.clone() );
-			// ensure!( free_balance >= creation_fee, Error::<T>::BalanceTooLow );
-
-			// take next realm
-			let realm = NextRealmIndex::get();
-			Self::create_realm( origin.clone(), org );
-			
-			// take next class in realm (should be 0 on init anyway)
-			let class = NextClassIndex::get(realm);
-			Self::create_class( origin.clone(), realm, ("my_name_is").as_bytes().to_vec(), 1337 );
-			
-			// the creator nft
-			// TODO: take creator nft from gamedao realm (0,0)
-			Self::create_item( origin.clone(), 0, 0, ("kreataww").as_bytes().to_vec(), ("0xb00b5").as_bytes().to_vec() );
-
-			// mint the member nft
-			// TODO: get the actual member hashes
-			// Self::create_item( origin, realm, class, ("my_nft===dollah").as_bytes().to_vec(), ("0xb00b5").as_bytes().to_vec() );
-
-		}
 
 		#[weight = 50_000]
 		pub fn create_realm(
@@ -314,7 +271,7 @@ decl_module! {
 			MaxItems::insert((&realm,&index),max.clone());
 
 			// class
-			let hash = <T as Config>::Randomness::random(b"rndclass ");
+			let hash = <T as Config>::Randomness::random(b"rndclass");
 			let new_class = TangramClass {
 				id: hash.clone(),
 				realm: realm.clone(),
@@ -343,10 +300,12 @@ decl_module! {
 			realm: RealmIndex, 	// associated realm
 			class: ClassIndex,	// associated class
 			name: Vec<u8>,		// token name
-			cid: Vec<u8>		// ipfs cid
+			cid: Vec<u8>,		// ipfs cid
+			who: T::AccountId
 		) -> DispatchResult {
 
-			let who = ensure_signed(origin)?;
+			let sender = ensure_signed(origin)?;
+			// TODO: get realm controller
 			// TODO: ensure origin == realm controller
 			// T::ItemAdmin::ensure_origin(origin)?;
 
@@ -362,53 +321,50 @@ decl_module! {
 			// 	WithdrawReasons::Fee | WithdrawReasons::Reserve
 			// );
 
-			// 2. generate based on rarity levels
+			// 2. determine rarity based on time since initial invocation
+			// a bonding
+
+			// 3. generate based on rarity levels
 			// epic mega rare common
 			// 0000+0000+0000+00000000 = 24 bytes
 
 			// let epic = "0000";
-			// let mega = "0000";
-			// let rare = "0000";
-			// let high = "0000";
-			// let low  = "0000";
-			// let mut stream = [
-			// 		epic,
-			// 		mega,
-			// 		rare,
-			// 		high,
-			// 		low,
-			// 	].concat();
-			//let bytes: [u8] = stream.iter().map(|c| *c as u8).collect::<Vec<_>>();
-			// let bytes: &str = str::from_utf8(&stream).unwrap();
+			// let rare = "1111";
+			// let high = "2222";
+			// let low  = "3333";
 
-			let hash = <T as Config>::Randomness::random( &MODULE_ID );
+			// let mut stream = [ epic, rare, high, low ].concat();
+			// let stream = stream.as_bytes();
+			// let id = T::Hashing::hash_of(&stream);
+
+			let dob = <T as Config>::Time::now();
+			let dna = <T as Config>::Randomness::random( &name ); // for now
+
+			let item = TangramItem {
+				dob: dob,
+				dna: dna
+			};
+
+			let metadata = TangramMetadata {
+				realm: realm.clone(),
+				class: class.clone(),
+				name: name.clone(),
+				cid: cid.clone(),
+			};
 
 			// 3. mint
 			match Self::mint(
-				&who,	// caller == owner
-				TangramItem {
-					dob: T::Time::now(),
-					dna: hash
-				}
+				&who,
+				item
 			) {
 				Ok(id) => {
 					// 4. store metadata
-					// ItemMetadata::<T>::insert(
-					// 	id,
-					// 	TangramMetadata {
-					//		id: id.clone(),		// hash
-					// 		name: name.clone(), // name
-					// 		cid: cid.clone(),	// content
-					// 		owner: who,			// owner
-					// 		realm: realm,		// ref realm
-					// 		class: class,		// ref class
-					// 	}
-					// );
+					ItemMetadata::<T>::insert(id, metadata );
 
 					let itemIndex = Self::next_item_index((&realm,&class));
 					let nextItemIndex = itemIndex.checked_add(1).ok_or(Error::<T>::Overflow)?;
 					NextItemIndex::insert((&realm,&class), nextItemIndex);
-					Self::deposit_event( RawEvent::Minted( id, hash, who ) );
+					Self::deposit_event( RawEvent::Minted( id, dna, who ) );
 				},
 				Err(err) => Err(err)?
 			}
@@ -447,11 +403,11 @@ impl<T: Config> Module<T> {
 	// }
 
 	fn mint(
-	    owner_account: &T::AccountId,
-	    item_info: TangramItemOf<T>,
+	    owner: &T::AccountId,
+	    item: TangramItem<T::Hash, MomentOf<T>>,
 	) -> dispatch::result::Result< T::Hash, dispatch::DispatchError> {
 
-		let item_id = T::Hashing::hash_of(&item_info);
+		let id = T::Hashing::hash_of(&item);
 
 		//     ensure!(
 		//         !AccountForItem::<T, I>::contains_key(&item_id),
@@ -468,15 +424,15 @@ impl<T: Config> Module<T> {
 		//         Error::<T, I>::TooManyItems
 		//     );
 
-		let new_item = (item_id, item_info);
+		// create an item
+		// on success write
+		Item::<T>::insert( id.clone(), item.clone() );
 
-		AccountForItem::<T>::insert( item_id, &owner_account );
-		Total::mutate(|i| *i += 1);
-		TotalForAccount::<T>::mutate( owner_account, |total| *total += 1 );
-		ItemsForAccount::<T>::mutate( owner_account, |items| {
-			match items.binary_search(&new_item) {
+		AccountForItem::<T>::insert( id.clone(), owner.clone() );
+		ItemsForAccount::<T>::mutate( &owner, |items| {
+			match items.binary_search(&id) {
 				Ok(_pos) => {} // should never happen
-				Err(pos) => items.insert(pos, new_item),
+				Err(pos) => items.insert(pos, id),
 			}
 		});
 
@@ -484,9 +440,10 @@ impl<T: Config> Module<T> {
 		// item by index
 		// TODO:
 		// items for account
-		//
 
-		Ok(item_id)
+		Total::mutate(|i| *i += 1);
+		TotalForAccount::<T>::mutate( &owner, |total| *total += 1 );
+		Ok(id)
 
 	}
 
@@ -517,6 +474,7 @@ impl<T: Config> Module<T> {
 	//     dest_account: &T::AccountId,
 	//     item_id: &Item<T>,
 	// ) -> dispatch::DispatchResult {
+
 	//     let owner = Self::owner_of(&item_id);
 	//     ensure!(
 	//         owner != T::AccountId::default(),
