@@ -81,7 +81,7 @@ const MAX_PROPOSAL_DURATION: u32 = 864000; // 60 * 60 * 24 * 30 / 3
 //
 
 decl_storage! {
-	trait Store for Module<T: Config> as Governance25 {
+	trait Store for Module<T: Config> as Governance27 {
 
 		/// Global status
 		Proposals get(fn proposals): map hasher(blake2_128_concat) T::Hash => Proposal<T::Hash, T::BlockNumber>;
@@ -99,9 +99,9 @@ decl_storage! {
 		ProposalsIndex: map hasher(blake2_128_concat) T::Hash => u64;
 
 		/// Proposals by campaign
-		ProposalsByCampaignArray get(fn proposals_by_campaign_by_index): map hasher(blake2_128_concat)  (T::Hash, u64) => T::Hash;
-		ProposalsByCampaignCount get(fn proposals_by_campaign_count): map hasher(blake2_128_concat) T::Hash => u64;
-		ProposalsByCampaignIndex: map hasher(blake2_128_concat) (T::Hash, T::Hash) => u64;
+		ProposalsByContextArray get(fn proposals_by_campaign_by_index): map hasher(blake2_128_concat)  (T::Hash, u64) => T::Hash;
+		ProposalsByContextCount get(fn proposals_by_campaign_count): map hasher(blake2_128_concat) T::Hash => u64;
+		ProposalsByContextIndex: map hasher(blake2_128_concat) (T::Hash, T::Hash) => u64;
 
 		/// Proposals by owner
 		ProposalsByOwnerArray get(fn proposals_by_owner): map hasher(blake2_128_concat) (T::AccountId, u64) => T::Hash;
@@ -118,18 +118,17 @@ decl_storage! {
 		ProposalApprovers get(fn proposal_approvers): map hasher(blake2_128_concat) T::Hash => u64;
 		/// The number of people who deny a proposal
 		ProposalDeniers get(fn proposal_deniers): map hasher(blake2_128_concat) T::Hash => u64;
-
-		// TODO: ProposalTotalVoters
+		/// Voters per proposal
+		ProposalVoters get(fn proposal_voters): map hasher(blake2_128_concat) T::Hash => Vec<T::AccountId>;
+		/// Ack vs Nack
+		ProposalSimpleVotes get(fn proposal_simple_votes): map hasher(blake2_128_concat) T::Hash => (u64,u64);
+		/// User has voted on a proposal
+		VotedBefore get(fn has_voted): map hasher(blake2_128_concat) (T::AccountId, T::Hash) => bool;
 		// TODO: ProposalTotalEligibleVoters
+
 		// TODO: ProposalApproversWeight
 		// TODO: ProposalDeniersWeight
 		// TODO: ProposalTotalEligibleWeight
-
-		/// Ack vs Nack
-		ProposalSimpleVotes get(fn proposal_simple_votes): map hasher(blake2_128_concat) T::Hash => (u64,u64);
-
-		/// Judge if the user has voted the proposal
-		VotedBefore get(fn has_voted_before): map hasher(blake2_128_concat) (T::AccountId, T::Hash) => bool;
 
 		/// The total number of proposals
 		Nonce: u64;
@@ -162,7 +161,7 @@ decl_module! {
 			// active/existing dao?
 			ensure!( <control::Module<T>>::body_state(&context_id) == 1, Error::<T>::DAOInactive );
 
-			// search by body_member_state:
+			// member of body?
 			let member = <control::Module<T>>::body_member_state((&context_id,&sender));
 			ensure!( member == 1, Error::<T>::AuthorizationError );
 
@@ -239,9 +238,9 @@ decl_module! {
 			<ProposalsIndex<T>>::insert(proposal_id.clone(), proposals_count);
 
 			// update campaign map
-			<ProposalsByCampaignArray<T>>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
-			<ProposalsByCampaignCount<T>>::insert(context_id.clone(), updated_proposals_by_campaign_count);
-			<ProposalsByCampaignIndex<T>>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
+			<ProposalsByContextArray<T>>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
+			<ProposalsByContextCount<T>>::insert(context_id.clone(), updated_proposals_by_campaign_count);
+			<ProposalsByContextIndex<T>>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
 
 			// update owner map
 			<ProposalsByOwnerArray<T>>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
@@ -398,9 +397,9 @@ decl_module! {
 			<ProposalsIndex<T>>::insert(proposal_id.clone(), proposals_count);
 
 			// update campaign map
-			<ProposalsByCampaignArray<T>>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
-			<ProposalsByCampaignCount<T>>::insert(context_id.clone(), updated_proposals_by_campaign_count);
-			<ProposalsByCampaignIndex<T>>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
+			<ProposalsByContextArray<T>>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
+			<ProposalsByContextCount<T>>::insert(context_id.clone(), updated_proposals_by_campaign_count);
+			<ProposalsByContextIndex<T>>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
 
 			// update owner map
 			<ProposalsByOwnerArray<T>>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
@@ -498,29 +497,6 @@ decl_module! {
 							(yes,no)
 						);
 
-						// a naive attempt to update a tuple
-						// if vote == true  { yes.checked_add(1).ok_or("voting overflow")?; }
-						// if vote == false { no.checked_add(1).ok_or("voting overflow")?; }
-						// let updated_votes = ( yes, no );
-
-						// no worky
-						// ProposalSimpleVotes::<T>::mutate(
-						// 	proposal_id.clone(),
-						// 	|votes| updated_votes
-						// );
-
-						// no worky
-						// <ProposalSimpleVotes<T>>::insert(
-						// 	proposal_id.clone(),
-						// 	updated_votes
-						// );
-
-						// if vote == true {
-						// }
-
-						// if vote == false {
-
-						// }
 				},
 				// Campaign Token Weighted Proposal
 				// total token balance yes vs no
@@ -532,7 +508,10 @@ decl_module! {
 				// simply one token one vote yes / no,
 				// TODO: ratio definable, now simple majority wins
 				2 => {
-
+					// approve
+					// deny
+					// kick
+					// ban
 				},
 				// supporters vs total threshold voting ( e.g. accept deliverable )
 				3 => {
@@ -553,7 +532,6 @@ decl_module! {
 					}
 
 					// Change the number of supporters
-
 					<ProposalApprovers<T>>::insert(
 						proposal_id.clone(),
 						updated_proposal_approvers.clone()
@@ -567,7 +545,16 @@ decl_module! {
 			}
 
 			// register voting
-			<VotedBefore<T>>::insert( ( sender.clone(), proposal_id.clone() ), true );
+			VotedBefore::<T>::insert( ( sender.clone(), proposal_id.clone() ), true );
+
+			let mut voters = ProposalVoters::<T>::get(&proposal_id);
+			match voters.binary_search(&sender) {
+				Ok(_) => {}, // should never happen
+				Err(index) => {
+					voters.insert(index, sender.clone());
+					ProposalVoters::<T>::insert( &proposal_id, voters );
+				}
+			}
 
 			// dispatch vote event
 			Self::deposit_event(
@@ -750,6 +737,8 @@ decl_error! {
 		OutOfBounds,
 		/// Unknown Error
 		UnknownError,
+		///MemberExists
+		MemberExists,
 
 	}
 }
