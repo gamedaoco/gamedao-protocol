@@ -159,7 +159,7 @@ pub mod module {
 	//
 
 	decl_storage! {
-		trait Store for Module<T: Config> as Control1 {
+		trait Store for Module<T: Config> as Control27 {
 
 			// general
 
@@ -221,7 +221,7 @@ pub mod module {
 			type Error = Error<T>;
 
 			// Enable Body
-			#[weight = 5_000]
+			#[weight = 10_000]
 			fn enable(
 				origin,
 				hash: T::Hash,
@@ -234,7 +234,7 @@ pub mod module {
 			}
 
 			// Disable Body
-			#[weight = 5_000]
+			#[weight = 10_000]
 			fn disable(
 				origin,
 				hash: T::Hash,
@@ -247,7 +247,7 @@ pub mod module {
 			}
 
 			// Create Body
-			#[weight = 10_000]
+			#[weight = 50_000]
 			fn create(
 				origin,
 				creator: T::AccountId,      // creator
@@ -388,26 +388,39 @@ pub mod module {
 				// get the next realm index...
 				let next_realm_index = tangram::NextRealmIndex::get();
 
-				// bootstrap realm, class and a creator nft
-				// let item =
-				// tangram::Call::<T>::bootstrap( hash.clone() );
+				// mint an item for creator
+				// let item_name:Vec<u8> = b"creator".to_vec();
+				// let item_cid:Vec<u8> = b"0".to_vec();
 
-				let item_name:Vec<u8> = b"creator".to_vec();
-				let item_cid:Vec<u8> = b"0".to_vec();
-				let item = tangram::Module::<T>::create_item(
-					origin.clone(),
-					current_realm_index,
-					current_class_index,
-					item_name,
-					item_cid
-				);
-				let item = match item {
-						Ok(_) => {},
-						Err(err) => { return Err(err) }
-				};
+				// let item = tangram::Module::<T>::create_item(
+				// 	origin.clone(),
+				// 	current_realm_index,
+				// 	current_class_index,
+				// 	item_name,
+				// 	item_cid,
+				// 	creator.clone()
+				// );
+				// let item = match item {
+				// 		Ok(_) => {},
+				// 		Err(err) => { return Err(err) }
+				// };
 
-				// TODO: send item to creator
-				// TODO: send item to controller
+				// mint an item for controller
+				// let ctrl_item_name:Vec<u8> = b"controller".to_vec();
+				// let ctrl_item_cid:Vec<u8> = b"1".to_vec();
+
+				// let ctrl_item = tangram::Module::<T>::create_item(
+				// 	origin.clone(),
+				// 	current_realm_index,
+				// 	current_class_index,
+				// 	ctrl_item_name,
+				// 	ctrl_item_cid,
+				// 	controller.clone()
+				// );
+				// let ctrl_item = match ctrl_item {
+				// 		Ok(_) => {},
+				// 		Err(err) => { return Err(err) }
+				// };
 
 				// nonce
 				Nonce::mutate(|n| *n += 1);
@@ -421,21 +434,22 @@ pub mod module {
 			}
 
 			// Add Member to Body
-			#[weight = 5_000]
+			#[weight = 10_000]
 			fn add_member(
 				origin,
 				hash: T::Hash,
 				account: T::AccountId
 			) -> DispatchResult {
+
 				let caller = ensure_signed(origin)?;
 				// TODO: ensure not a member yet
-
 				let add = Self::add( hash.clone(), account.clone() );
 				let add = match add {
 						Ok(_) => {},
 						Err(err) => { return Err(err) }
 				};
 				Ok(())
+
 			}
 
 			// Remove Member from Body
@@ -445,17 +459,17 @@ pub mod module {
 				hash: T::Hash,
 				account: T::AccountId,
 			) -> DispatchResult {
+
 				// TODO:
 				// when fees==1 unreserve fees
-
 				let caller = ensure_signed(origin)?;
-
 				let remove = Self::remove( hash.clone(), account.clone());
 				let remove = match remove {
 						Ok(_) => {},
 						Err(err) => { return Err(err) }
 				};
 				Ok(())
+
 			}
 
 			// Update State of Body
@@ -471,7 +485,7 @@ pub mod module {
 
 			// }
 
-			#[weight = 5_000]
+			#[weight = 10_000]
 			fn check_membership(
 				origin,
 				hash: T::Hash
@@ -480,11 +494,11 @@ pub mod module {
 				let caller = ensure_signed(origin)?;
 				let members = BodyMembers::<T>::get(hash);
 				ensure!(members.contains(&caller), Error::<T>::MemberUnknown);
-				// Self::deposit_event();
 				Self::deposit_event(
 					RawEvent::IsAMember(hash,caller)
 				);
 				Ok(())
+
 			}
 
 		// /// Set controller. Must be a current member.
