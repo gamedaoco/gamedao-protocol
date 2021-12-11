@@ -113,13 +113,6 @@ pub mod module {
 		type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
 		type Randomness: Randomness<Self::Hash>;
 
-		// tangram
-		// type Tangram: From<tangram::Config>;
-		// type Kitties: pallet_commodities::nft::UniqueAssets<
-		// Self::AccountId,
-		// AssetId = Self::Hash,
-		// AssetInfo = KittyInfoOf<Self>,
-		// >;
 	}
 
 	//
@@ -221,7 +214,10 @@ pub mod module {
 			type Error = Error<T>;
 
 			// Enable Body
-			#[weight = 10_000]
+			// currently root, layer supervisor
+			// enables an org to be used
+			// hash: an organisations hash
+			#[weight = 1_000_000]
 			fn enable(
 				origin,
 				hash: T::Hash,
@@ -234,7 +230,10 @@ pub mod module {
 			}
 
 			// Disable Body
-			#[weight = 10_000]
+			// currently root, layer supervisor
+			// disables an org to be used
+			// hash: an organisations hash
+			#[weight = 1_000_000]
 			fn disable(
 				origin,
 				hash: T::Hash,
@@ -247,53 +246,69 @@ pub mod module {
 			}
 
 			// Create Body
-			#[weight = 50_000]
+			// create an on chain organisation
+			// creator: T::AccountId,      // creator
+			// controller: T::AccountId,   // current controller
+			// treasury: T::AccountId,     // treasury
+			// name: Vec<u8>,              // body name
+			// cid: Vec<u8>,               // cid -> ipfs
+			// body: u8,                   // individual | legal body | dao
+			// access: u8,                 // anybody can join | only member can add | only controller can add
+			// fee_model: u8,              // only TX by OS | fees are reserved | fees are moved to treasury
+			// fee: T::Balance,
+			// gov_asset: u8,              // control assets to empower actors
+			// pay_asset: u8,
+			// member_limit: u64,          // max members, if 0 == no limit
+			// // mint: T::Balance,		// cost to mint
+			// // burn: T::Balance,		// cost to burn
+			// // strategy: u16,
+			#[weight = 5_000_000]
 			fn create(
 				origin,
-				creator: T::AccountId,      // creator
-				controller: T::AccountId,   // current controller
-				treasury: T::AccountId,     // treasury
-				name: Vec<u8>,              // body name
-				cid: Vec<u8>,               // cid -> ipfs
-				body: u8,                   // individual | legal body | dao
-				access: u8,                 // anybody can join | only member can add | only controller can add
-				fee_model: u8,              // only TX by OS | fees are reserved | fees are moved to treasury
+				controller: T::AccountId,
+				treasury: T::AccountId,
+				name: Vec<u8>,
+				cid: Vec<u8>,
+				body: u8,
+				access: u8,
+				fee_model: u8,
 				fee: T::Balance,
-				gov_asset: u8,              // control assets to empower actors
+				gov_asset: u8,
 				pay_asset: u8,
-				member_limit: u64,          // max members, if 0 == no limit
-				// mint: T::Balance,		// cost to mint
-				// burn: T::Balance,		// cost to burn
+				member_limit: u64,
+				// mint: T::Balance,
+				// burn: T::Balance,
 				// strategy: u16,
 			) -> DispatchResult {
+
+				let sender = ensure_signed(origin.clone())?;
 
 				// set up fee
 				let creation_fee = T::CreationFee::get();
 				// creator can pay fees
-				ensure!( <balances::Module<T>>::free_balance(creator.clone()) >= creation_fee, Error::<T>::BalanceTooLow );
+				ensure!(<balances::Module<T>>::free_balance(&sender) >= creation_fee.clone(), Error::<T>::BalanceTooLow );
+				// controller and treasury should not be equal
+				ensure!(&controller != &treasury, Error::<T>::DuplicateAddress );
 
 				let now   = <system::Module<T>>::block_number();
+				let hash = <T as Config>::Randomness::random(&name);
 				let index = Nonce::get();
 				let state = 1; // live
+				let strategy = 0;
 
-				let phrase = name.clone();
-				let hash = <T as Config>::Randomness::random(&phrase);
-
-				// body
-				let data = Body {
+				let body_data = Body {
 					id:       hash.clone(),
 					index:    index.clone(),
-					creator:  creator.clone(),
+					creator:  sender.clone(),
 					name:     name.clone(),
 					cid:      cid,
 					body:     body.clone(),
 					created:  now.clone(),
 					mutated:  now.clone(),
 				};
+				Bodies::<T>::insert( hash.clone(), body_data );
 
-				Bodies::<T>::insert( hash.clone(), data );
-
-				let config = BConfig {
+				let config_data = BConfig {
 					fee_model: fee_model.clone(),
 					fee: fee.clone(),
 					gov_asset: gov_asset.clone(),
@@ -301,16 +316,14 @@ pub mod module {
 					member_limit: member_limit.clone(),
 					access: access.clone()
 				};
-
-				// TODO: Self::update_config
-				BodyConfig::<T>::insert( hash.clone(), config );
+				BodyConfig::<T>::insert( hash.clone(), config_data );
 
 				//
 
 				BodyByNonce::<T>::insert( index.clone(), hash.clone() );
 				BodyState::<T>::insert( hash.clone(), state );
 				BodyAccess::<T>::insert( hash.clone(), access.clone() );
-				BodyCreator::<T>::insert( hash.clone(), creator.clone() );
+				BodyCreator::<T>::insert( hash.clone(), sender.clone() );
 				BodyController::<T>::insert( hash.clone(), controller.clone() );
 				BodyTreasury::<T>::insert( hash.clone(), treasury.clone() );
 
@@ -329,20 +342,20 @@ pub mod module {
 				);
 
 
-				let mut created = Self::by_creator(&creator);
+				let mut created = Self::by_creator(sender.clone());
 				created.push(hash.clone());
 				ControlledBodies::<T>::mutate(
-					&creator,
+					&sender,
 					|created| created.push(hash.clone())
 				);
 
-				// ...creator, controller and treasury shall be members
-
 				// initiate member registry -> consumes fees
-				match Self::add( hash.clone(), creator.clone() ) {
-						Ok(_) => {},
-						Err(err) => { panic!("{err}") }
-				};
+				// creator and controller can be equal
+				// controller and treasury cannot be equal
+				// match Self::add( &hash, creator.clone() ) {
+				// 		Ok(_) => {},
+				// 		Err(err) => { panic!("{err}") }
+				// };
 				match Self::add( hash.clone(), controller.clone() ) {
 						Ok(_) => {},
 						Err(err) => { panic!("{err}") }
@@ -378,7 +391,7 @@ pub mod module {
 					max,
 					// mint,
 					// burn,
-					// strategy
+					strategy
 				);
 				let class = match class {
 						Ok(_) => {},
@@ -427,14 +440,14 @@ pub mod module {
 
 				// dispatch event
 				Self::deposit_event(
-					RawEvent::BodyCreated(creator, hash, now, next_realm_index)
+					RawEvent::BodyCreated(sender, hash, now, next_realm_index)
 				);
 				Ok(())
 
 			}
 
 			// Add Member to Body
-			#[weight = 10_000]
+			#[weight = 1_000_000]
 			fn add_member(
 				origin,
 				hash: T::Hash,
@@ -453,7 +466,7 @@ pub mod module {
 			}
 
 			// Remove Member from Body
-			#[weight = 10_000]
+			#[weight = 1_000_000]
 			fn remove_member(
 				origin,
 				hash: T::Hash,
@@ -485,7 +498,7 @@ pub mod module {
 
 			// }
 
-			#[weight = 10_000]
+			#[weight = 1_000_000]
 			fn check_membership(
 				origin,
 				hash: T::Hash
@@ -584,6 +597,8 @@ pub mod module {
  			};
 
  			// 4. apply fees
+ 			// either user keeps balance, which is reserved
+ 			// or balance is transferred to treasury account
 
 			if config.fee_model != 0 {
 
@@ -735,7 +750,9 @@ pub mod module {
 			/// Member Unknonw
 			MemberUnknown,
 			/// Unknown Error
-			UnknownError
+			UnknownError,
+			/// Duplicate Address
+			DuplicateAddress,
 		}
 	}
 

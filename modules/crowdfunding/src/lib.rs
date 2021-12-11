@@ -289,7 +289,7 @@ decl_module! {
 		fn deposit_event() = default;
 
 		// possibly this needs to become invalidated vs destroyed
-		#[weight = 50_000]
+		#[weight = 1_000_000]
 		fn destroy( origin, id: T:: Hash ) -> DispatchResult {
 			ensure_root(origin)?;
 			Self::deposit_event(
@@ -302,7 +302,7 @@ decl_module! {
 		// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
 		// admin can set any status
 		// owner can pause, cancel
-		#[weight = 1_000]
+		#[weight = 1_000_000]
 		fn update_status(
 			origin,
 			campaign_id: T::Hash,
@@ -340,7 +340,7 @@ decl_module! {
 			Ok(())
 		}
 
-		#[weight = 10_000]
+		#[weight = 5_000_000]
 		fn create(
 			origin,
 			org: T::Hash,
@@ -491,7 +491,7 @@ decl_module! {
 		}
 
 		/// contribute to project
-		#[weight = 10_000]
+		#[weight = 5_000_000]
 		fn contribute (
 			origin,
 			campaign_id: T::Hash,

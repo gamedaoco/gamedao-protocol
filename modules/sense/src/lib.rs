@@ -152,7 +152,7 @@ pub mod module {
 			type Error = Error<T>;
 
 			// Create Entity
-			#[weight = 10_000]
+			#[weight = 1_000_000]
 			fn create_entity(
 				origin,
 				account: T::AccountId,
@@ -199,7 +199,7 @@ pub mod module {
 			// all:   governance
 			//        sudo ( until its removal )
 
-			#[weight = 5_000]
+			#[weight = 1_000_000]
 			fn mod_xp(
 				origin,
 				account: T::AccountId,
@@ -227,7 +227,7 @@ pub mod module {
 
 			}
 
-			#[weight = 5_000]
+			#[weight = 1_000_000]
 			fn mod_rep(
 				origin,
 				account: T::AccountId,
@@ -254,7 +254,7 @@ pub mod module {
 
 			}
 
-			#[weight = 5_000]
+			#[weight = 1_000_000]
 			fn mod_trust(
 				origin,
 				account: T::AccountId,

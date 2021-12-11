@@ -146,7 +146,7 @@ decl_module! {
 		fn deposit_event() = default;
 
 		// TODO: general proposal for a DAO
-		#[weight = 10_000]
+		#[weight = 5_000_000]
 		fn general_proposal(
 			origin,
 			context_id: T::Hash,
@@ -273,17 +273,17 @@ decl_module! {
 
 		// TODO: membership proposal for a DAO
 
-		#[weight = 10_000]
+		#[weight = 1_000_000]
 		fn propose_add(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
 			Ok(())
 		}
 
-		#[weight = 10_000]
+		#[weight = 1_000_000]
 		fn propose_kick(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
 			Ok(())
 		}
 
-		#[weight = 10_000]
+		#[weight = 1_000_000]
 		fn propose_ban(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
 			Ok(())
 		}
@@ -293,7 +293,7 @@ decl_module! {
 //
 
 		// TODO: withdrawal proposal for a campaign
-		#[weight = 10_000]
+		#[weight = 5_000_000]
 		fn withdraw_proposal(
 			origin,
 			context_id: T::Hash,
@@ -433,7 +433,7 @@ decl_module! {
 		// 2. conviction voting requires ongoing staking
 		// 3. quadratic voting
 
-		#[weight = 5_000]
+		#[weight = 5_000_000]
 		fn simple_vote(
 			origin,
 			proposal_id: T::Hash,

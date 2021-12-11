@@ -95,9 +95,9 @@ pub struct TangramClass<Hash, /*Balance*/> {
 	realm: RealmIndex,// auth realm
 	index: u64,	// class index
 	max: u64,	// max number of items in class
-	// mint: Balance,	// mint cost
-	// burn: Balance,	// burn cost
-	// strategy: u16,	// cid to strategy
+	// mint: Balance, // mint cost
+	// burn: Balance, // burn cost
+	strategy: u64, // cid to strategy
 }
 
 /// TangramClassMetadata
@@ -109,6 +109,7 @@ pub struct TangramClassMetadata<Hash, BlockNumber> {
 	cid: Vec<u8>,
 	created: BlockNumber,
 	mutated: BlockNumber,
+	f: Vec<u8>
 }
 
 /// Tangram Immutable + Unique
@@ -212,8 +213,34 @@ decl_storage! {
 		/// Burned Token in system
 		pub Burned get(fn burend_items): BurnedIndex;
 
+		// pub Redeemable get(fn redeemable): map hasher(blake2_128_concat) T::AccountId => Vec<(RealmId, ClassId)>;
+		// /// Total Redeemable
+		// pub Redeemable: u128 = 0;
+		// /// Total Redeemed
+		// pub Redeemed: u128 = 0;
+
+		// /// map strategies
+		// pub Strategy get(fn strategy): map hasher(blake2_128_concat) u64 => (BuyFn,SellFn,RarityFn);
+
 	}
 }
+
+// pub enum Payable {
+// 	SENDER,
+// 	RECIPIENT,
+// 	SPLIT
+// }
+
+// pub struct Redeemable<T::AccountId, RealmId, ClassId> {
+// 	recipient: T::AccountId,
+// 	realm: RealmId,
+// 	class: ClassId
+// }
+
+// /// resolve account to list of hashes
+// T::AccountId => Vec<RedeemableHash>
+// /// resolve a hash to a struct
+// RedeemableHash => Redeemable
 
 decl_module! {
 	pub struct Module<T: Config> for enum Call where origin: T::Origin {
@@ -230,7 +257,66 @@ decl_module! {
 		const MaxTokenPerClass: u128 = T::MaxTokenPerClass::get();
 		const MaxTotalToken: u128 = T::MaxTotalToken::get();
 
-		#[weight = 50_000]
+		//
+		//	add redeemables
+		//	origin === controller
+		//
+
+		// #[weight = 50_000]
+		// pub fn add_redeemable(
+		// 	origin,
+		// 	realm: RealmId,
+		// 	class: ClassId,
+		// 	who: T::AccountId
+		// ) -> DispatchResult {
+
+		// 	// check authorised for realm, class (usually controller)
+		// 	// check for max items in class
+
+		// 	// insert realm, class for who
+		// 	// redeemable ++
+		// 	// AddRedeemable event
+		// }
+
+		// #[weight = 25_000]
+		// pub fn redeem(
+		// 	origin,
+		// 	who: T::Hash
+		// ) -> DispatchResult {
+		// 	ensure_signed(origin);
+
+		// 	// find redeemables for account
+		// 	let available_redeemables = Redeemable::<T>::get(&origin);
+		// 	ensure( available_redeemables > 0, Error::<T>::NoRedeemables  );
+
+		// 	for redeemable in &available_redeemables {
+
+		// 		let realm = redeemable.0
+		// 		let class = redeemable.1
+
+		// 		// id: Hash,
+		// 		// name: Vec<u8>,
+		// 		// cid: Vec<u8>,
+		// 		// created: BlockNumber,
+		// 		// mutated: BlockNumber,
+		// 		// f: Vec<u8>
+
+		// 		let config = TangramClassMetadata::<T>::get(( &realm, &class ));
+		// 		let curve =
+		// 		let rarity =
+
+		// 		// mint
+
+		// 	}
+		// 	// remove redeemable from vec
+		// 	// redeemable --
+		// 	// redeemed ++
+		// 	// Redeem event
+
+		// }
+
+
+		#[weight = 1_000_000]
 		pub fn create_realm(
 			origin,
 			org: T::Hash
@@ -249,15 +335,20 @@ decl_module! {
 			Ok(())
 		}
 
-		#[weight = 50_000]
+		/*
+			create_class
+			realm: index of the relevant realm
+			name:  plaintext name for the class
+			max:   max items for the class
+			strategy: default 0
+		*/
+		#[weight = 1_000_000]
 		pub fn create_class(
 			origin,
-			realm: RealmIndex,	// associated realm
-			name: Vec<u8>,		// class name
-			max: u64,			// max items
-			// mint: T::Balance,	// mint cost
-			// burn: T::Balance,	// burn cost
-			// strategy: u16		// cid for strategy
+			realm: RealmIndex,
+			name: Vec<u8>,
+			max: u64,
+			strategy: u64
 		) -> DispatchResult {
 			// TODO: ensure origin == realm controller
 
@@ -277,9 +368,7 @@ decl_module! {
 				realm: realm.clone(),
 				index: index.clone(),
 				max: max.clone(),
-				// mint: 1,
-				// burn: 1,
-				// strategy: 1
+				strategy: 0 // (1,1,1)
 			};
 			ItemClass::<T>::insert( hash.clone(), new_class );
 			// ClassByIndex::<T>::insert( index.clone(), hash );
@@ -294,7 +383,7 @@ decl_module! {
 			Ok(())
 		}
 
-		#[weight = 50_000]
+		#[weight = 5_000_000]
 		pub fn create_item(
 			origin,
 			realm: RealmIndex, 	// associated realm
