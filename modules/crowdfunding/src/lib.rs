@@ -114,6 +114,7 @@ pub trait Config: system::Config + balances::Config + timestamp::Config + contro
 
 	/// The origin that is allowed to make judgements.
 	type GameDAOAdminOrigin: EnsureOrigin<Self::Origin>;
+	type GameDAOTreasury: Get<<Self as frame_system::Config>::AccountId>;
 
 	type Currency: ReservableCurrency<Self::AccountId>;
 	type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
@@ -134,7 +135,8 @@ pub trait Config: system::Config + balances::Config + timestamp::Config + contro
 
 	// TODO: collect fees for treasury
 	// type CreationFee: Get<T::Balance<Self>>;
-	// type ContributionFee: Get<T::Balance<Self>>;
+
+	type CampaignFee: Get<Self::Balance>;
 
 }
 
@@ -531,11 +533,10 @@ decl_module! {
 		/// finalize campaigns ending in current block
 		fn on_finalize() {
 
-			// get all the contributions of current block
+			// get all the campaigns ending in current block
 			let block_number = <system::Module<T>>::block_number();
 			let campaign_hashes = Self::campaigns_by_block(block_number);
 
-			// iterate over hashes
 			for campaign_id in &campaign_hashes {
 
 				let campaign = Self::campaign_by_id(campaign_id);
@@ -570,28 +571,49 @@ decl_module! {
 
 								// if contributor == campaign owner
 								// unreserve the money
+
 								if contributor == &owner { continue; }
+
 								let _transfer = <balances::Module<T> as Currency<_>>::transfer(
 									&contributor,
 									&owner,
 									contributor_balance,
 									ExistenceRequirement::AllowDeath
 								);
-
 								match _transfer {
 									Err(_e) => {
 										transaction_complete = false;
 										break 'inner;
 									},
-									Ok(_v) => {}
+									Ok(_v) => {
+									}
 								}
 
 							}
 
 							// If all transactions are settled
-							// reserve all money of the funding
+							// 1. send the commission to treasury
+							// 2. reserve all money of the funding
 							if transaction_complete {
-								let _ = <balances::Module<T>>::reserve(&owner, campaign_balance);
+
+								// commission
+								let fee = <T as Config>::CampaignFee::get();
+								let commission = campaign_balance / fee;
+
+								let transfer_commission = <balances::Module<T> as Currency<_>>::transfer(
+									&owner,
+									&<T as Config>::GameDAOTreasury::get(),
+									commission,
+									ExistenceRequirement::AllowDeath
+								);
+								// match transfer_commission {
+								// 	Err(_e) => { panic!("error transferring commission") },
+								// 	Ok(_v) => {}
+								// }
+
+								// lock remaining balance
+								let _ = <balances::Module<T>>::reserve( &owner, campaign_balance - commission );
+
 								// deposit the event
 								Self::deposit_event(
 									RawEvent::CampaignFinalized(
