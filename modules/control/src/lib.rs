@@ -42,17 +42,17 @@ pub mod module {
 	use frame_system::{ self as system, ensure_root, ensure_signed };
 	use codec::{ Encode, Decode };
 	use sp_runtime::{
-		traits::{ Hash },
+		traits::{ Hash, Zero },
 		ModuleId
 	};
 	use sp_std::prelude::*;
 	use pallet_balances::{ self as balances };
 	use primitives:: {
 		Balance,
-		// BodyType,
-		// BodyState
+		// AccountId,
 	};
 
+	// use hex_literal;
 
 	use tangram;
 	use tangram::Module as Tangram;
@@ -113,11 +113,18 @@ pub mod module {
 		type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
 		type Randomness: Randomness<Self::Hash>;
 
+		// TODO: Externalise
+		type GameDAOTreasury: Get<<Self as frame_system::Config>::AccountId>;
+
 	}
 
 	//
 	//
 	//
+
+	//"3UeyL5qABPNjSpkqPnwqvYa62gpFuFKfiHCmyU6wNsnDEBeH"
+	// pub const GameDAOTreasury:AccountId = hex!["d29b158976481808895b22560876f499ffd0a70113ef19fe2a7c9ead69210c49"].into();
+	// pub const GameDAOTreasury:AccountId32 = hex_literal::hex!["d29b158976481808895b22560876f499ffd0a70113ef19fe2a7c9ead69210c49"].into();
 
 	/// Body
 	#[derive(Encode, Decode, Default, PartialEq, Eq)]
@@ -153,8 +160,6 @@ pub mod module {
 
 	decl_storage! {
 		trait Store for Module<T: Config> as Control27 {
-
-			// general
 
 			/// Body by hash
 			Bodies get(fn body_by_hash): map hasher(blake2_128_concat) T::Hash => Body<T::Hash, T::AccountId, T::BlockNumber>;
@@ -308,9 +313,16 @@ pub mod module {
 				};
 				Bodies::<T>::insert( hash.clone(), body_data );
 
+				// membership fees
+				let mut _fee = T::Balance::zero();
+				match &fee_model {
+					1|2 => { _fee = fee },
+					_ => { }
+				};
+
 				let config_data = BConfig {
 					fee_model: fee_model.clone(),
-					fee: fee.clone(),
+					fee: _fee.clone(),
 					gov_asset: gov_asset.clone(),
 					pay_asset: pay_asset.clone(),
 					member_limit: member_limit.clone(),
@@ -434,6 +446,17 @@ pub mod module {
 				// 		Ok(_) => {},
 				// 		Err(err) => { return Err(err) }
 				// };
+
+				// pay tribute
+				// let balance = <balances::Module<T>>::free_balance(&sender);
+				// let dao_fee = _fee.checked_mul(0.25);
+
+				let transfer = <balances::Module<T> as Currency<_>>::transfer(
+					&sender,
+					&T::GameDAOTreasury::get(),
+					creation_fee,
+					ExistenceRequirement::AllowDeath
+				);
 
 				// nonce
 				Nonce::mutate(|n| *n += 1);
@@ -597,20 +620,21 @@ pub mod module {
  			};
 
  			// 4. apply fees
- 			// either user keeps balance, which is reserved
- 			// or balance is transferred to treasury account
 
-			if config.fee_model != 0 {
+			let fee = config.fee;
+			ensure!( <balances::Module<T>>::free_balance(account.clone()) >= fee, Error::<T>::BalanceTooLow );
 
-				let fee = config.fee;
-				ensure!( <balances::Module<T>>::free_balance(account.clone()) >= fee, Error::<T>::BalanceTooLow );
+ 			match &config.fee_model {
 
-				// when fees==1 reserve fees until exit
-				if config.fee_model == 1 {
+ 				// no fees
+ 				0 => {
+ 				},
+ 				// reserve
+ 				1 => {
 					<balances::Module<T>>::reserve(&account, config.fee)?;
-				}
-				// when fees==2 send fee to treasury
-				else {
+ 				},
+ 				// transfer to treasury
+ 				2 => {
 					let treasury = BodyTreasury::<T>::get(hash);
 					let transfer = <balances::Module<T> as Currency<_>>::transfer(
 						&account,
@@ -618,9 +642,9 @@ pub mod module {
 						config.fee,
 						ExistenceRequirement::AllowDeath
 					);
-				}
-
-			}
+ 				}
+ 				_ => {}
+ 			}
 
 			// 5. add
 
