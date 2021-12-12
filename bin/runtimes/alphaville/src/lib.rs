@@ -22,7 +22,6 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
-
 use sp_std::prelude::*;
 use frame_support::{
 	construct_runtime, parameter_types, debug, RuntimeDebug,
@@ -72,6 +71,9 @@ use pallet_session::{historical as pallet_session_historical};
 use sp_inherents::{InherentData, CheckInherentsResult};
 use static_assertions::const_assert;
 use pallet_contracts::WeightInfo;
+
+#[cfg(any(feature = "std"))]
+use hex_literal;
 
 use module_sense;
 use module_control;
@@ -173,7 +175,7 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 //
 
 // parameter_types! {
-// 	pub const ZeroTreasuryModuleId: ModuleId = ModuleId(*b"z/schatz");
+	// pub const GameDAOTreasuryModuleId: ModuleId = ModuleId(*b"dao/");
 // 	pub const StakingPoolModuleId: ModuleId = ModuleId(*b"z/sicher");
 // 	pub const CrowdfundingModuleId: ModuleId = ModuleId(*b"modraise");
 // 	pub const GovernanceModuleId: ModuleId = ModuleId(*b"modchord");
@@ -1067,7 +1069,11 @@ impl module_sense::Config for Runtime {
 // >;
 
 parameter_types! {
-	// pub const Treasury: AccountId =
+
+	// 3aSdb5NZZgFTbtAJJKpsJSqWgAxYxRxBuDkub9kEqjNhWHo6
+	// d29b158976481808895b22560876f499ffd0a70113ef19fe2a7c9ead69210c49
+	pub GameDAOTreasury: AccountId = hex_literal::hex!["d29b158976481808895b22560876f499ffd0a70113ef19fe2a7c9ead69210c49"].into();
+
 	pub const Fee: Balance = 100 * DOLLARS;
 	pub const MaxBodiesPerAccount: usize = 10;
 	pub const MaxCreationsPerBlock: usize = 3;
@@ -1076,7 +1082,7 @@ parameter_types! {
 
 impl module_control::Config for Runtime {
 
-	// type Treasury = Treasury;
+	type GameDAOTreasury = GameDAOTreasury;
 	type ForceOrigin = EnsureRoot<AccountId>;
 
 	type Currency = Balances;
@@ -1124,7 +1130,7 @@ parameter_types! {
 	pub const MinContribution: Balance = 1 * DOLLARS;
 
 	// TODO: fees
-	pub const CreationFee: Balance = 1 * DOLLARS;
+	pub const CampaignFee: Balance = 25 * CENTS;
 
 }
 
@@ -1133,6 +1139,8 @@ impl module_crowdfunding::Config for Runtime {
 	// ensure root or half council as admin role for campaigns.
 	// might need another instance of council as e.g. supervisor
 	// type ModuleAdmin = frame_system::EnsureRoot<AccountId>;
+
+	type GameDAOTreasury = GameDAOTreasury;
 
 	type GameDAOAdminOrigin = pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>;
 	type Currency = Balances;
@@ -1152,6 +1160,8 @@ impl module_crowdfunding::Config for Runtime {
 	type MinCreatorDeposit = MinCreatorDeposit;
 	type MinContribution = MinContribution;
 
+	type CampaignFee = CampaignFee;
+
 }
 
 //
@@ -1165,8 +1175,8 @@ parameter_types! {
 
 impl module_governance::Config for Runtime {
 
+	// type GameDAOTreasury = GameDAOTreasury;
 	// type ModuleAdmin = frame_system::EnsureRoot<AccountId>;
-
 	type Currency = Balances;
 	type Event = Event;
 	type Nonce = SeedNonce;
