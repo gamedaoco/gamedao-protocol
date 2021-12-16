@@ -120,6 +120,9 @@ decl_storage! {
 		ProposalDeniers get(fn proposal_deniers): map hasher(blake2_128_concat) T::Hash => u64;
 		/// Voters per proposal
 		ProposalVoters get(fn proposal_voters): map hasher(blake2_128_concat) T::Hash => Vec<T::AccountId>;
+		/// Voter count per proposal
+		ProposalVotes get(fn proposal_votes): map hasher(blake2_128_concat) T::Hash => u64 = 0;
+
 		/// Ack vs Nack
 		ProposalSimpleVotes get(fn proposal_simple_votes): map hasher(blake2_128_concat) T::Hash => (u64,u64);
 		/// User has voted on a proposal
@@ -292,7 +295,10 @@ decl_module! {
 //
 //
 
-		// TODO: withdrawal proposal for a campaign
+		//	create a withdrawal proposal
+		//	origin must be controller of the campaign == controller of the dao
+		//	beneficiary must be the treasury of the dao
+
 		#[weight = 5_000_000]
 		fn withdraw_proposal(
 			origin,
@@ -306,65 +312,43 @@ decl_module! {
 
 			let sender = ensure_signed(origin)?;
 
-			//
-			//
-			//
+			//	A C C E S S
 
-			// existing campaign?
-			// ensure!( <crowdfunding::Module<T>>::campaign_by_id(context_id), "The campaign does not exist" );
+			// ensure!( crowdfunding::Module::<T>::campaign_by_id(context_id), Error::<T>::CampaignUnknown );
+			ensure!( crowdfunding::Module::<T>::campaign_state(context_id) == 3, Error::<T>::CampaignFailed );
+			let owner = crowdfunding::Module::<T>::campaign_owner(context_id).ok_or( Error::<T>::UnknownAccount )?;
+			ensure!(sender == owner, Error::<T>::AuthorizationError );
 
-			// successful campaign?
-			// ensure!( <crowdfunding::Module<T>>::campaign_state(context_id) == 3, "The campaign did not succeed");
+			//	B O U N D S
 
-			// DISCUSSION: can proposals be made by contributors?
-			// request by owner?
-			let owner = <crowdfunding::Module<T>>::campaign_owner(context_id).ok_or("The owner does not exist")?;
-			ensure!(sender == owner, "The sender must be the owner of the campaign");
-
-			// ensure that start and expiry are in bounds
 			let current_block = <system::Module<T>>::block_number();
 			// ensure!(start > current_block, Error::<T>::OutOfBounds );
-			ensure!(expiry > current_block, Error::<T>::OutOfBounds );
-			ensure!(expiry <= current_block + Self::proposal_time_limit(), Error::<T>::OutOfBounds );
+			// ensure!(expiry > start, Error::<T>::OutOfBounds );
+			// ensure!(expiry <= current_block + Self::proposal_time_limit(), Error::<T>::OutOfBounds );
 
-			// balance check
+			//	B A L A N C E
+
 			let used_balance = Self::used_balance(&context_id);
-			let total_balance = <crowdfunding::Module<T>>::campaign_balance(context_id);
+			let total_balance = crowdfunding::Module::<T>::campaign_balance(context_id);
 			let remaining_balance = total_balance - used_balance;
-			ensure!(remaining_balance >= amount, "The remaining balance is too low");
+			ensure!(remaining_balance >= amount, Error::<T>::BalanceInsufficient );
 
-			// ensure that number of proposals
-			// ending in target block
-			// do not exceed the maximum
+			//	T R A F F I C
+
 			let proposals = Self::proposals_by_block(expiry);
-			ensure!(proposals.len() < MAX_PROPOSALS_PER_BLOCK, "Maximum number of proposals is reached for the target block, try another block");
+			ensure!(proposals.len() < MAX_PROPOSALS_PER_BLOCK, Error::<T>::TooManyProposals );
 
-			//
+			//	C O N F I G
 
 			let proposal_type = 1; // treasury
 			let voting_type = 0; // votes
-
-			// get the nonce
 			let nonce = Nonce::get();
-
-			// generate unique id
 			let phrase = b"just another withdrawal";
+
 			let proposal_id = <T as Config>::Randomness::random(phrase);
+			ensure!(!Proposals::<T>::contains_key(&context_id), Error::<T>::HashCollision );
 
-			// ensure that the proposal id is unique
-			ensure!(!<Proposals<T>>::contains_key(&context_id), "Proposal id already exists");
-
-			// metadata
-
-			let metadata = ProposalMetadata {
-				title: title,
-				cid: cid,
-				amount,
-			};
-
-			// proposal
-
-			let new_proposal = Proposal {
+			let proposal = Proposal {
 				proposal_id: proposal_id.clone(),
 				context_id: context_id.clone(),
 				proposal_type,
@@ -373,47 +357,45 @@ decl_module! {
 				expiry,
 			};
 
-			// check add
+			let metadata = ProposalMetadata {
+				title: title,
+				cid: cid,
+				amount,
+			};
+
+			//	C O U N T S
+
 			let proposals_count = Self::proposals_count();
-			let updated_proposals_count = proposals_count.checked_add(1).ok_or("Overflow adding a new proposal to total proposals")?;
+			let updated_proposals_count = proposals_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
 			let proposals_by_campaign_count = Self::proposals_by_campaign_count(context_id);
-			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or("Overflow adding a new proposal to the campaign's proposals")?;
+			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
 			let proposals_by_owner_count = Self::proposals_by_owner_count(&sender);
-			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or("Overflow adding a new proposal to the owner's proposals")?;
+			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
 
-			// insert proposals
-			<Proposals<T>>::insert(proposal_id.clone(), new_proposal.clone());
-			<Metadata<T>>::insert(proposal_id.clone(), metadata.clone());
-			<Owners<T>>::insert(proposal_id.clone(), sender.clone());
+			//	W R I T E
 
-			<ProposalStates<T>>::insert(proposal_id.clone(), 1);
+			Proposals::<T>::insert(&proposal_id, proposal.clone());
+			Metadata::<T>::insert(&proposal_id, metadata.clone());
+			Owners::<T>::insert(&proposal_id, sender.clone());
+			ProposalStates::<T>::insert(proposal_id.clone(), 1);
 
-			// update max per block
-			<ProposalsByBlock<T>>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
+			ProposalsByBlock::<T>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
+			ProposalsArray::<T>::insert(&proposals_count, proposal_id.clone());
+			ProposalsCount::put(updated_proposals_count);
+			ProposalsIndex::<T>::insert(proposal_id.clone(), proposals_count);
+			ProposalsByContextArray::<T>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
+			ProposalsByContextCount::<T>::insert(context_id.clone(), updated_proposals_by_campaign_count);
+			ProposalsByContextIndex::<T>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
+			ProposalsByOwnerArray::<T>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
+			ProposalsByOwnerCount::<T>::insert(sender.clone(), updated_proposals_by_owner_count);
+			ProposalsByOwnerIndex::<T>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
 
-			// update proposal map
-			<ProposalsArray<T>>::insert(&proposals_count, proposal_id.clone());
-			<ProposalsCount>::put(updated_proposals_count);
-			<ProposalsIndex<T>>::insert(proposal_id.clone(), proposals_count);
+			// ++
 
-			// update campaign map
-			<ProposalsByContextArray<T>>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
-			<ProposalsByContextCount<T>>::insert(context_id.clone(), updated_proposals_by_campaign_count);
-			<ProposalsByContextIndex<T>>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
-
-			// update owner map
-			<ProposalsByOwnerArray<T>>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
-			<ProposalsByOwnerCount<T>>::insert(sender.clone(), updated_proposals_by_owner_count);
-			<ProposalsByOwnerIndex<T>>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
-
-			//
-			//
-			//
-
-			// nonce++
 			Nonce::mutate(|n| *n += 1);
 
-			// deposit event
+			//	E V E N T
+
 			Self::deposit_event(
 				RawEvent::ProposalCreated(
 					sender,
@@ -457,6 +439,7 @@ decl_module! {
 			// Ensure the proposal is not expired
 			ensure!(<system::Module<T>>::block_number() < proposal.expiry, Error::<T>::ProposalExpired);
 
+			// TODO:
 			// ensure origin is one of:
 			// a. member when the proposal is general
 			// b. contributor when the proposal is a withdrawal request
@@ -469,78 +452,98 @@ decl_module! {
 				// TODO: ratio definable, now > 50% majority wins
 				0 => {
 
-						let (mut yes, mut no) = Self::proposal_simple_votes(&proposal_id);
+					let (mut yes, mut no) = Self::proposal_simple_votes(&proposal_id);
 
-						match vote {
-							true => {
-								yes = yes.checked_add(1).ok_or("Overflow")?;
-								let proposal_approvers = Self::proposal_approvers(&proposal_id);
-								let updated_proposal_approvers = proposal_approvers.checked_add(1).ok_or("Overflow")?;
-								ProposalApprovers::<T>::insert(
-									proposal_id.clone(),
-									updated_proposal_approvers.clone()
-								);
-							},
-							false => {
-								no = no.checked_add(1).ok_or("Overflow")?;
-								let proposal_deniers = Self::proposal_deniers(&proposal_id);
-								let updated_proposal_deniers = proposal_deniers.checked_add(1).ok_or("Overflow")?;
-								ProposalDeniers::<T>::insert(
-									proposal_id.clone(),
-									updated_proposal_deniers.clone()
-								);
-							}
+					match vote {
+						true => {
+							yes = yes.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+							let proposal_approvers = Self::proposal_approvers(&proposal_id);
+							let updated_proposal_approvers = proposal_approvers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+							ProposalApprovers::<T>::insert(
+								proposal_id.clone(),
+								updated_proposal_approvers.clone()
+							);
+						},
+						false => {
+							no = no.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+							let proposal_deniers = Self::proposal_deniers(&proposal_id);
+							let updated_proposal_deniers = proposal_deniers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+							ProposalDeniers::<T>::insert(
+								proposal_id.clone(),
+								updated_proposal_deniers.clone()
+							);
 						}
+					}
 
-						ProposalSimpleVotes::<T>::insert(
-							proposal_id.clone(),
-							(yes,no)
-						);
+					ProposalSimpleVotes::<T>::insert(
+						proposal_id.clone(),
+						(yes,no)
+					);
+
+				},
+				// 50% majority over total number of campaign contributors
+				1 => {
+
+					let (mut yes, mut no) = Self::proposal_simple_votes(&proposal_id);
+
+					match vote {
+						true => {
+							yes = yes.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+
+							let current_approvers = Self::proposal_approvers(&proposal_id);
+							let updated_approvers = current_approvers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+							ProposalApprovers::<T>::insert(proposal_id.clone(), updated_approvers.clone());
+
+							// TODO: make this variable
+							let contributors = crowdfunding::Module::<T>::campaign_contributors_count(proposal.context_id);
+							let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError)?;
+							if updated_approvers > threshold {
+								Self::unlock_balance(proposal_id, updated_approvers)?;
+							}
+							// remove
+							let proposal_approvers = Self::proposal_approvers(&proposal_id);
+							let updated_proposal_approvers = proposal_approvers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+							ProposalApprovers::<T>::insert(
+								proposal_id.clone(),
+								updated_proposal_approvers.clone()
+							);
+
+						},
+						false => {
+							no = no.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+							// remove
+							let proposal_deniers = Self::proposal_deniers(&proposal_id);
+							let updated_proposal_deniers = proposal_deniers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+							ProposalDeniers::<T>::insert(
+								proposal_id.clone(),
+								updated_proposal_deniers.clone()
+							);
+						}
+					}
+
+					ProposalSimpleVotes::<T>::insert(
+						proposal_id.clone(),
+						(yes,no)
+					);
+
 
 				},
 				// Campaign Token Weighted Proposal
 				// total token balance yes vs no
 				// TODO: ratio definable, now > 50% majority wins
-				1 => {
-
+				2 => {
 				},
 				// Membership Voting
 				// simply one token one vote yes / no,
 				// TODO: ratio definable, now simple majority wins
-				2 => {
+				3 => {
 					// approve
 					// deny
 					// kick
 					// ban
 				},
-				// supporters vs total threshold voting ( e.g. accept deliverable )
-				3 => {
-
-					// Get the number of people who have supported the proposal and add 1
-					let proposal_approvers = Self::proposal_approvers(&proposal_id);
-					let updated_proposal_approvers = proposal_approvers.checked_add(1).ok_or("Overflow adding the number of people who have voted the proposal")?;
-					let contributors = <crowdfunding::Module<T>>::campaign_contributors_count(proposal.context_id);
-					let approvers = updated_proposal_approvers.clone();
-					// TODO: make this variable
-					let fittycent = contributors.checked_div(2).ok_or("Error on division")?;
-
-					// If the approvers are more than half the contributors,
-					// the proposal shall pass
-					// and funds will be released
-					if updated_proposal_approvers > fittycent {
-						Self::unlock_balance(proposal_id, approvers)?;
-					}
-
-					// Change the number of supporters
-					<ProposalApprovers<T>>::insert(
-						proposal_id.clone(),
-						updated_proposal_approvers.clone()
-					);
-
-				}
 				// default
 				_ => {
-
 				},
 			}
 
@@ -597,8 +600,17 @@ decl_module! {
 					},
 					1 => {
 						// treasury
-						// if ( ack > nack ) { proposal_state = 1; }
-						// if ( ack < nack ) { proposal_state = 2; }
+						// 50% majority of eligible voters
+						// let (yes,no) = Self::proposal_simple_votes(&proposal_id);
+						// let contributors = crowdfunding::Module::<T>::campaign_contributors_count(proposal.context_id);
+						// let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError)?;
+						// if yes > threshold {
+						// 	proposal_state = 1;
+						// 	Self::unlock_balance(proposal_id, yes)?;
+						// } else {
+						// 	proposal_state = 2;
+						// }
+
 					},
 					2 => {
 						// membership
@@ -662,7 +674,7 @@ impl<T:Config> Module<T> {
 		// let used_balance = Self::balance_used(proposal.context_id);
 		let used_balance = <CampaignBalanceUsed<T>>::get(proposal.context_id);
 		let available_balance = total_balance - used_balance.clone();
-		ensure!(available_balance >= proposal_balance, "The remaining balance is insufficient");
+		ensure!(available_balance >= proposal_balance, Error::<T>::BalanceInsufficient );
 
 		// Get the owner of the campaign
 		let owner = <Owners<T>>::get(&proposal_id).ok_or("No owner for proposal")?;
@@ -691,7 +703,7 @@ impl<T:Config> Module<T> {
 }
 
 //
-//	e v e n t s
+//	E V E N T S
 //
 
 decl_event!(
@@ -713,7 +725,7 @@ decl_event!(
 );
 
 //
-//	e r r o r s
+//	E R R O R S
 //
 
 decl_error! {
@@ -739,6 +751,21 @@ decl_error! {
 		UnknownError,
 		///MemberExists
 		MemberExists,
-
+		/// Unknown Campaign
+		CampaignUnknown,
+		/// Campaign Failed
+		CampaignFailed,
+		/// Balance Too Low
+		BalanceInsufficient,
+		/// Hash Collision
+		HashCollision,
+		/// Unknown Account
+		UnknownAccount,
+		/// Too Many Proposals for block
+		TooManyProposals,
+		/// Overflow Error
+		OverflowError,
+		/// Division Error
+		DivisionError,
 	}
 }

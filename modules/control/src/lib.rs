@@ -167,7 +167,7 @@ pub mod module {
 			BodyByNonce get(fn body_by_nonce): map hasher(blake2_128_concat) u128 => T::Hash;
 			/// Body State
 			/// 0 inactive 1 active 2 system lock 3 supervisor lock
-			BodyState get(fn body_state): map hasher(blake2_128_concat) T::Hash => u8;
+			BodyState get(fn body_state): map hasher(blake2_128_concat) T::Hash => u8 = 0;
 			/// Config -> struct
 			BodyConfig get(fn body_config): map hasher(blake2_128_concat) T::Hash => BConfig<T::Balance>;
 
@@ -181,31 +181,45 @@ pub mod module {
 			BodyTreasury get(fn body_treasury): map hasher(blake2_128_concat) T::Hash => T::AccountId;
 			/// All bodies created by account
 			CreatedBodies get(fn by_creator): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
-			CreatedBodiesCount get(fn by_creator_count): map hasher(blake2_128_concat) T::AccountId => u64;
+			CreatedBodiesCount get(fn by_creator_count): map hasher(blake2_128_concat) T::AccountId => u64 = 0;
 
 			/// All bodies controlled by account
 			ControlledBodies get(fn by_controller): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
 
 			// TODO: add the count to creation...
-			ControlledBodiesCount get(fn by_controller_count): map hasher(blake2_128_concat) T::AccountId => u64;
+			ControlledBodiesCount get(fn by_controller_count): map hasher(blake2_128_concat) T::AccountId => u64 = 0;
 
 			/// Membership by AccountId
 			Memberships get(fn memberships): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
 
 			/// Accessmodel of a body
 			/// 0 open, 1 invite by members, 2 invite by controller
-			BodyAccess get(fn body_access): map hasher(blake2_128_concat) T::Hash => u8;
+			BodyAccess get(fn body_access): map hasher(blake2_128_concat) T::Hash => u8 = 0;
 			/// Get all members of a body
 			BodyMembers get(fn body_members): map hasher(blake2_128_concat) T::Hash => Vec<T::AccountId>;
 			/// Get the member count
-			BodyMemberCount get(fn body_member_count): map hasher(blake2_128_concat) T::Hash => u64;
+			BodyMemberCount get(fn body_member_count): map hasher(blake2_128_concat) T::Hash => u64 = 0;
 			/// Get the member state 0 inactive | 1 active | 2 pending | 3 kicked | 4 banned | 5 exited
-			BodyMemberState get(fn body_member_state): map hasher(blake2_128_concat) (T::Hash, T::AccountId) => u8;
+			BodyMemberState get(fn body_member_state): map hasher(blake2_128_concat) (T::Hash, T::AccountId) => u8 = 0;
 
 			/// the goode olde nonce
 			Nonce: u128;
 
 		}
+
+		// add_extra_genesis {
+		// 	config(balances): Vec<(T::AccountId, Vec<T::CommodityInfo>)>;
+		// 	build(|config: &GenesisConfig<T, I>| {
+		// 		for (who, assets) in config.balances.iter() {
+		// 			for asset in assets {
+		// 			match <Module::<T, I> as UniqueAssets::<T::AccountId>>::mint(who, asset.clone()) {
+		// 				Ok(_) => {}
+		// 				Err(err) => { panic!(err) },
+		// 			}
+		// 			}
+		// 		}
+		// 	});
+		// }
 	}
 
 	//
@@ -691,16 +705,30 @@ pub mod module {
 			ensure!( <Bodies<T>>::contains_key(&hash), Error::<T>::BodyUnknown );
 
 			let mut members = BodyMembers::<T>::get(hash);
-
 			match members.binary_search(&account) {
 
 				Ok(index) => {
+
+					// remove member from body
 					members.remove(index);
 					BodyMembers::<T>::insert(&hash,members.clone());
 
-					// counter
+					// remove body from member's bodies
+					let mut memberships = Self::memberships(&account);
+					match memberships.binary_search(&hash) {
+						Ok(index) => {
+							memberships.remove(index);
+							Memberships::<T>::insert( &account, memberships );
+						},
+						Err(_) => {},
+					}
+
+					// counter --
 					let count = members.len();
 					BodyMemberCount::<T>::insert( &hash, count as u64 );
+
+					// member state
+					BodyMemberState::<T>::insert(( hash.clone(), account.clone() ), 0);
 
 					let now = <system::Module<T>>::block_number();
 					Self::deposit_event(
