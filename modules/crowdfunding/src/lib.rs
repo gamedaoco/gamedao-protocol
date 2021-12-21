@@ -242,6 +242,9 @@ decl_storage! {
 		/// campaigns contributed by accountid
 		CampaignsContributed get(fn campaigns_contributed): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
 
+		/// campaigns related to an organisation
+		CampaignsByBody get(fn campaigns_by_body): map hasher(blake2_128_concat) T::Hash => Vec<T::Hash>;
+
 		// caller contributed campaigns -> contributed campaigns
 		CampaignsContributedArray get(fn campaigns_contributed_index): map hasher(blake2_128_concat) (T::AccountId, u64) => T::Hash;
 		CampaignsContributedCount get(fn campaigns_contributed_count): map hasher(blake2_128_concat) T::AccountId => u64;
@@ -685,43 +688,38 @@ impl<T: Config> Module<T> {
 
 	}
 
+	// campaign creator
+	// sender: T::AccountId,
+	// generated campaign id
+	// campaign_id: T::Hash,
+	// expiration blocktime
+	// example: desired lifetime == 30 days
+	// 30 days * 24h * 60m / 5s avg blocktime ==
+	// 2592000s / 5s == 518400 blocks from now.
+	// expiry: T::BlockNumber,
+	// campaign creator deposit to invoke the campaign
+	// deposit: T::Balance,
+	// funding protocol
+	// 0 grant, 1 prepaid, 2 loan, 3 shares, 4 dao
+	// proper assignment of funds into the instrument
+	// happens after successful funding of the campaing
+	// protocol: u8,
+	// campaign object
 	fn mint(
-		// campaign creator
-		// sender: T::AccountId,
-		// generated campaign id
-		// campaign_id: T::Hash,
-		// expiration blocktime
-		// example: desired lifetime == 30 days
-		// 30 days * 24h * 60m / 5s avg blocktime ==
-		// 2592000s / 5s == 518400 blocks from now.
-		// expiry: T::BlockNumber,
-		// campaign creator deposit to invoke the campaign
-		// deposit: T::Balance,
-		// funding protocol
-		// 0 grant, 1 prepaid, 2 loan, 3 shares, 4 dao
-		// proper assignment of funds into the instrument
-		// happens after successful funding of the campaing
-		// protocol: u8,
-		// campaign object
 		campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, T::Moment>
 	) -> DispatchResult {
 
 		// campaigns
-		<Campaigns<T>>::insert(campaign.id.clone(), campaign.clone());
-
+		Campaigns::<T>::insert(&campaign.id, campaign.clone());
 		// add org to index
-		CampaignOrg::<T>::insert(campaign.id.clone(), campaign.org.clone());
-
+		CampaignOrg::<T>::insert(&campaign.id, campaign.org.clone());
 		// owners
-		<CampaignOwner<T>>::insert(campaign.id.clone(), campaign.owner.clone());
-
+		CampaignOwner::<T>::insert(&campaign.id, campaign.owner.clone());
 		// admins
-		// let admin = new_campaign.admin;
-		<CampaignAdmin<T>>::insert(campaign.id.clone(), campaign.admin.clone());
+		CampaignAdmin::<T>::insert(&campaign.id, campaign.admin.clone());
 
 		// expiration
-		//<CampaignsByBlockNumber<T>>::mutate(expiry.clone(), |campaigns| campaigns.push(id.clone()));
-		<CampaignsByBlock<T>>::mutate(
+		CampaignsByBlock::<T>::mutate(
 			campaign.expiry.clone(),
 			|campaigns| campaigns.push(campaign.id.clone())
 		);
@@ -737,16 +735,14 @@ impl<T: Config> Module<T> {
 		let update_campaigns_owned_count = campaigns_owned_count.checked_add(1).ok_or(Error::<T>::AddContributionOverflow)?;
 
 		// update global campaign count
-		<CampaignsArray<T>>::insert(&campaigns_count, campaign.id.clone());
-		<CampaignsCount>::put(update_campaigns_count);
-		<CampaignsIndex<T>>::insert(campaign.id.clone(), campaigns_count);
+		CampaignsArray::<T>::insert(&campaigns_count, campaign.id.clone());
+		CampaignsCount::put(update_campaigns_count);
+		CampaignsIndex::<T>::insert(campaign.id.clone(), campaigns_count);
 
 		// update owned campaign count
-		<CampaignsOwnedArray<T>>::insert((campaign.owner.clone(), campaigns_owned_count.clone()), campaign.id.clone());
-		<CampaignsOwnedCount<T>>::insert(&campaign.owner, update_campaigns_owned_count);
-		<CampaignsOwnedIndex<T>>::insert((campaign.owner.clone(), campaign.id.clone()), campaigns_owned_count);
-
-		// write
+		CampaignsOwnedArray::<T>::insert((&campaign.owner, &campaigns_owned_count), campaign.id.clone());
+		CampaignsOwnedCount::<T>::insert(&campaign.owner, update_campaigns_owned_count);
+		CampaignsOwnedIndex::<T>::insert((&campaign.owner, &campaign.id), campaigns_owned_count);
 
 		// TODO: final check
 		// TODO: final check
@@ -770,6 +766,9 @@ impl<T: Config> Module<T> {
 		// 	}
 		// }
 
+		// add campaign to body map
+		CampaignsByBody::<T>::mutate( &campaign.org, |campaigns| campaigns.push(campaign.id) );
+
 		// nonce ++
 		Nonce::mutate(|n| *n += 1);
 
@@ -783,7 +782,7 @@ impl<T: Config> Module<T> {
 	) -> DispatchResult {
 
 		// campaign exists ?
-		ensure!( <Campaigns<T>>::contains_key(campaign_id), Error::<T>::InvalidId );
+		ensure!( Campaigns::<T>::contains_key(campaign_id), Error::<T>::InvalidId );
 		let campaign = Self::campaign_by_id(&campaign_id);
 
 		// campaign still active ?
@@ -795,28 +794,28 @@ impl<T: Config> Module<T> {
 		// meta data
 		// check if contributor exists
 		// if not, update metadata
-		if !<CampaignContribution<T>>::contains_key((&campaign_id, &sender)) {
+		if !CampaignContribution::<T>::contains_key((&campaign_id, &sender)) {
 
 			// increase the number of campaigncontributors invested in
 			let campaigns_contributed = Self::campaigns_contributed_count(&sender);
 			let update_campaigns_contributed = campaigns_contributed.checked_add(1).ok_or(Error::<T>::AddContributionOverflow)?;
 
 			// increase the number of contributors into the campaign
-			let contributors = <CampaignContributorsCount<T>>::get(&campaign_id);
+			let contributors = CampaignContributorsCount::<T>::get(&campaign_id);
 			let update_contributors = contributors.checked_add(1).ok_or(Error::<T>::UpdateContributorOverflow)?;
 
 			// add contribution
-			<CampaignContribution<T>>::insert((campaign_id.clone(), sender.clone()), contribution.clone());
+			CampaignContribution::<T>::insert((campaign_id.clone(), sender.clone()), contribution.clone());
 			// update total contributors, count
 			// -> should be contributor or contribution?
-			<CampaignContributors<T>>::mutate(&campaign_id, |accounts| accounts.push(sender.clone()));
-			<CampaignContributorsCount<T>>::insert(campaign_id.clone(), update_contributors);
+			CampaignContributors::<T>::mutate(&campaign_id, |accounts| accounts.push(sender.clone()));
+			CampaignContributorsCount::<T>::insert(campaign_id.clone(), update_contributors);
 
 
 			// update contributed campaigns for contributor
-			<CampaignsContributedArray<T>>::insert((sender.clone(), campaigns_contributed), campaign_id);
-			<CampaignsContributedCount<T>>::insert(&sender, update_campaigns_contributed);
-			<CampaignsContributedIndex<T>>::insert((sender.clone(), campaign_id.clone()), campaigns_contributed);
+			CampaignsContributedArray::<T>::insert((sender.clone(), campaigns_contributed), campaign_id);
+			CampaignsContributedCount::<T>::insert(&sender, update_campaigns_contributed);
+			CampaignsContributedIndex::<T>::insert((sender.clone(), campaign_id.clone()), campaigns_contributed);
 
 		}
 
@@ -833,12 +832,12 @@ impl<T: Config> Module<T> {
 		// update contributor balance for campaign
 		let total_contribution = Self::campaign_contribution((&campaign_id, &sender));
 		let update_total_contribution = total_contribution + contribution;
-		<CampaignContribution<T>>::insert((&campaign_id, &sender), update_total_contribution);
+		CampaignContribution::<T>::insert((&campaign_id, &sender), update_total_contribution);
 
 		// update campaign balance
 		let total_campaign_balance = Self::campaign_balance(&campaign_id);
 		let update_campaign_balance = total_campaign_balance + contribution;
-		<CampaignBalance<T>>::insert(&campaign_id, update_campaign_balance);
+		CampaignBalance::<T>::insert(&campaign_id, update_campaign_balance);
 
 		Ok(())
 	}
