@@ -98,7 +98,7 @@ decl_storage! {
 		ProposalsCount get(fn proposals_count): u64;
 		ProposalsIndex: map hasher(blake2_128_concat) T::Hash => u64;
 
-		/// Proposals by campaign
+		/// Proposals by campaign / org
 		ProposalsByContextArray get(fn proposals_by_campaign_by_index): map hasher(blake2_128_concat)  (T::Hash, u64) => T::Hash;
 		ProposalsByContextCount get(fn proposals_by_campaign_count): map hasher(blake2_128_concat) T::Hash => u64;
 		ProposalsByContextIndex: map hasher(blake2_128_concat) (T::Hash, T::Hash) => u64;
@@ -107,6 +107,11 @@ decl_storage! {
 		ProposalsByOwnerArray get(fn proposals_by_owner): map hasher(blake2_128_concat) (T::AccountId, u64) => T::Hash;
 		ProposalsByOwnerCount get(fn proposals_by_owner_count): map hasher(blake2_128_concat) T::AccountId => u64;
 		ProposalsByOwnerIndex: map hasher(blake2_128_concat) (T::AccountId, T::Hash) => u64;
+
+		/// Proposals where voter participated
+		ProposalsByVoter get(fn proposals_by_voter): map hasher(blake2_128_concat) T::AccountId => Vec<(T::Hash, bool)>;
+		/// Total proposals voted on by voter
+		ProposalsByVoterCount get(fn proposals_by_voter_index): map hasher(blake2_128_concat) T::AccountId => u64;
 
 		/// Proposals ending in a block
 		ProposalsByBlock get(fn proposals_by_block): map hasher(blake2_128_concat) T::BlockNumber => Vec<T::Hash>;
@@ -548,7 +553,12 @@ decl_module! {
 			}
 
 			// register voting
-			VotedBefore::<T>::insert( ( sender.clone(), proposal_id.clone() ), true );
+			VotedBefore::<T>::insert( ( &sender, proposal_id.clone() ), true );
+			// ++ voter voting counter
+			ProposalsByVoterCount::<T>::mutate( &sender, |v| *v +=1 );
+			// add voting to participations map
+			let votings = Self::proposals_by_voter( &sender );
+			ProposalsByVoter::<T>::mutate( &sender, |votings| votings.push((proposal_id.clone(), vote)));
 
 			let mut voters = ProposalVoters::<T>::get(&proposal_id);
 			match voters.binary_search(&sender) {
@@ -719,6 +729,8 @@ decl_event!(
 		ProposalFinalized(Hash, u8),
 		ProposalApproved(Hash),
 		ProposalRejected(Hash),
+		ProposalExpired(Hash),
+		ProposalAborted(Hash),
 		ProposalError(Hash, Vec<u8>),
 		WithdrawalGranted(Hash),
 	}
