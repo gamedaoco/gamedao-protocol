@@ -34,10 +34,22 @@ use primitives::{ Balance, BlockNumber, Index, Moment};
 //
 //
 
+// TODO: migrate from u8 to enum
+// type ProposalState = u8;
+#[derive(Encode, Decode, Clone, PartialEq)]
+pub enum ProposalState {
+	INIT = 0,		// waiting for start block
+	ACTIVE = 1,		// voting is active
+	ACCEPTED = 2,	// voters did approve
+	REJECTED = 3,	// voters did not approve
+	EXPIRED = 4,	// ended without votes
+	ABORTED = 5,	// sudo abort
+	FINALIZED = 6,	// accepted withdrawal proposal is processed
+}
+
 type TitleText = Vec<u8>;
 type CID = Vec<u8>;
 type ProposalType = u8;
-type ProposalState = u8;
 type VotingType = u8;
 
 type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -88,7 +100,7 @@ decl_storage! {
 		Metadata get(fn metadata): map hasher(blake2_128_concat) T::Hash => ProposalMetadata<T::Balance>;
 		Owners get(fn owners): map hasher(blake2_128_concat) T::Hash => Option<T::AccountId>;
 		/// Get the state of a proposal
-       	ProposalStates get(fn proposal_states): map hasher(blake2_128_concat) T::Hash => ProposalState;
+       	ProposalStates get(fn proposal_states): map hasher(blake2_128_concat) T::Hash => ProposalState = ProposalState::INIT;
 
 		/// Maximum time limit for a proposal
 		ProposalTimeLimit get(fn proposal_time_limit) config(): T::BlockNumber = T::BlockNumber::from(MAX_PROPOSAL_DURATION);
@@ -188,7 +200,7 @@ decl_module! {
 			//
 
 			let proposal_type = 0;
-			let proposal_state = 1;
+			let proposal_state = ProposalState::ACTIVE;
 			let voting_type = 0;
 			let nonce = Nonce::get();
 
@@ -235,7 +247,7 @@ decl_module! {
 			<Metadata<T>>::insert(proposal_id.clone(), metadata.clone());
 			<Owners<T>>::insert(proposal_id.clone(), sender.clone());
 
-			<ProposalStates<T>>::insert(proposal_id.clone(), 1);
+			<ProposalStates<T>>::insert(proposal_id.clone(), proposal_state);
 
 			// update max per block
 			<ProposalsByBlock<T>>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
@@ -382,7 +394,7 @@ decl_module! {
 			Proposals::<T>::insert(&proposal_id, proposal.clone());
 			Metadata::<T>::insert(&proposal_id, metadata.clone());
 			Owners::<T>::insert(&proposal_id, sender.clone());
-			ProposalStates::<T>::insert(proposal_id.clone(), 1);
+			ProposalStates::<T>::insert(proposal_id.clone(), ProposalState::ACTIVE);
 
 			ProposalsByBlock::<T>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
 			ProposalsArray::<T>::insert(&proposals_count, proposal_id.clone());
@@ -434,7 +446,7 @@ decl_module! {
 
 			// Ensure the proposal has not ended
 			let proposal_state = Self::proposal_states(&proposal_id);
-			ensure!(proposal_state == 1, Error::<T>::ProposalEnded);
+			ensure!(proposal_state == ProposalState::ACTIVE, Error::<T>::ProposalEnded);
 
 			// Ensure the contributor did not vote before
 			ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), Error::<T>::AlreadyVoted);
@@ -590,7 +602,7 @@ decl_module! {
 			for proposal_id in &proposal_hashes {
 
 				let mut proposal_state = Self::proposal_states(&proposal_id);
-				if proposal_state != 1 { continue };
+				if proposal_state != ProposalState::ACTIVE { continue };
 
 				let proposal = Self::proposals(&proposal_id);
 
@@ -605,8 +617,8 @@ decl_module! {
 					0 => {
 						// simple vote
 						let (yes,no) = Self::proposal_simple_votes(&proposal_id);
-						if yes > no { proposal_state = 1; }
-						if yes < no { proposal_state = 2; }
+						if yes > no { proposal_state = ProposalState::ACCEPTED; }
+						if yes < no { proposal_state = ProposalState::REJECTED; }
 					},
 					1 => {
 						// treasury
@@ -628,19 +640,19 @@ decl_module! {
 					},
 					_ => {
 						// no result - fail
-						proposal_state = 4;
+						proposal_state = ProposalState::EXPIRED;
 					}
 				}
 
 				<ProposalStates<T>>::insert(proposal_id.clone(), proposal_state.clone());
 
 				match proposal_state {
-					1 => {
+					ProposalState::ACCEPTED => {
 						Self::deposit_event(
 							RawEvent::ProposalApproved(proposal_id.clone())
 						);
 					},
-					2 => {
+					ProposalState::REJECTED => {
 						Self::deposit_event(
 							RawEvent::ProposalRejected(proposal_id.clone())
 						);
@@ -697,7 +709,7 @@ impl<T:Config> Module<T> {
 		<CampaignBalanceUsed<T>>::insert(proposal.context_id, new_used_balance);
 
 		// proposal completed
-		let proposal_state = 5;
+		let proposal_state = ProposalState::FINALIZED;
 		<ProposalStates<T>>::insert(proposal_id.clone(), proposal_state);
 
 		<Proposals<T>>::insert(proposal_id.clone(), proposal.clone());
