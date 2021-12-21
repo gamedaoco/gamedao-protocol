@@ -34,8 +34,6 @@ use primitives::{ Balance, BlockNumber, Index, Moment};
 //
 //
 
-// TODO: migrate from u8 to enum
-// type ProposalState = u8;
 #[derive(Encode, Decode, Clone, PartialEq)]
 pub enum ProposalState {
 	INIT = 0,		// waiting for start block
@@ -132,18 +130,18 @@ decl_storage! {
 		CampaignBalanceUsed get(fn used_balance): map hasher(blake2_128_concat) T::Hash => T::Balance;
 
 		/// The number of people who approve a proposal
-		ProposalApprovers get(fn proposal_approvers): map hasher(blake2_128_concat) T::Hash => u64;
+		ProposalApprovers get(fn proposal_approvers): map hasher(blake2_128_concat) T::Hash => u64 = 0;
 		/// The number of people who deny a proposal
-		ProposalDeniers get(fn proposal_deniers): map hasher(blake2_128_concat) T::Hash => u64;
+		ProposalDeniers get(fn proposal_deniers): map hasher(blake2_128_concat) T::Hash => u64 = 0;
 		/// Voters per proposal
 		ProposalVoters get(fn proposal_voters): map hasher(blake2_128_concat) T::Hash => Vec<T::AccountId>;
 		/// Voter count per proposal
 		ProposalVotes get(fn proposal_votes): map hasher(blake2_128_concat) T::Hash => u64 = 0;
 
 		/// Ack vs Nack
-		ProposalSimpleVotes get(fn proposal_simple_votes): map hasher(blake2_128_concat) T::Hash => (u64,u64);
+		ProposalSimpleVotes get(fn proposal_simple_votes): map hasher(blake2_128_concat) T::Hash => (u64,u64) = (0,0);
 		/// User has voted on a proposal
-		VotedBefore get(fn has_voted): map hasher(blake2_128_concat) (T::AccountId, T::Hash) => bool;
+		VotedBefore get(fn has_voted): map hasher(blake2_128_concat) (T::AccountId, T::Hash) => bool = false;
 		// TODO: ProposalTotalEligibleVoters
 
 		// TODO: ProposalApproversWeight
@@ -619,6 +617,7 @@ decl_module! {
 						let (yes,no) = Self::proposal_simple_votes(&proposal_id);
 						if yes > no { proposal_state = ProposalState::ACCEPTED; }
 						if yes < no { proposal_state = ProposalState::REJECTED; }
+						if yes == 0 && no == 0 { proposal_state = ProposalState::EXPIRED; }
 					},
 					1 => {
 						// treasury
@@ -644,7 +643,7 @@ decl_module! {
 					}
 				}
 
-				<ProposalStates<T>>::insert(proposal_id.clone(), proposal_state.clone());
+				<ProposalStates<T>>::insert(&proposal_id, proposal_state.clone());
 
 				match proposal_state {
 					ProposalState::ACCEPTED => {
@@ -657,7 +656,12 @@ decl_module! {
 							RawEvent::ProposalRejected(proposal_id.clone())
 						);
 					},
-					_ => {}
+					ProposalState::EXPIRED => {
+						Self::deposit_event(
+							RawEvent::ProposalExpired(proposal_id.clone())
+						);
+					},					_
+					=> {}
 				}
 
 			}
