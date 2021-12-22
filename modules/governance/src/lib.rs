@@ -120,6 +120,8 @@ decl_storage! {
 
 		/// Proposals where voter participated
 		ProposalsByVoter get(fn proposals_by_voter): map hasher(blake2_128_concat) T::AccountId => Vec<(T::Hash, bool)>;
+		/// Proposal voters and votes by proposal
+		ProposalVotesByVoters get(fn proposal_votes_by_voters): map hasher(blake2_128_concat) T::Hash => Vec<(T::AccountId, bool)>;
 		/// Total proposals voted on by voter
 		ProposalsByVoterCount get(fn proposals_by_voter_index): map hasher(blake2_128_concat) T::AccountId => u64;
 
@@ -562,12 +564,9 @@ decl_module! {
 				},
 			}
 
-			// register voting
 			VotedBefore::<T>::insert( ( &sender, proposal_id.clone() ), true );
-			// ++ voter voting counter
 			ProposalsByVoterCount::<T>::mutate( &sender, |v| *v +=1 );
-			// add voting to participations map
-			let votings = Self::proposals_by_voter( &sender );
+			ProposalVotesByVoters::<T>::mutate(&proposal_id, |votings| votings.push(( sender.clone(), vote.clone() )) );
 			ProposalsByVoter::<T>::mutate( &sender, |votings| votings.push((proposal_id.clone(), vote)));
 
 			let mut voters = ProposalVoters::<T>::get(&proposal_id);
