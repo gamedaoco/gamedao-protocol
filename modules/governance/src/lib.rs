@@ -91,7 +91,7 @@ const MAX_PROPOSAL_DURATION: u32 = 864000; // 60 * 60 * 24 * 30 / 3
 //
 
 decl_storage! {
-	trait Store for Module<T: Config> as Governance27 {
+	trait Store for Module<T: Config> as Governance35 {
 
 		/// Global status
 		Proposals get(fn proposals): map hasher(blake2_128_concat) T::Hash => Proposal<T::Hash, T::BlockNumber>;
@@ -112,6 +112,9 @@ decl_storage! {
 		ProposalsByContextArray get(fn proposals_by_campaign_by_index): map hasher(blake2_128_concat)  (T::Hash, u64) => T::Hash;
 		ProposalsByContextCount get(fn proposals_by_campaign_count): map hasher(blake2_128_concat) T::Hash => u64;
 		ProposalsByContextIndex: map hasher(blake2_128_concat) (T::Hash, T::Hash) => u64;
+
+		/// all proposals for a given context
+		ProposalsByContext get(fn proposals_by_context): map hasher(blake2_128_concat) T::Hash => Vec<T::Hash>;
 
 		/// Proposals by owner
 		ProposalsByOwnerArray get(fn proposals_by_owner): map hasher(blake2_128_concat) (T::AccountId, u64) => T::Hash;
@@ -235,40 +238,33 @@ decl_module! {
 			// check add
 			let proposals_count = Self::proposals_count();
 			let updated_proposals_count = proposals_count.checked_add(1).ok_or("Overflow adding a new proposal to total proposals")?;
-
 			let proposals_by_campaign_count = Self::proposals_by_campaign_count(&context_id);
 			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or("Overflow adding a new proposal to an organisation")?;
-
 			let proposals_by_owner_count = Self::proposals_by_owner_count(&sender);
 			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or("Overflow adding a new proposal to an owner")?;
 
 			// insert proposals
-			<Proposals<T>>::insert(proposal_id.clone(), new_proposal.clone());
-			<Metadata<T>>::insert(proposal_id.clone(), metadata.clone());
-			<Owners<T>>::insert(proposal_id.clone(), sender.clone());
-
-			<ProposalStates<T>>::insert(proposal_id.clone(), proposal_state);
-
+			Proposals::<T>::insert(proposal_id.clone(), new_proposal.clone());
+			Metadata::<T>::insert(proposal_id.clone(), metadata.clone());
+			Owners::<T>::insert(proposal_id.clone(), sender.clone());
+			ProposalStates::<T>::insert(proposal_id.clone(), proposal_state);
 			// update max per block
-			<ProposalsByBlock<T>>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
-
+			ProposalsByBlock::<T>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
 			// update proposal map
-			<ProposalsArray<T>>::insert(&proposals_count, proposal_id.clone());
-			<ProposalsCount>::put(updated_proposals_count);
-			<ProposalsIndex<T>>::insert(proposal_id.clone(), proposals_count);
-
+			ProposalsArray::<T>::insert(&proposals_count, proposal_id.clone());
+			ProposalsCount::put(updated_proposals_count);
+			ProposalsIndex::<T>::insert(proposal_id.clone(), proposals_count);
 			// update campaign map
-			<ProposalsByContextArray<T>>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
-			<ProposalsByContextCount<T>>::insert(context_id.clone(), updated_proposals_by_campaign_count);
-			<ProposalsByContextIndex<T>>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
-
+			ProposalsByContextArray::<T>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
+			ProposalsByContextCount::<T>::insert(context_id.clone(), updated_proposals_by_campaign_count);
+			ProposalsByContextIndex::<T>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
+			ProposalsByContext::<T>::mutate( context_id.clone(), |proposals| proposals.push(proposal_id.clone()) );
 			// update owner map
-			<ProposalsByOwnerArray<T>>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
-			<ProposalsByOwnerCount<T>>::insert(sender.clone(), updated_proposals_by_owner_count);
-			<ProposalsByOwnerIndex<T>>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
-
+			ProposalsByOwnerArray::<T>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
+			ProposalsByOwnerCount::<T>::insert(sender.clone(), updated_proposals_by_owner_count);
+			ProposalsByOwnerIndex::<T>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
 			// init votes
-			<ProposalSimpleVotes<T>>::insert(context_id, (0,0));
+			ProposalSimpleVotes::<T>::insert(context_id, (0,0));
 
 			//
 			//
@@ -331,10 +327,11 @@ decl_module! {
 
 			//	A C C E S S
 
-			// ensure!( crowdfunding::Module::<T>::campaign_by_id(context_id), Error::<T>::CampaignUnknown );
-			ensure!( crowdfunding::Module::<T>::campaign_state(context_id) == 3, Error::<T>::CampaignFailed );
-			let owner = crowdfunding::Module::<T>::campaign_owner(context_id).ok_or( Error::<T>::UnknownAccount )?;
-			ensure!(sender == owner, Error::<T>::AuthorizationError );
+			// ensure!( crowdfunding::Module::<T>::campaign_by_id(&context_id), Error::<T>::CampaignUnknown );
+			let state = crowdfunding::Module::<T>::campaign_state(&context_id);
+			ensure!( state == 3, Error::<T>::CampaignFailed );
+			// let owner = crowdfunding::Module::<T>::campaign_owner(&context_id);
+			// ensure!( sender == owner, Error::<T>::AuthorizationError );
 
 			//	B O U N D S
 
@@ -406,6 +403,7 @@ decl_module! {
 			ProposalsByOwnerArray::<T>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
 			ProposalsByOwnerCount::<T>::insert(sender.clone(), updated_proposals_by_owner_count);
 			ProposalsByOwnerIndex::<T>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
+			ProposalsByContext::<T>::mutate( context_id.clone(), |proposals| proposals.push(proposal_id.clone()) );
 
 			// ++
 
@@ -621,15 +619,17 @@ decl_module! {
 					1 => {
 						// treasury
 						// 50% majority of eligible voters
-						// let (yes,no) = Self::proposal_simple_votes(&proposal_id);
-						// let contributors = crowdfunding::Module::<T>::campaign_contributors_count(proposal.context_id);
-						// let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError)?;
+						let (yes,no) = Self::proposal_simple_votes(&proposal_id);
+						// let context = proposal.context_id.clone();
+						// let contributors = crowdfunding::Module::<T>::campaign_contributors_count(context);
+						// let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError);
 						// if yes > threshold {
-						// 	proposal_state = 1;
-						// 	Self::unlock_balance(proposal_id, yes)?;
-						// } else {
-						// 	proposal_state = 2;
-						// }
+						if yes > no {
+							proposal_state = ProposalState::ACCEPTED;
+							Self::unlock_balance( proposal.proposal_id, yes );
+						} else {
+							proposal_state = ProposalState::REJECTED;
+						}
 
 					},
 					2 => {
@@ -691,9 +691,9 @@ impl<T:Config> Module<T> {
 		// Get proposal and metadata
 		let proposal = Self::proposals(proposal_id.clone());
 		let metadata = Self::metadata(proposal_id.clone());
-		let proposal_balance = metadata.amount;
 
 		// Ensure sufficient balance
+		let proposal_balance = metadata.amount;
 		let total_balance = <crowdfunding::Module<T>>::campaign_balance(proposal.context_id);
 
 		// let used_balance = Self::balance_used(proposal.context_id);
@@ -704,8 +704,10 @@ impl<T:Config> Module<T> {
 		// Get the owner of the campaign
 		let owner = <Owners<T>>::get(&proposal_id).ok_or("No owner for proposal")?;
 
-		// Unreserve the proposal balance
-		let _ = <balances::Module<T>>::unreserve(&owner, proposal_balance.clone());
+		// get treasury account for related body and unlock balance
+		let body = crowdfunding::Module::<T>::campaign_org(&proposal.context_id);
+		let treasury_account = control::Module::<T>::body_treasury(&body);
+		let _ = <balances::Module<T>>::unreserve(&treasury_account, proposal_balance);
 
 		// Change the used amount
 		let new_used_balance = used_balance + proposal_balance;
@@ -720,6 +722,8 @@ impl<T:Config> Module<T> {
 		Self::deposit_event(
 			RawEvent::WithdrawalGranted(
 				proposal_id,
+				proposal.context_id,
+				body
 			)
 		);
 		Ok(())
@@ -747,7 +751,7 @@ decl_event!(
 		ProposalExpired(Hash),
 		ProposalAborted(Hash),
 		ProposalError(Hash, Vec<u8>),
-		WithdrawalGranted(Hash),
+		WithdrawalGranted(Hash,Hash,Hash),
 	}
 );
 
