@@ -192,7 +192,7 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp> {
 }
 
 decl_storage! {
-	trait Store for Module<T: Config> as Crowdfunding27 {
+	trait Store for Module<T: Config> as Crowdfunding35 {
 
 		// TODO:
 		//	actually most of the aggregated data only consumes cpu cycles
@@ -614,8 +614,22 @@ decl_module! {
 								// 	Ok(_v) => {}
 								// }
 
+								// transfer remaining balance to treasury
+								let body = Self::campaign_org(&campaign_id);
+								let body_treasury = control::Module::<T>::body_treasury(body);
+								let transfer_amount = campaign_balance - commission;
+
+								let transfer_to_treasury = <balances::Module<T> as Currency<_>>::transfer(
+									&owner,
+									&body_treasury,
+									transfer_amount.clone(),
+									ExistenceRequirement::AllowDeath
+								);
 								// lock remaining balance
-								let _ = <balances::Module<T>>::reserve( &owner, campaign_balance - commission );
+								let _ = <balances::Module<T>>::reserve(
+									&body_treasury,
+									transfer_amount
+								);
 
 								// deposit the event
 								Self::deposit_event(
