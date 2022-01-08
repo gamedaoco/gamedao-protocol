@@ -10,8 +10,8 @@ const fs = require('fs');
 // Redundant with construct_runtime!
 const modules = [
 	"control",
-	"crowdfunding",
-	"governance",
+	"flow",
+	"signal",
 	"tangram",
 	"sense",
 	// "hypaspace",

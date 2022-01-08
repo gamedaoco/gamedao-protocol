@@ -5,7 +5,7 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
-use crowdfunding;
+use flow;
 use control;
 
 use frame_system::{ self as system, ensure_signed };
@@ -73,7 +73,7 @@ pub struct ProposalMetadata<Balance> {
 //
 //
 
-pub trait Config: system::Config + balances::Config + timestamp::Config + crowdfunding::Config + control::Config {
+pub trait Config: system::Config + balances::Config + timestamp::Config + flow::Config + control::Config {
 	type Currency: ReservableCurrency<Self::AccountId>;
 	type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
 	type Nonce: Get<u64>;
@@ -91,7 +91,7 @@ const MAX_PROPOSAL_DURATION: u32 = 864000; // 60 * 60 * 24 * 30 / 3
 //
 
 decl_storage! {
-	trait Store for Module<T: Config> as Governance35 {
+	trait Store for Module<T: Config> as signal37 {
 
 		/// Global status
 		Proposals get(fn proposals): map hasher(blake2_128_concat) T::Hash => Proposal<T::Hash, T::BlockNumber>;
@@ -327,10 +327,10 @@ decl_module! {
 
 			//	A C C E S S
 
-			// ensure!( crowdfunding::Module::<T>::campaign_by_id(&context_id), Error::<T>::CampaignUnknown );
-			let state = crowdfunding::Module::<T>::campaign_state(&context_id);
+			// ensure!( flow::Module::<T>::campaign_by_id(&context_id), Error::<T>::CampaignUnknown );
+			let state = flow::Module::<T>::campaign_state(&context_id);
 			ensure!( state == 3, Error::<T>::CampaignFailed );
-			// let owner = crowdfunding::Module::<T>::campaign_owner(&context_id);
+			// let owner = flow::Module::<T>::campaign_owner(&context_id);
 			// ensure!( sender == owner, Error::<T>::AuthorizationError );
 
 			//	B O U N D S
@@ -343,7 +343,7 @@ decl_module! {
 			//	B A L A N C E
 
 			let used_balance = Self::used_balance(&context_id);
-			let total_balance = crowdfunding::Module::<T>::campaign_balance(context_id);
+			let total_balance = flow::Module::<T>::campaign_balance(context_id);
 			let remaining_balance = total_balance - used_balance;
 			ensure!(remaining_balance >= amount, Error::<T>::BalanceInsufficient );
 
@@ -510,7 +510,7 @@ decl_module! {
 							ProposalApprovers::<T>::insert(proposal_id.clone(), updated_approvers.clone());
 
 							// TODO: make this variable
-							let contributors = crowdfunding::Module::<T>::campaign_contributors_count(proposal.context_id);
+							let contributors = flow::Module::<T>::campaign_contributors_count(proposal.context_id);
 							let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError)?;
 							if updated_approvers > threshold {
 								Self::unlock_balance(proposal_id, updated_approvers)?;
@@ -621,7 +621,7 @@ decl_module! {
 						// 50% majority of eligible voters
 						let (yes,no) = Self::proposal_simple_votes(&proposal_id);
 						// let context = proposal.context_id.clone();
-						// let contributors = crowdfunding::Module::<T>::campaign_contributors_count(context);
+						// let contributors = flow::Module::<T>::campaign_contributors_count(context);
 						// let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError);
 						// if yes > threshold {
 						if yes > no {
@@ -694,7 +694,7 @@ impl<T:Config> Module<T> {
 
 		// Ensure sufficient balance
 		let proposal_balance = metadata.amount;
-		let total_balance = <crowdfunding::Module<T>>::campaign_balance(proposal.context_id);
+		let total_balance = <flow::Module<T>>::campaign_balance(proposal.context_id);
 
 		// let used_balance = Self::balance_used(proposal.context_id);
 		let used_balance = <CampaignBalanceUsed<T>>::get(proposal.context_id);
@@ -705,7 +705,7 @@ impl<T:Config> Module<T> {
 		let owner = <Owners<T>>::get(&proposal_id).ok_or("No owner for proposal")?;
 
 		// get treasury account for related body and unlock balance
-		let body = crowdfunding::Module::<T>::campaign_org(&proposal.context_id);
+		let body = flow::Module::<T>::campaign_org(&proposal.context_id);
 		let treasury_account = control::Module::<T>::body_treasury(&body);
 		let _ = <balances::Module<T>>::unreserve(&treasury_account, proposal_balance);
 

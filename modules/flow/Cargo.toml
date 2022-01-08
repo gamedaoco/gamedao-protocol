@@ -1,11 +1,11 @@
 [package]
-name = "module-crowdfunding"
+name = "module-flow"
 version = "1.0.1-dev"
 authors = ['zero.io','gamedao.co']
 repository = ''
 edition = "2018"
 license = "GPL-3.0-or-later"
-description = "module-crowdfunding"
+description = "module-flow"
 
 [package.metadata.substrate]
 categories = ["module"]

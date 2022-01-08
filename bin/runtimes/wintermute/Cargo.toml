@@ -94,8 +94,8 @@ module-sense = { default-features = false, path = "../../../modules/sense" }
 
 # gamedao
 module-control = { default-features = false, path = "../../../modules/control" }
-module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
-module-governance = { default-features = false, path = "../../../modules/governance" }
+module-flow = { default-features = false, path = "../../../modules/flow" }
+module-signal = { default-features = false, path = "../../../modules/signal" }
 
 # hypaspace
 module-item = { default-features = false, path = "../../../modules/item" }
@@ -170,8 +170,8 @@ std = [
 	"pallet-recovery/std",
 	"pallet-vesting/std",
 	#
-	"module-crowdfunding/std",
-	"module-governance/std",
+	"module-flow/std",
+	"module-signal/std",
 	"module-sense/std",
 	"module-item/std",
 	"module-hypaspace/std",

@@ -77,8 +77,8 @@ use hex_literal;
 
 use module_sense;
 use module_control;
-use module_crowdfunding;
-use module_governance;
+use module_flow;
+use module_signal;
 use module_tangram;
 
 // use zero_nft;
@@ -128,7 +128,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// and set impl_version to 0. If only runtime
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
-	spec_version: 36,
+	spec_version: 37,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -177,15 +177,15 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 // parameter_types! {
 	// pub const GameDAOTreasuryModuleId: ModuleId = ModuleId(*b"dao/");
 // 	pub const StakingPoolModuleId: ModuleId = ModuleId(*b"z/sicher");
-// 	pub const CrowdfundingModuleId: ModuleId = ModuleId(*b"modraise");
-// 	pub const GovernanceModuleId: ModuleId = ModuleId(*b"modchord");
+// 	pub const flowModuleId: ModuleId = ModuleId(*b"modraise");
+// 	pub const signalModuleId: ModuleId = ModuleId(*b"modchord");
 // 	pub const SenseModuleId: ModuleId = ModuleId(*b"modsense");
 // }
 
 // pub fn get_all_module_accounts() -> Vec<AccountId> {
 // 	vec![
-// 		CrowdfundingModuleId::get().into_account(),
-// 		GovernanceModuleId::get().into_account(),
+// 		flowModuleId::get().into_account(),
+// 		signalModuleId::get().into_account(),
 // 		SenseModuleId::get().into_account(),
 // 	]
 // }
@@ -1100,7 +1100,7 @@ impl module_control::Config for Runtime {
 }
 
 //
-//	crowdfunding
+//	flow
 //	fundraising module
 //
 //	TODO
@@ -1134,7 +1134,7 @@ parameter_types! {
 
 }
 
-impl module_crowdfunding::Config for Runtime {
+impl module_flow::Config for Runtime {
 
 	// ensure root or half council as admin role for campaigns.
 	// might need another instance of council as e.g. supervisor
@@ -1165,7 +1165,7 @@ impl module_crowdfunding::Config for Runtime {
 }
 
 //
-//	governance
+//	signal
 //	coordinated withdrawal
 //
 
@@ -1173,7 +1173,7 @@ parameter_types! {
 	pub const MaxProposalsPerBlock: usize = 3;
 }
 
-impl module_governance::Config for Runtime {
+impl module_signal::Config for Runtime {
 
 	// type GameDAOTreasury = GameDAOTreasury;
 	// type ModuleAdmin = frame_system::EnsureRoot<AccountId>;
@@ -1320,8 +1320,8 @@ construct_runtime!(
 
 		//
 		GameDaoControl: module_control::{Module, Call, Storage, Event<T>},
-		GameDaoCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
-		GameDaoGovernance: module_governance::{Module, Call, Storage, Event<T>},
+		GameDaoSignal: module_signal::{Module, Call, Storage, Event<T>},
+		GameDaoFlow: module_flow::{Module, Call, Storage, Event<T>},
 		GameDaoTangram: module_tangram::{Module, Call, Storage, Event<T>},
 
 	}

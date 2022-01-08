@@ -78,8 +78,8 @@ use module_sense;
 // use module_payment;
 // use module_currencies;
 // use module_airdrop;
-use module_crowdfunding;
-use module_governance;
+use module_flow;
+use module_signal;
 use module_item;
 use module_hypaspace;
 
@@ -171,15 +171,15 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 // parameter_types! {
 // 	// pub const ZeroTreasuryModuleId: ModuleId = ModuleId(*b"z/schatz");
 // 	// pub const StakingPoolModuleId: ModuleId = ModuleId(*b"z/sicher");
-// 	pub const CrowdfundingModuleId: ModuleId = ModuleId(*b"modraise");
-// 	pub const GovernanceModuleId: ModuleId = ModuleId(*b"modchord");
+// 	pub const flowModuleId: ModuleId = ModuleId(*b"modraise");
+// 	pub const signalModuleId: ModuleId = ModuleId(*b"modchord");
 // 	pub const SenseModuleId: ModuleId = ModuleId(*b"modsense");
 // }
 
 // pub fn get_all_module_accounts() -> Vec<AccountId> {
 // 	vec![
-// 		CrowdfundingModuleId::get().into_account(),
-// 		GovernanceModuleId::get().into_account(),
+// 		flowModuleId::get().into_account(),
+// 		signalModuleId::get().into_account(),
 // 		SenseModuleId::get().into_account(),
 // 	]
 // }
@@ -281,7 +281,7 @@ parameter_types! {
 pub enum ProxyType {
 	Any,
 	NonTransfer,
-	Governance,
+	signal,
 	Staking,
 }
 impl Default for ProxyType { fn default() -> Self { Self::Any } }
@@ -295,7 +295,7 @@ impl InstanceFilter<Call> for ProxyType {
 				Call::Vesting(pallet_vesting::Call::vested_transfer(..)) |
 				Call::Indices(pallet_indices::Call::transfer(..))
 			),
-			ProxyType::Governance => matches!(
+			ProxyType::signal => matches!(
 				c,
 				Call::Democracy(..) |
 				Call::Council(..) |
@@ -1089,7 +1089,7 @@ impl module_control::Config for Runtime {
 
 
 //
-//	crowdfunding
+//	flow
 //	fundraising module
 //
 //	TODO
@@ -1123,7 +1123,7 @@ parameter_types! {
 
 }
 
-impl module_crowdfunding::Config for Runtime {
+impl module_flow::Config for Runtime {
 
 	// ensure root or half council as admin role for campaigns.
 	// might need another instance of council as e.g. supervisor
@@ -1150,7 +1150,7 @@ impl module_crowdfunding::Config for Runtime {
 }
 
 //
-//	governance
+//	signal
 //	coordinated withdrawal
 //
 
@@ -1158,7 +1158,7 @@ parameter_types! {
 	pub const MaxProposalsPerBlock: usize = 3;
 }
 
-impl module_governance::Config for Runtime {
+impl module_signal::Config for Runtime {
 
 	// type ModuleAdmin = frame_system::EnsureRoot<AccountId>;
 
@@ -1370,8 +1370,8 @@ construct_runtime!(
 
 		//
 		GameDaoControl: module_control::{Module, Call, Storage, Event<T>},
-		GameDaoCrowdfunding: module_crowdfunding::{Module, Call, Storage, Event<T>},
-		GameDaoGovernance: module_governance::{Module, Call, Storage, Event<T>},
+		GameDaoflow: module_flow::{Module, Call, Storage, Event<T>},
+		GameDaosignal: module_signal::{Module, Call, Storage, Event<T>},
 
 		//
 		HypaspaceItems: module_item::{Module, Call, Storage, Event<T>},

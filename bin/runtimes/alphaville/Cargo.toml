@@ -1,6 +1,6 @@
 [package]
 name = "zero-runtime"
-version = "1.36.0"
+version = "1.37.0"
 authors = ["zero collective <play@zero.io>"]
 description = "videogames x metaverse"
 edition = "2018"
@@ -93,8 +93,8 @@ module-sense = { default-features = false, path = "../../../modules/sense" }
 
 # gamedao
 module-control = { default-features = false, path = "../../../modules/control" }
-module-crowdfunding = { default-features = false, path = "../../../modules/crowdfunding" }
-module-governance = { default-features = false, path = "../../../modules/governance" }
+module-flow = { default-features = false, path = "../../../modules/flow" }
+module-signal = { default-features = false, path = "../../../modules/signal" }
 module-tangram = { default-features = false, path = "../../../modules/tangram" }
 
 #
@@ -179,8 +179,8 @@ std = [
 	"pallet-vesting/std",
 
 	"module-control/std",
-	"module-crowdfunding/std",
-	"module-governance/std",
+	"module-flow/std",
+	"module-signal/std",
 	"module-sense/std",
 
 ]

@@ -1,4 +1,4 @@
-# Module Crowdfunding
+# Module Flow
 
 Simple Crowdfunding module, supporting multiple campaigns, which are all settled with the platform currency.
 

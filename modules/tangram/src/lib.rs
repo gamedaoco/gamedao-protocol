@@ -31,8 +31,8 @@ use sp_std::vec::Vec;
 use primitives::{ Balance };
 
 // use control;
-// use governance;
-// use crowdfunding;
+// use signal;
+// use flow;
 
 // nft interface
 
@@ -157,7 +157,7 @@ pub trait Config: frame_system::Config + balances::Config  {
 }
 
 decl_storage! {
-	trait Store for Module<T: Config> as Tangram35 {
+	trait Store for Module<T: Config> as Tangram37 {
 
 		// realm
 
