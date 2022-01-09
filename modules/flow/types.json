@@ -6,11 +6,14 @@
     "expiry": "BlockNumber",
     "cap": "Balance",
     "name": "Vec<u8>",
-    "protocol": "u8",
-    "governance": "u8",
+    "protocol": "FlowProtocol",
+    "governance": "FlowGovernance",
     "cid": "Vec<u8>",
     "created": "Timestamp"
   },
   "EventMessage": "Vec<u8>",
   "Nonce": "u64"
+  "FlowProtocol": { "_enum": [ "GRANT", "RAISE", "LEND", "LOAN", "SHARE", "POOL" ] },
+  "FlowGovernance": { "_enum": [ "NO", "YES" ] },
+  "FlowState": { "_enum": [ "INIT","ACTIVE","PAUSED","SUCCESS","FAILED","LOCKED" ] }
 }

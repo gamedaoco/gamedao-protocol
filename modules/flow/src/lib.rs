@@ -51,6 +51,7 @@
 // 2. invest into open campaigns
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![feature(derive_default_enum)]
 
 // TODO: harden checks on completion
 #![allow(dead_code)]
@@ -103,12 +104,54 @@ mod tests;
 // TODO: externalise error messages
 // mod errors;
 
+//	C O N S T A N T S
+
 // TODO: take constants from runtime
 const MODULE_ID: ModuleId = ModuleId(*b"modraise");
 const MODULE_VERSION: &str = "1.0";
 const MAX_CONTRIBUTIONS_PER_BLOCK: usize = 5;
 const MAX_CONTRIBUTIONS_PER_ADDRESS: usize = 3;
 const MAX_CAMPAIGN_DURATION: u32 = 777600;
+
+//
+//	E N U M S
+//
+
+#[derive(Encode, Decode, Clone, PartialEq, Default)]
+#[derive(Debug)]
+pub enum FlowProtocol {
+	GRANT = 0,
+	#[default]
+	RAISE = 1,
+	LEND = 2,
+	LOAN = 3,
+	SHARE = 4,
+	POOL = 5
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Default)]
+#[derive(Debug)]
+pub enum FlowGovernance {
+	#[default]
+	NO = 0,  // 100% unreserved upon completion
+	YES = 1, // withdrawal votings
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, PartialOrd)]
+#[derive(Debug)]
+pub enum FlowState {
+	#[default]
+	INIT = 0,
+	ACTIVE = 1,
+	PAUSED = 2,
+	SUCCESS = 3,
+	FAILED = 4,
+	LOCKED = 5
+}
+
+//
+//	C O N F I G
+//
 
 pub trait Config: system::Config + balances::Config + timestamp::Config + control::Config {
 
@@ -142,21 +185,22 @@ pub trait Config: system::Config + balances::Config + timestamp::Config + contro
 
 // TODO: this can be decomposed to improve weight
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp> {
+pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, FlowGovernance> {
 
-	/// unique hash to identify campaign (generated)
+	// unique hash to identify campaign (generated)
 	id: Hash,
-	/// hash of the overarching body from module-control
+	// hash of the overarching body from module-control
 	org: Hash,
-	/// name
+	// name
 	name: Vec<u8>,
 
-	/// controller account -> must match body controller
-	/// during campaing runtime controller change is not allowed
+	// controller account -> must match body controller
+	// during campaing runtime controller change is not allowed
 	// needs to be revised to avoid campaign attack by starting
-	// a campagin wenn dao wants to remove controller for reasons
+	// a campagin when dao wants to remove controller for reasons
 	owner: AccountId,
 
+	// TODO: THIS NEEDS TO BE GAMEDAO SUPERVISION
 	/// admin account of the campaign (operator)
 	admin: AccountId,
 
@@ -170,16 +214,14 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp> {
 	/// minimum amount of token to become a successful campaign
 	cap: Balance,
 
-	/// protocol: 0 grant, 1 prepaid, 2 loan, 3 share, 4 dao
-	protocol: u8,
-	/// dao governed after success
-	/// true: payout through governance
-	/// false: 100% payout upon completion
-	/// 0 nay, 1 aye
-	governance: u8,
+	/// protocol after successful raise
+	protocol: FlowProtocol,
+	/// governance after successful raise
+	governance: FlowGovernance,
 
 	/// content storage
 	cid: Vec<u8>,
+
 
 	// /// token symbol
 	token_symbol: Vec<u8>,
@@ -211,7 +253,7 @@ decl_storage! {
 		// - 	ownedCampaigns
 
 		/// Campaign
-		Campaigns get(fn campaign_by_id): map hasher(blake2_128_concat) T::Hash => Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, T::Moment>;
+		Campaigns get(fn campaign_by_id): map hasher(blake2_128_concat) T::Hash => Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, T::Moment, FlowProtocol, FlowGovernance>;
 		/// Associated Body
 		CampaignOrg get(fn campaign_org): map hasher(blake2_128_concat) T::Hash => T::Hash;
 
@@ -222,9 +264,9 @@ decl_storage! {
 
 		/// Campaign state
 		/// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
-		CampaignState get(fn campaign_state): map hasher(blake2_128_concat) T::Hash => u8;
+		CampaignState get(fn campaign_state): map hasher(blake2_128_concat) T::Hash => FlowState = FlowState::INIT;
 		/// Get Campaigns for a certain state
-		CampaignsByState get(fn campaigns_by_state): map hasher(blake2_128_concat) u8 => Vec<T::Hash>;
+		CampaignsByState get(fn campaigns_by_state): map hasher(blake2_128_concat) FlowState => Vec<T::Hash>;
 
 		/// Campaigns ending in block x
 		CampaignsByBlock get(fn campaigns_by_block): map hasher(blake2_128_concat) T::BlockNumber => Vec<T::Hash>;
@@ -275,13 +317,14 @@ decl_event! {
 		<T as balances::Config>::Balance,
 		<T as system::Config>::BlockNumber,
 		EventMessage = Vec<u8>,
+		State = FlowState
 	{
 		CampaignDestroyed(Hash),
 		CampaignCreated(Hash, AccountId, AccountId, Balance, Balance, BlockNumber, Vec<u8>),
 		CampaignContributed(Hash, AccountId, Balance, BlockNumber),
 		CampaignFinalized(Hash, Balance, BlockNumber, bool),
 		CampaignFailed(Hash, Balance, BlockNumber, bool),
-		CampaignUpdated(Hash, u8, BlockNumber),
+		CampaignUpdated(Hash, State, BlockNumber),
 		Message(EventMessage),
 	}
 }
@@ -308,10 +351,10 @@ decl_module! {
 		// admin can set any status
 		// owner can pause, cancel
 		#[weight = 1_000_000]
-		fn update_status(
+		fn update_state(
 			origin,
 			campaign_id: T::Hash,
-			status: u8
+			state: FlowState
 		) -> DispatchResult {
 
 			// access control
@@ -326,18 +369,21 @@ decl_module! {
 			ensure!(<system::Module<T>>::block_number() < campaign.expiry, Error::<T>::CampaignExpired );
 
 			// not finished or locked?
-			let current_status = Self::campaign_state(campaign_id);
-			ensure!(current_status < 2, Error::<T>::CampaignExpired );
+			let current_state = Self::campaign_state(campaign_id);
+			ensure!(
+				current_state < FlowState::SUCCESS,
+				Error::<T>::CampaignExpired
+			);
 
 			// set
-			Self::set_status(campaign_id.clone(), status.clone());
+			Self::set_state(campaign_id.clone(), state.clone());
 
 			// dispatch status update event
 			let now = <system::Module<T>>::block_number();
 			Self::deposit_event(
 				RawEvent::CampaignUpdated(
 					campaign_id,
-					status,
+					state,
 					now
 				)
 			);
@@ -355,8 +401,8 @@ decl_module! {
 			target: T::Balance,
 			deposit: T::Balance,
 			expiry: T::BlockNumber,
-			protocol: u8,
-			governance: u8,
+			protocol: FlowProtocol,
+			governance: FlowGovernance,
 			cid: Vec<u8>,           // content cid
 			token_symbol: Vec<u8>,  // up to 5
 			token_name: Vec<u8>,    // cleartext
@@ -471,9 +517,9 @@ decl_module! {
 			)?;
 
 			// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
-			Self::set_status(
+			Self::set_state(
 				id.clone(),
-				1
+				FlowState::ACTIVE
 			);
 
 			// deposit the event
@@ -509,10 +555,9 @@ decl_module! {
 			let owner = Self::campaign_owner(campaign_id) .ok_or(Error::<T>::OwnerUnknown)?;
 			ensure!( owner != sender, Error::<T>::NoContributionToOwnCampaign );
 
-			// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
 			// contribution only possible when state active..
 			let state = Self::campaign_state(campaign_id);
-			ensure!( state == 1, Error::<T>::NoContributionsAllowed);
+			ensure!( state == FlowState::ACTIVE, Error::<T>::NoContributionsAllowed);
 
 			// submit
 			Self::create_contribution(sender.clone(), campaign_id.clone(), contribution.clone())?;
@@ -550,7 +595,7 @@ decl_module! {
 
 					// update campaign state to success
 					// campaign.status = 3;
-					Self::set_status(campaign.id.clone(),3);
+					Self::set_state(campaign.id.clone(),FlowState::SUCCESS);
 					<Campaigns<T>>::insert(campaign_id.clone(), campaign);
 
 					// get campaign owner
@@ -654,7 +699,7 @@ decl_module! {
 
 					// update campaign state to failed
 					// campaign.status = 4;
-					Self::set_status(campaign.id,4);
+					Self::set_state(campaign.id,FlowState::FAILED);
 					<Campaigns<T>>::insert(campaign_id.clone(), campaign);
 
 					// revert all contributions
@@ -684,7 +729,7 @@ decl_module! {
 
 impl<T: Config> Module<T> {
 
-	fn set_status( id: T::Hash, state: u8 ) {
+	fn set_state( id: T::Hash, state: FlowState ) {
 
 		let current_state = Self::campaign_state( &id );
 		// remove
@@ -714,13 +759,13 @@ impl<T: Config> Module<T> {
 	// campaign creator deposit to invoke the campaign
 	// deposit: T::Balance,
 	// funding protocol
-	// 0 grant, 1 prepaid, 2 loan, 3 shares, 4 dao
+	// 0 grant, 1 prepaid, 2 loan, 3 shares, 4 dao, 5 pool
 	// proper assignment of funds into the instrument
 	// happens after successful funding of the campaing
 	// protocol: u8,
 	// campaign object
 	fn mint(
-		campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, T::Moment>
+		campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, T::Moment, FlowProtocol, FlowGovernance>
 	) -> DispatchResult {
 
 		// campaigns
