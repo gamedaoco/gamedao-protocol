@@ -1,4 +1,19 @@
+//
+//           _______________________________ ________
+//           \____    /\_   _____/\______   \\_____  \
+//             /     /  |    __)_  |       _/ /   |   \
+//            /     /_  |        \ |    |   \/    |    \
+//           /_______ \/_______  / |____|_  /\_______  /
+//                   \/        \/         \/         \/
+//           Z  E  R  O  .  I  O     N  E  T  W  O  R  K
+//           © C O P Y R I O T   2 0 7 5 @ Z E R O . I O
+
+// This file is part of ZERO Network.
+// Copyright (C) 2010-2020 ZERO Labs.
+// SPDX-License-Identifier: Apache-2.0
+
 #![cfg_attr(not(feature = "std"), no_std)]
+#![feature(derive_default_enum)]
 
 // TODO: harden checks on completion
 #![allow(dead_code)]
@@ -34,8 +49,9 @@ use primitives::{ Balance, BlockNumber, Index, Moment};
 //
 //
 
-#[derive(Encode, Decode, Clone, PartialEq)]
+#[derive(Encode, Decode, Clone, PartialEq, Default)]
 pub enum ProposalState {
+	#[default]
 	INIT = 0,		// waiting for start block
 	ACTIVE = 1,		// voting is active
 	ACCEPTED = 2,	// voters did approve
@@ -45,19 +61,40 @@ pub enum ProposalState {
 	FINALIZED = 6,	// accepted withdrawal proposal is processed
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Default)]
+pub enum ProposalType {
+	#[default]
+	GENERAL = 0,
+	MULTIPLE = 1,
+	MEMBER = 2,
+	WITHDRAWAL = 3,
+	SPENDING = 4
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Default)]
+pub enum VotingType {
+	#[default]
+	SIMPLE = 0,   // votes across participating votes
+	TOKEN = 1,    // weight across participating votes
+	ABSOLUTE = 2, // votes vs all eligible voters
+	QUADRATIC = 3,
+	RANKED = 4,
+	CONVICTION = 5
+}
+
 type TitleText = Vec<u8>;
 type CID = Vec<u8>;
-type ProposalType = u8;
-type VotingType = u8;
+// type ProposalType = u8;
+// type VotingType = u8;
 
 type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
-pub struct Proposal<Hash, BlockNumber> {
+pub struct Proposal<Hash, BlockNumber, ProposalType, VotingType> {
 	proposal_id: Hash,
 	context_id: Hash,
-	proposal_type: u8,
-	voting_type: u8,
+	proposal_type: ProposalType,
+	voting_type: VotingType,
 	start: BlockNumber,
 	expiry: BlockNumber
 }
@@ -94,7 +131,7 @@ decl_storage! {
 	trait Store for Module<T: Config> as signal37 {
 
 		/// Global status
-		Proposals get(fn proposals): map hasher(blake2_128_concat) T::Hash => Proposal<T::Hash, T::BlockNumber>;
+		Proposals get(fn proposals): map hasher(blake2_128_concat) T::Hash => Proposal<T::Hash, T::BlockNumber, ProposalType, VotingType>;
 		Metadata get(fn metadata): map hasher(blake2_128_concat) T::Hash => ProposalMetadata<T::Balance>;
 		Owners get(fn owners): map hasher(blake2_128_concat) T::Hash => Option<T::AccountId>;
 		/// Get the state of a proposal
@@ -182,11 +219,11 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			// active/existing dao?
-			ensure!( <control::Module<T>>::body_state(&context_id) == 1, Error::<T>::DAOInactive );
+			ensure!( <control::Module<T>>::body_state(&context_id) == control::ControlState::ACTIVE, Error::<T>::DAOInactive );
 
 			// member of body?
 			let member = <control::Module<T>>::body_member_state((&context_id,&sender));
-			ensure!( member == 1, Error::<T>::AuthorizationError );
+			ensure!( member == control::ControlMemberState::ACTIVE, Error::<T>::AuthorizationError );
 
 			// ensure that start and expiry are in bounds
 			let current_block = <system::Module<T>>::block_number();
@@ -202,9 +239,9 @@ decl_module! {
 
 			//
 
-			let proposal_type = 0;
+			let proposal_type = ProposalType::GENERAL;
 			let proposal_state = ProposalState::ACTIVE;
-			let voting_type = 0;
+			let voting_type = VotingType::SIMPLE;
 			let nonce = Nonce::get();
 
 			// generate unique id
@@ -237,11 +274,11 @@ decl_module! {
 
 			// check add
 			let proposals_count = Self::proposals_count();
-			let updated_proposals_count = proposals_count.checked_add(1).ok_or("Overflow adding a new proposal to total proposals")?;
+			let updated_proposals_count = proposals_count.checked_add(1).ok_or( Error::<T>::OverflowError)?;
 			let proposals_by_campaign_count = Self::proposals_by_campaign_count(&context_id);
-			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or("Overflow adding a new proposal to an organisation")?;
+			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
 			let proposals_by_owner_count = Self::proposals_by_owner_count(&sender);
-			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or("Overflow adding a new proposal to an owner")?;
+			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
 
 			// insert proposals
 			Proposals::<T>::insert(proposal_id.clone(), new_proposal.clone());
@@ -289,18 +326,27 @@ decl_module! {
 
 		// TODO: membership proposal for a DAO
 
-		#[weight = 1_000_000]
-		fn propose_add(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
-			Ok(())
-		}
-
-		#[weight = 1_000_000]
-		fn propose_kick(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
-			Ok(())
-		}
-
-		#[weight = 1_000_000]
-		fn propose_ban(origin, org: T::Hash, who: T::AccountId ) -> DispatchResult {
+		#[weight = 5_000_000]
+		fn membership_proposal(
+			origin,
+			context: T::Hash,
+			member: T::Hash,
+			action: u8,
+			start: T::BlockNumber,
+			expiry: T::BlockNumber
+		) -> DispatchResult {
+			let sender = ensure_signed(origin)?;
+			// ensure active
+			// ensure member
+			// match action
+			// action
+			// deposit event
+			Self::deposit_event(
+				RawEvent::Proposal(
+					sender,
+					context
+				)
+			);
 			Ok(())
 		}
 
@@ -329,7 +375,7 @@ decl_module! {
 
 			// ensure!( flow::Module::<T>::campaign_by_id(&context_id), Error::<T>::CampaignUnknown );
 			let state = flow::Module::<T>::campaign_state(&context_id);
-			ensure!( state == 3, Error::<T>::CampaignFailed );
+			ensure!( state == flow::FlowState::SUCCESS, Error::<T>::CampaignFailed );
 			// let owner = flow::Module::<T>::campaign_owner(&context_id);
 			// ensure!( sender == owner, Error::<T>::AuthorizationError );
 
@@ -354,8 +400,8 @@ decl_module! {
 
 			//	C O N F I G
 
-			let proposal_type = 1; // treasury
-			let voting_type = 0; // votes
+			let proposal_type = ProposalType::WITHDRAWAL; // treasury
+			let voting_type = VotingType::SIMPLE; // votes
 			let nonce = Nonce::get();
 			let phrase = b"just another withdrawal";
 
@@ -465,7 +511,7 @@ decl_module! {
 				// DAO Democratic Proposal
 				// simply one member one vote yes / no,
 				// TODO: ratio definable, now > 50% majority wins
-				0 => {
+				ProposalType::GENERAL => {
 
 					let (mut yes, mut no) = Self::proposal_simple_votes(&proposal_id);
 
@@ -497,7 +543,7 @@ decl_module! {
 
 				},
 				// 50% majority over total number of campaign contributors
-				1 => {
+				ProposalType::WITHDRAWAL => {
 
 					let (mut yes, mut no) = Self::proposal_simple_votes(&proposal_id);
 
@@ -543,15 +589,17 @@ decl_module! {
 
 
 				},
+
 				// Campaign Token Weighted Proposal
 				// total token balance yes vs no
 				// TODO: ratio definable, now > 50% majority wins
-				2 => {
-				},
+				// ProposalType:: => {
+				// },
+
 				// Membership Voting
 				// simply one token one vote yes / no,
 				// TODO: ratio definable, now simple majority wins
-				3 => {
+				ProposalType::MEMBER => {
 					// approve
 					// deny
 					// kick
@@ -581,7 +629,7 @@ decl_module! {
 				RawEvent::ProposalVoted(
 					sender,
 					proposal_id.clone(),
-					proposal.proposal_type
+					vote
 				)
 			);
 			Ok(())
@@ -609,14 +657,14 @@ decl_module! {
 				// e. conviction
 
 				match &proposal.proposal_type {
-					0 => {
+					ProposalType::GENERAL => {
 						// simple vote
 						let (yes,no) = Self::proposal_simple_votes(&proposal_id);
 						if yes > no { proposal_state = ProposalState::ACCEPTED; }
 						if yes < no { proposal_state = ProposalState::REJECTED; }
 						if yes == 0 && no == 0 { proposal_state = ProposalState::EXPIRED; }
 					},
-					1 => {
+					ProposalType::WITHDRAWAL => {
 						// treasury
 						// 50% majority of eligible voters
 						let (yes,no) = Self::proposal_simple_votes(&proposal_id);
@@ -632,7 +680,7 @@ decl_module! {
 						}
 
 					},
-					2 => {
+					ProposalType::MEMBER => {
 						// membership
 						//
 					},
@@ -659,8 +707,8 @@ decl_module! {
 						Self::deposit_event(
 							RawEvent::ProposalExpired(proposal_id.clone())
 						);
-					},					_
-					=> {}
+					},
+					_ => {}
 				}
 
 			}
@@ -744,7 +792,7 @@ decl_event!(
 	{
 		Proposal(AccountId, Hash),
 		ProposalCreated(AccountId, Hash, Hash, Balance, BlockNumber),
-		ProposalVoted(AccountId, Hash, u8),
+		ProposalVoted(AccountId, Hash, bool),
 		ProposalFinalized(Hash, u8),
 		ProposalApproved(Hash),
 		ProposalRejected(Hash),

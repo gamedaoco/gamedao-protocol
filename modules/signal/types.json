@@ -1,10 +1,22 @@
+{
+
   "Proposal": {
     "proposal_id": "Hash",
-    "campaign_id": "Hash",
-    "purpose": "Vec<u8>",
-    "cid": "Vec<u8>",
-    "amount": "Balance",
+    "context_id": "Hash",
+    "proposal_type": "ProposalType",
+    "voting_type": "VotingType",
     "start": "BlockNumber",
-    "expiry": "BlockNumber",
-    "status": "u8"
-  }
+    "expiry": "BlockNumber"
+  },
+
+  "ProposalMetadata": {
+    "title": "Vec<u8>",
+    "cid": "Vec<u8>",
+    "amount": "Balance"
+  },
+
+  "ProposalState": { "_enum" : [ "INIT", "ACTIVE", "ACCEPTED", "REJECTED", "EXPIRED", "ABORTED", "FINALIZED" ]},
+  "ProposalType": { "_enum" : [ "GENERAL", "MULTIPLE", "MEMBER", "WITHDRAWAL", "SPENDING" ]},
+  "VotingType": { "_enum" : [ "SIMPLE_MAJORITY",  "TOKEN_MAJORITY",  "ABSOLUTE_MAJORITY",  "QUADRATIC",  "RANKED", " CONVICTION" ]},
+
+}
