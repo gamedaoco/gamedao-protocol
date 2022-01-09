@@ -93,7 +93,7 @@ pub mod module {
 		EXITED = 5,
 	}
 
-	#[derive(Encode, Decode, Clone, PartialEq, Default)]
+	#[derive(Encode, Decode, Clone, PartialEq, Default, Eq)]
 	#[derive(Debug)]
 	pub enum ControlFeeModel {
 		#[default]
@@ -754,8 +754,8 @@ pub mod module {
 
 					// unreserve?
 					let config = Self::body_config(hash);
-		 			if &config.fee_model == ControlFeeModel::RESERVE {
-						<balances::Module<T>>::unreserve( &account, &config.fee )?;
+		 			if config.fee_model == ControlFeeModel::RESERVE {
+						<balances::Module<T>>::unreserve( &account, config.fee );
 	 				}
 
 					// counter --
