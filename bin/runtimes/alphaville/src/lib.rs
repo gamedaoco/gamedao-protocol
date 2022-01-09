@@ -128,7 +128,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// and set impl_version to 0. If only runtime
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
-	spec_version: 37,
+	spec_version: 40,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -175,11 +175,12 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 //
 
 // parameter_types! {
-	// pub const GameDAOTreasuryModuleId: ModuleId = ModuleId(*b"dao/");
-// 	pub const StakingPoolModuleId: ModuleId = ModuleId(*b"z/sicher");
-// 	pub const flowModuleId: ModuleId = ModuleId(*b"modraise");
-// 	pub const signalModuleId: ModuleId = ModuleId(*b"modchord");
-// 	pub const SenseModuleId: ModuleId = ModuleId(*b"modsense");
+//  pub const GameDAOTreasuryModuleId: ModuleId = ModuleId(*b"dao/safe");
+// 	pub const ControlModuleId: ModuleId = ModuleId(*b"dao/ctrl");
+// 	pub const SignalModuleId: ModuleId = ModuleId(*b"dao/sgnl");
+// 	pub const FlowModuleId: ModuleId = ModuleId(*b"dao/flow");
+// 	pub const SenseModuleId: ModuleId = ModuleId(*b"zio/sens");
+// 	pub const StakingPoolModuleId: ModuleId = ModuleId(*b"zio/stke");
 // }
 
 // pub fn get_all_module_accounts() -> Vec<AccountId> {
@@ -1312,17 +1313,16 @@ construct_runtime!(
 		//
 		//
 
-		//
 		ZeroSense: module_sense::{Module, Call, Storage, Event<T>},
 		// ZeroNFT: zero_nft::{Module, Call, Storage, Event<T>},
 		// ZeroCurrencies: module_currencies::{Module, Call, Storage, Event<T>},
 		// ZeroAirdrop: module_airdrop::{Module, Call, Storage, Event<T>},
 
-		//
-		GameDaoControl: module_control::{Module, Call, Storage, Event<T>},
-		GameDaoSignal: module_signal::{Module, Call, Storage, Event<T>},
-		GameDaoFlow: module_flow::{Module, Call, Storage, Event<T>},
-		GameDaoTangram: module_tangram::{Module, Call, Storage, Event<T>},
+		GameDAOControl: module_control::{Module, Call, Storage, Event<T>},
+		GameDAOGovernance: module_signal::{Module, Call, Storage, Event<T>},
+		GameDAOCrowdfunding: module_flow::{Module, Call, Storage, Event<T>},
+		GameDAOTangram: module_tangram::{Module, Call, Storage, Event<T>},
+//		GameDAOLootDrop: module_loot::{Module, Call, Storage, Event<T>},
 
 	}
 );
