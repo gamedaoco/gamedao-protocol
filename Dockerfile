@@ -24,7 +24,7 @@ FROM baseimage as builder
 ARG PROFILE=release
 
 RUN	export PATH="$PATH:$HOME/.cargo/bin" && \
-	cargo build "--$PROFILE"
+	cargo +nightly build "--$PROFILE"
 
 # ===== STAGE 3 ======
 
