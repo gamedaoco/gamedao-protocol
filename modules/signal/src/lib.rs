@@ -128,7 +128,7 @@ const MAX_PROPOSAL_DURATION: u32 = 864000; // 60 * 60 * 24 * 30 / 3
 //
 
 decl_storage! {
-	trait Store for Module<T: Config> as signal37 {
+	trait Store for Module<T: Config> as Signal40 {
 
 		/// Global status
 		Proposals get(fn proposals): map hasher(blake2_128_concat) T::Hash => Proposal<T::Hash, T::BlockNumber, ProposalType, VotingType>;
@@ -668,17 +668,21 @@ decl_module! {
 						// treasury
 						// 50% majority of eligible voters
 						let (yes,no) = Self::proposal_simple_votes(&proposal_id);
-						// let context = proposal.context_id.clone();
-						// let contributors = flow::Module::<T>::campaign_contributors_count(context);
-						// let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError);
-						// if yes > threshold {
-						if yes > no {
-							proposal_state = ProposalState::ACCEPTED;
-							Self::unlock_balance( proposal.proposal_id, yes );
-						} else {
-							proposal_state = ProposalState::REJECTED;
+						let context = proposal.context_id.clone();
+						let contributors = flow::Module::<T>::campaign_contributors_count(context);
+						// TODO: dynamic threshold
+						let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError);
+						match threshold {
+							Ok(t) => {
+								if yes > t {
+									proposal_state = ProposalState::ACCEPTED;
+									Self::unlock_balance( proposal.proposal_id, yes );
+								} else {
+									proposal_state = ProposalState::REJECTED;
+								}
+							},
+							Err(err) => {  }
 						}
-
 					},
 					ProposalType::MEMBER => {
 						// membership
