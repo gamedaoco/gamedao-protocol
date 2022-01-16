@@ -128,7 +128,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	// and set impl_version to 0. If only runtime
 	// implementation changes and behavior does not, then leave spec_version as
 	// is and increment impl_version.
-	spec_version: 40,
+	spec_version: 44,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -1318,11 +1318,11 @@ construct_runtime!(
 		// ZeroCurrencies: module_currencies::{Module, Call, Storage, Event<T>},
 		// ZeroAirdrop: module_airdrop::{Module, Call, Storage, Event<T>},
 
-		GameDAOControl: module_control::{Module, Call, Storage, Event<T>},
-		GameDAOGovernance: module_signal::{Module, Call, Storage, Event<T>},
-		GameDAOCrowdfunding: module_flow::{Module, Call, Storage, Event<T>},
-		GameDAOTangram: module_tangram::{Module, Call, Storage, Event<T>},
-//		GameDAOLootDrop: module_loot::{Module, Call, Storage, Event<T>},
+		GameDaoControl: module_control::{Module, Call, Storage, Event<T>},
+		GameDaoGovernance: module_signal::{Module, Call, Storage, Event<T>},
+		GameDaoCrowdfunding: module_flow::{Module, Call, Storage, Event<T>},
+		GameDaoTangram: module_tangram::{Module, Call, Storage, Event<T>},
+//		GameDaoLootDrop: module_loot::{Module, Call, Storage, Event<T>},
 
 	}
 );

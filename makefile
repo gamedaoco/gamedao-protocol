@@ -10,7 +10,7 @@ test-mod:
 # release
 
 build:
-	cargo build --release
+	cargo +nightly build --release
 run:
 	./target/release/subzero --tmp --name local-node
 purge:
@@ -62,6 +62,7 @@ docker-run-local:
 	playzero/subzero:local \
 	/usr/local/bin/subzero \
 	--dev \
+	--tmp \
 	--name hello-joy \
 	--ws-external \
 	--rpc-external \
