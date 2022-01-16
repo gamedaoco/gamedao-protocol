@@ -239,7 +239,7 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtoc
 }
 
 decl_storage! {
-	trait Store for Module<T: Config> as Flow40 {
+	trait Store for Module<T: Config> as Flow44 {
 
 		// TODO:
 		//	actually most of the aggregated data only consumes cpu cycles
