@@ -32,7 +32,8 @@ std = [
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false }
-serde = { version = "1.0.103", optional = true, features = ["derive"] }
+# serde = { version = "1.0.103", optional = true, features = ["derive"] }
+serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
 
 sp-core = { version = "3.0.0", default-features = false, path = "../../primitives/core" }
 sp-runtime = { version = "3.0.0", default-features = false, path = "../../primitives/runtime" }

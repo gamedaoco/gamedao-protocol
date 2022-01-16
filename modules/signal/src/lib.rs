@@ -44,42 +44,47 @@ use sp_runtime::traits::{ Hash, Zero };
 use serde::{ Deserialize, Serialize };
 
 use primitives::{ Balance, BlockNumber, Index, Moment};
+use scale_info::TypeInfo;
 
 //
 //
 //
 
-#[derive(Encode, Decode, Clone, PartialEq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[repr(u8)]
 pub enum ProposalState {
 	#[default]
-	INIT = 0,		// waiting for start block
-	ACTIVE = 1,		// voting is active
-	ACCEPTED = 2,	// voters did approve
-	REJECTED = 3,	// voters did not approve
-	EXPIRED = 4,	// ended without votes
-	ABORTED = 5,	// sudo abort
-	FINALIZED = 6,	// accepted withdrawal proposal is processed
+	Init = 0,		// waiting for start block
+	Active = 1,		// voting is active
+	Accepted = 2,	// voters did approve
+	Rejected = 3,	// voters did not approve
+	Expired = 4,	// ended without votes
+	Aborted = 5,	// sudo abort
+	Finalized = 6,	// accepted withdrawal proposal is processed
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord, TypeInfo)]
+#[repr(u8)]
 pub enum ProposalType {
 	#[default]
-	GENERAL = 0,
-	MULTIPLE = 1,
-	MEMBER = 2,
-	WITHDRAWAL = 3,
-	SPENDING = 4
+	General = 0,
+	Multiple = 1,
+	Member = 2,
+	Withdrawal = 3,
+	Spending = 4
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord, TypeInfo)]
+#[repr(u8)]
 pub enum VotingType {
 	#[default]
-	SIMPLE = 0,   // votes across participating votes
-	TOKEN = 1,    // weight across participating votes
-	ABSOLUTE = 2, // votes vs all eligible voters
-	QUADRATIC = 3,
-	RANKED = 4,
-	CONVICTION = 5
+	Simple = 0,   // votes across participating votes
+	Token = 1,    // weight across participating votes
+	Absolute = 2, // votes vs all eligible voters
+	Quadratic = 3,
+	Ranked = 4,
+	Conviction = 5
 }
 
 type TitleText = Vec<u8>;
@@ -135,7 +140,7 @@ decl_storage! {
 		Metadata get(fn metadata): map hasher(blake2_128_concat) T::Hash => ProposalMetadata<T::Balance>;
 		Owners get(fn owners): map hasher(blake2_128_concat) T::Hash => Option<T::AccountId>;
 		/// Get the state of a proposal
-       	ProposalStates get(fn proposal_states): map hasher(blake2_128_concat) T::Hash => ProposalState = ProposalState::INIT;
+       	ProposalStates get(fn proposal_states): map hasher(blake2_128_concat) T::Hash => ProposalState = ProposalState::Init;
 
 		/// Maximum time limit for a proposal
 		ProposalTimeLimit get(fn proposal_time_limit) config(): T::BlockNumber = T::BlockNumber::from(MAX_PROPOSAL_DURATION);
@@ -219,11 +224,11 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			// active/existing dao?
-			ensure!( <control::Module<T>>::body_state(&context_id) == control::ControlState::ACTIVE, Error::<T>::DAOInactive );
+			ensure!( <control::Module<T>>::body_state(&context_id) == control::ControlState::Active, Error::<T>::DAOInactive );
 
 			// member of body?
 			let member = <control::Module<T>>::body_member_state((&context_id,&sender));
-			ensure!( member == control::ControlMemberState::ACTIVE, Error::<T>::AuthorizationError );
+			ensure!( member == control::ControlMemberState::Active, Error::<T>::AuthorizationError );
 
 			// ensure that start and expiry are in bounds
 			let current_block = <system::Module<T>>::block_number();
@@ -239,9 +244,9 @@ decl_module! {
 
 			//
 
-			let proposal_type = ProposalType::GENERAL;
-			let proposal_state = ProposalState::ACTIVE;
-			let voting_type = VotingType::SIMPLE;
+			let proposal_type = ProposalType::General;
+			let proposal_state = ProposalState::Active;
+			let voting_type = VotingType::Simple;
 			let nonce = Nonce::get();
 
 			// generate unique id
@@ -375,7 +380,7 @@ decl_module! {
 
 			// ensure!( flow::Module::<T>::campaign_by_id(&context_id), Error::<T>::CampaignUnknown );
 			let state = flow::Module::<T>::campaign_state(&context_id);
-			ensure!( state == flow::FlowState::SUCCESS, Error::<T>::CampaignFailed );
+			ensure!( state == flow::FlowState::Success, Error::<T>::CampaignFailed );
 			// let owner = flow::Module::<T>::campaign_owner(&context_id);
 			// ensure!( sender == owner, Error::<T>::AuthorizationError );
 
@@ -400,8 +405,8 @@ decl_module! {
 
 			//	C O N F I G
 
-			let proposal_type = ProposalType::WITHDRAWAL; // treasury
-			let voting_type = VotingType::SIMPLE; // votes
+			let proposal_type = ProposalType::Withdrawal; // treasury
+			let voting_type = VotingType::Simple; // votes
 			let nonce = Nonce::get();
 			let phrase = b"just another withdrawal";
 
@@ -437,7 +442,7 @@ decl_module! {
 			Proposals::<T>::insert(&proposal_id, proposal.clone());
 			Metadata::<T>::insert(&proposal_id, metadata.clone());
 			Owners::<T>::insert(&proposal_id, sender.clone());
-			ProposalStates::<T>::insert(proposal_id.clone(), ProposalState::ACTIVE);
+			ProposalStates::<T>::insert(proposal_id.clone(), ProposalState::Active);
 
 			ProposalsByBlock::<T>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
 			ProposalsArray::<T>::insert(&proposals_count, proposal_id.clone());
@@ -490,7 +495,7 @@ decl_module! {
 
 			// Ensure the proposal has not ended
 			let proposal_state = Self::proposal_states(&proposal_id);
-			ensure!(proposal_state == ProposalState::ACTIVE, Error::<T>::ProposalEnded);
+			ensure!(proposal_state == ProposalState::Active, Error::<T>::ProposalEnded);
 
 			// Ensure the contributor did not vote before
 			ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), Error::<T>::AlreadyVoted);
@@ -511,7 +516,7 @@ decl_module! {
 				// DAO Democratic Proposal
 				// simply one member one vote yes / no,
 				// TODO: ratio definable, now > 50% majority wins
-				ProposalType::GENERAL => {
+				ProposalType::General => {
 
 					let (mut yes, mut no) = Self::proposal_simple_votes(&proposal_id);
 
@@ -543,7 +548,7 @@ decl_module! {
 
 				},
 				// 50% majority over total number of campaign contributors
-				ProposalType::WITHDRAWAL => {
+				ProposalType::Withdrawal => {
 
 					let (mut yes, mut no) = Self::proposal_simple_votes(&proposal_id);
 
@@ -599,7 +604,7 @@ decl_module! {
 				// Membership Voting
 				// simply one token one vote yes / no,
 				// TODO: ratio definable, now simple majority wins
-				ProposalType::MEMBER => {
+				ProposalType::Member => {
 					// approve
 					// deny
 					// kick
@@ -645,7 +650,7 @@ decl_module! {
 			for proposal_id in &proposal_hashes {
 
 				let mut proposal_state = Self::proposal_states(&proposal_id);
-				if proposal_state != ProposalState::ACTIVE { continue };
+				if proposal_state != ProposalState::Active { continue };
 
 				let proposal = Self::proposals(&proposal_id);
 
@@ -657,14 +662,14 @@ decl_module! {
 				// e. conviction
 
 				match &proposal.proposal_type {
-					ProposalType::GENERAL => {
+					ProposalType::General => {
 						// simple vote
 						let (yes,no) = Self::proposal_simple_votes(&proposal_id);
-						if yes > no { proposal_state = ProposalState::ACCEPTED; }
-						if yes < no { proposal_state = ProposalState::REJECTED; }
-						if yes == 0 && no == 0 { proposal_state = ProposalState::EXPIRED; }
+						if yes > no { proposal_state = ProposalState::Accepted; }
+						if yes < no { proposal_state = ProposalState::Rejected; }
+						if yes == 0 && no == 0 { proposal_state = ProposalState::Expired; }
 					},
-					ProposalType::WITHDRAWAL => {
+					ProposalType::Withdrawal => {
 						// treasury
 						// 50% majority of eligible voters
 						let (yes,no) = Self::proposal_simple_votes(&proposal_id);
@@ -675,39 +680,39 @@ decl_module! {
 						match threshold {
 							Ok(t) => {
 								if yes > t {
-									proposal_state = ProposalState::ACCEPTED;
+									proposal_state = ProposalState::Accepted;
 									Self::unlock_balance( proposal.proposal_id, yes );
 								} else {
-									proposal_state = ProposalState::REJECTED;
+									proposal_state = ProposalState::Rejected;
 								}
 							},
 							Err(err) => {  }
 						}
 					},
-					ProposalType::MEMBER => {
+					ProposalType::Member => {
 						// membership
 						//
 					},
 					_ => {
 						// no result - fail
-						proposal_state = ProposalState::EXPIRED;
+						proposal_state = ProposalState::Expired;
 					}
 				}
 
 				<ProposalStates<T>>::insert(&proposal_id, proposal_state.clone());
 
 				match proposal_state {
-					ProposalState::ACCEPTED => {
+					ProposalState::Accepted => {
 						Self::deposit_event(
 							RawEvent::ProposalApproved(proposal_id.clone())
 						);
 					},
-					ProposalState::REJECTED => {
+					ProposalState::Rejected => {
 						Self::deposit_event(
 							RawEvent::ProposalRejected(proposal_id.clone())
 						);
 					},
-					ProposalState::EXPIRED => {
+					ProposalState::Expired => {
 						Self::deposit_event(
 							RawEvent::ProposalExpired(proposal_id.clone())
 						);
@@ -766,7 +771,7 @@ impl<T:Config> Module<T> {
 		<CampaignBalanceUsed<T>>::insert(proposal.context_id, new_used_balance);
 
 		// proposal completed
-		let proposal_state = ProposalState::FINALIZED;
+		let proposal_state = ProposalState::Finalized;
 		<ProposalStates<T>>::insert(proposal_id.clone(), proposal_state);
 
 		<Proposals<T>>::insert(proposal_id.clone(), proposal.clone());

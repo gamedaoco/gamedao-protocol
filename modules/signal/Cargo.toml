@@ -17,8 +17,12 @@ description = "signal"
 categories = ["pallet"]
 
 [dependencies]
-serde = { version = "1.0.103", optional = true }
+# serde = { version = "1.0.103", optional = true }
+serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
+
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false }
+num_enum = { version = "0.5.1", default-features = false }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 
 frame-support = { version = "3.0.0", default-features = false, path = "../../frame/support" }
 frame-system = { version = "3.0.0", default-features = false, path = "../../frame/system" }
@@ -37,8 +41,10 @@ flow = { package = "module-flow", path = "../flow", default-features = false }
 [features]
 default = ['std']
 std = [
-	'serde',
-	'codec/std',
+	"serde/std",
+	"codec/std",
+	"num_enum/std",
+
 	'frame-support/std',
 	'frame-system/std',
 	'balances/std',

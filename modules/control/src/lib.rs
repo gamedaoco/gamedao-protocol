@@ -64,51 +64,60 @@ pub mod module {
 		NextRealmIndex
 	};
 
+	use scale_info::TypeInfo;
+	#[cfg(feature = "std")]
+	use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 	// use tangram::Call::create_class;
 
-	#[derive(Encode, Decode, PartialEq, Clone, Eq, Default)]
+	#[derive(Encode, Decode, PartialEq, Clone, Eq, Default, PartialOrd, Ord, TypeInfo)]
+	#[repr(u8)]
 	#[derive(Debug)]
 	pub enum ControlType {
-		#[default]
-		INDIVIDUAL = 0, // individual
-		COMPANY = 1,    // offchain body
-		DAO = 2,        // dao
-		HYBRID = 3,
+	#[default]
+		Individual = 0, // individual
+		Company = 1,    // offchain body
+		Dao = 2,        // dao
+		Hybrid = 3,
 	}
 
-	#[derive(Encode, Decode, PartialEq, Clone, Eq)]
+	#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
+	#[repr(u8)]
 	pub enum ControlState {
-		INACTIVE = 0,
-		ACTIVE = 1,
-		LOCKED = 2,
+		Inactive = 0,
+		Active = 1,
+		Locked = 2,
 	}
 
-	#[derive(Encode, Decode, PartialEq, Clone, Eq)]
+	#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
+	#[repr(u8)]
 	pub enum ControlMemberState {
-		INACTIVE = 0, // eg inactive after threshold period
-		ACTIVE = 1,   // active
-		PENDING = 2,  // application voting pending
-		KICKED = 3,
-		BANNED = 4,
-		EXITED = 5,
+		Inactive = 0, // eg inactive after threshold period
+		Active = 1,   // active
+		Pending = 2,  // application voting pending
+		Kicked = 3,
+		Banned = 4,
+		Exited = 5,
 	}
 
-	#[derive(Encode, Decode, Clone, PartialEq, Default, Eq)]
+	#[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord, TypeInfo)]
+	#[repr(u8)]
 	#[derive(Debug)]
 	pub enum ControlFeeModel {
-		#[default]
-		NOFEES = 0,		// feeless
-		RESERVE = 1,	// amount is reserved in user account
-		TRANSFER = 2,	// amount is transfered to DAO treasury
+	#[default]
+		NoFees = 0,		// feeless
+		Reserve = 1,	// amount is reserved in user account
+		Transfer = 2,	// amount is transfered to DAO treasury
 	}
 
-	#[derive(Encode, Decode, Clone, PartialEq, Default)]
+	#[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord, TypeInfo)]
+	#[repr(u8)]
 	#[derive(Debug)]
 	pub enum ControlAccessModel {
-		#[default]
-		OPEN = 0,		// anybody can join
-		VOTING = 1,		// application creates membership voting
-		CONTROLLER = 2,	// controller invites
+	#[default]
+		Open = 0,		// anybody can join
+		Voting = 1,		// application creates membership voting
+		Controller = 2,	// controller invites
 	}
 
 	//
@@ -193,10 +202,10 @@ pub mod module {
 			BodyConfig get(fn body_config): map hasher(blake2_128_concat) T::Hash => BConfig<T::Balance, ControlFeeModel, ControlAccessModel>;
 
 			/// Global DAO State
-			BodyState get(fn body_state): map hasher(blake2_128_concat) T::Hash => ControlState = ControlState::INACTIVE;
+			BodyState get(fn body_state): map hasher(blake2_128_concat) T::Hash => ControlState = ControlState::Inactive;
 
 			/// Access model
-			BodyAccess get(fn body_access): map hasher(blake2_128_concat) T::Hash => ControlAccessModel = ControlAccessModel::OPEN;
+			BodyAccess get(fn body_access): map hasher(blake2_128_concat) T::Hash => ControlAccessModel = ControlAccessModel::Open;
 
 			/// Members of a DAO
 			BodyMembers get(fn body_members): map hasher(blake2_128_concat) T::Hash => Vec<T::AccountId>;
@@ -204,7 +213,7 @@ pub mod module {
 			BodyMemberCount get(fn body_member_count): map hasher(blake2_128_concat) T::Hash => u64 = 0;
 
 			/// Member state for a DAO
-			BodyMemberState get(fn body_member_state): map hasher(blake2_128_concat) (T::Hash, T::AccountId) => ControlMemberState = ControlMemberState::INACTIVE;
+			BodyMemberState get(fn body_member_state): map hasher(blake2_128_concat) (T::Hash, T::AccountId) => ControlMemberState = ControlMemberState::Inactive;
 			/// Memberships by AccountId
 			Memberships get(fn memberships): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
 
@@ -269,7 +278,7 @@ pub mod module {
 				hash: T::Hash,
 			) -> DispatchResult {
 				ensure_root(origin)?;
-				<BodyState<T>>::insert( hash.clone(), ControlState::ACTIVE );
+				<BodyState<T>>::insert( hash.clone(), ControlState::Active );
 				let now = <system::Module<T>>::block_number();
 				Self::deposit_event( RawEvent::BodyDisabled( hash ) );
 				Ok(())
@@ -285,7 +294,7 @@ pub mod module {
 				hash: T::Hash,
 			) -> DispatchResult {
 				ensure_root(origin)?;
-				<BodyState<T>>::insert( hash.clone(), ControlState::INACTIVE );
+				<BodyState<T>>::insert( hash.clone(), ControlState::Inactive );
 				let now = <system::Module<T>>::block_number();
 				Self::deposit_event( RawEvent::BodyDisabled( hash ) );
 				Ok(())
@@ -331,15 +340,23 @@ pub mod module {
 
 				// set up fee
 				let creation_fee = T::CreationFee::get();
-				// creator can pay fees
-				ensure!(<balances::Module<T>>::free_balance(&sender) >= creation_fee.clone(), Error::<T>::BalanceTooLow );
-				// controller and treasury should not be equal
+
+				// TODO: fix balance check
+				// it seems like the balances coming from polkadotjs app work
+				// the ones coming from gamedao beta dont
+				// controller and treasury need enough balance
+				let free_balance = balances::Module::<T>::free_balance(&sender);
+				// ensure!( free_balance > creation_fee, Error::<T>::BalanceTooLow );
+				let free_balance_treasury = balances::Module::<T>::free_balance(&treasury);
+				// ensure!( free_balance_treasury > creation_fee, Error::<T>::BalanceTooLow );
+
+				// controller and treasury must not be equal
 				ensure!(&controller != &treasury, Error::<T>::DuplicateAddress );
 
 				let now   = <system::Module<T>>::block_number();
 				let hash = <T as Config>::Randomness::random(&name);
 				let index = Nonce::get();
-				let state = ControlState::ACTIVE; // live
+				let state = ControlState::Active; // live
 				// TODO: create enums for bonding strategies
 				let strategy = 0;
 
@@ -358,8 +375,8 @@ pub mod module {
 				// membership fees
 				let mut _fee = T::Balance::zero();
 				match &fee_model {
-					ControlFeeModel::RESERVE => { _fee = fee },
-					ControlFeeModel::TRANSFER => { _fee = fee },
+					ControlFeeModel::Reserve => { _fee = fee },
+					ControlFeeModel::Transfer => { _fee = fee },
 					_ => { }
 				};
 
@@ -631,8 +648,8 @@ pub mod module {
 			let config = Self::body_config(hash);
 			let current_state = Self::body_member_state(( &hash, &account ));
 			let new_state = match config.access {
-				ControlAccessModel::OPEN => member_state, // when open use desired state
-				_ => ControlMemberState::PENDING, // else pending
+				ControlAccessModel::Open => member_state, // when open use desired state
+				_ => ControlMemberState::Pending, // else pending
 			};
 
 			Ok(())
@@ -658,8 +675,8 @@ pub mod module {
 
 			let config = Self::body_config(hash);
 			let state = match config.access {
-				ControlAccessModel::OPEN => ControlMemberState::ACTIVE, // active
-				_ => ControlMemberState::PENDING, // pending
+				ControlAccessModel::Open => ControlMemberState::Active, // active
+				_ => ControlMemberState::Pending, // pending
  			};
 
  			// 4. apply fees
@@ -670,14 +687,14 @@ pub mod module {
  			match &config.fee_model {
 
  				// no fees
- 				ControlFeeModel::NOFEES => {
+ 				ControlFeeModel::NoFees => {
  				},
  				// reserve
- 				ControlFeeModel::RESERVE => {
+ 				ControlFeeModel::Reserve => {
 					<balances::Module<T>>::reserve(&account, config.fee)?;
  				},
  				// transfer to treasury
- 				ControlFeeModel::TRANSFER => {
+ 				ControlFeeModel::Transfer => {
 					let treasury = BodyTreasury::<T>::get(hash);
 					let transfer = <balances::Module<T> as Currency<_>>::transfer(
 						&account,
@@ -754,7 +771,7 @@ pub mod module {
 
 					// unreserve?
 					let config = Self::body_config(hash);
-		 			if config.fee_model == ControlFeeModel::RESERVE {
+		 			if config.fee_model == ControlFeeModel::Reserve {
 						<balances::Module<T>>::unreserve( &account, config.fee );
 	 				}
 
@@ -763,7 +780,7 @@ pub mod module {
 					BodyMemberCount::<T>::insert( &hash, count as u64 );
 
 					// member state
-					BodyMemberState::<T>::insert(( hash.clone(), account.clone() ), ControlMemberState::INACTIVE);
+					BodyMemberState::<T>::insert(( hash.clone(), account.clone() ), ControlMemberState::Inactive);
 
 					let now = <system::Module<T>>::block_number();
 					Self::deposit_event(

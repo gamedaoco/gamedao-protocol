@@ -91,6 +91,8 @@ use codec::{ Encode, Decode };
 use timestamp;
 use primitives::{ Balance };
 
+use scale_info::TypeInfo;
+
 // TODO: tests
 #[cfg(test)]
 mod tests;
@@ -117,36 +119,39 @@ const MAX_CAMPAIGN_DURATION: u32 = 777600;
 //	E N U M S
 //
 
-#[derive(Encode, Decode, Clone, PartialEq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord, TypeInfo)]
 #[derive(Debug)]
+#[repr(u8)]
 pub enum FlowProtocol {
-	GRANT = 0,
+	Grant = 0,
 	#[default]
-	RAISE = 1,
-	LEND = 2,
-	LOAN = 3,
-	SHARE = 4,
-	POOL = 5
+	Raise = 1,
+	Lend = 2,
+	Loan = 3,
+	Share = 4,
+	Pool = 5
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord, TypeInfo)]
 #[derive(Debug)]
+#[repr(u8)]
 pub enum FlowGovernance {
 	#[default]
-	NO = 0,  // 100% unreserved upon completion
-	YES = 1, // withdrawal votings
+	No = 0,  // 100% unreserved upon completion
+	Yes = 1, // withdrawal votings
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, PartialOrd)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, PartialOrd, Ord, TypeInfo)]
 #[derive(Debug)]
+#[repr(u8)]
 pub enum FlowState {
 	#[default]
-	INIT = 0,
-	ACTIVE = 1,
-	PAUSED = 2,
-	SUCCESS = 3,
-	FAILED = 4,
-	LOCKED = 5
+	Init = 0,
+	Active = 1,
+	Paused = 2,
+	Success = 3,
+	Failed = 4,
+	Locked = 5
 }
 
 //
@@ -264,7 +269,7 @@ decl_storage! {
 
 		/// Campaign state
 		/// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
-		CampaignState get(fn campaign_state): map hasher(blake2_128_concat) T::Hash => FlowState = FlowState::INIT;
+		CampaignState get(fn campaign_state): map hasher(blake2_128_concat) T::Hash => FlowState = FlowState::Init;
 		/// Get Campaigns for a certain state
 		CampaignsByState get(fn campaigns_by_state): map hasher(blake2_128_concat) FlowState => Vec<T::Hash>;
 
@@ -371,7 +376,7 @@ decl_module! {
 			// not finished or locked?
 			let current_state = Self::campaign_state(campaign_id);
 			ensure!(
-				current_state < FlowState::SUCCESS,
+				current_state < FlowState::Success,
 				Error::<T>::CampaignExpired
 			);
 
@@ -519,7 +524,7 @@ decl_module! {
 			// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
 			Self::set_state(
 				id.clone(),
-				FlowState::ACTIVE
+				FlowState::Active
 			);
 
 			// deposit the event
@@ -557,7 +562,7 @@ decl_module! {
 
 			// contribution only possible when state active..
 			let state = Self::campaign_state(campaign_id);
-			ensure!( state == FlowState::ACTIVE, Error::<T>::NoContributionsAllowed);
+			ensure!( state == FlowState::Active, Error::<T>::NoContributionsAllowed);
 
 			// submit
 			Self::create_contribution(sender.clone(), campaign_id.clone(), contribution.clone())?;
@@ -595,7 +600,7 @@ decl_module! {
 
 					// update campaign state to success
 					// campaign.status = 3;
-					Self::set_state(campaign.id.clone(),FlowState::SUCCESS);
+					Self::set_state(campaign.id.clone(),FlowState::Success);
 					<Campaigns<T>>::insert(campaign_id.clone(), campaign);
 
 					// get campaign owner
@@ -699,7 +704,7 @@ decl_module! {
 
 					// update campaign state to failed
 					// campaign.status = 4;
-					Self::set_state(campaign.id,FlowState::FAILED);
+					Self::set_state(campaign.id,FlowState::Failed);
 					<Campaigns<T>>::insert(campaign_id.clone(), campaign);
 
 					// revert all contributions
