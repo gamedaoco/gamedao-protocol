@@ -66,6 +66,9 @@ fn sense_create_entity() {
 
 }
 
+// TODO: 1. Test: StorageMap value updated after calling extrinsic (SenseXP etc.)
+// 2. Tese: event is generated (EntityMutateXP etc.)
+// 3. Add comments
 macro_rules! sense_mod_tests {
     ($($name:ident: $storage:tt, $extrinsic:path,)*) => {
     $(
