@@ -160,7 +160,7 @@ pub mod pallet {
 			<SenseREP<T>>::insert( account.clone(), rep );
 			<SenseTrust<T>>::insert( account.clone(), trust );
 			<Sense<T>>::insert( account.clone(), entity );
-
+			// TODO: safe increment, checked_add
 			<Nonce<T>>::mutate(|n| *n += 1);
 
 			Self::deposit_event(
