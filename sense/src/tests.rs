@@ -55,6 +55,8 @@ fn sense_create_entity() {
 			}]
 		);
 
+		// TODO: Check Nonce value increased in storage as a result of successful extrinsic call.
+		
 		assert_noop!(ZeroSense::create_entity(Origin::signed(1), 1, vec![1u8]), BadOrigin);
 
 		assert_noop!(ZeroSense::create_entity(
