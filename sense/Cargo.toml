@@ -5,7 +5,7 @@ authors = ['2075']
 edition = '2018'
 license = 'GPL-3.0-or-later'
 description = 'Pallet Sense aggregates datapoints to reflect user experience and behaviour'
-repository = 'https://github.com/gamedaoco/gamedao-acala'
+repository = 'https://github.com/gamedaoco/gamedao-protocol'
 
 [package.metadata.substrate]
 categories = [
