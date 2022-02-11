@@ -211,7 +211,7 @@ pub mod pallet {
 
 			let now = <frame_system::Pallet<T>>::block_number();
 			let v = u64::from(value);
-			let current = Self::xp(&account);
+			let current = Self::rep(&account);
 
 			let updated = EntityProperty {
 				value: current.value.checked_add(v).ok_or(Error::<T>::GuruMeditation)?,
@@ -235,7 +235,7 @@ pub mod pallet {
 
 			let now = <frame_system::Pallet<T>>::block_number();
 			let v = u64::from(value);
-			let current = Self::xp(&account);
+			let current = Self::trust(&account);
 
 			let updated = EntityProperty {
 				value: current.value.checked_add(v).ok_or(Error::<T>::GuruMeditation)?,
