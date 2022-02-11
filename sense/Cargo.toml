@@ -32,13 +32,13 @@ sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-
 default = ['std']
 runtime-benchmarks = ['frame-benchmarking']
 std = [
-    'codec/std',
+	'codec/std',
 	'serde/std',
 	'scale-info/std',
 
-    'frame-support/std',
-    'frame-system/std',
-    'frame-benchmarking/std',
+	'frame-support/std',
+	'frame-system/std',
+	'frame-benchmarking/std',
 
 	'sp-core/std',
 	'sp-std/std',
