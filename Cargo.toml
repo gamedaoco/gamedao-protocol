@@ -1,6 +1,6 @@
 # [patch.crates-io]
 # librocksdb-sys = { git = "https://github.com/hdevalence/rust-rocksdb", branch = "master" }
-
+# resolver = "2"
 
 [workspace]
 members = [
