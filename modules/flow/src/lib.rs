@@ -80,6 +80,18 @@ use frame_support::{
 use frame_system::{ self as system, ensure_signed, ensure_root};
 
 use sp_core::{ Hasher, H256 };
+
+use sp_core::U256;
+use sp_runtime::{
+	traits::{
+		CheckedMul,
+		One,
+		Saturating,
+		UniqueSaturatedInto
+	},
+	FixedPointNumber,
+};
+
 use sp_runtime::{
 	traits::{ Hash, TrailingZeroInput },
 	ModuleId,
@@ -111,9 +123,6 @@ mod tests;
 // TODO: take constants from runtime
 const MODULE_ID: ModuleId = ModuleId(*b"modraise");
 const MODULE_VERSION: &str = "1.0";
-const MAX_CONTRIBUTIONS_PER_BLOCK: usize = 5;
-const MAX_CONTRIBUTIONS_PER_ADDRESS: usize = 3;
-const MAX_CAMPAIGN_DURATION: u32 = 777600;
 
 //
 //	E N U M S
@@ -205,10 +214,11 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtoc
 	// a campagin when dao wants to remove controller for reasons
 	owner: AccountId,
 
-	// TODO: THIS NEEDS TO BE GAMEDAO SUPERVISION
+	// TODO: THIS NEEDS TO BE GAMEDAO COUNCIL
 	/// admin account of the campaign (operator)
 	admin: AccountId,
 
+	// TODO: assets => GAME
 	/// campaign owners deposit
 	deposit: Balance,
 
@@ -227,19 +237,23 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtoc
 	/// content storage
 	cid: Vec<u8>,
 
-
+	// TODO: prepare for launchpad functionality
+	// token cap
+	// token_cap: u64,
+	// token_price
+	// token_price: u64,
 	// /// token symbol
 	token_symbol: Vec<u8>,
 	// /// token name
 	token_name: Vec<u8>,
 
-	created: Timestamp, //Vec<u8>,
-
+	/// creation timestamp
+	created: Timestamp,
 
 }
 
 decl_storage! {
-	trait Store for Module<T: Config> as Flow44 {
+	trait Store for Module<T: Config> as Flow45 {
 
 		// TODO:
 		//	actually most of the aggregated data only consumes cpu cycles
@@ -282,9 +296,9 @@ decl_storage! {
 		CampaignsIndex: map hasher(blake2_128_concat) T::Hash => u64;
 
 		// caller owned campaigns -> my campaigns
-		CampaignsOwnedArray get(fn campaigns_owned_index): map hasher(blake2_128_concat) (T::AccountId, u64) => T::Hash;
-		CampaignsOwnedCount get(fn campaigns_owned_count): map hasher(blake2_128_concat) T::AccountId => u64;
-		CampaignsOwnedIndex: map hasher(blake2_128_concat) (T::AccountId, T::Hash) => u64;
+		CampaignsOwnedArray get(fn campaigns_owned_index): map hasher(blake2_128_concat) T::Hash => T::Hash;
+		CampaignsOwnedCount get(fn campaigns_owned_count): map hasher(blake2_128_concat) T::Hash => u64;
+		CampaignsOwnedIndex: map hasher(blake2_128_concat) (T::Hash, T::Hash) => u64;
 
 		/// campaigns contributed by accountid
 		CampaignsContributed get(fn campaigns_contributed): map hasher(blake2_128_concat) T::AccountId => Vec<T::Hash>;
@@ -307,8 +321,8 @@ decl_storage! {
 		CampaignContributors get(fn campaign_contributors): map hasher(blake2_128_concat) T::Hash => Vec<T::AccountId>;
 		CampaignContributorsCount get(fn campaign_contributors_count): map hasher(blake2_128_concat) T::Hash => u64;
 
-		/// Max campaign block limit
-		CampaignMaxDuration get(fn get_max_duration) config(): T::BlockNumber = T::BlockNumber::from(MAX_CAMPAIGN_DURATION);
+		// Max campaign block limit
+		// CampaignMaxDuration get(fn get_max_duration) config(): T::BlockNumber = T::BlockNumber::from(T::MaxDuration::get());
 
 		// Campaign nonce, increases per created campaign
 		Nonce: u64;
@@ -400,7 +414,6 @@ decl_module! {
 		fn create(
 			origin,
 			org: T::Hash,
-			// controller: T::AccountId, // controller <- creator <- origin
 			admin: T::AccountId, // supervision, should be dao provided!
 			name: Vec<u8>,
 			target: T::Balance,
@@ -415,88 +428,44 @@ decl_module! {
 			// token_curve_b: Vec<u8>, // custom
 		) {
 
-			// get the creator
 			let creator = ensure_signed(origin)?;
+			let controller = control::Module::<T>::body_controller(org.clone());
+			ensure!( creator == controller, Error::<T>::AuthorizationError );
 
-			// TODO: ensure origin is controller of org
+			// Get Treasury account for deposits and fees
+			let treasury = control::Module::<T>::body_treasury(org.clone());
+
+			let free_balance = balances::Module::<T>::free_balance(&treasury);
+			ensure!(free_balance > deposit, Error::<T>::TreasuryBalanceTooLow );
+			ensure!(deposit <= target, Error::<T>::DepositTooHigh );
 
 			// check name length boundary
-			ensure!(
-				name.len() >= T::MinLength::get(),
-				Error::<T>::NameTooShort
-			);
-			ensure!(
-				name.len() <= T::MaxLength::get(),
-				Error::<T>::NameTooLong
-			);
+			ensure!(name.len() >= T::MinLength::get(), Error::<T>::NameTooShort );
+			ensure!(name.len() <= T::MaxLength::get(), Error::<T>::NameTooLong );
 
-			// get the nonce to help generate unique id
 			let nonce = T::Nonce::get();
-
-			// blocktime
 			let now = <system::Module<T>>::block_number();
-
-			// timestamp
 			let timestamp = <timestamp::Module<T>>::get();
 
 			// ensure campaign expires after now
-			ensure!(
-				expiry > now,
-				Error::<T>::EndTooEarly
-			);
+			ensure!(expiry > now, Error::<T>::EndTooEarly );
 
-			// TODO: refactor calculate dest. block
-			// let blocktime = 5;
-			// let target_block_number =
+			let max_length = T::MaxDuration::get();
+			let max_end_block = now + max_length;
+			ensure!(expiry <= max_end_block, Error::<T>::EndTooLate );
 
-			// TODO: fix BlockNumber sa
-			// ensure!(
-			// 	expiry <= <system::Module<T>>::block_number() + Self::campaign_max_duration_limit(),
-			// 	Error::<T>::EndTooLate
-			// );
-
-			// generate the unique campaign id
-			let phrase = b"crowdfunding_campaign";
+			// generate the unique campaign id + ensure uniqueness
+			let phrase = b"crowdfunding_campaign"; // create from name?
 			let id = <T as Config>::Randomness::random(phrase);
-
-			// TODO: check for correct padding
-			// let seed = <[u8; 32]>::decode(&mut TrailingZeroInput::new(seed.as_ref()))
-			// 	.expect("input is padded with zeroes; qed");
-			// let id = seed.clone();
-
-			// ensure unique id
-			// ensure!(
-			// 	!<CampaignOwner<T>>::exists(&id),
-			// 	Error::<T>::CampaignIdExists
-			// );
-
-			// ensure deposit <= target
-			// ensure!(
-			// 	deposit <= target,
-			// 	Error::<T>::CampaignDepositTooHigh
-			// );
+			// ensure!(!<CampaignOwner<T>>::exists(&id), Error::<T>::IdExists ); // check for collision
 
 			// check contribution limit per block
-			// let contributions = Self::campaign_expire_at(expiry);
-			// ensure!(
-			// 	contributions.len() < MAX_CONTRIBUTIONS_PER_BLOCK,
-			// 	Error::<T>::ContributionsPerBlockExceeded
-			// );
+			let contributions = Self::campaigns_by_block(expiry);
+			ensure!(contributions.len() < T::MaxCampaignsPerBlock::get(), Error::<T>::ContributionsPerBlockExceeded );
 
-			// let protocol :u8 = 0;
-			// let governance: bool = false;
-
-			// create a new campaign
-			// id: Hash,
-			// name: Vec<u8>,
-			// owner: AccountId,
-			// admin: AccountId,
-			// deposit: Balance,
-			// expiry: BlockNumber,
-			// cap: Balance,
-			// protocol: u8
-			// governance: bool
-			// status: u8,
+			//
+			//
+			//
 
 			let new_campaign = Campaign {
 				id: id.clone(),
@@ -505,8 +474,8 @@ decl_module! {
 				owner: creator.clone(),
 				admin: admin.clone(),
 				deposit: deposit.clone(),
-				expiry: expiry,
-				cap: target,
+				expiry: expiry.clone(),
+				cap: target.clone(),
 				protocol: protocol.clone(),
 				governance: governance.clone(),
 				cid: cid.clone(),
@@ -554,23 +523,26 @@ decl_module! {
 			contribution: T::Balance
 		) -> DispatchResult {
 
-			let sender = ensure_signed(origin)?;
+			// check
 
-			// owners cannot contribute to their own campaign..
+			let sender = ensure_signed(origin)?;
+			ensure!( <balances::Module<T>>::free_balance(sender.clone()) >= contribution, Error::<T>::BalanceTooLow );
 			let owner = Self::campaign_owner(campaign_id) .ok_or(Error::<T>::OwnerUnknown)?;
 			ensure!( owner != sender, Error::<T>::NoContributionToOwnCampaign );
 
-			// contribution only possible when state active..
+			ensure!( Campaigns::<T>::contains_key(campaign_id), Error::<T>::InvalidId );
 			let state = Self::campaign_state(campaign_id);
 			ensure!( state == FlowState::Active, Error::<T>::NoContributionsAllowed);
+			let campaign = Self::campaign_by_id(&campaign_id);
+			ensure!(<system::Module<T>>::block_number() < campaign.expiry, Error::<T>::CampaignExpired );
 
-			// submit
+			// write
+
 			Self::create_contribution(sender.clone(), campaign_id.clone(), contribution.clone())?;
 
-			// get current blocktime
-			let now = <system::Module<T>>::block_number();
+			// event
 
-			// send event
+			let now = <system::Module<T>>::block_number();
 			Self::deposit_event(
 				RawEvent::CampaignContributed(
 					campaign_id,
@@ -588,22 +560,23 @@ decl_module! {
 
 			// get all the campaigns ending in current block
 			let block_number = <system::Module<T>>::block_number();
+			// which campaigns end in this block
 			let campaign_hashes = Self::campaigns_by_block(block_number);
 
+			// iterate over campaigns ending in this block
 			for campaign_id in &campaign_hashes {
 
+				// get campaign struct
 				let campaign = Self::campaign_by_id(campaign_id);
 				let campaign_balance = Self::campaign_balance(campaign_id);
+				let dao = Self::campaign_org(&campaign_id);
+				let dao_treasury = control::Module::<T>::body_treasury(dao);
 
 				// check for cap reached
 				if campaign_balance >= campaign.cap {
 
-					// update campaign state to success
-					// campaign.status = 3;
-					Self::set_state(campaign.id.clone(),FlowState::Success);
-					<Campaigns<T>>::insert(campaign_id.clone(), campaign);
-
 					// get campaign owner
+					// should be controller --- test?
 					let _owner = Self::campaign_owner(campaign_id);
 
 					match _owner {
@@ -615,25 +588,33 @@ decl_module! {
 
 							// 1 iterate over contributors
 							// 2 unreserve contribution
-							// 3 transfer contribution to campaign owner -> should be treasury!
+							// 3 transfer contribution to campaign treasury
 							'inner: for contributor in &contributors {
 
-
-								let contributor_balance = Self::campaign_contribution((*campaign_id, contributor.clone()));
-								let _ = <balances::Module<T>>::unreserve(&contributor, contributor_balance.clone());
-
-								// if contributor == campaign owner
-								// unreserve the money
-
+								// if contributor == campaign owner, skip
 								if contributor == &owner { continue; }
 
-								let _transfer = <balances::Module<T> as Currency<_>>::transfer(
+								// get amount from contributor
+								let contributor_balance = Self::campaign_contribution(
+									(*campaign_id, contributor.clone())
+								);
+
+								// unreserve the amount in contributor balance
+								let unreserve_amount = <balances::Module<T>>::unreserve(
 									&contributor,
-									&owner,
-									contributor_balance,
+									contributor_balance.clone()
+								);
+
+								// transfer from contributor
+								let transfer_amount = <balances::Module<T> as Currency<_>>::transfer(
+									&contributor,
+									&dao_treasury,
+									contributor_balance.clone(),
 									ExistenceRequirement::AllowDeath
 								);
-								match _transfer {
+
+								// success?
+								match transfer_amount {
 									Err(_e) => {
 										transaction_complete = false;
 										break 'inner;
@@ -645,43 +626,60 @@ decl_module! {
 							}
 
 							// If all transactions are settled
-							// 1. send the commission to treasury
-							// 2. reserve all money of the funding
+							// 1. reserve campaign balance
+							// 2. unreserve and send the commission to operator treasury
 							if transaction_complete {
 
-								// commission
-								let fee = <T as Config>::CampaignFee::get();
-								let commission = campaign_balance / fee;
-
-								let transfer_commission = <balances::Module<T> as Currency<_>>::transfer(
-									&owner,
-									&<T as Config>::GameDAOTreasury::get(),
-									commission,
-									ExistenceRequirement::AllowDeath
+								// reserve campaign volume
+								let reserve_campaign_amount = <balances::Module<T>>::reserve(
+									&dao_treasury,
+									campaign_balance.clone()
 								);
+
+								//
+								//
+
+								// calculate commission
+
+								// -> pub const CampaignFee: Balance = 25 * CENTS;
+								// let fee = <T as Config>::CampaignFee::get();
+
+								// -> CampaignBalance get(fn campaign_balance): map hasher(blake2_128_concat) T::Hash => T::Balance;
+								// let bal = campaign_balance.clone();
+
+								// let commission = U256::from( bal.into() )
+									// .checked_div( U256::from( fee.into() ) );
+
+
+
+
+
+
+								// let commission = bal.checked_div(fee);
+								// let commission = U256::from(bal).checked_div(U256::from(fee));
+
+								//
+								//
+
+								// let unreserve_commission = <balances::Module<T>>::unreserve(
+								// 	&dao_treasury,
+								// 	commission.clone()
+								// );
+
+								// let transfer_commission = <balances::Module<T> as Currency<_>>::transfer(
+								// 	&dao_treasury,
+								// 	&<T as Config>::GameDAOTreasury::get(),
+								// 	commission,
+								// 	ExistenceRequirement::AllowDeath
+								// );
 								// match transfer_commission {
-								// 	Err(_e) => { panic!("error transferring commission") },
+								// 	Err(_e) => {   }, //(Error::<T>::TransferError)
 								// 	Ok(_v) => {}
 								// }
 
-								// transfer remaining balance to treasury
-								let body = Self::campaign_org(&campaign_id);
-								let body_treasury = control::Module::<T>::body_treasury(body);
-								let transfer_amount = campaign_balance - commission;
+								Self::set_state(campaign.id.clone(), FlowState::Success);
 
-								let transfer_to_treasury = <balances::Module<T> as Currency<_>>::transfer(
-									&owner,
-									&body_treasury,
-									transfer_amount.clone(),
-									ExistenceRequirement::AllowDeath
-								);
-								// lock remaining balance
-								let _ = <balances::Module<T>>::reserve(
-									&body_treasury,
-									transfer_amount
-								);
-
-								// deposit the event
+								// finalized event
 								Self::deposit_event(
 									RawEvent::CampaignFinalized(
 										*campaign_id,
@@ -699,22 +697,23 @@ decl_module! {
 				// campaign cap not reached
 				} else {
 
-					// campaign failed
-					// refund all of the money
+					// campaign failed, revert all contributions
 
-					// update campaign state to failed
-					// campaign.status = 4;
-					Self::set_state(campaign.id,FlowState::Failed);
-					<Campaigns<T>>::insert(campaign_id.clone(), campaign);
-
-					// revert all contributions
 					let contributors = Self::campaign_contributors(campaign_id);
 					for account in contributors {
 						let contribution = Self::campaign_contribution((*campaign_id, account.clone()));
 						let _ = <balances::Module<T>>::unreserve(&account, contribution);
 					}
 
-					// deposit the event
+					// update campaign state to failed
+					Self::set_state(campaign.id,FlowState::Failed);
+
+					// unreserve DEPOSIT
+
+					let unreserve_deposit = <balances::Module<T>>::unreserve(&dao_treasury, campaign.deposit);
+
+
+					// failed event
 					Self::deposit_event(
 						RawEvent::CampaignFailed(
 							*campaign_id,
@@ -737,6 +736,7 @@ impl<T: Config> Module<T> {
 	fn set_state( id: T::Hash, state: FlowState ) {
 
 		let current_state = Self::campaign_state( &id );
+
 		// remove
 		let mut current_state_members = Self::campaigns_by_state( &current_state );
 		match current_state_members.binary_search(&id) {
@@ -746,6 +746,7 @@ impl<T: Config> Module<T> {
 			},
 			Err(_) => () //(Error::<T>::IdUnknown)
 		}
+
 		// add
 		CampaignsByState::<T>::mutate( &state, |campaigns| campaigns.push( id.clone() ) );
 		CampaignState::<T>::insert( id, state );
@@ -773,65 +774,50 @@ impl<T: Config> Module<T> {
 		campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, T::Moment, FlowProtocol, FlowGovernance>
 	) -> DispatchResult {
 
-		// campaigns
+		// add campaign to campaigns
 		Campaigns::<T>::insert(&campaign.id, campaign.clone());
 		// add org to index
 		CampaignOrg::<T>::insert(&campaign.id, campaign.org.clone());
-		// owners
+		// Owner == DAO
 		CampaignOwner::<T>::insert(&campaign.id, campaign.owner.clone());
-		// admins
+		// TODO: Admin == Council
 		CampaignAdmin::<T>::insert(&campaign.id, campaign.admin.clone());
+		// add to campaigns by body
+		CampaignsByBody::<T>::mutate( &campaign.org, |campaigns| campaigns.push(campaign.id) );
 
 		// expiration
 		CampaignsByBlock::<T>::mutate(
-			campaign.expiry.clone(),
+			&campaign.expiry,
 			|campaigns| campaigns.push(campaign.id.clone())
 		);
-
-		// collect by state
 
 		// global campaigns count
 		let campaigns_count = Self::campaigns_count();
 		let update_campaigns_count = campaigns_count.checked_add(1).ok_or(Error::<T>::AddCampaignOverflow)?;
-
-		// owned campaigns count
-		let campaigns_owned_count = Self::campaigns_owned_count(&campaign.owner);
-		let update_campaigns_owned_count = campaigns_owned_count.checked_add(1).ok_or(Error::<T>::AddContributionOverflow)?;
 
 		// update global campaign count
 		CampaignsArray::<T>::insert(&campaigns_count, campaign.id.clone());
 		CampaignsCount::put(update_campaigns_count);
 		CampaignsIndex::<T>::insert(campaign.id.clone(), campaigns_count);
 
-		// update owned campaign count
-		CampaignsOwnedArray::<T>::insert((&campaign.owner, &campaigns_owned_count), campaign.id.clone());
-		CampaignsOwnedCount::<T>::insert(&campaign.owner, update_campaigns_owned_count);
-		CampaignsOwnedIndex::<T>::insert((&campaign.owner, &campaign.id), campaigns_owned_count);
+		// campaigns owned needs a refactor:
+		// CampaignsCreated( dao => map )
+		// owned campaigns count
+		let campaigns_owned_count = Self::campaigns_owned_count(&campaign.org);
+		let update_campaigns_owned_count = campaigns_owned_count.checked_add(1).ok_or(Error::<T>::AddOwnedOverflow)?;
 
-		// TODO: final check
-		// TODO: final check
-		// if deposit exceeds available balance,
-		// revert the campaign
+		// update owned campaigns for dao
+		CampaignsOwnedArray::<T>::insert(&campaign.org, campaign.id.clone());
+		CampaignsOwnedCount::<T>::insert(&campaign.org, update_campaigns_count);
+		CampaignsOwnedIndex::<T>::insert((&campaign.org, &campaign.id), campaigns_owned_count);
 
-		// if deposit > Balance::sa(0) {
-		// 	match Self::create_contribution(sender.clone(), id.clone(), deposit.clone()){
-		// 		Err(_e) => {
-		// 			<Campaigns<T>>::remove(id.clone());
-		// 			<CampaignOwner<T>>::remove(id.clone());
-		// 			<CampaignsByBlockNumber<T>>::mutate(expiry,|campaigns| campaigns.pop());
-		// 			<CampaignsArray<T>>::remove(&all_campaigns_count);
-		// 			<CampaignsIndex>::put(all_campaigns_count.clone());
-		// 			<AllCampaignsIndex<T>>::remove(id.clone());
-		// 			<CampaignsOwnedArray<T>>::remove((sender.clone(), owned_campaigns_count.clone()));
-		// 			<CampaignsOwnedCount<T>>::remove(&sender);
-		// 			<CampaignsOwnedIndex<T>>::remove((sender.clone(), id.clone()));
-		// 		},
-		// 		Ok(_v) => {}
-		// 	}
-		// }
-
-		// add campaign to body map
-		CampaignsByBody::<T>::mutate( &campaign.org, |campaigns| campaigns.push(campaign.id) );
+		// TODO: this should be a proper mechanism
+		// to reserve some of the staked GAME
+		let treasury = control::Module::<T>::body_treasury(&campaign.org);
+		let _ = <balances::Module<T>>::reserve(
+			&treasury,
+			campaign.deposit.clone()
+		);
 
 		// nonce ++
 		Nonce::mutate(|n| *n += 1);
@@ -845,41 +831,28 @@ impl<T: Config> Module<T> {
 		contribution: T::Balance
 	) -> DispatchResult {
 
-		// campaign exists ?
-		ensure!( Campaigns::<T>::contains_key(campaign_id), Error::<T>::InvalidId );
 		let campaign = Self::campaign_by_id(&campaign_id);
+		let returning_contributor = CampaignContribution::<T>::contains_key((&campaign_id, &sender));
 
-		// campaign still active ?
-		ensure!(<system::Module<T>>::block_number() < campaign.expiry, Error::<T>::CampaignExpired );
-
-		// contributor has sufficient balance ?
-		ensure!( <balances::Module<T>>::free_balance(sender.clone()) >= contribution, Error::<T>::BalanceTooLow );
-
-		// meta data
 		// check if contributor exists
 		// if not, update metadata
-		if !CampaignContribution::<T>::contains_key((&campaign_id, &sender)) {
+		if !returning_contributor {
 
-			// increase the number of campaigncontributors invested in
+			// increase the number of contributors
 			let campaigns_contributed = Self::campaigns_contributed_count(&sender);
-			let update_campaigns_contributed = campaigns_contributed.checked_add(1).ok_or(Error::<T>::AddContributionOverflow)?;
+			CampaignsContributedArray::<T>::insert((sender.clone(), campaigns_contributed), campaign_id);
+			CampaignsContributedIndex::<T>::insert((sender.clone(), campaign_id.clone()), campaigns_contributed);
 
-			// increase the number of contributors into the campaign
+			let update_campaigns_contributed = campaigns_contributed.checked_add(1).ok_or(Error::<T>::AddContributionOverflow)?;
+			CampaignsContributedCount::<T>::insert(&sender, update_campaigns_contributed);
+
+			// increase the number of contributors of the campaign
 			let contributors = CampaignContributorsCount::<T>::get(&campaign_id);
 			let update_contributors = contributors.checked_add(1).ok_or(Error::<T>::UpdateContributorOverflow)?;
-
-			// add contribution
-			CampaignContribution::<T>::insert((campaign_id.clone(), sender.clone()), contribution.clone());
-			// update total contributors, count
-			// -> should be contributor or contribution?
-			CampaignContributors::<T>::mutate(&campaign_id, |accounts| accounts.push(sender.clone()));
 			CampaignContributorsCount::<T>::insert(campaign_id.clone(), update_contributors);
 
-
-			// update contributed campaigns for contributor
-			CampaignsContributedArray::<T>::insert((sender.clone(), campaigns_contributed), campaign_id);
-			CampaignsContributedCount::<T>::insert(&sender, update_campaigns_contributed);
-			CampaignsContributedIndex::<T>::insert((sender.clone(), campaign_id.clone()), campaigns_contributed);
+			// add contibutor to campaign contributors
+			CampaignContributors::<T>::mutate(&campaign_id, |accounts| accounts.push(sender.clone()));
 
 		}
 
@@ -911,33 +884,6 @@ impl<T: Config> Module<T> {
 //
 //
 //
-//
-//
-
-// TODO
-// Simple ensure origin struct to filter for the founder account.
-// pub struct EnsureFounder<T>(sp_std::marker::PhantomData<T>);
-// impl<T: Config> EnsureOrigin<T::Origin> for EnsureFounder<T> {
-// 	type Success = T::AccountId;
-// 	fn try_origin(o: T::Origin) -> Result<Self::Success, T::Origin> {
-// 		o.into().and_then(|o| match (o, Founder::<T>::get()) {
-// 			(system::RawOrigin::Signed(ref who), Some(ref f)) if who == f => Ok(who.clone()),
-// 			(r, _) => Err(T::Origin::from(r)),
-// 		})
-// 	}
-
-// 	#[cfg(feature = "runtime-benchmarks")]
-// 	fn successful_origin() -> T::Origin {
-// 		let founder = Founder::<T>::get().expect("society founder should exist");
-// 		T::Origin::from(system::RawOrigin::Signed(founder))
-// 	}
-// }
-
-//
-//
-//
-//
-//
 
 decl_error! {
 	pub enum Error for Module<T: Config> {
@@ -949,6 +895,8 @@ decl_error! {
 		ContributionTooSmall,
 		/// Balance too low.
 		BalanceTooLow,
+		/// Treasury Balance Too Low
+		TreasuryBalanceTooLow,
 		/// The Campaign id specified does not exist
 		InvalidId,
 		/// The Campaign's contribution period has ended; no more contributions will be accepted
@@ -987,10 +935,12 @@ decl_error! {
 		//
 		/// Overflow adding a new campaign to total fundings
 		AddCampaignOverflow,
-		/// Overflow adding a new contribution to account balance
-		AddContributionOverflow,
+		/// Overflow adding a new owner
+		AddOwnedOverflow,
 		/// Overflow adding to the total number of contributors of a camapaign
 		UpdateContributorOverflow,
+		/// Overflow adding to the total number of contributions of a camapaign
+		AddContributionOverflow,
 		/// Campaign owner unknown
 		OwnerUnknown,
 		/// Campaign admin unknown
@@ -1005,6 +955,7 @@ decl_error! {
 		NoContributionsAllowed,
 		/// Id Unknown
 		IdUnknown,
-
+		/// Transfer Error
+		TransferError
 	}
 }
