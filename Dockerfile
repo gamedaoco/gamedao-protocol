@@ -14,9 +14,10 @@ RUN apt-get update && \
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 	export PATH="$PATH:$HOME/.cargo/bin" && \
-	rustup toolchain install nightly && \
-	rustup target add wasm32-unknown-unknown --toolchain nightly && \
-	rustup default stable
+	rustup toolchain install nightly-2021-11-07 && \
+	rustup target add wasm32-unknown-unknown --toolchain nightly-2021-11-07 && \
+	rustup default nightly-2021-11-07 &&\
+	rustup show
 
 # ===== STAGE 2 ======
 
@@ -24,7 +25,7 @@ FROM baseimage as builder
 ARG PROFILE=release
 
 RUN	export PATH="$PATH:$HOME/.cargo/bin" && \
-	cargo +nightly build "--$PROFILE"
+cargo build "--$PROFILE"
 
 # ===== STAGE 3 ======
 
