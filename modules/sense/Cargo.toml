@@ -1,0 +1,52 @@
+[package]
+name = "module-sense"
+version = "0.1.0"
+authors = ["2075"]
+repository = ""
+edition = "2018"
+license = "GPL-3.0-or-later"
+description = "module-sense"
+
+[package.metadata.substrate]
+categories = [
+	"zero",
+	"core"
+]
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"serde/std",
+
+	"pallet-assets/std",
+	"pallet-balances/std",
+	"frame-support/std",
+	"frame-system/std",
+
+	"sp-core/std",
+	"sp-std/std",
+	"sp-storage/std",
+	"sp-runtime/std",
+]
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false }
+# serde = { version = "1.0.103", optional = true, features = ["derive"] }
+serde = { default-features = false, features = ["derive"], optional = true, version = "1.0" }
+
+sp-core = { version = "3.0.0", default-features = false, path = "../../primitives/core" }
+sp-runtime = { version = "3.0.0", default-features = false, path = "../../primitives/runtime" }
+sp-std = { version = "3.0.0", default-features = false, path = "../../primitives/std" }
+sp-storage = { version = "3.0.0", default-features = false, path = "../../primitives/storage" }
+
+pallet-assets = { version = "3.0.0", default-features = false, path = "../../frame/assets" }
+pallet-balances = { version = "3.0.0", default-features = false, path = "../../frame/balances" }
+frame-support = { version = "3.0.0", default-features = false, path = "../../frame/support" }
+frame-system = { version = "3.0.0", default-features = false, path = "../../frame/system" }
+
+primitives = { package = "zero-primitives", path = "../../bin/primitives", default-features = false }
+
+[dev-dependencies]
+sp-core = { version = "3.0.0", default-features = false, path = "../../primitives/core" }
+sp-io = { version = "3.0.0", default-features = false, path = "../../primitives/io" }

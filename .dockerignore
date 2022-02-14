@@ -1,0 +1,15 @@
+doc
+**target*
+.idea/
+Dockerfile
+.dockerignore
+.local
+
+data
+tmp
+target
+
+.github
+.builder
+.maintain
+

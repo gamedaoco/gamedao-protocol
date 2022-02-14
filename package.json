@@ -1,0 +1,7 @@
+{
+  "name": "subzero",
+  "version": "1.31.0",
+  "repository": "git@gitlab.com:zero.io/subzero.git",
+  "author": "2075 <marco@zero.io>",
+  "license": "APACHE2"
+}
