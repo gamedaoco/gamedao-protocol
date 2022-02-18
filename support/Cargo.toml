@@ -1,0 +1,15 @@
+[package]
+name = "gamedao-protocol-support"
+version = "1.0.1-dev"
+authors = ["zero.io","gamedao.co"]
+edition = "2018"
+license = "GPL-3.0-or-later"
+description = ""
+repository = "https://github.com/gamedaoco/gamedao-protocol"
+
+
+[features]
+default = ["std"]
+std = [
+
+]
