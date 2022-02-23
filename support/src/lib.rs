@@ -42,10 +42,10 @@ pub enum ControlState {
 }
 
 pub trait ControlPalletStorage<AccountId, Hash> {
-    fn body_controller(org: Hash) -> AccountId;
-    fn body_treasury(org: Hash) -> AccountId;
-    fn body_member_state(hash: Hash, account_id: AccountId) -> ControlMemberState;
-    fn body_state(hash: Hash) -> ControlState;
+    fn body_controller(org: &Hash) -> AccountId;
+    fn body_treasury(org: &Hash) -> AccountId;
+    fn body_member_state(hash: &Hash, account_id: &AccountId) -> ControlMemberState;
+    fn body_state(hash: &Hash) -> ControlState;
 }
 
 pub trait FlowPalletStorage<Hash, Balance> {
