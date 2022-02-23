@@ -1,4 +1,5 @@
-use crate as pallet_sense;
+#![cfg(test)]
+
 use frame_support::parameter_types;
 use frame_system as system;
 use sp_core::H256;
@@ -18,9 +19,13 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		ZeroSense: pallet_sense::{Pallet, Call, Storage, Event<T>},
+		Sense: pallet_sense::{Pallet, Call, Storage, Event<T>},
 	}
 );
+
+mod pallet_sense {
+	pub use super::super::*;
+}
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
