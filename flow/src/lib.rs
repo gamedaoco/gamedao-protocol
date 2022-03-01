@@ -50,27 +50,27 @@
 // 1. create campaigns with custom funding goal and runtime
 // 2. invest into open campaigns
 #![cfg_attr(not(feature = "std"), no_std)]
-#[warn(unused_imports)]
+// #[warn(unused_imports)]
 // pub use weights::WeightInfo;
-pub use pallet::*;
 
 use frame_support::{
     codec::{Decode, Encode},
     dispatch::DispatchResult,
-    traits::{Randomness, UnixTime},
+    traits::{Randomness, UnixTime}
 };
 use scale_info::TypeInfo;
 use sp_std::{fmt::Debug, vec::Vec};
 
-use codec::FullCodec;
 use frame_support::traits::Get;
-use sp_runtime::traits::AtLeast32BitUnsigned;
 
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
-use primitives::{Balance, CurrencyId, Moment};
-use support::ControlPalletStorage;
+use zero_primitives::{Balance, CurrencyId, Moment};
+use gamedao_protocol_support::{ControlPalletStorage, FlowState};
 
-// TODO: tests
+mod mock;
+mod tests;
+
+pub use pallet::*;
 
 // TODO: pallet benchmarking
 // mod benchmarking;
@@ -108,23 +108,6 @@ pub enum FlowGovernance {
 impl Default for FlowGovernance {
     fn default() -> Self {
         Self::No
-    }
-}
-
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Debug)]
-#[repr(u8)]
-pub enum FlowState {
-    Init = 0,
-    Active = 1,
-    Paused = 2,
-    Success = 3,
-    Failed = 4,
-    Locked = 5,
-}
-
-impl Default for FlowState {
-    fn default() -> Self {
-        Self::Init
     }
 }
 
@@ -514,7 +497,7 @@ pub mod pallet {
                                 ));
 
                                 // unreserve the amount in contributor balance
-                                let unreserve_amount = T::Currency::unreserve(
+                                T::Currency::unreserve(
                                     T::FundingCurrencyId::get(),
                                     &contributor,
                                     contributor_balance.clone(),
@@ -545,7 +528,7 @@ pub mod pallet {
                             // 2. unreserve and send the commission to operator treasury
                             if transaction_complete {
                                 // reserve campaign volume
-                                let reserve_campaign_amount = T::Currency::reserve(
+                                let _reserve_campaign_amount = T::Currency::reserve(
                                     T::FundingCurrencyId::get(),
                                     &dao_treasury,
                                     campaign_balance.clone(),
@@ -617,7 +600,7 @@ pub mod pallet {
 
                     // unreserve DEPOSIT
 
-                    let unreserve_deposit = T::Currency::unreserve(
+                    T::Currency::unreserve(
                         T::FundingCurrencyId::get(),
                         &dao_treasury,
                         campaign.deposit,
@@ -681,7 +664,7 @@ pub mod pallet {
             let now = <frame_system::Pallet<T>>::block_number();
             let timestamp = T::UnixTime::now().as_secs();
 
-            // ensure campaign expires after now
+            // ensure campaign expires after the current block
             ensure!(expiry > now, Error::<T>::EndTooEarly);
 
             let max_length = T::MaxDuration::get();
@@ -690,6 +673,7 @@ pub mod pallet {
 
             // generate the unique campaign id + ensure uniqueness
             let phrase = b"crowdfunding_campaign"; // create from name?
+            // TODO: maybe simplify to H256::random()?
             let id = T::Randomness::random(phrase).0;
             // ensure!(!<CampaignOwner<T>>::exists(&id), Error::<T>::IdExists ); // check for collision
 
@@ -747,7 +731,7 @@ pub mod pallet {
             // access control
             let sender = ensure_signed(origin)?;
 
-            let owner = Self::campaign_owner(campaign_id).ok_or(Error::<T>::OwnerUnknown)?;
+            Self::campaign_owner(campaign_id).ok_or(Error::<T>::OwnerUnknown)?;
             let admin = Self::campaign_admin(campaign_id).ok_or(Error::<T>::AdminUnknown)?;
             ensure!(sender == admin, Error::<T>::AuthorizationError);
 
@@ -901,7 +885,7 @@ impl<T: Config> Pallet<T> {
         // CampaignsCreated( dao => map )
         // owned campaigns count
         let campaigns_owned_count = Self::campaigns_owned_count(&campaign.org);
-        let update_campaigns_owned_count = campaigns_owned_count
+        campaigns_owned_count
             .checked_add(1)
             .ok_or(Error::<T>::AddOwnedOverflow)?;
 
@@ -936,7 +920,6 @@ impl<T: Config> Pallet<T> {
         campaign_id: T::Hash,
         contribution: Balance,
     ) -> DispatchResult {
-        let campaign = Self::campaign_by_id(&campaign_id);
         let returning_contributor =
             CampaignContribution::<T>::contains_key((&campaign_id, &sender));
 
