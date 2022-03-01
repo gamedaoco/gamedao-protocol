@@ -156,23 +156,6 @@ parameter_types! {
     pub const GameDAOTreasury: AccountId = BOB;
 }
 
-// pub struct TestRandomness<T>(sp_std::marker::PhantomData<T>);
-
-// impl<Output: codec::Decode + Default, T> frame_support::traits::Randomness<Output, T::BlockNumber>
-// 	for TestRandomness<T>
-// where
-// 	T: frame_system::Config,	
-// {
-// 	fn random(subject: &[u8]) -> (Output, T::BlockNumber) {
-// 		use sp_runtime::traits::TrailingZeroInput;
-
-// 		(
-// 			Output::decode(&mut TrailingZeroInput::new(subject)).unwrap_or_default(),
-// 			frame_system::Pallet::<T>::block_number(),
-// 		)
-// 	}
-// }
-
 impl Config for Test {
     type WeightInfo = ();
 	type Event = Event;
@@ -216,7 +199,6 @@ construct_runtime!(
 		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
 		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
-        // RandomnessCollectiveFlip: pallet_randomness_collective_flip,
         Flow: pallet_flow,
 	}
 );

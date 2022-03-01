@@ -3,9 +3,11 @@
 use super::*;
 use codec::{Decode, Encode};
 use frame_support::{assert_noop, assert_ok};
+use frame_system::{EventRecord, Phase};
 use mock::{
-	new_test_ext, Flow, FlowProtocol, FlowGovernance, Event, Origin, Test, System, GAME, ALICE, BOB, MAX_DURATION
+	new_test_ext, Flow, FlowProtocol, FlowGovernance, Event as FlowEvent, Origin, Test, System, GAME, ALICE, BOB, MAX_DURATION
 };
+use gamedao_protocol_support::{FlowState};
 use sp_core::H256;
 
 
@@ -84,38 +86,43 @@ fn flow_create() {
         // Error: ContributionsPerBlockExceeded
 
         // Success
-
+        let id: H256 = <Test as Config>::Randomness::random(b"crowdfunding_campaign").0;
+        let org = H256::random();
+        let expiry = current_block + 1;
+        
         assert_ok!(
 			Flow::create(
-                Origin::signed(BOB), H256::random(), BOB, vec![1, 2], 20, 10,  current_block + 1, 
+                Origin::signed(BOB), org, BOB, vec![1, 2], 20, 10,  expiry, 
                 FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![])
 		);
-
-        let campaign_id: H256 = <Test as Config>::Randomness::random(b"crowdfunding_campaign").0;
         
+        assert_eq!(Campaigns::<Test>::get(id).id, id);
+        assert_eq!(CampaignOrg::<Test>::get(id), org);
+        assert_eq!(CampaignOwner::<Test>::get(id), Some(BOB));
+        assert_eq!(CampaignAdmin::<Test>::get(id), Some(BOB));
+        assert_eq!(CampaignsByBody::<Test>::get(org), vec![id]);
+        assert_eq!(CampaignsByBlock::<Test>::get(expiry), vec![id]);
+        assert_eq!(CampaignsCount::<Test>::get(), 1);
+        assert_eq!(CampaignsArray::<Test>::get(0), id);
+        assert_eq!(CampaignsIndex::<Test>::get(id), 0);
+        assert_eq!(CampaignsOwnedArray::<Test>::get(org), id);
+        assert_eq!(CampaignsOwnedCount::<Test>::get(org), 1);
+        assert_eq!(CampaignsOwnedIndex::<Test>::get((org, id)), 0);
+        assert_eq!(Nonce::<Test>::get(), 1);
+        assert_eq!(CampaignsByState::<Test>::get(FlowState::Active), vec![id]);
+        assert_eq!(CampaignState::<Test>::get(id), FlowState::Active);
 
-        // Campaigns
-        let campaign = Flow::campaign_by_id(campaign_id);
-        // assert_eq!()
-
-        // CampaignOrg
-        // CampaignOwner
-        // CampaignAdmin
-        // CampaignsByBody
-        // CampaignsByBlock
-        // CampaignsCount
-        // CampaignsArray
-        // CampaignsIndex
-        // CampaignsOwnedArray
-        // CampaignsOwnedCount
-        // CampaignsOwnedIndex
-        // Nonce
-        // CampaignsByState
-        // CampaignState
-
-        // Check if deposit was reserved from the Organization's treasury
+        // TODO: Check if deposit was reserved from the Organization's treasury
 
         // Event::CampaignUpdated
+        // assert_eq!(
+		// 	System::events(),
+		// 	vec![EventRecord {
+		// 		phase: Phase::Initialization,
+		// 		event: Event::Flow(FlowEvent::CampaignUpdated(id, FlowState::Active, current_block)),
+		// 		topics: vec![],
+		// 	}]
+		// );
 
     });
 }
