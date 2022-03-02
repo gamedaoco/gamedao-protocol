@@ -5,7 +5,7 @@ use codec::{Decode, Encode};
 use frame_support::{assert_noop, assert_ok};
 use frame_system::{EventRecord, Phase};
 use mock::{
-	new_test_ext, Flow, FlowProtocol, FlowGovernance, Event as FlowEvent, Origin, Test, System, GAME, ALICE, BOB, MAX_DURATION
+	new_test_ext, Flow, FlowProtocol, FlowGovernance, Event, Origin, Test, System, GAME, ALICE, BOB, MAX_DURATION
 };
 use gamedao_protocol_support::{FlowState};
 use sp_core::H256;
@@ -89,10 +89,13 @@ fn flow_create() {
         let id: H256 = <Test as Config>::Randomness::random(b"crowdfunding_campaign").0;
         let org = H256::random();
         let expiry = current_block + 1;
+        let deposit = 10;
+        let target = 20;
+        let name = vec![1, 2];
         
         assert_ok!(
 			Flow::create(
-                Origin::signed(BOB), org, BOB, vec![1, 2], 20, 10,  expiry, 
+                Origin::signed(BOB), org, BOB, name.clone(), target, deposit,  expiry, 
                 FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![])
 		);
         
@@ -112,17 +115,22 @@ fn flow_create() {
         assert_eq!(CampaignsByState::<Test>::get(FlowState::Active), vec![id]);
         assert_eq!(CampaignState::<Test>::get(id), FlowState::Active);
 
-        // TODO: Check if deposit was reserved from the Organization's treasury
-
-        // Event::CampaignUpdated
-        // assert_eq!(
-		// 	System::events(),
-		// 	vec![EventRecord {
-		// 		phase: Phase::Initialization,
-		// 		event: Event::Flow(FlowEvent::CampaignUpdated(id, FlowState::Active, current_block)),
-		// 		topics: vec![],
-		// 	}]
-		// );
+        // Events
+        assert_eq!(
+			System::events(),
+			vec![
+                EventRecord {
+				    phase: Phase::Initialization,
+				    event: Event::Tokens(orml_tokens::Event::Reserved(2, BOB, deposit)),
+				    topics: vec![],
+			    },
+                EventRecord {
+				    phase: Phase::Initialization,
+				    event: Event::Flow(crate::Event::CampaignCreated(id, BOB, BOB, target, deposit, expiry, name)),
+				    topics: vec![],
+			    },
+            ]
+		);
 
     });
 }
