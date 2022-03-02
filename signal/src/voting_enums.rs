@@ -3,6 +3,7 @@ use scale_info::TypeInfo;
 
 // #[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord, TypeInfo)]
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub enum ProposalState {
     Init = 0,		// waiting for start block
     Active = 1,		// voting is active
@@ -14,6 +15,7 @@ pub enum ProposalState {
 }
 
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub enum ProposalType {
     General = 0,
     Multiple = 1,
@@ -23,6 +25,7 @@ pub enum ProposalType {
 }
 
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub enum VotingType {
     Simple = 0,   // votes across participating votes
     Token = 1,    // weight across participating votes

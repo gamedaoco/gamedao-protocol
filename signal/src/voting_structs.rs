@@ -4,6 +4,7 @@ use scale_info::TypeInfo;
 
 
 #[derive(Encode, Decode, Default, Clone, PartialEq, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct Proposal<Hash, BlockNumber, ProposalType, VotingType> {
 	pub proposal_id: Hash,
 	pub context_id: Hash,
@@ -14,6 +15,7 @@ pub struct Proposal<Hash, BlockNumber, ProposalType, VotingType> {
 }
 
 #[derive(Encode, Decode, Default, Clone, PartialEq, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct ProposalMetadata<Balance> {
 	pub title: Vec<u8>,
 	pub cid: Vec<u8>,

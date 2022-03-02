@@ -36,7 +36,8 @@ pub mod pallet {
     use frame_support::{
         dispatch::DispatchResult,
         traits::{Randomness},
-        pallet_prelude::*
+        pallet_prelude::*,
+        transactional
     };
     use sp_std::vec::Vec;
 
@@ -187,7 +188,10 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        Proposal(T::AccountId, T::Hash),
+        Proposal {
+            sender_id: T::AccountId,
+            proposal_id: T::Hash
+        },
         ProposalCreated(T::AccountId, T::Hash, T::Hash, Balance, T::BlockNumber),
         ProposalVoted(T::AccountId, T::Hash, bool),
         ProposalFinalized(T::Hash, u8),
@@ -244,13 +248,10 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
 
-        #[pallet::weight(10_000)]
-        pub fn simple_one(origin: OriginFor<T>) -> DispatchResult {
-            Ok(())
-        }
 
         // TODO: general proposal for a DAO
         #[pallet::weight(5_000_000)]
+        #[transactional]
         pub fn general_proposal(
             origin: OriginFor<T>,
             context_id: T::Hash,
@@ -285,16 +286,22 @@ pub mod pallet {
             let proposal_type = ProposalType::General;
             let proposal_state = ProposalState::Active;
             let voting_type = VotingType::Simple;
-            // let nonce = <Nonce<T>>::get();
-
-            // generate unique id
-            let phrase = b"just another proposal";
-            let proposal_id = <T::Randomness>::random(phrase).0;
             // ensure!(!<Proposals<T>>::contains_key(&context_id), "Proposal id already exists");
             ensure!(!<Proposals<T>>::contains_key(&context_id), Error::<T>::ProposalExists);  // todo: was error generated manually on purpose?
 
+
+            // check add
+            let proposals_count = <ProposalsCount::<T>>::get();
+            let updated_proposals_count = proposals_count.checked_add(1).ok_or( Error::<T>::OverflowError)?;
+            let proposals_by_campaign_count = <ProposalsByContextCount::<T>>::get(&context_id);
+            let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
+            let proposals_by_owner_count = <ProposalsByOwnerCount::<T>>::get(&sender);
+            let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
+
             // proposal
 
+            let nonce = Self::get_and_increment_nonce();
+            let (proposal_id, _) = <T::Randomness>::random(&nonce);
             let new_proposal = Proposal {
                 proposal_id: proposal_id.clone(),
                 context_id: context_id.clone(),
@@ -315,14 +322,6 @@ pub mod pallet {
             //
             //
             //
-
-            // check add
-            let proposals_count = <ProposalsCount::<T>>::get();
-            let updated_proposals_count = proposals_count.checked_add(1).ok_or( Error::<T>::OverflowError)?;
-            let proposals_by_campaign_count = <ProposalsByContextCount::<T>>::get(&context_id);
-            let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
-            let proposals_by_owner_count = <ProposalsByOwnerCount::<T>>::get(&sender);
-            let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
 
             // insert proposals
             <Proposals::<T>>::insert(proposal_id.clone(), new_proposal.clone());
@@ -352,10 +351,10 @@ pub mod pallet {
             //
 
             // nonce++
-            <Nonce::<T>>::mutate(|n| *n += 1);  // todo: use safe addition
+            // <Nonce::<T>>::mutate(|n| *n += 1);  // todo: use safe addition
 
             // deposit event
-            Self::deposit_event(Event::<T>::Proposal(sender,proposal_id));
+            Self::deposit_event(Event::<T>::Proposal{sender_id: sender, proposal_id});
             Ok(())
         }
 
@@ -377,7 +376,7 @@ pub mod pallet {
             // match action
             // action
             // deposit event
-            Self::deposit_event(Event::<T>::Proposal(sender, context));
+            Self::deposit_event(Event::<T>::Proposal{sender_id: sender, proposal_id: context});
             Ok(())
         }
 
@@ -430,10 +429,10 @@ pub mod pallet {
 
             let proposal_type = ProposalType::Withdrawal; // treasury
             let voting_type = VotingType::Simple; // votes
-            // let nonce = <Nonce<T>>::get();
-            let phrase = b"just another withdrawal";
+            let nonce = Self::get_and_increment_nonce();
+            // let phrase = b"just another withdrawal";
 
-            let proposal_id = <T as Config>::Randomness::random(phrase).0;
+            let (proposal_id, _) = <T as Config>::Randomness::random(&nonce.encode());
             ensure!(!<Proposals<T>>::contains_key(&context_id), Error::<T>::HashCollision );
 
             let proposal = Proposal {
@@ -481,7 +480,7 @@ pub mod pallet {
 
             // ++
 
-            <Nonce<T>>::mutate(|n| *n += 1);  // todo: safe nonce increase
+            // <Nonce<T>>::mutate(|n| *n += 1);  // todo: safe nonce increase
 
             //  E V E N T
 
@@ -798,6 +797,12 @@ pub mod pallet {
             );
             Ok(())
 
+        }
+
+        fn get_and_increment_nonce() -> Vec<u8> {
+            let nonce = Nonce::<T>::get();
+            Nonce::<T>::put(nonce.wrapping_add(1));
+            nonce.encode()
         }
     }
 }
