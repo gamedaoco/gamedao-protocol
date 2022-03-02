@@ -27,7 +27,7 @@ fn flow_create() {
                 Origin::signed(not_creator), H256::random(), not_creator, vec![1, 2], 0, 0, 0, 
                 FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
             Error::<Test>::AuthorizationError
-		);
+        );
         // Check if organization's treasury has enough deposit
         // Error: TreasuryBalanceTooLow
         let deposit_more_than_treasury = 1000;
@@ -36,7 +36,7 @@ fn flow_create() {
                 Origin::signed(BOB), H256::random(), BOB, vec![1, 2], 0, deposit_more_than_treasury, 0, 
                 FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
             Error::<Test>::TreasuryBalanceTooLow
-		);
+        );
         // Check if deposit is not too high
         // Error: DepositTooHigh
         let target = 10;
@@ -46,7 +46,7 @@ fn flow_create() {
                 Origin::signed(BOB), H256::random(), BOB, vec![1, 2], target, deposit_more_than_target, 0, 
                 FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
             Error::<Test>::DepositTooHigh
-		);
+        );
         // Check Campaign name length
         // Error: NameTooShort
         let short_name = vec![1];
@@ -55,7 +55,7 @@ fn flow_create() {
                 Origin::signed(BOB), H256::random(), BOB, short_name, 20, 10, 0, 
                 FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
             Error::<Test>::NameTooShort
-		);
+        );
         // Error: NameTooLong
         let long_name = vec![1, 2, 3, 4, 5];
         assert_noop!(
@@ -63,7 +63,7 @@ fn flow_create() {
                 Origin::signed(BOB), H256::random(), BOB, long_name, 20, 10, 0, 
                 FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
 			Error::<Test>::NameTooLong
-		);
+        );
         // Ensure campaign expires after the current block
         // Error: EndTooEarly
         let expiration_block = current_block - 1;
@@ -72,7 +72,7 @@ fn flow_create() {
                 Origin::signed(BOB), H256::random(), BOB, vec![1, 2], 20, 10, expiration_block, 
                 FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
             Error::<Test>::EndTooEarly
-		);
+        );
         // Ensure campaign expires before expiration limit
         // Error: EndTooLate
         let expiration_block = MAX_DURATION + current_block + 1;
@@ -81,7 +81,7 @@ fn flow_create() {
                 Origin::signed(BOB), H256::random(), BOB, vec![1, 2], 20, 10, expiration_block, 
                 FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
             Error::<Test>::EndTooLate
-		);
+        );
         // Check contribution limit per block
         // Error: ContributionsPerBlockExceeded
 
@@ -94,10 +94,10 @@ fn flow_create() {
         let name = vec![1, 2];
 
         assert_ok!(
-			Flow::create(
+            Flow::create(
                 Origin::signed(BOB), org, BOB, name.clone(), target, deposit,  expiry, 
                 FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![])
-		);
+        );
         
         assert_eq!(Campaigns::<Test>::get(id).id, id);
         assert_eq!(CampaignOrg::<Test>::get(id), org);
@@ -126,9 +126,7 @@ fn flow_create() {
                 },
                 EventRecord {
                     phase: Phase::Initialization,
-                    event: Event::Flow(crate::Event::CampaignCreated(
-                        id, BOB, BOB, target, deposit, expiry, name
-                    )),
+                    event: Event::Flow(crate::Event::CampaignCreated(id, BOB, BOB, target, deposit, expiry, name)),
                     topics: vec![],
                 },
             ]
