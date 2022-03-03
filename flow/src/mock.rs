@@ -18,6 +18,7 @@ pub type AccountId = u64;
 pub type BlockNumber = u32;
 pub type Hash = H256;
 
+
 // TODO: move it to constants-------
 pub const MILLICENTS: Balance = 1_000_000_000;
 pub const CENTS: Balance = 1_000 * MILLICENTS;
@@ -34,6 +35,7 @@ pub const ALICE: AccountId = 1;
 pub const BOB: AccountId = 2;
 pub const GAME: CurrencyId = TokenSymbol::GAME as u32;
 pub const MAX_DURATION: BlockNumber = DAYS * 100;
+pub const GAME_CURRENCY_ID: CurrencyId = TokenSymbol::GAME as u32;
 
 
 mod pallet_flow {
@@ -133,7 +135,7 @@ impl ControlPalletStorage<AccountId, Hash> for ControlPalletMock<AccountId, Hash
 	fn body_controller(org: Hash) -> AccountId { BOB }
 	fn body_treasury(org: Hash) -> AccountId { BOB }
 	fn body_member_state(_hash: Hash, _account_id: AccountId) -> ControlMemberState { ControlMemberState::Active }
-    fn body_state(_hash: Hash) -> ControlState { ControlState::Active }
+	fn body_state(_hash: Hash) -> ControlState { ControlState::Active }
 }
 
 parameter_types! {
@@ -141,7 +143,7 @@ parameter_types! {
 	pub const MaxLength: u32 = 4;
 
 	pub const MaxCampaignsPerAddress: u32 = 3;
-	pub const MaxCampaignsPerBlock: u32 = 3;
+	pub const MaxCampaignsPerBlock: u32 = 1;
 	pub const MaxContributionsPerBlock: u32 = 3;
 
 	pub const MinDuration: BlockNumber = 1 * DAYS;
@@ -152,12 +154,12 @@ parameter_types! {
 
 	pub const CampaignFee: Balance = 25 * CENTS;
 
-	pub const GAMECurrencyId: CurrencyId = TokenSymbol::GAME as u32;
-    pub const GameDAOTreasury: AccountId = BOB;
+	pub const GAMECurrencyId: CurrencyId = GAME_CURRENCY_ID;
+	pub const GameDAOTreasury: AccountId = BOB;
 }
 
 impl Config for Test {
-    type WeightInfo = ();
+	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
 	type FundingCurrencyId = GAMECurrencyId;
@@ -166,7 +168,7 @@ impl Config for Test {
 
 	type Control = ControlPalletMock<AccountId, Hash>;
 
-    // TODO: type GameDAOAdminOrigin = EnsureRootOrHalfCouncil
+	// TODO: type GameDAOAdminOrigin = EnsureRootOrHalfCouncil
 	type GameDAOAdminOrigin = EnsureRoot<Self::AccountId>;
 	type GameDAOTreasury = GameDAOTreasury;
 
@@ -199,7 +201,7 @@ construct_runtime!(
 		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
 		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
-        Flow: pallet_flow,
+		Flow: pallet_flow,
 	}
 );
 
