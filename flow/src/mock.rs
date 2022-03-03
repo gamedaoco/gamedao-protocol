@@ -17,6 +17,7 @@ use zero_primitives::{Amount, CurrencyId, TokenSymbol, Header};
 pub type AccountId = u64;
 pub type BlockNumber = u32;
 pub type Hash = H256;
+pub type Timestamp = u64;
 
 
 // TODO: move it to constants-------
@@ -33,7 +34,6 @@ pub const DAYS: BlockNumber = HOURS * 24;
 
 pub const ALICE: AccountId = 1;
 pub const BOB: AccountId = 2;
-pub const GAME: CurrencyId = TokenSymbol::GAME as u32;
 pub const MAX_DURATION: BlockNumber = DAYS * 100;
 pub const GAME_CURRENCY_ID: CurrencyId = TokenSymbol::GAME as u32;
 
@@ -126,16 +126,13 @@ impl pallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
-pub struct ControlPalletMock<AccountId, Hash> {
-	a: AccountId,
-	h: Hash,
-}
+pub struct ControlPalletMock;
 
-impl ControlPalletStorage<AccountId, Hash> for ControlPalletMock<AccountId, Hash> {
-	fn body_controller(org: Hash) -> AccountId { BOB }
-	fn body_treasury(org: Hash) -> AccountId { BOB }
-	fn body_member_state(_hash: Hash, _account_id: AccountId) -> ControlMemberState { ControlMemberState::Active }
-	fn body_state(_hash: Hash) -> ControlState { ControlState::Active }
+impl ControlPalletStorage<AccountId, Hash> for ControlPalletMock {
+	fn body_controller(_org: &Hash) -> AccountId { BOB }
+	fn body_treasury(_org: &Hash) -> AccountId { BOB }
+	fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> ControlMemberState { ControlMemberState::Active }
+	fn body_state(_hash: &Hash) -> ControlState { ControlState::Active }
 }
 
 parameter_types! {
@@ -163,10 +160,10 @@ impl Config for Test {
 	type Event = Event;
 	type Currency = Currencies;
 	type FundingCurrencyId = GAMECurrencyId;
-	type UnixTime = Timestamp;
+	type UnixTime = PalletTimestamp;
 	type Randomness = TestRandomness<Self>;
 
-	type Control = ControlPalletMock<AccountId, Hash>;
+	type Control = ControlPalletMock;
 
 	// TODO: type GameDAOAdminOrigin = EnsureRootOrHalfCouncil
 	type GameDAOAdminOrigin = EnsureRoot<Self::AccountId>;
@@ -190,6 +187,27 @@ impl Config for Test {
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
+impl Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, FlowGovernance> {
+	pub fn new(campaign_id: Hash, expiry: BlockNumber) -> Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, FlowGovernance> {
+        Campaign {
+			id: campaign_id,
+			org: H256::random(),
+			name: vec![1, 2],
+			owner: BOB,
+			admin: BOB,
+			deposit: 10,
+			expiry: expiry,
+			cap: 20,
+			protocol: FlowProtocol::Raise,
+			governance: FlowGovernance::No,
+			cid: vec![1, 2],
+			token_symbol: vec![1, 2],
+			token_name: vec![1, 2],
+			created: PalletTimestamp::now(),
+		}
+	}
+}
+
 construct_runtime!(
 	pub enum Test where
 		Block = Block,
@@ -200,7 +218,7 @@ construct_runtime!(
 		Currencies: orml_currencies::{Pallet, Call, Event<T>},
 		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
 		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+		PalletTimestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 		Flow: pallet_flow,
 	}
 );
@@ -209,8 +227,8 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	orml_tokens::GenesisConfig::<Test> {
 		balances: vec![
-			(ALICE, GAME, 100),
-			(BOB, GAME, 100),
+			(ALICE, GAME_CURRENCY_ID, 100),
+			(BOB, GAME_CURRENCY_ID, 100),
 		],
 	}.assimilate_storage(&mut t).unwrap();
 	t.into()

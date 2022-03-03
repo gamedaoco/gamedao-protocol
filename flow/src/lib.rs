@@ -54,6 +54,7 @@
 // pub use weights::WeightInfo;
 
 use frame_support::{
+    transactional,
 	codec::{Decode, Encode},
 	dispatch::DispatchResult,
 	traits::{Randomness, UnixTime}
@@ -467,7 +468,7 @@ pub mod pallet {
 				let campaign = Self::campaign_by_id(campaign_id);
 				let campaign_balance = Self::campaign_balance(campaign_id);
 				let dao = Self::campaign_org(&campaign_id);
-				let dao_treasury = T::Control::body_treasury(dao);
+				let dao_treasury = T::Control::body_treasury(&dao);
 
 				// check for cap reached
 				if campaign_balance >= campaign.cap {
@@ -621,6 +622,8 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(5_000_000)]
+        // Reason for using transactional is get_and_increment_nonce
+        #[transactional]
 		pub fn create(
 			origin: OriginFor<T>,
 			org: T::Hash,
@@ -639,13 +642,13 @@ pub mod pallet {
 		) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
 
-			let controller = T::Control::body_controller(org.clone());
+			let controller = T::Control::body_controller(&org);
 
 			ensure!(creator == controller, Error::<T>::AuthorizationError);
 
 			// Get Treasury account for deposits and fees
 
-			let treasury = T::Control::body_treasury(org.clone());
+			let treasury = T::Control::body_treasury(&org);
 
 			let free_balance = T::Currency::free_balance(T::FundingCurrencyId::get(), &treasury);
 			ensure!(free_balance > deposit, Error::<T>::TreasuryBalanceTooLow);
@@ -895,7 +898,7 @@ impl<T: Config> Pallet<T> {
 
 		// TODO: this should be a proper mechanism
 		// to reserve some of the staked GAME
-		let treasury = T::Control::body_treasury(campaign.org.clone());
+		let treasury = T::Control::body_treasury(&campaign.org);
 
 		// let fundingCurrency = T::FundingCurrencyId::get();
 		T::Currency::reserve(

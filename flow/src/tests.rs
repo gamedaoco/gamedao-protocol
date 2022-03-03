@@ -1,11 +1,11 @@
 #![cfg(test)]
 
 use super::*;
-use codec::{Decode, Encode};
+use codec::Encode;
 use frame_support::{assert_noop, assert_ok};
 use frame_system::{EventRecord, Phase};
 use mock::{
-	new_test_ext, Flow, FlowProtocol, FlowGovernance, Event, Origin, Test, System, GAME, ALICE, BOB, MAX_DURATION, GAME_CURRENCY_ID
+	new_test_ext, Flow, FlowProtocol, FlowGovernance, Event, Origin, Test, System, ALICE, BOB, MAX_DURATION, GAME_CURRENCY_ID
 };
 use gamedao_protocol_support::{FlowState};
 use sp_core::H256;
@@ -84,15 +84,15 @@ fn flow_create_errors() {
 
 		// TODO: make it work again!!
 
-		// CampaignsByBlock::<Test>::mutate(current_block + 1, |campaigns| {
-		//     campaigns.push(H256::random())
-		// });
-		// assert_noop!(
-		//     Flow::create(
-		//         Origin::signed(BOB), H256::random(), BOB, vec![1, 2], 20, 10, current_block + 1, 
-		//         FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]),
-		//     Error::<Test>::ContributionsPerBlockExceeded
-		// );
+		CampaignsByBlock::<Test>::mutate(current_block + 1, |campaigns| {
+			campaigns.push(H256::random())
+		});
+		assert_noop!(
+			Flow::create(
+				Origin::signed(BOB), H256::random(), BOB, vec![1, 2], 20, 10, current_block + 1, 
+				FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]),
+			Error::<Test>::ContributionsPerBlockExceeded
+		);
 
 	});
 }
@@ -161,7 +161,6 @@ fn flow_update_state_errors() {
 		System::set_block_number(current_block);
 		let nonce = Nonce::<Test>::get().encode();
 		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
-		let org:H256 = H256::random();
 
 		// Check if campaign has an owner
 		// Error: OwnerUnknown
@@ -185,23 +184,7 @@ fn flow_update_state_errors() {
 		);
 		// Check if campaign expires after the current block
 		// Error: CampaignExpired
-		let expiry = current_block - 1;
-		let mut campaign = Campaign {
-			id: campaign_id,
-			org: H256::random(),
-			name: vec![1, 2],
-			owner: BOB,
-			admin: BOB,
-			deposit: 10,
-			expiry: expiry,
-			cap: 20,
-			protocol: FlowProtocol::Raise,
-			governance: FlowGovernance::No,
-			cid: vec![1, 2],
-			token_symbol: vec![1, 2],
-			token_name: vec![1, 2],
-			created: 1,
-		};
+		let campaign = Campaign::new(campaign_id, current_block - 1);
 		CampaignAdmin::<Test>::insert(&campaign_id, &BOB);
 		Campaigns::<Test>::insert(&campaign_id, &campaign);
 		assert_noop!(
@@ -210,7 +193,7 @@ fn flow_update_state_errors() {
 		);
 		// Ensure that campaign state is not Failed
 		// Error: CampaignExpired
-		campaign.expiry = current_block + 2;
+		let campaign = Campaign::new(campaign_id, current_block + 2);
 		Campaigns::<Test>::insert(&campaign_id, &campaign);
 		CampaignState::<Test>::insert(&campaign_id, FlowState::Failed);
 		assert_noop!(
@@ -228,24 +211,8 @@ fn flow_update_state_success() {
 
 		let nonce = Nonce::<Test>::get().encode();
 		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
+		let campaign = Campaign::new(campaign_id, current_block + 1);
 
-		let expiry = current_block - 1;
-		let mut campaign = Campaign {
-			id: campaign_id,
-			org: H256::random(),
-			name: vec![1, 2],
-			owner: BOB,
-			admin: BOB,
-			deposit: 10,
-			expiry: current_block + 1,
-			cap: 20,
-			protocol: FlowProtocol::Raise,
-			governance: FlowGovernance::No,
-			cid: vec![1, 2],
-			token_symbol: vec![1, 2],
-			token_name: vec![1, 2],
-			created: 1,
-		};
 		Campaigns::<Test>::insert(&campaign_id, &campaign);
 		CampaignOwner::<Test>::insert(campaign_id, BOB);
 		CampaignAdmin::<Test>::insert(campaign_id, BOB);
@@ -254,5 +221,32 @@ fn flow_update_state_success() {
 
 		assert_eq!(CampaignsByState::<Test>::get(FlowState::Paused), vec![campaign_id]);
 		assert_eq!(CampaignState::<Test>::get(campaign_id), FlowState::Paused);
+	});
+}
+
+#[test]
+fn flow_contribute_errors() {
+	new_test_ext().execute_with(|| {
+		let current_block = 3;
+		System::set_block_number(current_block);
+
+	});
+}
+
+#[test]
+fn flow_contribute_success() {
+	new_test_ext().execute_with(|| {
+		let current_block = 3;
+		System::set_block_number(current_block);
+
+	});
+}
+
+#[test]
+fn flow_on_finalize() {
+	new_test_ext().execute_with(|| {
+		let current_block = 3;
+		System::set_block_number(current_block);
+
 	});
 }
