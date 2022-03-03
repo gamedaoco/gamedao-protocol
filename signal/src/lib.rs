@@ -16,7 +16,6 @@
 
 pub mod voting_enums;
 pub mod voting_structs;
-pub mod traits;
 
 #[cfg(test)]
 pub mod mock;
@@ -43,11 +42,13 @@ pub mod pallet {
 
     // use orml_traits::{MultiCurrency, MultiReservableCurrency};
     use primitives::{Balance, CurrencyId};
-    use support::{ControlPalletStorage, ControlState, ControlMemberState};
+    use support::{
+    	ControlPalletStorage, ControlState, ControlMemberState,
+    	FlowPalletStorage, FlowState
+    };
     use super::*;
     use voting_enums::{ProposalState, ProposalType, VotingType};
     use voting_structs::{Proposal, ProposalMetadata};
-    use traits::*;
 
 
     // type Balance<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -59,7 +60,7 @@ pub mod pallet {
         //     + MultiReservableCurrency<Self::AccountId>;
         type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
         type Control: ControlPalletStorage<Self::AccountId, Self::Hash>;
-        type Flow: Flow<Self::Hash, Balance>;
+        type Flow: FlowPalletStorage<Self::Hash, Balance>;
         type ForceOrigin: EnsureOrigin<Self::Origin>;
         type WeightInfo: WeightInfo;
 
@@ -75,6 +76,7 @@ pub mod pallet {
 
 
     #[pallet::pallet]
+    #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
 
 
@@ -192,8 +194,18 @@ pub mod pallet {
             sender_id: T::AccountId,
             proposal_id: T::Hash
         },
-        ProposalCreated(T::AccountId, T::Hash, T::Hash, Balance, T::BlockNumber),
-        ProposalVoted(T::AccountId, T::Hash, bool),
+        ProposalCreated {
+        	sender_id: T::AccountId,
+        	context_id: T::Hash,
+        	proposal_id: T::Hash,
+        	amount: Balance,
+        	expiry: T::BlockNumber,
+        },
+        ProposalVoted {
+        	sender_id: T::AccountId,
+        	proposal_id: T::Hash,
+        	vote: bool
+        },
         ProposalFinalized(T::Hash, u8),
         ProposalApproved(T::Hash),
         ProposalRejected(T::Hash),
@@ -403,11 +415,13 @@ pub mod pallet {
             // ensure!( T::Flow::campaign_by_id(&context_id), Error::<T>::CampaignUnknown );
             let state = T::Flow::campaign_state(&context_id);
             ensure!( state == FlowState::Success, Error::<T>::CampaignFailed );
-            // let owner = flow::Module::<T>::campaign_owner(&context_id);
+            // todo: should this checks be performed?
+            // let owner = T::Flow::campaign_owner(&context_id);
             // ensure!( sender == owner, Error::<T>::AuthorizationError );
 
             //  B O U N D S
 
+            // todo: should this checks be performed or not?
             // let current_block = <frame_system::Pallet<T>>::block_number();
             // ensure!(start > current_block, Error::<T>::OutOfBounds );
             // ensure!(expiry > start, Error::<T>::OutOfBounds );
@@ -417,23 +431,31 @@ pub mod pallet {
 
             let used_balance = <CampaignBalanceUsed<T>>::get(&context_id);
             let total_balance = T::Flow::campaign_balance(&context_id);
-            let remaining_balance = total_balance - used_balance;
+            let remaining_balance = total_balance.checked_sub(used_balance).ok_or(Error::<T>::BalanceInsufficient)? ;
             ensure!(remaining_balance >= amount, Error::<T>::BalanceInsufficient );
 
             //  T R A F F I C
 
             let proposals = <ProposalsByBlock<T>>::get(expiry);
-            ensure!((proposals.len() as u32) < T::MaxProposalsPerBlock::get(), Error::<T>::TooManyProposals );
+            ensure!((proposals.len() as u32) < T::MaxProposalsPerBlock::get(), Error::<T>::TooManyProposals);
+            ensure!(!<Proposals<T>>::contains_key(&context_id), Error::<T>::ProposalExists);
+
+            //  C O U N T S
+
+            let proposals_count = <ProposalsCount<T>>::get();
+            let updated_proposals_count = proposals_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+            let proposals_by_campaign_count = <ProposalsByContextCount<T>>::get(&context_id);
+            let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
+            let proposals_by_owner_count = <ProposalsByOwnerCount<T>>::get(&sender);
+            let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
 
             //  C O N F I G
 
             let proposal_type = ProposalType::Withdrawal; // treasury
             let voting_type = VotingType::Simple; // votes
             let nonce = Self::get_and_increment_nonce();
-            // let phrase = b"just another withdrawal";
 
-            let (proposal_id, _) = <T as Config>::Randomness::random(&nonce.encode());
-            ensure!(!<Proposals<T>>::contains_key(&context_id), Error::<T>::HashCollision );
+            let (proposal_id, _) = <T as Config>::Randomness::random(&nonce);
 
             let proposal = Proposal {
                 proposal_id: proposal_id.clone(),
@@ -449,15 +471,6 @@ pub mod pallet {
                 cid,
                 amount,
             };
-
-            //  C O U N T S
-
-            let proposals_count = <ProposalsCount<T>>::get();
-            let updated_proposals_count = proposals_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-            let proposals_by_campaign_count = <ProposalsByContextCount<T>>::get(&context_id);
-            let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-            let proposals_by_owner_count = <ProposalsByOwnerCount<T>>::get(&sender);
-            let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
 
             //  W R I T E
 
@@ -478,14 +491,16 @@ pub mod pallet {
             <ProposalsByOwnerIndex<T>>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
             <ProposalsByContext<T>>::mutate( context_id.clone(), |proposals| proposals.push(proposal_id.clone()) );
 
-            // ++
-
-            // <Nonce<T>>::mutate(|n| *n += 1);  // todo: safe nonce increase
-
             //  E V E N T
 
             Self::deposit_event(
-                Event::<T>::ProposalCreated(sender, context_id, proposal_id, amount, expiry)
+                Event::<T>::ProposalCreated {
+                	sender_id: sender,
+                	context_id,
+                	proposal_id,
+                	amount,
+                	expiry
+                }
             );
             Ok(())
 
@@ -580,6 +595,7 @@ pub mod pallet {
                             let contributors = T::Flow::campaign_contributors_count(&proposal.context_id);
                             let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError)?;
                             if updated_approvers > threshold {
+                            	// todo: should this be called on finalize?
                                 Self::unlock_balance(proposal_id, updated_approvers)?;
                             }
                             // remove
@@ -647,11 +663,11 @@ pub mod pallet {
 
             // dispatch vote event
             Self::deposit_event(
-                Event::<T>::ProposalVoted(
-                    sender,
-                    proposal_id.clone(),
+                Event::<T>::ProposalVoted {
+                    sender_id: sender,
+                    proposal_id:proposal_id.clone(),
                     vote
-                )
+                }
             );
             Ok(())
 
@@ -701,12 +717,14 @@ pub mod pallet {
                             Ok(t) => {
                                 if yes > t {
                                     proposal_state = ProposalState::Accepted;
-                                    Self::unlock_balance( proposal.proposal_id, yes );
+                                    Self::unlock_balance(proposal.proposal_id, yes);
                                 } else {
                                     proposal_state = ProposalState::Rejected;
                                 }
                             },
-                            Err(_err) => {  }
+                            Err(_err) => {
+                            	// todo: logic on error event
+                            }
                         }
                     },
                     ProposalType::Member => {
@@ -768,7 +786,7 @@ pub mod pallet {
             // let used_balance = Self::balance_used(proposal.context_id);
             let used_balance = <CampaignBalanceUsed<T>>::get(proposal.context_id);
             let available_balance = total_balance - used_balance.clone();
-            ensure!(available_balance >= proposal_balance, Error::<T>::BalanceInsufficient );
+            ensure!(available_balance >= proposal_balance, Error::<T>::BalanceInsufficient);
 
             // Get the owner of the campaign
             let _owner = <Owners<T>>::get(&proposal_id).ok_or("No owner for proposal")?;

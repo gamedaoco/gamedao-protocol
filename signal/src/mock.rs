@@ -2,17 +2,20 @@
 
 use crate as pallet_signal;
 use frame_support::parameter_types;
-use frame_system as system;
+use frame_system;
 use frame_support_test::TestRandomness;
 use sp_std::cell::RefCell;
+use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     // BuildStorage,
 };
 // use orml_currencies::{Currency};
-use crate::traits::{Flow, FlowState};
-use support::{ControlPalletStorage, ControlState, ControlMemberState};
+use support::{
+	ControlPalletStorage, ControlState, ControlMemberState,
+	FlowPalletStorage, FlowState
+};
 use primitives::{Balance, CurrencyId, Hash, TokenSymbol};
 
 type AccountId = u64;
@@ -25,17 +28,14 @@ pub struct ControlFixture {
 	pub body_member_state: ControlMemberState,
 	pub body_state: ControlState
 }
-impl ControlFixture {
-	pub fn body_controller(&mut self, value: AccountId) {
-		self.body_controller = value;
-	}
-	pub fn body_state(&mut self, value: ControlState) {
-		self.body_state = value;
-	}
-	pub fn body_member_state(&mut self, value: ControlMemberState) {
-		self.body_member_state = value;
-	}
+
+pub struct FlowFixture {
+	pub campaign_balance: Balance,
+	pub campaign_state: FlowState,
+	pub campaign_contributors_count: u64,
+	pub campaign_org: Hash
 }
+
 thread_local!(
 	pub static control_fixture: RefCell<ControlFixture> = RefCell::new(ControlFixture {
 		body_controller: ACC1,
@@ -43,31 +43,29 @@ thread_local!(
 		body_member_state: ControlMemberState::Active,
 		body_state: ControlState::Active
 	});
+	pub static flow_fixture: RefCell<FlowFixture> = RefCell::new(FlowFixture {
+		campaign_balance: 15,
+		campaign_state: FlowState::Success,
+		campaign_contributors_count: 0,
+		campaign_org: H256::random()
+	});
 );
 
 
 pub struct ControlMock;
 impl ControlPalletStorage<AccountId, Hash> for ControlMock {
-
 	fn body_controller(_org: &Hash) -> AccountId { control_fixture.with(|v| v.borrow().body_controller.clone()) }
 	fn body_treasury(_org: &Hash) -> AccountId { control_fixture.with(|v| v.borrow().body_treasury.clone()) }
 	fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> ControlMemberState { control_fixture.with(|v| v.borrow().body_member_state.clone()) }
 	fn body_state(_hash: &Hash) -> ControlState { control_fixture.with(|v| v.borrow().body_state.clone()) }
 }
-// impl ControlPalletStorage<AccountId, Hash> for ControlMock {
-
-// 	fn body_controller(_org: &Hash) -> AccountId { ACC1 }
-// 	fn body_treasury(_org: &Hash) -> AccountId { ACC2 }
-// 	fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> ControlMemberState { ControlMemberState::Active }
-// 	fn body_state(_hash: &Hash) -> ControlState { ControlState::Active }
-// }
 
 pub struct FlowMock;
-impl Flow<Hash, Balance> for FlowMock {
-	fn campaign_balance(_hash: &Hash) -> Balance { Default::default() }
-    fn campaign_state(_hash: &Hash) -> FlowState { FlowState::Active }
-    fn campaign_contributors_count(_hash: &Hash) -> u64 { 0 }
-    fn campaign_org(_hash: &Hash) -> Hash { Default::default() }
+impl FlowPalletStorage<Hash, Balance> for FlowMock {
+	fn campaign_balance(_hash: &Hash) -> Balance { flow_fixture.with(|v| v.borrow().campaign_balance.clone()) }
+    fn campaign_state(_hash: &Hash) -> FlowState { flow_fixture.with(|v| v.borrow().campaign_state.clone()) }
+    fn campaign_contributors_count(_hash: &Hash) -> u64 { flow_fixture.with(|v| v.borrow().campaign_contributors_count.clone()) }
+    fn campaign_org(_hash: &Hash) -> Hash { flow_fixture.with(|v| v.borrow().campaign_org.clone()) }
 }
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -81,7 +79,7 @@ frame_support::construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-        Signal: pallet_signal::{Pallet, Call, Storage, Event<T>},
+        Signal: pallet_signal,
     }
 );
 
@@ -99,7 +97,7 @@ parameter_types! {
 
 // impl pallet_randomness_collective_flip::Config for Test {}
 
-impl system::Config for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
@@ -142,7 +140,7 @@ impl pallet_signal::Config for Test {
 pub struct ExtBuilder;
 impl ExtBuilder {
     pub fn build(self) -> sp_io::TestExternalities {
-        let t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
+        let t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
         let mut ext = sp_io::TestExternalities::new(t);
         ext.execute_with(|| System::set_block_number(1));
         ext
