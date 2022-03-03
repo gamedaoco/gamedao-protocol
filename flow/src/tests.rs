@@ -81,9 +81,6 @@ fn flow_create_errors() {
 		);
 		// Check contribution limit per block
 		// Error: ContributionsPerBlockExceeded
-
-		// TODO: make it work again!!
-
 		CampaignsByBlock::<Test>::mutate(current_block + 1, |campaigns| {
 			campaigns.push(H256::random())
 		});
@@ -153,14 +150,12 @@ fn flow_create_success() {
 	});
 }
 
-
 #[test]
 fn flow_update_state_errors() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;
 		System::set_block_number(current_block);
-		let nonce = Nonce::<Test>::get().encode();
-		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
+		let campaign_id: H256 = H256::random();
 
 		// Check if campaign has an owner
 		// Error: OwnerUnknown
@@ -209,8 +204,7 @@ fn flow_update_state_success() {
 		let current_block = 3;
 		System::set_block_number(current_block);
 
-		let nonce = Nonce::<Test>::get().encode();
-		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
+		let campaign_id: H256 = H256::random();
 		let campaign = Campaign::new(campaign_id, current_block + 1);
 
 		Campaigns::<Test>::insert(&campaign_id, &campaign);
@@ -218,7 +212,6 @@ fn flow_update_state_success() {
 		CampaignAdmin::<Test>::insert(campaign_id, BOB);
 
 		assert_ok!(Flow::update_state(Origin::signed(BOB), campaign_id, FlowState::Paused));
-
 		assert_eq!(CampaignsByState::<Test>::get(FlowState::Paused), vec![campaign_id]);
 		assert_eq!(CampaignState::<Test>::get(campaign_id), FlowState::Paused);
 	});
@@ -230,6 +223,53 @@ fn flow_contribute_errors() {
 		let current_block = 3;
 		System::set_block_number(current_block);
 
+		let campaign_id: H256 = H256::random();
+		let campaign = Campaign::new(campaign_id, current_block + 2);
+		Campaigns::<Test>::insert(&campaign_id, &campaign);
+
+		// Check if contributor has enough balance
+		// Error: BalanceTooLow
+		let more_than_balance = 110;
+		assert_noop!(
+			Flow::contribute(Origin::signed(BOB), campaign_id, more_than_balance),
+			Error::<Test>::BalanceTooLow
+		);
+		// Check if owner exists for the campaign
+		// OwnerUnknown
+		assert_noop!(
+			Flow::contribute(Origin::signed(BOB), campaign_id, 50),
+			Error::<Test>::OwnerUnknown
+		);
+		// Check that owner is not caller
+		// NoContributionToOwnCampaign
+		CampaignOwner::<Test>::insert(campaign_id, BOB);
+		assert_noop!(
+			Flow::contribute(Origin::signed(BOB), campaign_id, 50),
+			Error::<Test>::NoContributionToOwnCampaign
+		);
+		// Check if campaign exists
+		// InvalidId
+		let new_campaign_id = H256::random();
+		CampaignOwner::<Test>::insert(new_campaign_id, BOB);
+		assert_noop!(
+			Flow::contribute(Origin::signed(ALICE), new_campaign_id, 50),
+			Error::<Test>::InvalidId
+		);
+		// Check if Campaign's state is Active
+		// NoContributionsAllowed
+		CampaignState::<Test>::insert(&campaign_id, FlowState::Paused);
+		assert_noop!(
+			Flow::contribute(Origin::signed(ALICE), campaign_id, 50),
+			Error::<Test>::NoContributionsAllowed
+		);
+		// Check if campaign ends before the current block
+		// CampaignExpired
+		System::set_block_number(current_block + 2);
+		CampaignState::<Test>::insert(&campaign_id, FlowState::Active);
+		assert_noop!(
+			Flow::contribute(Origin::signed(ALICE), campaign_id, 50),
+			Error::<Test>::CampaignExpired
+		);
 	});
 }
 
@@ -239,6 +279,38 @@ fn flow_contribute_success() {
 		let current_block = 3;
 		System::set_block_number(current_block);
 
+		let campaign_id: H256 = H256::random();
+		let campaign = Campaign::new(campaign_id, current_block + 2);
+		let contribution = 30;
+		Campaigns::<Test>::insert(&campaign_id, &campaign);
+		CampaignOwner::<Test>::insert(campaign_id, BOB);
+		CampaignState::<Test>::insert(&campaign_id, FlowState::Active);
+
+		assert_ok!(Flow::contribute(Origin::signed(ALICE), campaign_id, contribution));
+
+		assert_eq!(CampaignsContributedArray::<Test>::get((ALICE, 0)), campaign_id);
+		assert_eq!(CampaignsContributedIndex::<Test>::get((ALICE, campaign_id)), 0);
+		assert_eq!(CampaignsContributedCount::<Test>::get(ALICE), 1);
+		assert_eq!(CampaignContributorsCount::<Test>::get(campaign_id), 1);
+		assert_eq!(CampaignContribution::<Test>::get((campaign_id, ALICE)), contribution);
+		assert_eq!(CampaignBalance::<Test>::get(campaign_id), contribution);
+
+		// Events
+		assert_eq!(
+			System::events(),
+				vec![
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Tokens(orml_tokens::Event::Reserved(GAME_CURRENCY_ID, ALICE, contribution)),
+						topics: vec![],
+					},
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Flow(crate::Event::CampaignContributed(campaign_id, ALICE, contribution, current_block)),
+						topics: vec![],
+					},
+				]
+			);
 	});
 }
 

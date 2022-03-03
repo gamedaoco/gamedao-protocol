@@ -138,19 +138,14 @@ impl ControlPalletStorage<AccountId, Hash> for ControlPalletMock {
 parameter_types! {
 	pub const MinLength: u32 = 2;
 	pub const MaxLength: u32 = 4;
-
 	pub const MaxCampaignsPerAddress: u32 = 3;
 	pub const MaxCampaignsPerBlock: u32 = 1;
 	pub const MaxContributionsPerBlock: u32 = 3;
-
 	pub const MinDuration: BlockNumber = 1 * DAYS;
 	pub const MaxDuration: BlockNumber = MAX_DURATION;
-
 	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
-
 	pub const CampaignFee: Balance = 25 * CENTS;
-
 	pub const GAMECurrencyId: CurrencyId = GAME_CURRENCY_ID;
 	pub const GameDAOTreasury: AccountId = BOB;
 }
@@ -197,7 +192,7 @@ impl Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, Fl
 			admin: BOB,
 			deposit: 10,
 			expiry: expiry,
-			cap: 20,
+			cap: 200,
 			protocol: FlowProtocol::Raise,
 			governance: FlowGovernance::No,
 			cid: vec![1, 2],
