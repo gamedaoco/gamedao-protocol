@@ -3,12 +3,15 @@
 use super::*;
 use codec::Encode;
 use frame_support::{assert_noop, assert_ok};
+use frame_support::traits::Hooks;
 use frame_system::{EventRecord, Phase};
 use mock::{
-	new_test_ext, Flow, FlowProtocol, FlowGovernance, Event, Origin, Test, System, ALICE, BOB, MAX_DURATION, GAME_CURRENCY_ID
+	new_test_ext, Flow, FlowProtocol, FlowGovernance, Event, Origin, Test, System, ALICE, BOB, BOGDANA, TREASURY, MAX_DURATION, GAME_CURRENCY_ID, AccountId
 };
 use gamedao_protocol_support::{FlowState};
 use sp_core::H256;
+
+use orml_traits::MultiCurrency;
 
 
 #[test]
@@ -136,7 +139,7 @@ fn flow_create_success() {
 			vec![
 				EventRecord {
 					phase: Phase::Initialization,
-					event: Event::Tokens(orml_tokens::Event::Reserved(GAME_CURRENCY_ID, BOB, deposit)),
+					event: Event::Tokens(orml_tokens::Event::Reserved(GAME_CURRENCY_ID, TREASURY, deposit)),
 					topics: vec![],
 				},
 				EventRecord {
@@ -315,10 +318,77 @@ fn flow_contribute_success() {
 }
 
 #[test]
-fn flow_on_finalize() {
+fn flow_on_finalize_campaign_succeess() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;
 		System::set_block_number(current_block);
 
+		let expiry = current_block + 1;
+		let deposit = 60;
+		let target = 100;
+		
+		// Create Campaign
+		let nonce = Nonce::<Test>::get().encode();
+		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
+		assert_ok!(
+			Flow::create(
+				Origin::signed(BOB), H256::random(), BOB, vec![1, 2], target, deposit,  expiry, 
+				FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![])
+		);
+		// Contribute (60/100)
+		assert_ok!(Flow::contribute(Origin::signed(ALICE), campaign_id, deposit));
+		// Contribute (120/100)
+		assert_ok!(Flow::contribute(Origin::signed(BOGDANA), campaign_id, deposit));
+
+		// deposit > capacity
+		System::set_block_number(expiry);
+		Flow::on_finalize(expiry);
+		
+		assert_eq!(
+			<Test as Config>::Currency::total_balance(GAME_CURRENCY_ID, &TREASURY),
+			100 + deposit * 2
+		);
+
+		assert_eq!(
+			<Test as Config>::Currency::free_balance(GAME_CURRENCY_ID, &TREASURY),
+			100 - deposit
+		);
+	});
+}
+
+#[test]
+fn flow_on_finalize_campaign_failed() {
+	new_test_ext().execute_with(|| {
+		let current_block = 3;
+		System::set_block_number(current_block);
+
+		let expiry = current_block + 1;
+		let deposit = 60;
+		let target = 100;
+		
+		// Create Campaign
+		let nonce = Nonce::<Test>::get().encode();
+		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
+		assert_ok!(
+			Flow::create(
+				Origin::signed(BOB), H256::random(), BOB, vec![1, 2], target, deposit,  expiry, 
+				FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![])
+		);
+		// Contribute (60/100)
+		assert_ok!(Flow::contribute(Origin::signed(ALICE), campaign_id, deposit));
+
+		// deposit < capacity
+		System::set_block_number(expiry);
+		Flow::on_finalize(expiry);
+		
+		assert_eq!(
+			<Test as Config>::Currency::total_balance(GAME_CURRENCY_ID, &TREASURY),
+			100
+		);
+
+		assert_eq!(
+			<Test as Config>::Currency::free_balance(GAME_CURRENCY_ID, &TREASURY),
+			100
+		);
 	});
 }

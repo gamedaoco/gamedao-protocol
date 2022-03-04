@@ -34,6 +34,9 @@ pub const DAYS: BlockNumber = HOURS * 24;
 
 pub const ALICE: AccountId = 1;
 pub const BOB: AccountId = 2;
+pub const BOGDANA: AccountId = 3;
+pub const TREASURY: AccountId = 4;
+
 pub const MAX_DURATION: BlockNumber = DAYS * 100;
 pub const GAME_CURRENCY_ID: CurrencyId = TokenSymbol::GAME as u32;
 
@@ -130,9 +133,9 @@ pub struct ControlPalletMock;
 
 impl ControlPalletStorage<AccountId, Hash> for ControlPalletMock {
 	fn body_controller(_org: &Hash) -> AccountId { BOB }
-	fn body_treasury(_org: &Hash) -> AccountId { BOB }
-	fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> ControlMemberState { ControlMemberState::Active }
+	fn body_treasury(_org: &Hash) -> AccountId { TREASURY }
 	fn body_state(_hash: &Hash) -> ControlState { ControlState::Active }
+    fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> ControlMemberState { ControlMemberState::Active }
 }
 
 parameter_types! {
@@ -147,7 +150,7 @@ parameter_types! {
 	pub const MinContribution: Balance = 1 * DOLLARS;
 	pub const CampaignFee: Balance = 25 * CENTS;
 	pub const GAMECurrencyId: CurrencyId = GAME_CURRENCY_ID;
-	pub const GameDAOTreasury: AccountId = BOB;
+	pub const GameDAOTreasury: AccountId = TREASURY;
 }
 
 impl Config for Test {
@@ -192,7 +195,7 @@ impl Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, Fl
 			admin: BOB,
 			deposit: 10,
 			expiry: expiry,
-			cap: 200,
+			cap: 110,
 			protocol: FlowProtocol::Raise,
 			governance: FlowGovernance::No,
 			cid: vec![1, 2],
@@ -224,6 +227,8 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		balances: vec![
 			(ALICE, GAME_CURRENCY_ID, 100),
 			(BOB, GAME_CURRENCY_ID, 100),
+            (BOGDANA, GAME_CURRENCY_ID, 100),
+            (TREASURY, GAME_CURRENCY_ID, 100),
 		],
 	}.assimilate_storage(&mut t).unwrap();
 	t.into()

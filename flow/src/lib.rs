@@ -510,8 +510,6 @@ pub mod pallet {
 									&contributor,
 									&dao_treasury,
 									contributor_balance.clone(),
-									// TODO: check how this impacts logic:
-									// ExistenceRequirement::AllowDeath
 								);
 
 								// success?
