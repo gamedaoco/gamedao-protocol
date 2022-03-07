@@ -313,7 +313,7 @@ fn flow_contribute_success() {
 						topics: vec![],
 					},
 				]
-			);
+		);
 	});
 }
 
@@ -353,6 +353,44 @@ fn flow_on_finalize_campaign_succeess() {
 			<Test as Config>::Currency::free_balance(GAME_CURRENCY_ID, &TREASURY),
 			100 - deposit
 		);
+
+        assert_eq!(
+            // Skip events from create and contribute extrinsics
+            System::events()[6..],
+                vec![
+                    EventRecord {
+                        phase: Phase::Initialization,
+                        event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, ALICE, deposit)),
+                        topics: vec![],
+                    },
+                    EventRecord {
+                        phase: Phase::Initialization,
+                        event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, ALICE, expiry, deposit)),
+                        topics: vec![],
+                    },
+                    EventRecord {
+                        phase: Phase::Initialization,
+                        event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, BOGDANA, deposit)),
+                        topics: vec![],
+                    },
+                    EventRecord {
+                        phase: Phase::Initialization,
+                        event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, BOGDANA, expiry, deposit)),
+                        topics: vec![],
+                    },
+                    EventRecord {
+                        phase: Phase::Initialization,
+                        event: Event::Tokens(orml_tokens::Event::Reserved(GAME_CURRENCY_ID, TREASURY, deposit * 2)),
+                        topics: vec![],
+                    },
+                    EventRecord {
+                        phase: Phase::Initialization,
+                        event: Event::Flow(crate::Event::CampaignFinalized(campaign_id, deposit * 2, expiry, true)),
+                        topics: vec![],
+                    },
+                ]
+        );
+
 	});
 }
 
@@ -390,5 +428,27 @@ fn flow_on_finalize_campaign_failed() {
 			<Test as Config>::Currency::free_balance(GAME_CURRENCY_ID, &TREASURY),
 			100
 		);
+
+        assert_eq!(
+            // Skip events from create and contribute extrinsics
+            System::events()[4..],
+                vec![
+                    EventRecord {
+                        phase: Phase::Initialization,
+                        event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, ALICE, deposit)),
+                        topics: vec![],
+                    },
+                    EventRecord {
+                        phase: Phase::Initialization,
+                        event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, TREASURY, deposit)),
+                        topics: vec![],
+                    },
+                    EventRecord {
+                        phase: Phase::Initialization,
+                        event: Event::Flow(crate::Event::CampaignFailed(campaign_id, deposit, expiry, false)),
+                        topics: vec![],
+                    },
+                ]
+        );
 	});
 }

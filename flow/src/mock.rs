@@ -14,7 +14,7 @@ use orml_traits::parameter_type_with_key;
 use gamedao_protocol_support::{ControlPalletStorage, ControlMemberState, ControlState};
 use zero_primitives::{Amount, CurrencyId, TokenSymbol, Header};
 
-pub type AccountId = u64;
+pub type AccountId = u32;
 pub type BlockNumber = u32;
 pub type Hash = H256;
 pub type Timestamp = u64;
