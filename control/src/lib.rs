@@ -11,18 +11,23 @@
 //! CONTROL
 //! Create and manage DAO like organizations.
 
-// #![warn(unused_imports)]
+#![warn(unused_imports)]
 #![allow(clippy::unused_unit)]
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(derive_default_enum)]
+// #![feature(derive_default_enum)]
 pub use pallet::*;
 // TODO:
 // mod default_weight;
 // mod mock;
-// mod tests;
+
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
 
 use frame_support::{
 	ensure,
@@ -35,6 +40,7 @@ use sp_std::{ fmt::Debug, vec::Vec };
 // use pallet_balances::{ self as balances };
 use orml_traits::{ MultiCurrency, MultiReservableCurrency };
 use primitives::{ Balance, CurrencyId, BlockNumber };
+use gamedao_protocol_support::{ControlState as State, ControlMemberState as MemberState};
 
 //
 //
@@ -43,8 +49,7 @@ use primitives::{ Balance, CurrencyId, BlockNumber };
 //
 
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
-#[repr(u8)]
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub enum OrgType {
 	Individual = 0,
 	Company = 1,
@@ -57,46 +62,32 @@ impl Default for OrgType {
 	}
 }
 
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Default)]
-#[repr(u8)]
-pub enum State {
-#[default]
-	Inactive = 0,
-	Active = 1,
-	Locked = 2,
-}
-
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Default)]
-#[repr(u8)]
-pub enum MemberState {
-#[default]
-	Inactive = 0, // eg inactive after threshold period
-	Active = 1,   // active
-	Pending = 2,  // application voting pending
-	Kicked = 3,
-	Banned = 4,
-	Exited = 5,
-}
-
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Default)]
-#[repr(u8)]
-#[derive(Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub enum FeeModel {
-#[default]
 	NoFees = 0,		// feeless
 	Reserve = 1,	// amount is reserved in user account
 	Transfer = 2,	// amount is transfered to Org treasury
 }
+impl Default for FeeModel {
+	fn default() -> Self {
+		Self::NoFees
+	}
+}
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Default)]
-#[repr(u8)]
-#[derive(Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub enum AccessModel {
-#[default]
 	Open = 0,		// anyDAO can join
 	Voting = 1,		// application creates membership voting
 	Controller = 2,	// controller invites
 }
+impl Default for AccessModel {
+	fn default() -> Self {
+		Self::Open
+	}
+}
+
 
 /// Organization
 #[derive(Encode, Decode, PartialEq, Eq, TypeInfo)]
@@ -169,10 +160,10 @@ pub mod pallet {
 			+ Into<<Self as frame_system::Config>::Event>;
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = CurrencyId, Balance = Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
-		type UnixTime: UnixTime;
+		// type UnixTime: UnixTime;
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 
-		type GameDAOAdminOrigin: EnsureOrigin<Self::Origin>;
+		// type GameDAOAdminOrigin: EnsureOrigin<Self::Origin>;
 		type GameDAOTreasury: Get<Self::AccountId>;
 
 		type ForceOrigin: EnsureOrigin<Self::Origin>;
@@ -222,7 +213,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn org_state )]
 	pub(super) type OrgState<T: Config> =
-		StorageMap <_, Blake2_128Concat, T::Hash, State, OptionQuery>;
+		StorageMap <_, Blake2_128Concat, T::Hash, State, ValueQuery, GetDefault>;
 
 	/// Access model
 	#[pallet::storage]
@@ -246,7 +237,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn org_member_state )]
 	pub(super) type OrgMemberState<T: Config> =
-		StorageMap <_, Blake2_128Concat, (T::Hash, T::AccountId), MemberState, ValueQuery>;
+		StorageMap <_, Blake2_128Concat, (T::Hash, T::AccountId), MemberState, ValueQuery, GetDefault>;
 
 	/// Memberships by AccountId
 	#[pallet::storage]
@@ -448,12 +439,14 @@ pub mod pallet {
 				T::DepositCurrencyId::get(),
 				&sender
 			);
+			println!("{:?} vs {:?}", creation_fee, free_balance);
 			ensure!( free_balance > creation_fee, Error::<T>::BalanceTooLow );
 
 			let free_balance_treasury = T::Currency::free_balance(
 				T::DepositCurrencyId::get(),
 				&treasury
 			);
+			println!("{:?} vs {:?} vs {:?}", creation_fee, free_balance, free_balance_treasury);
 			ensure!( free_balance_treasury > creation_fee, Error::<T>::BalanceTooLow );
 
 			// controller and treasury must not be equal
