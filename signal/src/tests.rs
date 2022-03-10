@@ -33,7 +33,7 @@ use super::{
 	voting_enums::{VotingType, ProposalType, ProposalState},
 	mock::{
 		Test, ExtBuilder,
-		ACC1, ACC2,
+		AccountId, ACC1, ACC2, TREASURY_ACC,
 		System, Origin, Event, Signal,
 		control_fixture, flow_fixture
 	}
@@ -45,7 +45,8 @@ use support::{
 use sp_runtime::traits::BadOrigin;
 use sp_core::H256;
 use frame_support::{assert_ok, assert_noop, traits::{Randomness, Hooks}};
-use frame_system;
+use orml_tokens::Event as TokensEvent;
+use orml_traits::{MultiReservableCurrency};
 
 
 
@@ -66,7 +67,7 @@ fn signal_general_proposal_success() {
 				15  // expiry
 			)
 		);
-		let event = <frame_system::Pallet<Test>>::events().pop()
+		let event = System::events().pop()
 			.expect("No event generated").event;
 		assert_eq!(
 			event,
@@ -275,7 +276,7 @@ fn signal_withdraw_proposal_success() {
 				15  // expiry
 			)
 		);
-		let event = <frame_system::Pallet<Test>>::events().pop()
+		let event = System::events().pop()
 			.expect("No event generated").event;
 		assert_eq!(
 			event,
@@ -484,7 +485,7 @@ fn signal_simple_vote_success() {
 		assert_ok!(
 			Signal::simple_vote(Origin::signed(ACC2), proposal_id, true)
 		);
-		let event = <frame_system::Pallet<Test>>::events().pop()
+		let event = System::events().pop()
 			.expect("No event generated").event;
 		assert_eq!(
 			event,
@@ -507,7 +508,7 @@ fn signal_simple_vote_success() {
 		assert_ok!(
 			Signal::simple_vote(Origin::signed(ACC1), proposal_id, false)
 		);
-		let event = <frame_system::Pallet<Test>>::events().pop()
+		let event = System::events().pop()
 			.expect("No event generated").event;
 		assert_eq!(
 			event,
@@ -546,7 +547,7 @@ fn signal_simple_vote_success() {
 		assert_ok!(
 			Signal::simple_vote(Origin::signed(ACC1), proposal_id, false)
 		);
-		let event = <frame_system::Pallet<Test>>::events().pop()
+		let event = System::events().pop()
 			.expect("No event generated").event;
 		assert_eq!(
 			event,
@@ -565,7 +566,7 @@ fn signal_simple_vote_success() {
 		// assert_ok!(
 		// 	Signal::simple_vote(Origin::signed(ACC2), proposal_id, true)
 		// );
-		// let event = <frame_system::Pallet<Test>>::events().pop()
+		// let event = System::events().pop()
 		// 	.expect("No event generated").event;
 		// assert_eq!(
 		// 	event,
@@ -653,11 +654,140 @@ fn signal_simple_vote_error() {
 #[test]
 fn signal_on_finalize_success() {
 	ExtBuilder::default().build().execute_with(|| {
-		let bn = 3;
-		System::set_block_number(bn);
+		let (start, expiry) = (3, 15);
+		System::set_block_number(start);
+		let (proposal_id1, _): (H256, _) = <Test as Config>::Randomness::random(&vec![0]);
+		let (proposal_id2, _): (H256, _) = <Test as Config>::Randomness::random(&vec![1]);
+		let (proposal_id3, _): (H256, _) = <Test as Config>::Randomness::random(&vec![2]);
 
-		// create 4 proposals
-		// two general and two withdrawal, one expired and one not
-		Signal::on_finalize(bn);
+		assert_ok!(
+			Signal::general_proposal(
+				Origin::signed(ACC1),
+				H256::random(),  // context id
+				vec![1,2,3],  // title
+				vec![1,2,3],  // cid
+				start,  // start
+				expiry  // expiry
+			)
+		);
+		assert_ok!(
+			Signal::withdraw_proposal(
+				Origin::signed(ACC1),  // origin
+				H256::random(),  // context id
+				vec![1,2,3],  // title
+				vec![1,2,3],  // cid
+				10,  // amount
+				start,  // start
+				expiry  // expiry
+			)
+		);
+		for i in 1..5 {
+			assert_ok!(
+				Signal::simple_vote(
+					Origin::signed(i),
+					proposal_id1,
+					i < 4
+				)
+			);
+		}
+		for i in 1..5 {
+			assert_ok!(
+				Signal::simple_vote(
+					Origin::signed(i),
+					proposal_id2,
+					i == 5
+				)
+			);
+		}
+		// todo: few votes for each item
+
+		let mut events_before = System::events().len();
+		assert_eq!(events_before, 10);
+		Signal::on_finalize(start);
+		assert_eq!(System::events().len(), events_before);
+
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+		let mut events = System::events();
+		assert_eq!(events.len(), events_before + 2);
+
+		let withdrawal_event = events.pop().unwrap().event;
+		let general_event = events.pop().unwrap().event;
+		assert_eq!(
+			withdrawal_event,
+			Event::Signal(crate::Event::ProposalRejected {proposal_id: proposal_id2})
+		);
+		assert_eq!(
+			<ProposalStates<Test>>::get(proposal_id2),
+			ProposalState::Rejected
+		);
+
+		assert_eq!(
+			general_event,
+			Event::Signal(crate::Event::ProposalApproved {proposal_id: proposal_id1})
+		);
+		assert_eq!(
+			<ProposalStates<Test>>::get(proposal_id1),
+			ProposalState::Accepted
+		);
+
+		events_before = 12;
+		let ctx_id = H256::random();
+		assert_ok!(
+			Signal::withdraw_proposal(
+				Origin::signed(ACC1),  // origin
+				ctx_id,  // context id
+				vec![1,2,3],  // title
+				vec![1,2,3],  // cid
+				10,  // amount
+				15,  // start
+				16  // expiry
+			)
+		);
+		assert_eq!(System::events().len(), events_before + 1);
+
+		let res = <<Test as Config>::Currency as MultiReservableCurrency<AccountId>>::
+			reserve(<Test as Config>::FundingCurrencyId::get(), &TREASURY_ACC, 25);
+		match res {
+			Ok(_) => {},
+			Err(_) => panic!("Failed to reserve treasury balance")
+		}
+		assert_ok!(
+			Signal::simple_vote(
+				Origin::signed(ACC1),
+				proposal_id3,
+				true
+			)
+		);
+		assert_eq!(System::events().len(), events_before + 5);
+		System::set_block_number(16);
+		Signal::on_finalize(16);
+		let mut events = System::events();
+		assert_eq!(events.len(), events_before + 5);
+		assert_eq!(
+			events.pop().unwrap().event,
+			Event::Signal(crate::Event::ProposalVoted {sender_id: ACC1, proposal_id: proposal_id3, vote: true})
+		);
+		assert_eq!(
+			events.pop().unwrap().event,
+			Event::Signal(crate::Event::WithdrawalGranted {
+				proposal_id: proposal_id3,
+				context_id: ctx_id,
+				body_id: flow_fixture.with(|v| v.borrow().campaign_org)
+			})
+		);
+		assert_eq!(
+			events.pop().unwrap().event,
+			Event::Tokens(
+				TokensEvent::Unreserved(
+					<Test as Config>::FundingCurrencyId::get(),
+					TREASURY_ACC,
+					10
+				)
+			)
+		);
+		assert_eq!(<CampaignBalanceUsed<Test>>::get(ctx_id), 10);
+		assert_eq!(<ProposalStates<Test>>::get(proposal_id3), ProposalState::Finalized);
+
 	});
 }

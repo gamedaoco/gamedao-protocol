@@ -37,8 +37,10 @@ support = { package = "gamedao-protocol-support", path = "../support", default-f
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
-pallet-randomness-collective-flip = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 frame-support-test = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+
+orml-tokens = { path = "../../orml/tokens", default-features = false }
 orml-currencies = { path = "../../orml/currencies", default-features = false }
 
 [features]
@@ -57,7 +59,9 @@ std = [
     'sp-std/std',
     'sp-runtime/std',
 
-    "orml-traits/std",
+	"orml-traits/std",
+	"orml-tokens/std",
+	"orml-currencies/std",
 
     "support/std"
 ]

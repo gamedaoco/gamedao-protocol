@@ -2,6 +2,7 @@
 
 use crate as pallet_signal;
 use frame_support::parameter_types;
+use frame_support::traits::{GenesisBuild, Nothing};
 use frame_system;
 use frame_support_test::TestRandomness;
 use sp_std::cell::RefCell;
@@ -9,18 +10,20 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    // BuildStorage,
 };
-// use orml_currencies::{Currency};
+use orml_traits::parameter_type_with_key;
 use support::{
 	ControlPalletStorage, ControlState, ControlMemberState,
 	FlowPalletStorage, FlowState
 };
-use primitives::{Balance, CurrencyId, Hash, TokenSymbol};
+use primitives::{Amount, Balance, CurrencyId, Hash, TokenSymbol};
 
-type AccountId = u64;
+pub type AccountId = u64;
+pub type BlockNumber = u32;
+
 pub const ACC1: AccountId = 1;
 pub const ACC2: AccountId = 2;
+pub const TREASURY_ACC: AccountId = 3;
 
 pub struct ControlFixture {
 	pub body_controller: AccountId,
@@ -39,7 +42,7 @@ pub struct FlowFixture {
 thread_local!(
 	pub static control_fixture: RefCell<ControlFixture> = RefCell::new(ControlFixture {
 		body_controller: ACC1,
-		body_treasury: ACC2,
+		body_treasury: TREASURY_ACC,
 		body_member_state: ControlMemberState::Active,
 		body_state: ControlState::Active
 	});
@@ -80,15 +83,59 @@ frame_support::construct_runtime!(
     {
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
         Signal: pallet_signal,
+        Currencies: orml_currencies::{Pallet, Call, Event<T>},
+        Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
+		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
     }
 );
+
+parameter_type_with_key! {
+	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
+		Default::default()
+	};
+}
+
+impl orml_tokens::Config for Test {
+	type Event = Event;
+	type Balance = Balance;
+	type Amount = Amount;
+	type CurrencyId = CurrencyId;
+	type WeightInfo = ();
+	type ExistentialDeposits = ExistentialDeposits;
+	type OnDust = ();
+	type MaxLocks = ();
+	type DustRemovalWhitelist = Nothing;
+}
+
+impl pallet_balances::Config for Test {
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = Event;
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = frame_system::Pallet<Test>;
+	type MaxLocks = ();
+	type MaxReserves = ();
+	type ReserveIdentifier = [u8; 8];
+	type WeightInfo = ();
+}
+pub type AdaptedBasicCurrency = orml_currencies::BasicCurrencyAdapter<Test, PalletBalances, Amount, BlockNumber>;
+
+impl orml_currencies::Config for Test {
+	type Event = Event;
+	type MultiCurrency = Tokens;
+	type NativeCurrency = AdaptedBasicCurrency;
+	type GetNativeCurrencyId = ();
+	type WeightInfo = ();
+}
+
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
     pub const SS58Prefix: u8 = 42;
     pub BlockWeights: frame_system::limits::BlockWeights =
         frame_system::limits::BlockWeights::simple_max(1024);
-    pub static ExistentialDeposit: u64 = 0;
+
+    pub const ExistentialDeposit: Balance = 1;
 
     pub const MaxProposalsPerBlock: u32 = 2;
     pub const MaxProposalDuration: u32 = 20;
@@ -115,7 +162,7 @@ impl frame_system::Config for Test {
     type BlockHashCount = BlockHashCount;
     type Version = ();
     type PalletInfo = PalletInfo;
-    type AccountData = ();
+    type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
@@ -133,16 +180,24 @@ impl pallet_signal::Config for Test {
 	type MaxProposalDuration = MaxProposalDuration;
 	type FundingCurrencyId = FundingCurrencyId;
 	type Randomness = TestRandomness<Self>;
-	// type Currency = Currency<Config, AccountId>;
+	type Currency = Currencies;
 }
 
 #[derive(Default)]
 pub struct ExtBuilder;
 impl ExtBuilder {
     pub fn build(self) -> sp_io::TestExternalities {
-        let t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-        let mut ext = sp_io::TestExternalities::new(t);
-        ext.execute_with(|| System::set_block_number(1));
-        ext
+        let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+        let currency_id = TokenSymbol::GAME as u32;
+        orml_tokens::GenesisConfig::<Test> {
+			balances: vec![
+				(ACC1, currency_id, 100),
+				(ACC2, currency_id, 100),
+				(TREASURY_ACC, currency_id, 25)
+			],
+		}.assimilate_storage(&mut t).unwrap();
+		let mut ext = sp_io::TestExternalities::new(t);
+		ext.execute_with(|| System::set_block_number(1));
+  		ext
     }
 }

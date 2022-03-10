@@ -14,6 +14,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub use pallet::*;
+
 pub mod voting_enums;
 pub mod voting_structs;
 
@@ -21,8 +23,8 @@ pub mod voting_structs;
 pub mod mock;
 #[cfg(test)]
 mod tests;
-
-pub use pallet::*;
+// #[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 
 
 #[frame_support::pallet]
@@ -39,8 +41,8 @@ pub mod pallet {
         transactional
     };
     use sp_std::vec::Vec;
+    use orml_traits::{MultiCurrency, MultiReservableCurrency};
 
-    // use orml_traits::{MultiCurrency, MultiReservableCurrency};
     use primitives::{Balance, CurrencyId};
     use support::{
     	ControlPalletStorage, ControlState, ControlMemberState,
@@ -56,8 +58,8 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event> + Into<<Self as frame_system::Config>::Event>;
-        // type Currency: MultiCurrency<Self::AccountId, CurrencyId = CurrencyId, Balance = Balance>
-        //     + MultiReservableCurrency<Self::AccountId>;
+        type Currency: MultiCurrency<Self::AccountId, CurrencyId = CurrencyId, Balance = Balance>
+            + MultiReservableCurrency<Self::AccountId>;
         type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
         type Control: ControlPalletStorage<Self::AccountId, Self::Hash>;
         type Flow: FlowPalletStorage<Self::Hash, Balance>;
@@ -207,12 +209,20 @@ pub mod pallet {
         	vote: bool
         },
         ProposalFinalized(T::Hash, u8),
-        ProposalApproved(T::Hash),
-        ProposalRejected(T::Hash),
+        ProposalApproved {
+        	proposal_id: T::Hash
+        },
+        ProposalRejected {
+        	proposal_id: T::Hash
+        },
         ProposalExpired(T::Hash),
         ProposalAborted(T::Hash),
         ProposalError(T::Hash, Vec<u8>),
-        WithdrawalGranted(T::Hash, T::Hash, T::Hash),
+        WithdrawalGranted{
+        	proposal_id: T::Hash,
+        	context_id: T::Hash,
+        	body_id: T::Hash
+        },
     }
 
     #[pallet::error]
@@ -704,6 +714,7 @@ pub mod pallet {
                         if yes > no { proposal_state = ProposalState::Accepted; }
                         if yes < no { proposal_state = ProposalState::Rejected; }
                         if yes == 0 && no == 0 { proposal_state = ProposalState::Expired; }
+                        // todo: if same amount of yes/no votes?
                     },
                     ProposalType::Withdrawal => {
                         // treasury
@@ -742,12 +753,12 @@ pub mod pallet {
                 match proposal_state {
                     ProposalState::Accepted => {
                         Self::deposit_event(
-                            Event::<T>::ProposalApproved(proposal_id.clone())
+                            Event::<T>::ProposalApproved {proposal_id: proposal_id.clone()}
                         );
                     },
                     ProposalState::Rejected => {
                         Self::deposit_event(
-                            Event::<T>::ProposalRejected(proposal_id.clone())
+                            Event::<T>::ProposalRejected {proposal_id: proposal_id.clone()}
                         );
                     },
                     ProposalState::Expired => {
@@ -794,11 +805,11 @@ pub mod pallet {
             // get treasury account for related body and unlock balance
             let body = T::Flow::campaign_org(&proposal.context_id);
             let treasury_account = T::Control::body_treasury(&body);
-            // T::Currency::unreserve(
-            //     T::FundingCurrencyId::get(),
-            //     &treasury_account,
-            //     proposal_balance
-            // );
+            T::Currency::unreserve(
+                T::FundingCurrencyId::get(),
+                &treasury_account,
+                proposal_balance.clone()
+            );
 
             // Change the used amount
             let new_used_balance = used_balance + proposal_balance;
@@ -811,7 +822,7 @@ pub mod pallet {
             <Proposals<T>>::insert(proposal_id.clone(), proposal.clone());
 
             Self::deposit_event(
-                Event::<T>::WithdrawalGranted(proposal_id, proposal.context_id, body)
+                Event::<T>::WithdrawalGranted {proposal_id, context_id: proposal.context_id, body_id: body}
             );
             Ok(())
 
