@@ -12,6 +12,15 @@
 // Copyright (C) 2010-2020 ZERO Labs.
 // SPDX-License-Identifier: Apache-2.0
 
+// Proposals and voting space for organizations and campaigns.
+// This pallet provides next features:
+//  * Allow members of organisations to generate proposals under campaign.
+//    Each proposal has a lifitime, expiration, details and number of votes.
+//    Specific type of proposal is withdrawal one.
+//    It allows (if approved) to release locked campaign balance for further usage.
+//  * Vote on those proposals.
+//  * Manage proposal lifetime, close and finalize those proposals once expired.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
@@ -23,8 +32,8 @@ pub mod voting_structs;
 pub mod mock;
 #[cfg(test)]
 mod tests;
-// #[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
+// #[cfg(feature = "runtime-benchmarks")]  // todo
+// mod benchmarking;
 
 
 #[frame_support::pallet]
@@ -43,17 +52,16 @@ pub mod pallet {
     use sp_std::vec::Vec;
     use orml_traits::{MultiCurrency, MultiReservableCurrency};
 
-    use primitives::{Balance, CurrencyId};
+    use zero_primitives::{Balance, CurrencyId};
     use support::{
     	ControlPalletStorage, ControlState, ControlMemberState,
     	FlowPalletStorage, FlowState
     };
+
     use super::*;
     use voting_enums::{ProposalState, ProposalType, VotingType};
     use voting_structs::{Proposal, ProposalMetadata};
 
-
-    // type Balance<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -208,17 +216,19 @@ pub mod pallet {
         	proposal_id: T::Hash,
         	vote: bool
         },
-        ProposalFinalized(T::Hash, u8),
+        // ProposalFinalized(T::Hash, u8),
         ProposalApproved {
         	proposal_id: T::Hash
         },
         ProposalRejected {
         	proposal_id: T::Hash
         },
-        ProposalExpired(T::Hash),
-        ProposalAborted(T::Hash),
-        ProposalError(T::Hash, Vec<u8>),
-        WithdrawalGranted{
+        ProposalExpired {
+        	proposal_id: T::Hash
+        },
+        // ProposalAborted(T::Hash),
+        // ProposalError(T::Hash, Vec<u8>),
+        WithdrawalGranted {
         	proposal_id: T::Hash,
         	context_id: T::Hash,
         	body_id: T::Hash
@@ -368,15 +378,10 @@ pub mod pallet {
             // init votes
             <ProposalSimpleVotes::<T>>::insert(context_id, (0,0));
 
-            //
-            //
-            //
-
-            // nonce++
-            // <Nonce::<T>>::mutate(|n| *n += 1);  // todo: use safe addition
-
             // deposit event
-            Self::deposit_event(Event::<T>::Proposal{sender_id: sender, proposal_id});
+            Self::deposit_event(
+            	Event::<T>::Proposal{sender_id: sender, proposal_id}
+        	);
             Ok(())
         }
 
@@ -763,7 +768,7 @@ pub mod pallet {
                     },
                     ProposalState::Expired => {
                         Self::deposit_event(
-                            Event::<T>::ProposalExpired(proposal_id.clone())
+                            Event::<T>::ProposalExpired {proposal_id: proposal_id.clone()}
                         );
                     },
                     _ => {}

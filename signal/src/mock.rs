@@ -16,10 +16,9 @@ use support::{
 	ControlPalletStorage, ControlState, ControlMemberState,
 	FlowPalletStorage, FlowState
 };
-use primitives::{Amount, Balance, CurrencyId, Hash, TokenSymbol};
+use zero_primitives::{Amount, Balance, BlockNumber, CurrencyId, Hash, TokenSymbol};
 
 pub type AccountId = u64;
-pub type BlockNumber = u32;
 
 pub const ACC1: AccountId = 1;
 pub const ACC2: AccountId = 2;
@@ -39,6 +38,7 @@ pub struct FlowFixture {
 	pub campaign_org: Hash
 }
 
+// todo: use actual Control & Flow pallets once they are done
 thread_local!(
 	pub static control_fixture: RefCell<ControlFixture> = RefCell::new(ControlFixture {
 		body_controller: ACC1,

@@ -1,34 +1,7 @@
 #[cfg(test)]
 
 use super::{
-	Proposals,
-	Metadata,
-	Owners,
-	ProposalsByBlock,
-	ProposalStates,
-	ProposalsCount,
-	ProposalsIndex,
-	ProposalsArray,
-	ProposalsByContextArray,
-	ProposalsByContextCount,
-	ProposalsByContextIndex,
-	ProposalsByOwnerArray,
-	ProposalsByOwnerCount,
-	ProposalsByOwnerIndex,
-	ProposalsByContext,
-	ProposalTimeLimit,
-	ProposalSimpleVotes,
-	ProposalApprovers,
-	ProposalDeniers,
-	VotedBefore,
-	ProposalsByVoterCount,
-	ProposalVotesByVoters,
-	ProposalsByVoter,
-	ProposalVoters,
-	CampaignBalanceUsed,
-	Nonce,
-	Config,
-	Error,
+	*,
 	voting_structs::{Proposal, ProposalMetadata},
 	voting_enums::{VotingType, ProposalType, ProposalState},
 	mock::{
@@ -125,10 +98,7 @@ fn signal_general_proposal_success() {
 				15  // expiry
 			)
 		);
-		assert_eq!(
-			<ProposalsByBlock<Test>>::get(15),
-			vec![proposal_id.clone(), new_proposal_id.clone()]
-		);
+		assert_eq!(<ProposalsByBlock<Test>>::get(15), vec![proposal_id.clone(), new_proposal_id.clone()]);
 		assert_eq!(<ProposalsArray<Test>>::get(1), new_proposal_id);
 		assert_eq!(<ProposalsCount<Test>>::get(), 2);
 		assert_eq!(<ProposalsIndex<Test>>::get(&new_proposal_id), 1);
@@ -138,10 +108,7 @@ fn signal_general_proposal_success() {
 		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 1)), new_proposal_id);
 		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 2);
 		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, new_proposal_id)), 1);
-		assert_eq!(
-			<ProposalsByContext<Test>>::get(ctx_id),
-			vec![proposal_id.clone(), new_proposal_id.clone()]
-		);
+		assert_eq!(<ProposalsByContext<Test>>::get(ctx_id), vec![proposal_id.clone(), new_proposal_id.clone()]);
 		assert_eq!(<Nonce<Test>>::get(), 2);
 	});
 }
@@ -349,10 +316,7 @@ fn signal_withdraw_proposal_success() {
 		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 1)), new_proposal_id);
 		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 2);
 		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, new_proposal_id)), 1);
-		assert_eq!(
-			<ProposalsByContext<Test>>::get(ctx_id),
-			vec![proposal_id.clone(), new_proposal_id.clone()]
-		);
+		assert_eq!(<ProposalsByContext<Test>>::get(ctx_id), vec![proposal_id.clone(), new_proposal_id.clone()]);
 		assert_eq!(<Nonce<Test>>::get(), 2);
 
 	});
@@ -563,6 +527,7 @@ fn signal_simple_vote_success() {
 		assert_eq!(<ProposalApprovers<Test>>::get(&proposal_id), 0);
 		assert_eq!(<ProposalDeniers<Test>>::get(&proposal_id), 1);
 
+		// todo: delete this after `unlock_balance` will be moved out from extrinsic call
 		// assert_ok!(
 		// 	Signal::simple_vote(Origin::signed(ACC2), proposal_id, true)
 		// );
@@ -699,7 +664,6 @@ fn signal_on_finalize_success() {
 				)
 			);
 		}
-		// todo: few votes for each item
 
 		let mut events_before = System::events().len();
 		assert_eq!(events_before, 10);

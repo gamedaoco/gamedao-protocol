@@ -30,7 +30,7 @@ frame-support = { git = "https://github.com/paritytech/substrate", branch = "pol
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false }
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 orml-traits = { path = "../../orml/traits", default-features = false }
-primitives = { package = "zero-primitives", path = "../../primitives", default-features = false }
+zero-primitives = { package = "zero-primitives", path = "../../primitives", default-features = false }
 support = { package = "gamedao-protocol-support", path = "../support", default-features = false }
 
 [dev-dependencies]
