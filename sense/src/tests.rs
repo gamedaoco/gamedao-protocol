@@ -12,11 +12,11 @@ fn sense_create_entity() {
 	new_test_ext().execute_with(|| {
 		let cid = vec![1, 2, 3];
 
-        let account = 1;
-        let index = 0;
-        let block_number = 3;
+		let account = 1;
+		let index = 0;
+		let block_number = 3;
 
-        System::set_block_number(block_number);
+		System::set_block_number(block_number);
 
 		assert_noop!(
 			Sense::create_entity(RawOrigin::Root.into(), 1, vec![]),
