@@ -136,7 +136,7 @@ impl ControlPalletStorage<AccountId, Hash> for ControlPalletMock {
 	fn body_controller(_org: &Hash) -> AccountId { BOB }
 	fn body_treasury(_org: &Hash) -> AccountId { TREASURY }
 	fn body_state(_hash: &Hash) -> ControlState { ControlState::Active }
-    fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> ControlMemberState { ControlMemberState::Active }
+	fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> ControlMemberState { ControlMemberState::Active }
 }
 
 parameter_types! {
@@ -149,7 +149,7 @@ parameter_types! {
 	pub const MaxDuration: BlockNumber = MAX_DURATION;
 	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
-    pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
+	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
 	// pub const CampaignFee: Balance = 25 * CENTS;
 	pub const GAMECurrencyId: CurrencyId = GAME_CURRENCY_ID;
 	pub const GameDAOTreasury: AccountId = GAMEDAO_TREASURY;
@@ -189,7 +189,7 @@ type Block = frame_system::mocking::MockBlock<Test>;
 
 impl Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, FlowGovernance> {
 	pub fn new(campaign_id: Hash, expiry: BlockNumber) -> Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, FlowGovernance> {
-        Campaign {
+		Campaign {
 			id: campaign_id,
 			org: H256::random(),
 			name: vec![1, 2],
@@ -229,9 +229,9 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		balances: vec![
 			(ALICE, GAME_CURRENCY_ID, 100),
 			(BOB, GAME_CURRENCY_ID, 100),
-            (BOGDANA, GAME_CURRENCY_ID, 100),
-            (TREASURY, GAME_CURRENCY_ID, 100),
-            (GAMEDAO_TREASURY, GAME_CURRENCY_ID, 0),
+			(BOGDANA, GAME_CURRENCY_ID, 100),
+			(TREASURY, GAME_CURRENCY_ID, 100),
+			(GAMEDAO_TREASURY, GAME_CURRENCY_ID, 0),
 		],
 	}.assimilate_storage(&mut t).unwrap();
 	t.into()
