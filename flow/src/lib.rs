@@ -61,19 +61,21 @@ use frame_support::{
 };
 use scale_info::TypeInfo;
 use sp_std::{fmt::Debug, vec::Vec};
-
+use sp_runtime::Permill;
 use frame_support::traits::Get;
 
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use zero_primitives::{Balance, CurrencyId, Moment};
 use gamedao_protocol_support::{ControlPalletStorage, FlowState};
 
+
+
 mod mock;
 mod tests;
 
 pub use pallet::*;
 
-// TODO: pallet benchmarking
+// TODO: after Control pallet will be merged
 // mod benchmarking;
 
 // TODO: weights
@@ -218,9 +220,8 @@ pub mod pallet {
 		type FundingCurrencyId: Get<CurrencyId>;
 
 		// TODO: collect fees for treasury
-		// type CreationFee: Get<Balance<Self>>;
 		#[pallet::constant]
-		type CampaignFee: Get<Balance>;
+		type CampaignFee: Get<Permill>;
 	}
 
 	/// Campaign
@@ -355,7 +356,6 @@ pub mod pallet {
 	// CampaignMaxDuration get(fn get_max_duration) config(): T::BlockNumber = T::BlockNumber::from(T::MaxDuration::get());
 
 	// Campaign nonce, increases per created campaign
-
 	#[pallet::storage]
 	#[pallet::getter(fn nonce)]
 	pub type Nonce<T: Config> = StorageValue<_, u128, ValueQuery>;
@@ -363,20 +363,41 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		CampaignDestroyed(T::Hash),
-		CampaignCreated(
-			T::Hash,
-			T::AccountId,
-			T::AccountId,
-			Balance,
-			Balance,
-			T::BlockNumber,
-			Vec<u8>,
-		),
-		CampaignContributed(T::Hash, T::AccountId, Balance, T::BlockNumber),
-		CampaignFinalized(T::Hash, Balance, T::BlockNumber, bool),
-		CampaignFailed(T::Hash, Balance, T::BlockNumber, bool),
-		CampaignUpdated(T::Hash, FlowState, T::BlockNumber),
+		CampaignDestroyed{
+            campaign_id: T::Hash
+        },
+		CampaignCreated{
+			campaign_id: T::Hash,
+			creator: T::AccountId,
+			admin: T::AccountId,
+			target: Balance,
+			deposit: Balance,
+			expiry: T::BlockNumber,
+			name: Vec<u8>,
+        },
+		CampaignContributed{
+            campaign_id: T::Hash,
+            sender: T::AccountId,
+            contribution: Balance,
+            block_number: T::BlockNumber
+        },
+		CampaignFinalized{
+            campaign_id: T::Hash,
+            campaign_balance: Balance,
+            block_number: T::BlockNumber,
+            success: bool
+        },
+		CampaignFailed{
+            campaign_id: T::Hash,
+            campaign_balance: Balance,
+            block_number: T::BlockNumber,
+            success: bool
+        },
+		CampaignUpdated{
+            campaign_id: T::Hash,
+            state: FlowState,
+            block_number: T::BlockNumber
+        },
 		Message(Vec<u8>),
 	}
 
@@ -533,38 +554,19 @@ pub mod pallet {
 									campaign_balance.clone(),
 								);
 
-								//
-								//
+                                let fee = T::CampaignFee::get();
+                                let commission = fee.mul_floor(campaign_balance.clone());
+                                T::Currency::unreserve(T::FundingCurrencyId::get(), &dao_treasury, commission.clone());
 
-								// calculate commission
+                                let _transfer_commission = T::Currency::transfer(
+									T::FundingCurrencyId::get(),
+									&dao_treasury,
+									&T::GameDAOTreasury::get(),
+									commission,
+								);
 
-								// -> pub const CampaignFee: Balance = 25 * CENTS;
-								// let fee = <T as Config>::CampaignFee::get();
-
-								// -> CampaignBalance get(fn campaign_balance): map hasher(blake2_128_concat) T::Hash => T::Balance;
-								// let bal = campaign_balance.clone();
-
-								// let commission = U256::from( bal.into() )
-								// .checked_div( U256::from( fee.into() ) );
-
-								// let commission = bal.checked_div(fee);
-								// let commission = U256::from(bal).checked_div(U256::from(fee));
-
-								//
-								//
-
-								// let unreserve_commission = <balances::Module<T>>::unreserve(
-								// 	&dao_treasury,
-								// 	commission.clone()
-								// );
-
-								// let transfer_commission = <balances::Module<T> as Currency<_>>::transfer(
-								// 	&dao_treasury,
-								// 	&<T as Config>::GameDAOTreasury::get(),
-								// 	commission,
-								// 	ExistenceRequirement::AllowDeath
-								// );
-								// match transfer_commission {
+                                // TODO: TransferError?
+                                // match transfer_commission {
 								// 	Err(_e) => {   }, //(Error::<T>::TransferError)
 								// 	Ok(_v) => {}
 								// }
@@ -572,12 +574,12 @@ pub mod pallet {
 								Self::set_state(campaign.id.clone(), FlowState::Success);
 
 								// finalized event
-								Self::deposit_event(Event::CampaignFinalized(
-									*campaign_id,
+								Self::deposit_event(Event::CampaignFinalized{
+									campaign_id: *campaign_id,
 									campaign_balance,
 									block_number,
-									true,
-								));
+									success: true,
+                                });
 							}
 						}
 						None => continue,
@@ -606,12 +608,12 @@ pub mod pallet {
 					);
 
 					// failed event
-					Self::deposit_event(Event::CampaignFailed(
-						*campaign_id,
+					Self::deposit_event(Event::CampaignFailed{
+						campaign_id: *campaign_id,
 						campaign_balance,
 						block_number,
-						false,
-					));
+						success: false,
+                    });
 				}
 			}
 		}
@@ -684,10 +686,6 @@ pub mod pallet {
 				Error::<T>::ContributionsPerBlockExceeded
 			);
 
-			//
-			//
-			//
-
 			let new_campaign = Campaign {
 				id: id.clone(),
 				org: org.clone(),
@@ -712,9 +710,9 @@ pub mod pallet {
 			Self::set_state(id.clone(), FlowState::Active);
 
 			// deposit the event
-			Self::deposit_event(Event::CampaignCreated(
-				id, creator, admin, target, deposit, expiry, name,
-			));
+			Self::deposit_event(Event::CampaignCreated{
+				campaign_id: id, creator, admin, target, deposit, expiry, name,
+            });
 			Ok(())
 
 			// No fees are paid here if we need to create this account;
@@ -747,11 +745,10 @@ pub mod pallet {
 				Error::<T>::CampaignExpired
 			);
 
-			// set
 			Self::set_state(campaign_id.clone(), state.clone());
 
 			// dispatch status update event
-			Self::deposit_event(Event::CampaignUpdated(campaign_id, state, now));
+			Self::deposit_event(Event::CampaignUpdated{campaign_id, state, block_number: now});
 
 			Ok(())
 		}
@@ -795,12 +792,12 @@ pub mod pallet {
 			// event
 
 			let now = <frame_system::Pallet<T>>::block_number();
-			Self::deposit_event(Event::CampaignContributed(
+			Self::deposit_event(Event::CampaignContributed{
 				campaign_id,
 				sender,
 				contribution,
-				now,
-			));
+				block_number: now,
+            });
 
 			Ok(())
 		}
@@ -898,20 +895,15 @@ impl<T: Config> Pallet<T> {
 		// to reserve some of the staked GAME
 		let treasury = T::Control::body_treasury(&campaign.org);
 
-		// let fundingCurrency = T::FundingCurrencyId::get();
 		T::Currency::reserve(
 			T::FundingCurrencyId::get(),
 			&treasury,
 			campaign.deposit.clone(),
 		)?;
-		// let _ = <balances::Module<T>>::reserve(
-		// 	&treasury,
-		// 	campaign.deposit.clone()
-		// );
 
 		Ok(())
 	}
-
+    
 	fn create_contribution(
 		sender: T::AccountId,
 		campaign_id: T::Hash,

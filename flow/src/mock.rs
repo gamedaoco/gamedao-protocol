@@ -8,7 +8,7 @@ use frame_support::{
 use frame_support_test::TestRandomness;
 use frame_system::EnsureRoot;
 use sp_core::H256;
-use sp_runtime::traits::IdentityLookup;
+use sp_runtime::{traits::{IdentityLookup},Permill};
 
 use orml_traits::parameter_type_with_key;
 use gamedao_protocol_support::{ControlPalletStorage, ControlMemberState, ControlState};
@@ -36,6 +36,7 @@ pub const ALICE: AccountId = 1;
 pub const BOB: AccountId = 2;
 pub const BOGDANA: AccountId = 3;
 pub const TREASURY: AccountId = 4;
+pub const GAMEDAO_TREASURY: AccountId = 5;
 
 pub const MAX_DURATION: BlockNumber = DAYS * 100;
 pub const GAME_CURRENCY_ID: CurrencyId = TokenSymbol::GAME as u32;
@@ -148,9 +149,10 @@ parameter_types! {
 	pub const MaxDuration: BlockNumber = MAX_DURATION;
 	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
-	pub const CampaignFee: Balance = 25 * CENTS;
+    pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
+	// pub const CampaignFee: Balance = 25 * CENTS;
 	pub const GAMECurrencyId: CurrencyId = GAME_CURRENCY_ID;
-	pub const GameDAOTreasury: AccountId = TREASURY;
+	pub const GameDAOTreasury: AccountId = GAMEDAO_TREASURY;
 }
 
 impl Config for Test {
@@ -229,6 +231,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 			(BOB, GAME_CURRENCY_ID, 100),
             (BOGDANA, GAME_CURRENCY_ID, 100),
             (TREASURY, GAME_CURRENCY_ID, 100),
+            (GAMEDAO_TREASURY, GAME_CURRENCY_ID, 0),
 		],
 	}.assimilate_storage(&mut t).unwrap();
 	t.into()
