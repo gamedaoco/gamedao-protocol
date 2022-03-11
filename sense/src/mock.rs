@@ -1,4 +1,5 @@
-use crate as pallet_sense;
+#![cfg(test)]
+
 use frame_support::parameter_types;
 use frame_system as system;
 use sp_core::H256;
@@ -12,15 +13,19 @@ type Block = frame_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
-    {
-        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-        ZeroSense: pallet_sense::{Pallet, Call, Storage, Event<T>},
-    }
+	pub enum Test where
+		Block = Block,
+		NodeBlock = Block,
+		UncheckedExtrinsic = UncheckedExtrinsic,
+	{
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Sense: pallet_sense::{Pallet, Call, Storage, Event<T>},
+	}
 );
+
+mod pallet_sense {
+	pub use super::super::*;
+}
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
