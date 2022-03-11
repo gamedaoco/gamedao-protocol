@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate as pallet_control;
-use frame_system as system;
+use frame_system;
 use frame_support::traits::GenesisBuild;
 use frame_support_test::TestRandomness;
 use primitives::{Amount, Balance, CurrencyId, Hash, TokenSymbol};

@@ -2,8 +2,6 @@
 
 use super::*;
 use mock::{Control, new_test_ext, Origin, Test, TREASURY_ACCOUNT, USER_ACCOUNT};
-
-// use frame_support::{impl_outer_origin, assert_ok, assert_noop};
 use frame_support::{assert_ok, assert_noop};
 
 #[test]
@@ -29,7 +27,7 @@ fn control_create_campaign_success() {
 		);
 
 		// check that there are now 1 Control in storage
-		assert_eq!(Control::nonce(), 1);
+		assert_eq!(Nonce::<Test>::get(), 1);
 
 		// // check that account #5 is creator
 		// let creator_hash = <OrgByHash<Test>>::get(0);
