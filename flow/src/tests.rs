@@ -7,7 +7,7 @@ use frame_support::traits::Hooks;
 use frame_system::{EventRecord, Phase};
 use mock::{
 	new_test_ext, Flow, FlowProtocol, FlowGovernance, Event, Origin, Test, System, ALICE,
-    BOB, BOGDANA, TREASURY, MAX_DURATION, GAME_CURRENCY_ID, GAMEDAO_TREASURY
+	BOB, BOGDANA, TREASURY, MAX_DURATION, GAME_CURRENCY_ID, GAMEDAO_TREASURY
 };
 use gamedao_protocol_support::{FlowState};
 use sp_core::H256;
@@ -143,8 +143,8 @@ fn flow_create_success() {
 				EventRecord {
 					phase: Phase::Initialization,
 					event: Event::Flow(crate::Event::CampaignCreated{
-                        campaign_id: id, creator: BOB, admin: BOB, target, deposit, expiry, name
-                    }),
+						campaign_id: id, creator: BOB, admin: BOB, target, deposit, expiry, name
+					}),
 					topics: vec![],
 				},
 			]
@@ -310,8 +310,8 @@ fn flow_contribute_success() {
 					EventRecord {
 						phase: Phase::Initialization,
 						event: Event::Flow(crate::Event::CampaignContributed{
-                            campaign_id, sender: ALICE, contribution, block_number: current_block
-                        }),
+							campaign_id, sender: ALICE, contribution, block_number: current_block
+						}),
 						topics: vec![],
 					},
 				]
@@ -345,8 +345,8 @@ fn flow_on_finalize_campaign_succeess() {
 		// deposit > capacity
 		System::set_block_number(expiry);
 		Flow::on_finalize(expiry);
-        
-        let commission = <Test as Config>::CampaignFee::get().mul_floor(deposit * 2);
+		
+		let commission = <Test as Config>::CampaignFee::get().mul_floor(deposit * 2);
 		assert_eq!(
 			<Test as Config>::Currency::total_balance(GAME_CURRENCY_ID, &TREASURY),
 			100 + deposit * 2 - commission
@@ -356,54 +356,54 @@ fn flow_on_finalize_campaign_succeess() {
 			100 - deposit
 		);
 
-        assert_eq!(
-            // Skip events from create and contribute extrinsics
-            System::events()[6..],
-                vec![
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, ALICE, deposit)),
-                        topics: vec![],
-                    },
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, ALICE, TREASURY, deposit)),
-                        topics: vec![],
-                    },
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, BOGDANA, deposit)),
-                        topics: vec![],
-                    },
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, BOGDANA, TREASURY, deposit)),
-                        topics: vec![],
-                    },
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Tokens(orml_tokens::Event::Reserved(GAME_CURRENCY_ID, TREASURY, deposit * 2)),
-                        topics: vec![],
-                    },
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, TREASURY, commission)),
-                        topics: vec![],
-                    },
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, TREASURY, GAMEDAO_TREASURY, commission)),
-                        topics: vec![],
-                    },
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Flow(crate::Event::CampaignFinalized{
-                            campaign_id, campaign_balance: deposit * 2, block_number: expiry, success: true
-                        }),
-                        topics: vec![],
-                    },
-                ]
-        );
+		assert_eq!(
+			// Skip events from create and contribute extrinsics
+			System::events()[6..],
+				vec![
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, ALICE, deposit)),
+						topics: vec![],
+					},
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, ALICE, TREASURY, deposit)),
+						topics: vec![],
+					},
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, BOGDANA, deposit)),
+						topics: vec![],
+					},
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, BOGDANA, TREASURY, deposit)),
+						topics: vec![],
+					},
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Tokens(orml_tokens::Event::Reserved(GAME_CURRENCY_ID, TREASURY, deposit * 2)),
+						topics: vec![],
+					},
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, TREASURY, commission)),
+						topics: vec![],
+					},
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, TREASURY, GAMEDAO_TREASURY, commission)),
+						topics: vec![],
+					},
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Flow(crate::Event::CampaignFinalized{
+							campaign_id, campaign_balance: deposit * 2, block_number: expiry, success: true
+						}),
+						topics: vec![],
+					},
+				]
+		);
 
 	});
 }
@@ -443,28 +443,28 @@ fn flow_on_finalize_campaign_failed() {
 			100
 		);
 
-        assert_eq!(
-            // Skip events from create and contribute extrinsics
-            System::events()[4..],
-                vec![
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, ALICE, deposit)),
-                        topics: vec![],
-                    },
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, TREASURY, deposit)),
-                        topics: vec![],
-                    },
-                    EventRecord {
-                        phase: Phase::Initialization,
-                        event: Event::Flow(crate::Event::CampaignFailed{
-                            campaign_id, campaign_balance: deposit, block_number: expiry, success: false
-                        }),
-                        topics: vec![],
-                    },
-                ]
-        );
+		assert_eq!(
+			// Skip events from create and contribute extrinsics
+			System::events()[4..],
+				vec![
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, ALICE, deposit)),
+						topics: vec![],
+					},
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, TREASURY, deposit)),
+						topics: vec![],
+					},
+					EventRecord {
+						phase: Phase::Initialization,
+						event: Event::Flow(crate::Event::CampaignFailed{
+							campaign_id, campaign_balance: deposit, block_number: expiry, success: false
+						}),
+						topics: vec![],
+					},
+				]
+		);
 	});
 }

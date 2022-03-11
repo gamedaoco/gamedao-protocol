@@ -54,7 +54,7 @@
 // pub use weights::WeightInfo;
 
 use frame_support::{
-    transactional,
+	transactional,
 	codec::{Decode, Encode},
 	dispatch::DispatchResult,
 	traits::{Randomness, UnixTime}
@@ -364,8 +364,8 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		CampaignDestroyed{
-            campaign_id: T::Hash
-        },
+			campaign_id: T::Hash
+		},
 		CampaignCreated{
 			campaign_id: T::Hash,
 			creator: T::AccountId,
@@ -374,30 +374,30 @@ pub mod pallet {
 			deposit: Balance,
 			expiry: T::BlockNumber,
 			name: Vec<u8>,
-        },
+		},
 		CampaignContributed{
-            campaign_id: T::Hash,
-            sender: T::AccountId,
-            contribution: Balance,
-            block_number: T::BlockNumber
-        },
+			campaign_id: T::Hash,
+			sender: T::AccountId,
+			contribution: Balance,
+			block_number: T::BlockNumber
+		},
 		CampaignFinalized{
-            campaign_id: T::Hash,
-            campaign_balance: Balance,
-            block_number: T::BlockNumber,
-            success: bool
-        },
+			campaign_id: T::Hash,
+			campaign_balance: Balance,
+			block_number: T::BlockNumber,
+			success: bool
+		},
 		CampaignFailed{
-            campaign_id: T::Hash,
-            campaign_balance: Balance,
-            block_number: T::BlockNumber,
-            success: bool
-        },
+			campaign_id: T::Hash,
+			campaign_balance: Balance,
+			block_number: T::BlockNumber,
+			success: bool
+		},
 		CampaignUpdated{
-            campaign_id: T::Hash,
-            state: FlowState,
-            block_number: T::BlockNumber
-        },
+			campaign_id: T::Hash,
+			state: FlowState,
+			block_number: T::BlockNumber
+		},
 		Message(Vec<u8>),
 	}
 
@@ -554,19 +554,19 @@ pub mod pallet {
 									campaign_balance.clone(),
 								);
 
-                                let fee = T::CampaignFee::get();
-                                let commission = fee.mul_floor(campaign_balance.clone());
-                                T::Currency::unreserve(T::FundingCurrencyId::get(), &dao_treasury, commission.clone());
+								let fee = T::CampaignFee::get();
+								let commission = fee.mul_floor(campaign_balance.clone());
+								T::Currency::unreserve(T::FundingCurrencyId::get(), &dao_treasury, commission.clone());
 
-                                let _transfer_commission = T::Currency::transfer(
+								let _transfer_commission = T::Currency::transfer(
 									T::FundingCurrencyId::get(),
 									&dao_treasury,
 									&T::GameDAOTreasury::get(),
 									commission,
 								);
 
-                                // TODO: TransferError?
-                                // match transfer_commission {
+								// TODO: TransferError?
+								// match transfer_commission {
 								// 	Err(_e) => {   }, //(Error::<T>::TransferError)
 								// 	Ok(_v) => {}
 								// }
@@ -579,7 +579,7 @@ pub mod pallet {
 									campaign_balance,
 									block_number,
 									success: true,
-                                });
+								});
 							}
 						}
 						None => continue,
@@ -613,7 +613,7 @@ pub mod pallet {
 						campaign_balance,
 						block_number,
 						success: false,
-                    });
+					});
 				}
 			}
 		}
@@ -622,8 +622,8 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(5_000_000)]
-        // Reason for using transactional is get_and_increment_nonce
-        #[transactional]
+		// Reason for using transactional is get_and_increment_nonce
+		#[transactional]
 		pub fn create(
 			origin: OriginFor<T>,
 			org: T::Hash,
@@ -712,7 +712,7 @@ pub mod pallet {
 			// deposit the event
 			Self::deposit_event(Event::CampaignCreated{
 				campaign_id: id, creator, admin, target, deposit, expiry, name,
-            });
+			});
 			Ok(())
 
 			// No fees are paid here if we need to create this account;
@@ -797,7 +797,7 @@ pub mod pallet {
 				sender,
 				contribution,
 				block_number: now,
-            });
+			});
 
 			Ok(())
 		}
@@ -903,7 +903,7 @@ impl<T: Config> Pallet<T> {
 
 		Ok(())
 	}
-    
+	
 	fn create_contribution(
 		sender: T::AccountId,
 		campaign_id: T::Hash,
