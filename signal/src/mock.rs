@@ -8,8 +8,8 @@ use frame_support_test::TestRandomness;
 use sp_std::cell::RefCell;
 use sp_core::H256;
 use sp_runtime::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+	testing::Header,
+	traits::{BlakeTwo256, IdentityLookup},
 };
 use orml_traits::parameter_type_with_key;
 use support::{
@@ -66,9 +66,9 @@ impl ControlPalletStorage<AccountId, Hash> for ControlMock {
 pub struct FlowMock;
 impl FlowPalletStorage<Hash, Balance> for FlowMock {
 	fn campaign_balance(_hash: &Hash) -> Balance { flow_fixture.with(|v| v.borrow().campaign_balance.clone()) }
-    fn campaign_state(_hash: &Hash) -> FlowState { flow_fixture.with(|v| v.borrow().campaign_state.clone()) }
-    fn campaign_contributors_count(_hash: &Hash) -> u64 { flow_fixture.with(|v| v.borrow().campaign_contributors_count.clone()) }
-    fn campaign_org(_hash: &Hash) -> Hash { flow_fixture.with(|v| v.borrow().campaign_org.clone()) }
+	fn campaign_state(_hash: &Hash) -> FlowState { flow_fixture.with(|v| v.borrow().campaign_state.clone()) }
+	fn campaign_contributors_count(_hash: &Hash) -> u64 { flow_fixture.with(|v| v.borrow().campaign_contributors_count.clone()) }
+	fn campaign_org(_hash: &Hash) -> Hash { flow_fixture.with(|v| v.borrow().campaign_org.clone()) }
 }
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -76,17 +76,17 @@ type Block = frame_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
-    {
-        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-        Signal: pallet_signal,
-        Currencies: orml_currencies::{Pallet, Call, Event<T>},
-        Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
+	pub enum Test where
+		Block = Block,
+		NodeBlock = Block,
+		UncheckedExtrinsic = UncheckedExtrinsic,
+	{
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Signal: pallet_signal,
+		Currencies: orml_currencies::{Pallet, Call, Event<T>},
+		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
 		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-    }
+	}
 );
 
 parameter_type_with_key! {
@@ -130,53 +130,53 @@ impl orml_currencies::Config for Test {
 
 
 parameter_types! {
-    pub const BlockHashCount: u64 = 250;
-    pub const SS58Prefix: u8 = 42;
-    pub BlockWeights: frame_system::limits::BlockWeights =
-        frame_system::limits::BlockWeights::simple_max(1024);
+	pub const BlockHashCount: u64 = 250;
+	pub const SS58Prefix: u8 = 42;
+	pub BlockWeights: frame_system::limits::BlockWeights =
+		frame_system::limits::BlockWeights::simple_max(1024);
 
-    pub const ExistentialDeposit: Balance = 1;
+	pub const ExistentialDeposit: Balance = 1;
 
-    pub const MaxProposalsPerBlock: u32 = 2;
-    pub const MaxProposalDuration: u32 = 20;
-    pub const FundingCurrencyId: CurrencyId = TokenSymbol::GAME as u32;
+	pub const MaxProposalsPerBlock: u32 = 2;
+	pub const MaxProposalDuration: u32 = 20;
+	pub const FundingCurrencyId: CurrencyId = TokenSymbol::GAME as u32;
 }
 
 // impl pallet_randomness_collective_flip::Config for Test {}
 
 impl frame_system::Config for Test {
-    type BaseCallFilter = frame_support::traits::Everything;
-    type BlockWeights = ();
-    type BlockLength = ();
-    type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
-    type Index = u64;
-    type BlockNumber = u64;
-    type Hash = Hash;
-    type Hashing = BlakeTwo256;
-    type AccountId = AccountId;
-    type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
-    type Event = Event;
-    type BlockHashCount = BlockHashCount;
-    type Version = ();
-    type PalletInfo = PalletInfo;
-    type AccountData = pallet_balances::AccountData<Balance>;
-    type OnNewAccount = ();
-    type OnKilledAccount = ();
-    type SystemWeightInfo = ();
-    type SS58Prefix = SS58Prefix;
-    type OnSetCode = ();
+	type BaseCallFilter = frame_support::traits::Everything;
+	type BlockWeights = ();
+	type BlockLength = ();
+	type DbWeight = ();
+	type Origin = Origin;
+	type Call = Call;
+	type Index = u64;
+	type BlockNumber = u64;
+	type Hash = Hash;
+	type Hashing = BlakeTwo256;
+	type AccountId = AccountId;
+	type Lookup = IdentityLookup<Self::AccountId>;
+	type Header = Header;
+	type Event = Event;
+	type BlockHashCount = BlockHashCount;
+	type Version = ();
+	type PalletInfo = PalletInfo;
+	type AccountData = pallet_balances::AccountData<Balance>;
+	type OnNewAccount = ();
+	type OnKilledAccount = ();
+	type SystemWeightInfo = ();
+	type SS58Prefix = SS58Prefix;
+	type OnSetCode = ();
 }
 
 impl pallet_signal::Config for Test {
-    type Event = Event;
-    type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
-    type WeightInfo = ();
-    type Control = ControlMock;
-    type Flow = FlowMock;
-    type MaxProposalsPerBlock = MaxProposalsPerBlock;
+	type Event = Event;
+	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type WeightInfo = ();
+	type Control = ControlMock;
+	type Flow = FlowMock;
+	type MaxProposalsPerBlock = MaxProposalsPerBlock;
 	type MaxProposalDuration = MaxProposalDuration;
 	type FundingCurrencyId = FundingCurrencyId;
 	type Randomness = TestRandomness<Self>;
@@ -186,10 +186,10 @@ impl pallet_signal::Config for Test {
 #[derive(Default)]
 pub struct ExtBuilder;
 impl ExtBuilder {
-    pub fn build(self) -> sp_io::TestExternalities {
-        let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-        let currency_id = TokenSymbol::GAME as u32;
-        orml_tokens::GenesisConfig::<Test> {
+	pub fn build(self) -> sp_io::TestExternalities {
+		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		let currency_id = TokenSymbol::GAME as u32;
+		orml_tokens::GenesisConfig::<Test> {
 			balances: vec![
 				(ACC1, currency_id, 100),
 				(ACC2, currency_id, 100),
@@ -199,5 +199,5 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));
   		ext
-    }
+	}
 }

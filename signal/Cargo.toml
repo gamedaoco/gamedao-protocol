@@ -15,9 +15,9 @@ description = 'Signal pallet'
 
 [package.metadata.substrate]
 categories = [
-    'zero',
-    'core',
-    'pallet'
+	'zero',
+	'core',
+	'pallet'
 ]
 
 [dependencies]
@@ -47,22 +47,22 @@ orml-currencies = { path = "../../orml/currencies", default-features = false }
 default = ['std']
 runtime-benchmarks = ['frame-benchmarking']
 std = [
-    'codec/std',
-    'serde/std',
-    'scale-info/std',
+	'codec/std',
+	'serde/std',
+	'scale-info/std',
 
-    'frame-support/std',
-    'frame-system/std',
-    'frame-benchmarking/std',
+	'frame-support/std',
+	'frame-system/std',
+	'frame-benchmarking/std',
 
-    'sp-core/std',
-    'sp-std/std',
-    'sp-runtime/std',
+	'sp-core/std',
+	'sp-std/std',
+	'sp-runtime/std',
 
 	"orml-traits/std",
 	"orml-tokens/std",
 	"orml-currencies/std",
 
-    "support/std"
+	"support/std"
 ]
 try-runtime = ['frame-support/try-runtime']
