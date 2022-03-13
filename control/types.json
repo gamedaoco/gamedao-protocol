@@ -1,0 +1,26 @@
+
+"Body": {
+    "id": "Hash",
+    "index": "u128",
+    "creator": "AccountId",
+    "name": "Vec<u8>",
+    "cid": "Vec<u8>",
+    "body": "ControlType",
+    "created": "BlockNumber",
+    "mutated": "BlockNumber"
+  },
+
+"BConfig": {
+    "fee_model": "ControlFeeModel",
+    "fee": "Balance",
+    "gov_asset": "u8",
+    "pay_asset": "u8",
+    "access": "ControlAccessModel",
+    "member_limit": "u64"
+},
+
+"ControlType": { "_enum": ["INDIVIDUAL", "COMPANY", "DAO", "HYBRID"] },
+"ControlState": { "_enum": ["INACTIVE", "ACTIVE", "LOCKED"] },
+"ControlMemberState": { "_enum": ["INACTIVE", "ACTIVE", "PENDING", "KICKED", "BANNED", "EXITED"] },
+"ControlFeeModel": { "_enum": ["NOFEES", "RESERVE", "TRANSFER"] },
+"ControlAccessModel": { "_enum": ["OPEN", "VOTING", "CONTROLLER" ] }
