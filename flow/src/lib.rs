@@ -66,7 +66,7 @@ use frame_support::traits::Get;
 
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use zero_primitives::{Balance, CurrencyId, Moment};
-use gamedao_protocol_support::{ControlPalletStorage, FlowState};
+use gamedao_protocol_support::{ControlPalletStorage, FlowState, FlowPalletStorage};
 
 
 
@@ -972,4 +972,19 @@ impl<T: Config> Pallet<T> {
 		Nonce::<T>::put(nonce.wrapping_add(1));
 		nonce.encode()
 	}
+}
+
+impl <T: Config>FlowPalletStorage<T::Hash, Balance> for Pallet<T> {
+	fn campaign_balance(hash: &T::Hash) -> Balance {
+		CampaignBalance::<T>::get(hash)
+	}
+    fn campaign_state(hash: &T::Hash) -> FlowState {
+    	CampaignState::<T>::get(hash)
+    }
+    fn campaign_contributors_count(hash: &T::Hash) -> u64 {
+    	CampaignContributorsCount::<T>::get(hash)
+    }
+    fn campaign_org(hash: &T::Hash) -> T::Hash {
+    	CampaignOrg::<T>::get(hash)
+    }
 }
