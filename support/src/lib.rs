@@ -5,8 +5,7 @@ use sp_std::fmt::Debug;
 
 // TODO: discussion: where to store enums
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Debug)]
 #[repr(u8)]
 pub enum FlowState {
     Init = 0,
@@ -23,8 +22,7 @@ impl Default for FlowState {
     }
 }
 
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
 #[repr(u8)]
 pub enum ControlMemberState {
     Inactive = 0, // eg inactive after threshold period
@@ -34,24 +32,13 @@ pub enum ControlMemberState {
     Banned = 4,
     Exited = 5,
 }
-impl Default for ControlMemberState {
-	fn default() -> Self {
-		Self::Inactive
-	}
-}
 
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
 #[repr(u8)]
 pub enum ControlState {
     Inactive = 0,
     Active = 1,
     Locked = 2,
-}
-impl Default for ControlState {
-	fn default() -> Self {
-		Self::Inactive
-	}
 }
 
 pub trait ControlPalletStorage<AccountId, Hash> {
