@@ -24,7 +24,7 @@ use frame_support::{
 	ensure,
 	codec::{ Decode, Encode },
 	dispatch::DispatchResult,
-	traits::{ Randomness, UnixTime, Get },
+	traits::{ Randomness, Get },
 };
 use scale_info::TypeInfo;
 use sp_std::{ fmt::Debug, vec::Vec };
@@ -753,8 +753,8 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(OrgByHash::<T>::contains_key(&hash), Error::<T>::OrganizationUnknown );
 		let config = OrgConfiguration::<T>::get(&hash).ok_or(Error::<T>::OrganizationUnknown)?;
-		let current_state = OrgMemberState::<T>::get(( &hash, &account ));
-		let new_state = match config.access {
+		let _current_state = OrgMemberState::<T>::get(( &hash, &account ));
+		let _new_state = match config.access {
 			AccessModel::Open => member_state, // when open use desired state
 			_ => MemberState::Pending, // else pending
 		};
@@ -892,8 +892,8 @@ impl<T: Config> Pallet<T> {
 
 	// transfer control of a Org
 	fn transfer(
-		hash: T::Hash,
-		account: T::AccountId
+		_hash: T::Hash,
+		_account: T::AccountId
 	) {
 
 	}

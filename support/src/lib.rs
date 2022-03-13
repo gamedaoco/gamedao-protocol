@@ -33,12 +33,24 @@ pub enum ControlMemberState {
     Exited = 5,
 }
 
+impl Default for ControlMemberState {
+    fn default() -> Self {
+        Self::Inactive
+    }
+}
+
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
 #[repr(u8)]
 pub enum ControlState {
     Inactive = 0,
     Active = 1,
     Locked = 2,
+}
+
+impl Default for ControlState {
+    fn default() -> Self {
+        Self::Inactive
+    }
 }
 
 pub trait ControlPalletStorage<AccountId, Hash> {

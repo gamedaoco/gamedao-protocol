@@ -733,6 +733,7 @@ pub mod pallet {
 							Ok(t) => {
 								if yes > t {
 									proposal_state = ProposalState::Accepted;
+                                    // TODO: handle an error
 									Self::unlock_balance(proposal.proposal_id, yes);
 								} else {
 									proposal_state = ProposalState::Rejected;
