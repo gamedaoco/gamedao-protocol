@@ -1,16 +1,21 @@
+# ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+# ███░▄▄▄█░▄▄▀█░▄▀▄░█░▄▄█░▄▀█░▄▄▀█▀▄▄▀██
+# ███░█▄▀█░▀▀░█░█▄█░█░▄▄█░█░█░▀▀░█░██░██
+# ███▄▄▄▄█▄██▄█▄███▄█▄▄▄█▄▄██▄██▄██▄▄███
+# ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 [package]
-name = 'pallet-sense'
-version = '0.1.0'
-authors = ['2075']
-edition = '2018'
-license = 'GPL-3.0-or-later'
-description = 'Pallet Sense aggregates datapoints to reflect user experience and behaviour'
-repository = 'https://github.com/gamedaoco/gamedao-protocol'
+name = "gamedao-sense"
+version = "0.1.0"
+authors = ["zero.io","gamedao.co"]
+edition = "2018"
+license = "GPL-3.0-or-later"
+description = "Pallet Sense aggregates datapoints to reflect user experience and behaviour"
+repository = "https://github.com/gamedaoco/gamedao-protocol"
 
 [package.metadata.substrate]
 categories = [
-	'zero',
-	'core'
+	"zero",
+	"core"
 ]
 
 [dependencies]
@@ -29,19 +34,19 @@ sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkad
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 
 [features]
-default = ['std']
-runtime-benchmarks = ['frame-benchmarking']
+default = ["std"]
+runtime-benchmarks = ["frame-benchmarking"]
 std = [
-	'codec/std',
-	'serde/std',
-	'scale-info/std',
+	"codec/std",
+	"serde/std",
+	"scale-info/std",
 
-	'frame-support/std',
-	'frame-system/std',
-	'frame-benchmarking/std',
+	"frame-support/std",
+	"frame-system/std",
+	"frame-benchmarking/std",
 
-	'sp-core/std',
-	'sp-std/std',
-	'sp-runtime/std',
+	"sp-core/std",
+	"sp-std/std",
+	"sp-runtime/std",
 ]
-try-runtime = ['frame-support/try-runtime']
+try-runtime = ["frame-support/try-runtime"]

@@ -11,7 +11,7 @@ use sp_core::H256;
 use sp_runtime::{traits::{IdentityLookup},Permill};
 
 use orml_traits::parameter_type_with_key;
-use gamedao_protocol_support::{ControlPalletStorage, ControlMemberState, ControlState};
+use gamedao_traits::{ControlTrait, ControlMemberState, ControlState};
 use zero_primitives::{Amount, CurrencyId, TokenSymbol, Header};
 
 pub type AccountId = u32;
@@ -130,13 +130,28 @@ impl pallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
+// #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
+// #[repr(u8)]
+// pub enum ControlMemberState {
+//     Inactive = 0, // eg inactive after threshold period
+//     Active = 1,
+//     Pending = 2,  // application voting pending
+//     Kicked = 3,
+//     Banned = 4,
+//     Exited = 5,
+// }
+// TODO:
+
 pub struct ControlPalletMock;
 
-impl ControlPalletStorage<AccountId, Hash> for ControlPalletMock {
+impl ControlTrait<AccountId, Hash> for ControlPalletMock {
+
+    type ControlMemberState = ControlMemberState;
+
 	fn body_controller(_org: &Hash) -> AccountId { BOB }
 	fn body_treasury(_org: &Hash) -> AccountId { TREASURY }
 	fn body_state(_hash: &Hash) -> ControlState { ControlState::Active }
-	fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> ControlMemberState { ControlMemberState::Active }
+	fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> Self::ControlMemberState { Self::ControlMemberState::Active }
 }
 
 parameter_types! {

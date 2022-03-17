@@ -1,25 +1,15 @@
+//      _______  ________  ________  ________   ______   _______   _______
+//    ╱╱       ╲╱        ╲╱        ╲╱        ╲_╱      ╲╲╱       ╲╲╱       ╲╲
+//   ╱╱      __╱         ╱         ╱         ╱        ╱╱        ╱╱        ╱╱
+//  ╱       ╱ ╱         ╱         ╱        _╱         ╱         ╱         ╱
+//  ╲________╱╲___╱____╱╲__╱__╱__╱╲________╱╲________╱╲___╱____╱╲________╱
 //
-//		   _______________________________ ________
-//		   \____	/\_   _____/\______   \\_____  \
-//			 /	 /  |	__)_  |	   _/ /   |   \
-//			/	 /_  |		\ |	|   \/	|	\
-//		   /_______ \/_______  / |____|_  /\_______  /
-//				   \/		\/		 \/		 \/
-//		   Z  E  R  O  .  I  O	 N  E  T  W  O  R  K
-//		   © C O P Y R I O T   2 0 7 5 @ Z E R O . I O
-
-// This file is part of ZERO Network.
-// Copyright (C) 2010-2020 ZERO Labs.
+// This file is part of GameDAO Protocol.
+// Copyright (C) 2018-2022 GameDAO AG.
 // SPDX-License-Identifier: Apache-2.0
 
-// Proposals and voting space for organizations and campaigns.
-// This pallet provides next features:
-//  * Allow members of organisations to generate proposals under campaign.
-//	Each proposal has a lifitime, expiration, details and number of votes.
-//	Specific type of proposal is withdrawal one.
-//	It allows (if approved) to release locked campaign balance for further usage.
-//  * Vote on those proposals.
-//  * Manage proposal lifetime, close and finalize those proposals once expired.
+//! SIGNAL
+//! TODO: description (toml as well)
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -53,10 +43,7 @@ pub mod pallet {
 	use orml_traits::{MultiCurrency, MultiReservableCurrency};
 
 	use zero_primitives::{Balance, CurrencyId};
-	use support::{
-		ControlPalletStorage, ControlState, ControlMemberState,
-		FlowPalletStorage, FlowState
-	};
+	use gamedao_traits::{ControlTrait, FlowTrait};
 
 	use super::*;
 	use voting_enums::{ProposalState, ProposalType, VotingType};
@@ -69,8 +56,8 @@ pub mod pallet {
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = CurrencyId, Balance = Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
-		type Control: ControlPalletStorage<Self::AccountId, Self::Hash>;
-		type Flow: FlowPalletStorage<Self::Hash, Balance>;
+		type Control: ControlTrait<Self::AccountId, Self::Hash>;
+		type Flow: FlowTrait<Self::Hash, Balance>;
 		type ForceOrigin: EnsureOrigin<Self::Origin>;
 		type WeightInfo: WeightInfo;
 
@@ -296,11 +283,15 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			// active/existing dao?
-			ensure!(T::Control::body_state(&context_id) == ControlState::Active, Error::<T>::DAOInactive);
+            
+            // TODO: use check method
+			// ensure!(T::Control::body_state(&context_id) == ControlState::Active, Error::<T>::DAOInactive);
 
 			// member of body?
 			let member = T::Control::body_member_state(&context_id, &sender);
-			ensure!(member == ControlMemberState::Active, Error::<T>::AuthorizationError);
+
+            // TODO: use check method
+			// ensure!(member == ControlMemberState::Active, Error::<T>::AuthorizationError);
 
 			// ensure that start and expiry are in bounds
 			let current_block = <frame_system::Pallet<T>>::block_number();
@@ -429,7 +420,10 @@ pub mod pallet {
 
 			// ensure!( T::Flow::campaign_by_id(&context_id), Error::<T>::CampaignUnknown );
 			let state = T::Flow::campaign_state(&context_id);
-			ensure!( state == FlowState::Success, Error::<T>::CampaignFailed );
+
+            // TODO: use check method
+			// ensure!( state == T::Flow::FlowState::Success, Error::<T>::CampaignFailed );
+
 			// todo: should this checks be performed?
 			// let owner = T::Flow::campaign_owner(&context_id);
 			// ensure!( sender == owner, Error::<T>::AuthorizationError );

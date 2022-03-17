@@ -1,19 +1,14 @@
+//      _______  ________  ________  ________   ______   _______   _______
+//    ╱╱       ╲╱        ╲╱        ╲╱        ╲_╱      ╲╲╱       ╲╲╱       ╲╲
+//   ╱╱      __╱         ╱         ╱         ╱        ╱╱        ╱╱        ╱╱
+//  ╱       ╱ ╱         ╱         ╱        _╱         ╱         ╱         ╱
+//  ╲________╱╲___╱____╱╲__╱__╱__╱╲________╱╲________╱╲___╱____╱╲________╱
 //
-//           _______________________________ ________
-//           \____    /\_   _____/\______   \\_____  \
-//             /     /  |    __)_  |       _/ /   |   \
-//            /     /_  |        \ |    |   \/    |    \
-//           /_______ \/_______  / |____|_  /\_______  /
-//                   \/        \/         \/         \/
-//           Z  E  R  O  .  I  O     N  E  T  W  O  R  K
-//           © C O P Y R I O T   2 0 7 5 @ Z E R O . I O
-
-// This file is part of ZERO Network.
-// Copyright (C) 2010-2020 ZERO Labs.
+// This file is part of GameDAO Protocol.
+// Copyright (C) 2018-2022 GameDAO AG.
 // SPDX-License-Identifier: Apache-2.0
 
 //! SENSE
-//!
 //! This pallet aggregates datapoints to reflect user experience and behaviour.
 #![cfg_attr(not(feature = "std"), no_std)]
 #[warn(unused_imports)]

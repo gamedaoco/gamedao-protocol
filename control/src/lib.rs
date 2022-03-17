@@ -30,13 +30,8 @@ use scale_info::TypeInfo;
 use sp_std::{ fmt::Debug, vec::Vec };
 use orml_traits::{ MultiCurrency, MultiReservableCurrency };
 use primitives::{ Balance, CurrencyId, BlockNumber };
-use gamedao_protocol_support::{ ControlState as State, ControlMemberState as MemberState, ControlPalletStorage };
+use gamedao_traits::ControlTrait;
 
-//
-//
-//	structs
-//
-//
 
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -50,6 +45,37 @@ impl Default for OrgType {
 	fn default() -> Self {
 		Self::Individual
 	}
+}
+
+#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
+#[repr(u8)]
+pub enum ControlMemberState {
+    Inactive = 0, // eg inactive after threshold period
+    Active = 1,
+    Pending = 2,  // application voting pending
+    Kicked = 3,
+    Banned = 4,
+    Exited = 5,
+}
+
+impl Default for ControlMemberState {
+    fn default() -> Self {
+        Self::Inactive
+    }
+}
+
+#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
+#[repr(u8)]
+pub enum ControlState {
+    Inactive = 0,
+    Active = 1,
+    Locked = 2,
+}
+
+impl Default for ControlState {
+    fn default() -> Self {
+        Self::Inactive
+    }
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
@@ -120,11 +146,6 @@ pub struct OrgConfig<Balance, FeeModel, AccessModel> {
 	pub member_limit: u64,
 }
 
-//
-//
-//	Pallet
-//
-//
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -136,10 +157,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
-
-	//
-	//	Pallet Config
-	//
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -198,7 +215,7 @@ pub mod pallet {
 	/// Global Org State
 	#[pallet::storage]
 	pub(super) type OrgState<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, State, ValueQuery, GetDefault>;
+		StorageMap<_, Blake2_128Concat, T::Hash, ControlState, ValueQuery, GetDefault>;
 
 	/// Access model
 	#[pallet::storage]
@@ -218,7 +235,7 @@ pub mod pallet {
 	/// Member state for a Org
 	#[pallet::storage]
 	pub(super) type OrgMemberState<T: Config> =
-		StorageMap<_, Blake2_128Concat, (T::Hash, T::AccountId), MemberState, ValueQuery, GetDefault>;
+		StorageMap<_, Blake2_128Concat, (T::Hash, T::AccountId), ControlMemberState, ValueQuery, GetDefault>;
 
 	/// Memberships by AccountId
 	#[pallet::storage]
@@ -264,10 +281,6 @@ pub mod pallet {
 	#[pallet::storage]
 	pub(super) type Nonce<T: Config> = StorageValue<_, u64, ValueQuery>;
 
-	//
-	//	Pallet Events
-	//
-
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -302,10 +315,6 @@ pub mod pallet {
 		Message(Vec<u8>),
 	}
 
-	//
-	//	Pallet Errors
-	//
-
 	#[pallet::error]
 	pub enum Error<T> {
 		/// Org Exists
@@ -332,10 +341,6 @@ pub mod pallet {
 		GuruMeditation,
 	}
 
-	//
-	//	Pallet Functions
-	//
-
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 
@@ -349,7 +354,7 @@ pub mod pallet {
 			hash: T::Hash,
 		) -> DispatchResult {
 			ensure_root(origin)?;
-			OrgState::<T>::insert( hash.clone(), State::Active );
+			OrgState::<T>::insert( hash.clone(), ControlState::Active );
 			Self::deposit_event( Event::OrgEnabled( hash ) );
 			Ok(())
 		}
@@ -364,7 +369,7 @@ pub mod pallet {
 			hash: T::Hash,
 		) -> DispatchResult {
 			ensure_root(origin)?;
-			OrgState::<T>::insert( hash.clone(), State::Inactive );
+			OrgState::<T>::insert( hash.clone(), ControlState::Inactive );
 			Self::deposit_event( Event::OrgDisabled( hash ) );
 			Ok(())
 		}
@@ -463,7 +468,7 @@ pub mod pallet {
 			OrgCreator::<T>::insert( hash.clone(), sender.clone() );
 			OrgController::<T>::insert( hash.clone(), controller.clone() );
 			OrgTreasury::<T>::insert( hash.clone(), treasury.clone() );
-			OrgState::<T>::insert( hash.clone(), State::Active );
+			OrgState::<T>::insert( hash.clone(), ControlState::Active );
 
 			// let mut controlled = OrgsControlled::<T>::get(&controller);
 			// controlled.push(hash.clone());
@@ -724,11 +729,6 @@ pub mod pallet {
 
 }
 
-//
-//
-//	Pallet Private Functions
-//
-//
 
 impl<T: Config> Pallet<T> {
 
@@ -748,7 +748,7 @@ impl<T: Config> Pallet<T> {
 	fn set_member_state(
 		hash: T::Hash,
 		account: T::AccountId,
-		member_state: MemberState
+		member_state: ControlMemberState
 	) -> DispatchResult {
 
 		ensure!(OrgByHash::<T>::contains_key(&hash), Error::<T>::OrganizationUnknown );
@@ -756,7 +756,7 @@ impl<T: Config> Pallet<T> {
 		let _current_state = OrgMemberState::<T>::get(( &hash, &account ));
 		let _new_state = match config.access {
 			AccessModel::Open => member_state, // when open use desired state
-			_ => MemberState::Pending, // else pending
+			_ => ControlMemberState::Pending, // else pending
 		};
 		// todo: save new_state to storage
 
@@ -777,8 +777,8 @@ impl<T: Config> Pallet<T> {
 
 		let config = OrgConfiguration::<T>::get(&hash).ok_or(Error::<T>::OrganizationUnknown)?;
 		let state = match config.access {
-			AccessModel::Open => MemberState::Active, // active
-			_ => MemberState::Pending, // pending
+			AccessModel::Open => ControlMemberState::Active, // active
+			_ => ControlMemberState::Pending, // pending
 		};
 
 		// todo: Should this be FundingCurrencyId or other currency id?
@@ -878,7 +878,7 @@ impl<T: Config> Pallet<T> {
 				OrgMemberCount::<T>::insert( &hash, count as u64 );
 
 				// member state
-				OrgMemberState::<T>::insert(( hash.clone(), account.clone() ), MemberState::Inactive);
+				OrgMemberState::<T>::insert(( hash.clone(), account.clone() ), ControlMemberState::Inactive);
 
 
 				Ok(())
@@ -900,17 +900,23 @@ impl<T: Config> Pallet<T> {
 
 }
 
-impl <T: Config>ControlPalletStorage<T::AccountId, T::Hash> for Pallet<T> {
+impl <T: Config>ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
+
+    type ControlMemberState = ControlMemberState;
+    type ControlState = ControlState;
+
+    // TODO: add check methods
+
 	fn body_controller(org: &T::Hash) -> T::AccountId {
 		OrgController::<T>::get(org)
 	}
     fn body_treasury(org: &T::Hash) -> T::AccountId {
     	OrgTreasury::<T>::get(org)
     }
-    fn body_member_state(hash: &T::Hash, account_id: &T::AccountId) -> MemberState {
+    fn body_member_state(hash: &T::Hash, account_id: &T::AccountId) -> Self::ControlMemberState {
     	OrgMemberState::<T>::get((hash, account_id))
     }
-    fn body_state(hash: &T::Hash) -> State {
+    fn body_state(hash: &T::Hash) -> Self::ControlState {
     	OrgState::<T>::get(hash)
     }
 }

@@ -1,11 +1,51 @@
+# ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+# ███░▄▄▄█░▄▄▀█░▄▀▄░█░▄▄█░▄▀█░▄▄▀█▀▄▄▀██
+# ███░█▄▀█░▀▀░█░█▄█░█░▄▄█░█░█░▀▀░█░██░██
+# ███▄▄▄▄█▄██▄█▄███▄█▄▄▄█▄▄██▄██▄██▄▄███
+# ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 [package]
-name = "pallet-control"
+name = "gamedao-control"
 version = "1.0.1-dev"
 authors = ["zero.io","gamedao.co"]
 repository = "https://github.com/gamedaoco/gamedao-protocol"
 edition = "2018"
 license = "GPL-3.0-or-later"
 description = "DAO Factory"
+
+[dependencies]
+hex-literal = "0.3.1"
+num_enum = { version = "0.5.1", default-features = false }
+
+serde = { version = "1.0.124", optional = true }
+codec = { package = "parity-scale-codec", version = "2.3.1", default-features = false }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+
+sp-core = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-std = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-storage = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+
+frame-support = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+frame-system = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+
+pallet-assets = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+pallet-balances = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+
+orml-traits = { path = "../../orml/traits", default-features = false }
+primitives = { package = "zero-primitives", path = "../../primitives", default-features = false }
+gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
+
+# tangram = { package = "module-tangram", path = "../../zero/tangram", default-features = false }
+
+[dev-dependencies]
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+frame-support-test = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
+pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+orml-tokens = { path = "../../orml/tokens", default-features = false }
+orml-currencies = { path = "../../orml/currencies", default-features = false }
 
 [features]
 default = ["std"]
@@ -31,41 +71,6 @@ std = [
 	"orml-tokens/std",
 	"orml-currencies/std",
 
-	"gamedao-protocol-support/std",
+	"gamedao-traits/std",
 
 ]
-
-[dependencies]
-hex-literal = "0.3.1"
-num_enum = { version = "0.5.1", default-features = false }
-
-serde = { version = "1.0.124", optional = true }
-codec = { package = "parity-scale-codec", version = "2.3.1", default-features = false }
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
-
-sp-core = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-sp-std = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-sp-storage = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-
-frame-support = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-frame-system = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false, optional = true }
-
-pallet-assets = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-pallet-balances = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-
-orml-traits = { path = "../../orml/traits", default-features = false }
-primitives = { package = "zero-primitives", path = "../../primitives", default-features = false }
-gamedao-protocol-support = { package = "gamedao-protocol-support", path = "../support", default-features = false }
-
-# tangram = { package = "module-tangram", path = "../../zero/tangram", default-features = false }
-
-[dev-dependencies]
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
-frame-support-test = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
-pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-orml-tokens = { path = "../../orml/tokens", default-features = false }
-orml-currencies = { path = "../../orml/currencies", default-features = false }

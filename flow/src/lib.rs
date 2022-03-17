@@ -1,29 +1,14 @@
+//      _______  ________  ________  ________   ______   _______   _______
+//    ╱╱       ╲╱        ╲╱        ╲╱        ╲_╱      ╲╲╱       ╲╲╱       ╲╲
+//   ╱╱      __╱         ╱         ╱         ╱        ╱╱        ╱╱        ╱╱
+//  ╱       ╱ ╱         ╱         ╱        _╱         ╱         ╱         ╱
+//  ╲________╱╲___╱____╱╲__╱__╱__╱╲________╱╲________╱╲___╱____╱╲________╱
 //
-//           _______________________________ ________
-//           \____    /\_   _____/\______   \\_____  \
-//             /     /  |    __)_  |       _/ /   |   \
-//            /     /_  |        \ |    |   \/    |    \
-//           /_______ \/_______  / |____|_  /\_______  /
-//                   \/        \/         \/         \/
-//           Z  E  R  O  .  I  O     N  E  T  W  O  R  K
-//           © C O P Y R I O T   2 0 7 5 @ Z E R O . I O
-
-// This file is part of ZERO Network.
-// Copyright (C) 2010-2020 ZERO Technologies.
+// This file is part of GameDAO Protocol.
+// Copyright (C) 2018-2022 GameDAO AG.
 // SPDX-License-Identifier: Apache-2.0
 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// 	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+//! FLOW
 //! # Crowdfunding Campaign Factory + Treasury
 //!
 //! Run `cargo doc --package module-crowdfunding --open` to view this pallet's documentation.
@@ -66,8 +51,7 @@ use frame_support::traits::Get;
 
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use zero_primitives::{Balance, CurrencyId, Moment};
-use gamedao_protocol_support::{ControlPalletStorage, FlowState, FlowPalletStorage};
-
+use gamedao_traits::{ControlTrait, FlowTrait};
 
 
 mod mock;
@@ -75,7 +59,6 @@ mod tests;
 
 pub use pallet::*;
 
-// TODO: after Control pallet will be merged
 // mod benchmarking;
 
 // TODO: weights
@@ -99,6 +82,23 @@ impl Default for FlowProtocol {
 	fn default() -> Self {
 		Self::Raise
 	}
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Debug)]
+#[repr(u8)]
+pub enum FlowState {
+    Init = 0,
+    Active = 1,
+    Paused = 2,
+    Success = 3,
+    Failed = 4,
+    Locked = 5,
+}
+
+impl Default for FlowState {
+    fn default() -> Self {
+        Self::Init
+    }
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Debug)]
@@ -189,7 +189,7 @@ pub mod pallet {
 			+ MultiReservableCurrency<Self::AccountId>;
 		type UnixTime: UnixTime;
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
-		type Control: ControlPalletStorage<Self::AccountId, Self::Hash>;
+		type Control: ControlTrait<Self::AccountId, Self::Hash>;
 
 		/// The origin that is allowed to make judgements.
 		type GameDAOAdminOrigin: EnsureOrigin<Self::Origin>;
@@ -974,11 +974,14 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl <T: Config>FlowPalletStorage<T::Hash, Balance> for Pallet<T> {
+impl <T: Config>FlowTrait<T::Hash, Balance> for Pallet<T> {
+
+    type FlowState = FlowState;
+
 	fn campaign_balance(hash: &T::Hash) -> Balance {
 		CampaignBalance::<T>::get(hash)
 	}
-    fn campaign_state(hash: &T::Hash) -> FlowState {
+    fn campaign_state(hash: &T::Hash) -> Self::FlowState {
     	CampaignState::<T>::get(hash)
     }
     fn campaign_contributors_count(hash: &T::Hash) -> u64 {
