@@ -23,18 +23,18 @@ impl Default for FlowProtocol {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Debug)]
 #[repr(u8)]
 pub enum FlowState {
-    Init = 0,
-    Active = 1,
-    Paused = 2,
-    Success = 3,
-    Failed = 4,
-    Locked = 5,
+	Init = 0,
+	Active = 1,
+	Paused = 2,
+	Success = 3,
+	Failed = 4,
+	Locked = 5,
 }
 
 impl Default for FlowState {
-    fn default() -> Self {
-        Self::Init
-    }
+	fn default() -> Self {
+		Self::Init
+	}
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Debug)]

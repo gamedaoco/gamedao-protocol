@@ -172,7 +172,7 @@ parameter_types! {
 }
 
 impl Config for Test {
-    type Balance = Balance;
+	type Balance = Balance;
 	// type Moment = Moment;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
@@ -208,7 +208,7 @@ construct_runtime!(
 		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		PalletTimestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 		Flow: gamedao_flow,
-        Control: gamedao_control,
+		Control: gamedao_control,
 	}
 );
 

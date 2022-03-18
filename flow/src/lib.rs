@@ -84,16 +84,16 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 
-        type Balance: Member
-            + Parameter
-            + AtLeast32BitUnsigned
-            + Default
-            + Copy
-            + MaybeSerializeDeserialize
-            + MaxEncodedLen
-            + TypeInfo;
+		type Balance: Member
+			+ Parameter
+			+ AtLeast32BitUnsigned
+			+ Default
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen
+			+ TypeInfo;
 
-        type CurrencyId: Member
+		type CurrencyId: Member
 			+ Parameter
 			+ Default
 			+ Copy
@@ -102,7 +102,7 @@ pub mod pallet {
 			+ MaxEncodedLen
 			+ TypeInfo;
 
-        // type Moment: AtLeast32Bit + Parameter + Default + Copy;
+		// type Moment: AtLeast32Bit + Parameter + Default + Copy;
 
 		type WeightInfo: frame_system::weights::WeightInfo;
 		type Event: From<Event<Self>>
@@ -393,7 +393,7 @@ pub mod pallet {
 				let campaign = Self::campaign_by_id(campaign_id);
 				let campaign_balance = CampaignBalance::<T>::get(campaign_id);
 				let org = CampaignOrg::<T>::get(&campaign_id);
-                // TODO: rename method
+				// TODO: rename method
 				let org_treasury = T::Control::body_treasury(&org);
 
 				// check for cap reached
@@ -497,7 +497,7 @@ pub mod pallet {
 					let contributors = CampaignContributors::<T>::get(campaign_id);
 					for account in contributors {
 						let contribution =
-                            CampaignContribution::<T>::get((*campaign_id, account.clone()));
+							CampaignContribution::<T>::get((*campaign_id, account.clone()));
 						T::Currency::unreserve(T::ProtocolTokenId::get(), &account, contribution);
 					}
 
@@ -546,15 +546,15 @@ pub mod pallet {
 								   // token_curve_b: Vec<u8>, // custom
 		) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
-            
-            // TODO: rename method
+			
+			// TODO: rename method
 			let owner = T::Control::body_controller(&org);
 
 			ensure!(creator == owner, Error::<T>::AuthorizationError);
 
 			// Get Treasury account for deposits and fees
 
-            // TODO: rename method
+			// TODO: rename method
 			let treasury = T::Control::body_treasury(&org);
 
 			let free_balance = T::Currency::free_balance(T::ProtocolTokenId::get(), &treasury);
@@ -607,7 +607,7 @@ pub mod pallet {
 				token_symbol: token_symbol.clone(),
 				token_name: token_name.clone(),
 				// created: T::UnixTime::now(),
-                created: T::UnixTime::now().as_secs(),
+				created: T::UnixTime::now().as_secs(),
 			};
 
 			// mint the campaign
@@ -715,7 +715,7 @@ impl<T: Config> Pallet<T> {
 		let current_state = CampaignState::<T>::get(&id);
 
 		// remove
-        
+		
 		let mut current_state_members = CampaignsByState::<T>::get(&current_state);
 		match current_state_members.binary_search(&id) {
 			Ok(index) => {
@@ -775,7 +775,7 @@ impl<T: Config> Pallet<T> {
 		});
 
 		// global campaigns count
-        
+		
 		let campaigns_count = CampaignsCount::<T>::get();
 		let update_campaigns_count = campaigns_count
 			.checked_add(1)
@@ -801,7 +801,7 @@ impl<T: Config> Pallet<T> {
 
 		// TODO: this should be a proper mechanism
 		// to reserve some of the staked GAME
-        // TODO: rename method
+		// TODO: rename method
 		let treasury = T::Control::body_treasury(&campaign.org);
 
 		T::Currency::reserve(
@@ -885,18 +885,18 @@ impl<T: Config> Pallet<T> {
 
 impl <T: Config>FlowTrait<T::Hash, T::Balance> for Pallet<T> {
 
-    type FlowState = FlowState;
+	type FlowState = FlowState;
 
 	fn campaign_balance(hash: &T::Hash) -> T::Balance {
 		CampaignBalance::<T>::get(hash)
 	}
-    fn campaign_state(hash: &T::Hash) -> Self::FlowState {
-    	CampaignState::<T>::get(hash)
-    }
-    fn campaign_contributors_count(hash: &T::Hash) -> u64 {
-    	CampaignContributorsCount::<T>::get(hash)
-    }
-    fn campaign_org(hash: &T::Hash) -> T::Hash {
-    	CampaignOrg::<T>::get(hash)
-    }
+	fn campaign_state(hash: &T::Hash) -> Self::FlowState {
+		CampaignState::<T>::get(hash)
+	}
+	fn campaign_contributors_count(hash: &T::Hash) -> u64 {
+		CampaignContributorsCount::<T>::get(hash)
+	}
+	fn campaign_org(hash: &T::Hash) -> T::Hash {
+		CampaignOrg::<T>::get(hash)
+	}
 }
