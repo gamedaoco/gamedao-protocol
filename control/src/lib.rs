@@ -50,32 +50,32 @@ impl Default for OrgType {
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
 #[repr(u8)]
 pub enum ControlMemberState {
-    Inactive = 0, // eg inactive after threshold period
-    Active = 1,
-    Pending = 2,  // application voting pending
-    Kicked = 3,
-    Banned = 4,
-    Exited = 5,
+	Inactive = 0, // eg inactive after threshold period
+	Active = 1,
+	Pending = 2,  // application voting pending
+	Kicked = 3,
+	Banned = 4,
+	Exited = 5,
 }
 
 impl Default for ControlMemberState {
-    fn default() -> Self {
-        Self::Inactive
-    }
+	fn default() -> Self {
+		Self::Inactive
+	}
 }
 
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
 #[repr(u8)]
 pub enum ControlState {
-    Inactive = 0,
-    Active = 1,
-    Locked = 2,
+	Inactive = 0,
+	Active = 1,
+	Locked = 2,
 }
 
 impl Default for ControlState {
-    fn default() -> Self {
-        Self::Inactive
-    }
+	fn default() -> Self {
+		Self::Inactive
+	}
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
@@ -273,7 +273,7 @@ pub mod pallet {
 
 	/// the goode olde nonce
 	#[pallet::storage]
-    #[pallet::getter(fn nonce)]
+	#[pallet::getter(fn nonce)]
 	pub(super) type Nonce<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::event]
@@ -423,8 +423,8 @@ pub mod pallet {
 			// controller and treasury must not be equal
 			ensure!(&controller != &treasury, Error::<T>::DuplicateAddress );
 
-            let index = Nonce::<T>::get();
-            let nonce = Self::get_and_increment_nonce();
+			let index = Nonce::<T>::get();
+			let nonce = Self::get_and_increment_nonce();
 			let (hash, _) = T::Randomness::random(&nonce);
 			let current_block = <frame_system::Pallet<T>>::block_number();
 
@@ -439,7 +439,7 @@ pub mod pallet {
 				mutated: current_block.clone(),
 			};
 
-            // TODO: membership fees
+			// TODO: membership fees
 			let mut _fee = fee;
 			match &fee_model {
 				FeeModel::Reserve => { _fee = fee },
@@ -894,7 +894,7 @@ impl<T: Config> Pallet<T> {
 
 	}
 
-    fn get_and_increment_nonce() -> Vec<u8> {
+	fn get_and_increment_nonce() -> Vec<u8> {
 		let nonce = Nonce::<T>::get();
 		Nonce::<T>::put(nonce.wrapping_add(1));
 		nonce.encode()
@@ -904,21 +904,21 @@ impl<T: Config> Pallet<T> {
 
 impl <T: Config>ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 
-    type ControlMemberState = ControlMemberState;
-    type ControlState = ControlState;
+	type ControlMemberState = ControlMemberState;
+	type ControlState = ControlState;
 
-    // TODO: add check methods
+	// TODO: add check methods
 
 	fn body_controller(org: &T::Hash) -> T::AccountId {
 		OrgController::<T>::get(org)
 	}
-    fn body_treasury(org: &T::Hash) -> T::AccountId {
-    	OrgTreasury::<T>::get(org)
-    }
-    fn body_member_state(hash: &T::Hash, account_id: &T::AccountId) -> Self::ControlMemberState {
-    	OrgMemberState::<T>::get((hash, account_id))
-    }
-    fn body_state(hash: &T::Hash) -> Self::ControlState {
-    	OrgState::<T>::get(hash)
-    }
+	fn body_treasury(org: &T::Hash) -> T::AccountId {
+		OrgTreasury::<T>::get(org)
+	}
+	fn body_member_state(hash: &T::Hash, account_id: &T::AccountId) -> Self::ControlMemberState {
+		OrgMemberState::<T>::get((hash, account_id))
+	}
+	fn body_state(hash: &T::Hash) -> Self::ControlState {
+		OrgState::<T>::get(hash)
+	}
 }
