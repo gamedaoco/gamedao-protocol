@@ -42,12 +42,14 @@ pub mod pallet {
 	use sp_std::vec::Vec;
 	use orml_traits::{MultiCurrency, MultiReservableCurrency};
 
-	use zero_primitives::{Balance, CurrencyId};
 	use gamedao_traits::{ControlTrait, FlowTrait};
 
 	use super::*;
 	use voting_enums::{ProposalState, ProposalType, VotingType};
 	use voting_structs::{Proposal, ProposalMetadata};
+
+	type Balance = u128;
+	type CurrencyId = u32;
 
 
 	#[pallet::config]
@@ -283,15 +285,10 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			// active/existing dao?
-            
-            // TODO: use check method
-			// ensure!(T::Control::body_state(&context_id) == ControlState::Active, Error::<T>::DAOInactive);
+			ensure!(T::Control::is_org_active(&context_id), Error::<T>::DAOInactive);
 
 			// member of body?
-			let member = T::Control::body_member_state(&context_id, &sender);
-
-            // TODO: use check method
-			// ensure!(member == ControlMemberState::Active, Error::<T>::AuthorizationError);
+			ensure!(T::Control::is_org_member_active(&context_id, &sender), Error::<T>::AuthorizationError);
 
 			// ensure that start and expiry are in bounds
 			let current_block = <frame_system::Pallet<T>>::block_number();
@@ -303,14 +300,15 @@ pub mod pallet {
 			// ending in target block
 			// do not exceed the maximum
 			let proposals = <ProposalsByBlock::<T>>::get(expiry);
-			// ensure!(proposals.len() as u32 < T::MaxProposalsPerBlock::get(), "Maximum number of proposals is reached for the target block, try another block");
-			ensure!((proposals.len() as u32) < T::MaxProposalsPerBlock::get(), Error::<T>::TooManyProposals);  // todo: was error generated manually on purpose?
+			ensure!((proposals.len() as u32) < T::MaxProposalsPerBlock::get(), Error::<T>::TooManyProposals);
 
 			let proposal_type = ProposalType::General;
 			let proposal_state = ProposalState::Active;
 			let voting_type = VotingType::Simple;
-			// ensure!(!<Proposals<T>>::contains_key(&context_id), "Proposal id already exists");
-			ensure!(!<Proposals<T>>::contains_key(&context_id), Error::<T>::ProposalExists);  // todo: was error generated manually on purpose?
+
+			let nonce = Self::get_and_increment_nonce();
+			let (proposal_id, _) = <T::Randomness>::random(&nonce);
+			ensure!(!<Proposals<T>>::contains_key(&proposal_id), Error::<T>::ProposalExists);
 
 
 			// check add
@@ -322,9 +320,6 @@ pub mod pallet {
 			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
 
 			// proposal
-
-			let nonce = Self::get_and_increment_nonce();
-			let (proposal_id, _) = <T::Randomness>::random(&nonce);
 			let new_proposal = Proposal {
 				proposal_id: proposal_id.clone(),
 				context_id: context_id.clone(),
@@ -404,6 +399,7 @@ pub mod pallet {
 		//  beneficiary must be the treasury of the dao
 
 		#[pallet::weight(5_000_000)]
+		#[transactional]
 		pub fn withdraw_proposal(
 			origin: OriginFor<T>,
 			context_id: T::Hash,
@@ -418,11 +414,7 @@ pub mod pallet {
 
 			//  A C C E S S
 
-			// ensure!( T::Flow::campaign_by_id(&context_id), Error::<T>::CampaignUnknown );
-			let state = T::Flow::campaign_state(&context_id);
-
-            // TODO: use check method
-			// ensure!( state == T::Flow::FlowState::Success, Error::<T>::CampaignFailed );
+			ensure!(T::Flow::is_campaign_succeeded(&context_id), Error::<T>::CampaignFailed);
 
 			// todo: should this checks be performed?
 			// let owner = T::Flow::campaign_owner(&context_id);
@@ -445,9 +437,11 @@ pub mod pallet {
 
 			//  T R A F F I C
 
+			let nonce = Self::get_and_increment_nonce();
+			let (proposal_id, _) = <T as Config>::Randomness::random(&nonce);
 			let proposals = <ProposalsByBlock<T>>::get(expiry);
 			ensure!((proposals.len() as u32) < T::MaxProposalsPerBlock::get(), Error::<T>::TooManyProposals);
-			ensure!(!<Proposals<T>>::contains_key(&context_id), Error::<T>::ProposalExists);
+			ensure!(!<Proposals<T>>::contains_key(&proposal_id), Error::<T>::ProposalExists);
 
 			//  C O U N T S
 
@@ -462,9 +456,6 @@ pub mod pallet {
 
 			let proposal_type = ProposalType::Withdrawal; // treasury
 			let voting_type = VotingType::Simple; // votes
-			let nonce = Self::get_and_increment_nonce();
-
-			let (proposal_id, _) = <T as Config>::Randomness::random(&nonce);
 
 			let proposal = Proposal {
 				proposal_id: proposal_id.clone(),
@@ -600,11 +591,10 @@ pub mod pallet {
 							let updated_approvers = current_approvers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
 							<ProposalApprovers<T>>::insert(proposal_id.clone(), updated_approvers.clone());
 
-							// TODO: make this variable
 							let contributors = T::Flow::campaign_contributors_count(&proposal.context_id);
+							// TODO: make this variable
 							let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError)?;
 							if updated_approvers > threshold {
-								// todo: should this be called on finalize?
 								Self::unlock_balance(proposal_id, updated_approvers)?;
 							}
 							// remove
@@ -711,9 +701,8 @@ pub mod pallet {
 						// simple vote
 						let (yes,no) = <ProposalSimpleVotes<T>>::get(&proposal_id);
 						if yes > no { proposal_state = ProposalState::Accepted; }
-						if yes < no { proposal_state = ProposalState::Rejected; }
+						if yes <= no { proposal_state = ProposalState::Rejected; }
 						if yes == 0 && no == 0 { proposal_state = ProposalState::Expired; }
-						// todo: if same amount of yes/no votes?
 					},
 					ProposalType::Withdrawal => {
 						// treasury
@@ -800,11 +789,11 @@ pub mod pallet {
 			ensure!(available_balance >= proposal_balance, Error::<T>::BalanceInsufficient);
 
 			// Get the owner of the campaign
-			let _owner = <Owners<T>>::get(&proposal_id).ok_or("No owner for proposal")?;
+			let _owner = <Owners<T>>::get(&proposal_id).ok_or("No owner for proposal")?;  // todo: use error enum
 
 			// get treasury account for related body and unlock balance
 			let body = T::Flow::campaign_org(&proposal.context_id);
-			let treasury_account = T::Control::body_treasury(&body);
+			let treasury_account = T::Control::org_treasury_account(&body);
 			T::Currency::unreserve(
 				T::FundingCurrencyId::get(),
 				&treasury_account,
@@ -822,7 +811,11 @@ pub mod pallet {
 			<Proposals<T>>::insert(proposal_id.clone(), proposal.clone());
 
 			Self::deposit_event(
-				Event::<T>::WithdrawalGranted {proposal_id, context_id: proposal.context_id, body_id: body}
+				Event::<T>::WithdrawalGranted {
+					proposal_id,
+					context_id: proposal.context_id,
+					body_id: body
+				}
 			);
 			Ok(())
 
@@ -835,5 +828,3 @@ pub mod pallet {
 		}
 	}
 }
-
-// todo: Check storage fields and remove generices from those, who don't use Config trait

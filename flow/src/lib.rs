@@ -264,7 +264,7 @@ pub mod pallet {
 	// Campaign nonce, increases per created campaign
 	#[pallet::storage]
 	#[pallet::getter(fn nonce)]
-	pub type Nonce<T: Config> = StorageValue<_, u128, ValueQuery>;
+	pub(super) type Nonce<T: Config> = StorageValue<_, u128, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -393,8 +393,7 @@ pub mod pallet {
 				let campaign = Self::campaign_by_id(campaign_id);
 				let campaign_balance = CampaignBalance::<T>::get(campaign_id);
 				let org = CampaignOrg::<T>::get(&campaign_id);
-				// TODO: rename method
-				let org_treasury = T::Control::body_treasury(&org);
+				let org_treasury = T::Control::org_treasury_account(&org);
 
 				// check for cap reached
 				if campaign_balance >= campaign.cap {
@@ -539,23 +538,20 @@ pub mod pallet {
 			expiry: T::BlockNumber,
 			protocol: FlowProtocol,
 			governance: FlowGovernance,
-			cid: Vec<u8>,          // content cid
+			cid: Vec<u8>,		  // content cid
 			token_symbol: Vec<u8>, // up to 5
 			token_name: Vec<u8>,   // cleartext
-								   // token_curve_a: u8,      // preset
+								   // token_curve_a: u8,	  // preset
 								   // token_curve_b: Vec<u8>, // custom
 		) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
-			
-			// TODO: rename method
-			let owner = T::Control::body_controller(&org);
+
+			let owner = T::Control::org_controller_account(&org);
 
 			ensure!(creator == owner, Error::<T>::AuthorizationError);
 
 			// Get Treasury account for deposits and fees
-
-			// TODO: rename method
-			let treasury = T::Control::body_treasury(&org);
+			let treasury = T::Control::org_treasury_account(&org);
 
 			let free_balance = T::Currency::free_balance(T::ProtocolTokenId::get(), &treasury);
 			ensure!(free_balance > deposit, Error::<T>::TreasuryBalanceTooLow);
@@ -715,7 +711,7 @@ impl<T: Config> Pallet<T> {
 		let current_state = CampaignState::<T>::get(&id);
 
 		// remove
-		
+
 		let mut current_state_members = CampaignsByState::<T>::get(&current_state);
 		match current_state_members.binary_search(&id) {
 			Ok(index) => {
@@ -775,7 +771,7 @@ impl<T: Config> Pallet<T> {
 		});
 
 		// global campaigns count
-		
+
 		let campaigns_count = CampaignsCount::<T>::get();
 		let update_campaigns_count = campaigns_count
 			.checked_add(1)
@@ -801,8 +797,7 @@ impl<T: Config> Pallet<T> {
 
 		// TODO: this should be a proper mechanism
 		// to reserve some of the staked GAME
-		// TODO: rename method
-		let treasury = T::Control::body_treasury(&campaign.org);
+		let treasury = T::Control::org_treasury_account(&campaign.org);
 
 		T::Currency::reserve(
 			T::ProtocolTokenId::get(),
@@ -884,19 +879,16 @@ impl<T: Config> Pallet<T> {
 }
 
 impl <T: Config>FlowTrait<T::Hash, T::Balance> for Pallet<T> {
-
-	type FlowState = FlowState;
-
 	fn campaign_balance(hash: &T::Hash) -> T::Balance {
 		CampaignBalance::<T>::get(hash)
-	}
-	fn campaign_state(hash: &T::Hash) -> Self::FlowState {
-		CampaignState::<T>::get(hash)
 	}
 	fn campaign_contributors_count(hash: &T::Hash) -> u64 {
 		CampaignContributorsCount::<T>::get(hash)
 	}
 	fn campaign_org(hash: &T::Hash) -> T::Hash {
 		CampaignOrg::<T>::get(hash)
+	}
+	fn is_campaign_succeeded(hash: &T::Hash) -> bool {
+		CampaignState::<T>::get(hash) == FlowState::Success
 	}
 }

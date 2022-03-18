@@ -12,30 +12,19 @@
 //! TODO: description (toml as well)
 
 #![cfg_attr(not(feature = "std"), no_std)]
-use frame_support::codec::{Decode, Encode};
-use scale_info::TypeInfo;
-use sp_std::fmt::Debug;
-
 
 pub trait ControlTrait<AccountId, Hash> {
 
-    type ControlMemberState;
-    type ControlState;
-
-    // TODO: body rename to org
-    // TODO: add methods with enum checks
-    fn body_controller(org: &Hash) -> AccountId;
-    fn body_treasury(org: &Hash) -> AccountId;
-    fn body_member_state(hash: &Hash, account_id: &AccountId) -> Self::ControlMemberState;
-    fn body_state(hash: &Hash) -> Self::ControlState;
+    fn org_controller_account(org: &Hash) -> AccountId;
+    fn org_treasury_account(org: &Hash) -> AccountId;
+    fn is_org_active(org: &Hash) -> bool;
+    fn is_org_member_active(org: &Hash, accont_id: &AccountId) -> bool;
 }
 
 pub trait FlowTrait<Hash, Balance> {
 
-    type FlowState;
-
     fn campaign_balance(hash: &Hash) -> Balance;
-    fn campaign_state(hash: &Hash) -> Self::FlowState;
+    fn is_campaign_succeeded(hash: &Hash) -> bool;
     fn campaign_contributors_count(hash: &Hash) -> u64;
     fn campaign_org(hash: &Hash) -> Hash;
 }
