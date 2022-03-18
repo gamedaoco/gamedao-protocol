@@ -5,35 +5,94 @@ use super::{
 	voting_structs::{Proposal, ProposalMetadata},
 	voting_enums::{VotingType, ProposalType, ProposalState},
 	mock::{
-		Test, ExtBuilder,
-		AccountId, ACC1, ACC2, TREASURY_ACC,
-		System, Origin, Event, Signal,
-		control_fixture, flow_fixture
+		Test, ExtBuilder, DOLLARS, Balance,
+		AccountId, ACC1, ACC2, ACC3, TREASURY_ACC,
+		Origin, Event,
+		System, Control, Flow, Signal
 	}
-};
-use support::{
-	ControlState, ControlMemberState,
-	FlowState
 };
 use sp_runtime::traits::BadOrigin;
 use sp_core::H256;
 use frame_support::{assert_ok, assert_noop, traits::{Randomness, Hooks}};
-use orml_tokens::Event as TokensEvent;
+use frame_support::pallet_prelude::Encode;
+use orml_tokens::{Event as TokensEvent};
 use orml_traits::{MultiReservableCurrency};
 
+use gamedao_control::{OrgType, AccessModel, FeeModel};
+use gamedao_flow::{FlowState, FlowProtocol, FlowGovernance};
+
+
+fn create_org() -> H256 {
+	let nonce = Control::nonce().encode();
+	assert_ok!(
+		Control::create(
+			Origin::signed(ACC1),
+			ACC1,
+			TREASURY_ACC,
+			vec![1, 2, 3],
+			vec![1, 2, 3],
+			OrgType::Individual,
+			AccessModel::Open,
+			FeeModel::NoFees,
+			0, 1, 1, 100
+		)
+	);
+	<Test as gamedao_control::Config>::Randomness::random(&nonce).0
+}
+
+fn create_campaign(org: H256, contributions: Vec<(AccountId, Balance)>, new_state: Option<FlowState>, expiry: Option<u64>) -> H256 {
+	let nonce = Flow::nonce().encode();
+	assert_ok!(
+		Flow::create(
+			Origin::signed(ACC1),
+			org,
+			ACC1,
+			vec![1, 2, 3],
+			10 * DOLLARS,
+			10 * DOLLARS,
+			expiry.unwrap_or(100),
+			FlowProtocol::default(),
+			FlowGovernance::default(),
+			vec![1, 2, 3],
+			vec![1, 2, 3],
+			vec![1, 2, 3],
+		)
+	);
+	let campaign_id = <Test as gamedao_flow::Config>::Randomness::random(&nonce).0;
+	for (account_id, contribution) in contributions.iter() {
+		assert_ok!(
+			Flow::contribute(
+				Origin::signed(*account_id),
+				campaign_id,
+				*contribution
+			)
+		);
+	}
+	if new_state.is_some() {
+		assert_ok!(
+			Flow::update_state(
+				Origin::signed(ACC1),
+				campaign_id,
+				new_state.unwrap()
+			)
+		);
+	}
+	campaign_id
+}
 
 
 #[test]
 fn signal_general_proposal_success() {
 	ExtBuilder::default().build().execute_with(|| {
-		System::set_block_number(3);
 		let nonce = vec![0];
 		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
-		let ctx_id = H256::random();
+		let org_id = create_org();
+
+		System::set_block_number(3);
 		assert_ok!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				ctx_id,  // context id
+				org_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
 				3,  // start
@@ -55,7 +114,7 @@ fn signal_general_proposal_success() {
 			<Proposals<Test>>::get(&proposal_id),
 			Proposal {
 				proposal_id,
-				context_id: ctx_id,
+				context_id: org_id,
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start: 3,
@@ -76,13 +135,13 @@ fn signal_general_proposal_success() {
 		assert_eq!(<ProposalsArray<Test>>::get(0), proposal_id);
 		assert_eq!(<ProposalsCount<Test>>::get(), 1);
 		assert_eq!(<ProposalsIndex<Test>>::get(&proposal_id), 0);
-		assert_eq!(<ProposalsByContextArray<Test>>::get((ctx_id.clone(), 0)), proposal_id);
-		assert_eq!(<ProposalsByContextCount<Test>>::get(ctx_id), 1);
-		assert_eq!(<ProposalsByContextIndex<Test>>::get((ctx_id, proposal_id)), 0);
+		assert_eq!(<ProposalsByContextArray<Test>>::get((org_id.clone(), 0)), proposal_id);
+		assert_eq!(<ProposalsByContextCount<Test>>::get(org_id), 1);
+		assert_eq!(<ProposalsByContextIndex<Test>>::get((org_id, proposal_id)), 0);
 		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 0)), proposal_id);
 		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 1);
 		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, proposal_id)), 0);
-		assert_eq!(<ProposalsByContext<Test>>::get(ctx_id), vec![proposal_id.clone()]);
+		assert_eq!(<ProposalsByContext<Test>>::get(org_id), vec![proposal_id.clone()]);
 		assert_eq!(<Nonce<Test>>::get(), 1);
 
 
@@ -91,7 +150,7 @@ fn signal_general_proposal_success() {
 		assert_ok!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				ctx_id,  // context id
+				org_id,  // context id
 				vec![2,3,4],  // title
 				vec![2,3,4],  // cid
 				3,  // start
@@ -102,13 +161,13 @@ fn signal_general_proposal_success() {
 		assert_eq!(<ProposalsArray<Test>>::get(1), new_proposal_id);
 		assert_eq!(<ProposalsCount<Test>>::get(), 2);
 		assert_eq!(<ProposalsIndex<Test>>::get(&new_proposal_id), 1);
-		assert_eq!(<ProposalsByContextArray<Test>>::get((ctx_id.clone(), 1)), new_proposal_id);
-		assert_eq!(<ProposalsByContextCount<Test>>::get(ctx_id), 2);
-		assert_eq!(<ProposalsByContextIndex<Test>>::get((ctx_id, new_proposal_id)), 1);
+		assert_eq!(<ProposalsByContextArray<Test>>::get((org_id.clone(), 1)), new_proposal_id);
+		assert_eq!(<ProposalsByContextCount<Test>>::get(org_id), 2);
+		assert_eq!(<ProposalsByContextIndex<Test>>::get((org_id, new_proposal_id)), 1);
 		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 1)), new_proposal_id);
 		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 2);
 		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, new_proposal_id)), 1);
-		assert_eq!(<ProposalsByContext<Test>>::get(ctx_id), vec![proposal_id.clone(), new_proposal_id.clone()]);
+		assert_eq!(<ProposalsByContext<Test>>::get(org_id), vec![proposal_id.clone(), new_proposal_id.clone()]);
 		assert_eq!(<Nonce<Test>>::get(), 2);
 	});
 }
@@ -119,11 +178,11 @@ fn signal_general_proposal_error() {
 		System::set_block_number(3);
 		let nonce = vec![0];
 		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
-		let ctx_id = H256::random();
+		let campaign_id = create_org();
 
-		<Proposals<Test>>::insert(ctx_id, Proposal {
+		<Proposals<Test>>::insert(campaign_id, Proposal {
 			proposal_id: proposal_id,
-			context_id: ctx_id,
+			context_id: campaign_id,
 			proposal_type: ProposalType::General,
 			voting_type: VotingType::Simple,
 			start: 2,
@@ -132,7 +191,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
 				3,  // start
@@ -147,7 +206,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
 				3,  // start
@@ -159,7 +218,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
 				3,  // start
@@ -170,7 +229,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
 				System::block_number(),  // start
@@ -179,11 +238,17 @@ fn signal_general_proposal_error() {
 			Error::<Test>::OutOfBounds
 		);
 
-		control_fixture.with(|val|val.borrow_mut().body_member_state = ControlMemberState::Inactive);
+		assert_ok!(
+			Control::remove_member(
+				Origin::signed(ACC1),
+				campaign_id,
+				ACC1
+			)
+		);
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
 				3,  // start
@@ -192,11 +257,16 @@ fn signal_general_proposal_error() {
 			Error::<Test>::AuthorizationError
 		);
 
-		control_fixture.with(|val|val.borrow_mut().body_state = ControlState::Inactive);
+		assert_ok!(
+			Control::disable(
+				Origin::root(),
+				campaign_id
+			)
+		);
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				ctx_id,
+				campaign_id,
 				vec![1,2,3],
 				vec![1,2,3],
 				3,
@@ -208,7 +278,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::none(),
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
 				3,  // start
@@ -225,20 +295,21 @@ fn signal_general_proposal_error() {
 #[test]
 fn signal_withdraw_proposal_success() {
 	ExtBuilder::default().build().execute_with(|| {
+		let org_id = create_org();
+		let campaign_id = create_campaign(org_id, vec![(ACC2, 15 * DOLLARS)], Some(FlowState::Success), None);
 		System::set_block_number(3);
 
 		let nonce = vec![0];
 		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
-		let ctx_id = H256::random();
-		<CampaignBalanceUsed<Test>>::insert(ctx_id, 5);
+		<CampaignBalanceUsed<Test>>::insert(campaign_id, 5 * DOLLARS);
 
 		assert_ok!(
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),  // origin
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
-				10,  // amount
+				10 * DOLLARS,  // amount
 				3,  // start
 				15  // expiry
 			)
@@ -250,9 +321,9 @@ fn signal_withdraw_proposal_success() {
 			Event::Signal(
 				crate::Event::ProposalCreated {
 					sender_id: ACC1,
-					context_id: ctx_id,
+					context_id: campaign_id,
 					proposal_id,
-					amount: 10,
+					amount: 10 * DOLLARS,
 					expiry: 15
 				}
 			)
@@ -261,7 +332,7 @@ fn signal_withdraw_proposal_success() {
 			<Proposals<Test>>::get(&proposal_id),
 			Proposal {
 				proposal_id,
-				context_id: ctx_id,
+				context_id: campaign_id,
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start: 3,
@@ -273,7 +344,7 @@ fn signal_withdraw_proposal_success() {
 			ProposalMetadata {
 				title: vec![1,2,3],
 				cid: vec![1,2,3],
-				amount: 10
+				amount: 10 * DOLLARS
 			}
 		);
 		assert_eq!(<Owners<Test>>::get(&proposal_id), Some(ACC1));
@@ -282,13 +353,13 @@ fn signal_withdraw_proposal_success() {
 		assert_eq!(<ProposalsArray<Test>>::get(0), proposal_id);
 		assert_eq!(<ProposalsCount<Test>>::get(), 1);
 		assert_eq!(<ProposalsIndex<Test>>::get(&proposal_id), 0);
-		assert_eq!(<ProposalsByContextArray<Test>>::get((ctx_id.clone(), 0)), proposal_id);
-		assert_eq!(<ProposalsByContextCount<Test>>::get(ctx_id), 1);
-		assert_eq!(<ProposalsByContextIndex<Test>>::get((ctx_id, proposal_id)), 0);
+		assert_eq!(<ProposalsByContextArray<Test>>::get((campaign_id.clone(), 0)), proposal_id);
+		assert_eq!(<ProposalsByContextCount<Test>>::get(campaign_id), 1);
+		assert_eq!(<ProposalsByContextIndex<Test>>::get((campaign_id, proposal_id)), 0);
 		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 0)), proposal_id);
 		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 1);
 		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, proposal_id)), 0);
-		assert_eq!(<ProposalsByContext<Test>>::get(ctx_id), vec![proposal_id.clone()]);
+		assert_eq!(<ProposalsByContext<Test>>::get(campaign_id), vec![proposal_id.clone()]);
 		assert_eq!(<Nonce<Test>>::get(), 1);
 
 		let nonce = vec![1];
@@ -296,7 +367,7 @@ fn signal_withdraw_proposal_success() {
 		assert_ok!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![2,3,4],  // title
 				vec![2,3,4],  // cid
 				3,  // start
@@ -310,13 +381,13 @@ fn signal_withdraw_proposal_success() {
 		assert_eq!(<ProposalsArray<Test>>::get(1), new_proposal_id);
 		assert_eq!(<ProposalsCount<Test>>::get(), 2);
 		assert_eq!(<ProposalsIndex<Test>>::get(&new_proposal_id), 1);
-		assert_eq!(<ProposalsByContextArray<Test>>::get((ctx_id.clone(), 1)), new_proposal_id);
-		assert_eq!(<ProposalsByContextCount<Test>>::get(ctx_id), 2);
-		assert_eq!(<ProposalsByContextIndex<Test>>::get((ctx_id, new_proposal_id)), 1);
+		assert_eq!(<ProposalsByContextArray<Test>>::get((campaign_id.clone(), 1)), new_proposal_id);
+		assert_eq!(<ProposalsByContextCount<Test>>::get(campaign_id), 2);
+		assert_eq!(<ProposalsByContextIndex<Test>>::get((campaign_id, new_proposal_id)), 1);
 		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 1)), new_proposal_id);
 		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 2);
 		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, new_proposal_id)), 1);
-		assert_eq!(<ProposalsByContext<Test>>::get(ctx_id), vec![proposal_id.clone(), new_proposal_id.clone()]);
+		assert_eq!(<ProposalsByContext<Test>>::get(campaign_id), vec![proposal_id.clone(), new_proposal_id.clone()]);
 		assert_eq!(<Nonce<Test>>::get(), 2);
 
 	});
@@ -325,16 +396,17 @@ fn signal_withdraw_proposal_success() {
 #[test]
 fn signal_withdraw_proposal_error() {
 	ExtBuilder::default().build().execute_with(|| {
+		let org_id = create_org();
+		let campaign_id = create_campaign(org_id, vec![(ACC2, 15 * DOLLARS)], Some(FlowState::Success), None);
 		System::set_block_number(3);
 
 		let nonce = vec![0];
 		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
-		let ctx_id = H256::random();
-		<CampaignBalanceUsed<Test>>::insert(ctx_id, 5);
+		<CampaignBalanceUsed<Test>>::insert(campaign_id, 5 * DOLLARS);
 
-		<Proposals<Test>>::insert(ctx_id, Proposal {
+		<Proposals<Test>>::insert(campaign_id, Proposal {
 			proposal_id: proposal_id,
-			context_id: ctx_id,
+			context_id: campaign_id,
 			proposal_type: ProposalType::Withdrawal,
 			voting_type: VotingType::Simple,
 			start: 2,
@@ -343,10 +415,10 @@ fn signal_withdraw_proposal_error() {
 		assert_noop!(
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),  // origin
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
-				10,  // amount
+				10 * DOLLARS,  // amount
 				3,  // start
 				15  // expiry
 			),
@@ -358,57 +430,57 @@ fn signal_withdraw_proposal_error() {
 		assert_noop!(
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),  // origin
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
-				10,  // amount
+				10 * DOLLARS,  // amount
 				3,  // start
 				15  // expiry
 			),
 			Error::<Test>::TooManyProposals
 		);
 
-		<CampaignBalanceUsed<Test>>::insert(ctx_id, 5);
-		flow_fixture.with(|v| v.borrow_mut().campaign_balance = 10 );
+		<CampaignBalanceUsed<Test>>::insert(campaign_id, 15 * DOLLARS);
 		assert_noop!(
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),  // origin
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
-				10,  // amount
+				10 * DOLLARS,  // amount
 				3,  // start
 				15  // expiry
 			),
 			Error::<Test>::BalanceInsufficient
 		);
 
-		<CampaignBalanceUsed<Test>>::insert(ctx_id, 11);
+		<CampaignBalanceUsed<Test>>::insert(campaign_id, 11 * DOLLARS);
 		assert_noop!(
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),  // origin
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
-				10,  // amount
+				10 * DOLLARS,  // amount
 				3,  // start
 				15  // expiry
 			),
 			Error::<Test>::BalanceInsufficient
 		);
 
-		<CampaignBalanceUsed<Test>>::insert(ctx_id, 5);
-		flow_fixture.with(|v| v.borrow_mut().campaign_state = FlowState::Failed );
-		<CampaignBalanceUsed<Test>>::insert(ctx_id, 11);
+		// CampaignState::<Test>::insert(campaign_id, FlowState::Failed);
+		// System::set_block_number(4);
+		let campaign_id = create_campaign(org_id, vec![], Some(FlowState::Failed), Some(101));
+		<CampaignBalanceUsed<Test>>::insert(campaign_id, 11);
 		assert_noop!(
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),  // origin
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
-				10,  // amount
-				3,  // start
-				15  // expiry
+				10 * DOLLARS,  // amount
+				4,  // start
+				16  // expiry
 			),
 			Error::<Test>::CampaignFailed
 		);
@@ -416,12 +488,12 @@ fn signal_withdraw_proposal_error() {
 		assert_noop!(
 			Signal::withdraw_proposal(
 				Origin::none(),  // origin
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
-				10,  // amount
-				3,  // start
-				15  // expiry
+				10 * DOLLARS,  // amount
+				4,  // start
+				16  // expiry
 			),
 			BadOrigin
 		);
@@ -431,14 +503,15 @@ fn signal_withdraw_proposal_error() {
 #[test]
 fn signal_simple_vote_success() {
 	ExtBuilder::default().build().execute_with(|| {
+		let org_id = create_org();
+		let campaign_id = create_campaign(org_id, vec![(ACC2, 5 * DOLLARS)], None, None);
 		System::set_block_number(3);
 
 		let nonce = vec![0];
 		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
-		let ctx_id = H256::random();
 		<Proposals<Test>>::insert(proposal_id, Proposal {
 			proposal_id: proposal_id,
-			context_id: ctx_id,
+			context_id: campaign_id,
 			proposal_type: ProposalType::General,
 			voting_type: VotingType::Simple,
 			start: 2,
@@ -496,17 +569,16 @@ fn signal_simple_vote_success() {
 
 		let nonce = vec![1];
 		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
-		let ctx_id = H256::random();
+		let campaign_id = H256::random();
 		<Proposals<Test>>::insert(proposal_id, Proposal {
 			proposal_id: proposal_id,
-			context_id: ctx_id,
+			context_id: campaign_id,
 			proposal_type: ProposalType::Withdrawal,
 			voting_type: VotingType::Simple,
 			start: 2,
 			expiry: 13
 		});
 		<ProposalStates<Test>>::insert(proposal_id, ProposalState::Active);
-		flow_fixture.with(|v| v.borrow_mut().campaign_contributors_count = 1);
 
 		assert_ok!(
 			Signal::simple_vote(Origin::signed(ACC1), proposal_id, false)
@@ -527,24 +599,48 @@ fn signal_simple_vote_success() {
 		assert_eq!(<ProposalApprovers<Test>>::get(&proposal_id), 0);
 		assert_eq!(<ProposalDeniers<Test>>::get(&proposal_id), 1);
 
-		// todo: delete this after `unlock_balance` will be moved out from extrinsic call
-		// assert_ok!(
-		// 	Signal::simple_vote(Origin::signed(ACC2), proposal_id, true)
-		// );
-		// let event = System::events().pop()
-		// 	.expect("No event generated").event;
-		// assert_eq!(
-		// 	event,
-		// 	Event::Signal(
-		// 		crate::Event::ProposalVoted {
-		// 			sender_id: ACC2,
-		// 			proposal_id,
-		// 			vote: true
-		// 		}
-		// 	)
-		// );
-		// assert_eq!(<ProposalSimpleVotes<Test>>::get(&proposal_id), (1, 0));
-		// assert_eq!(<ProposalApprovers<Test>>::get(&proposal_id), 1);
+		let campaign_id = create_campaign(org_id, vec![(ACC2, 10), (ACC3, 10)], Some(FlowState::Active), Some(101));
+		let nonce = vec![2];
+		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
+		<Proposals<Test>>::insert(proposal_id, Proposal {
+			proposal_id: proposal_id,
+			context_id: campaign_id,
+			proposal_type: ProposalType::Withdrawal,
+			voting_type: VotingType::Simple,
+			start: 2,
+			expiry: 14
+		});
+		ProposalStates::<Test>::insert(proposal_id.clone(), ProposalState::Active);
+		Owners::<Test>::insert(proposal_id.clone(), ACC1.clone());
+		assert_ok!(
+			Signal::simple_vote(Origin::signed(ACC2), proposal_id, true)
+		);
+		assert_ok!(
+			Signal::simple_vote(Origin::signed(ACC3), proposal_id, true)
+		);
+		let mut events = System::events();
+		let event = events.pop().expect("No event generated").event;
+		assert_eq!(
+			event,
+			Event::Signal(
+				crate::Event::ProposalVoted {
+					sender_id: ACC3,
+					proposal_id,
+					vote: true
+				}
+			)
+		);
+		let event = events.pop().expect("No event generated").event;
+		assert_eq!(
+			event,
+			Event::Signal(
+				crate::Event::WithdrawalGranted {
+					proposal_id, context_id: campaign_id, body_id: org_id
+				}
+			)
+		);
+		assert_eq!(<ProposalSimpleVotes<Test>>::get(&proposal_id), (2, 0));
+		assert_eq!(<ProposalApprovers<Test>>::get(&proposal_id), 4);  // todo: this seems like incorrect?
 
 	});
 }
@@ -557,10 +653,10 @@ fn signal_simple_vote_error() {
 
 		let nonce = vec![0];
 		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
-		let ctx_id = H256::random();
+		let campaign_id = H256::random();
 		<Proposals<Test>>::insert(proposal_id, Proposal {
 			proposal_id: proposal_id,
-			context_id: ctx_id,
+			context_id: campaign_id,
 			proposal_type: ProposalType::General,
 			voting_type: VotingType::Simple,
 			start: 2,
@@ -619,6 +715,8 @@ fn signal_simple_vote_error() {
 #[test]
 fn signal_on_finalize_success() {
 	ExtBuilder::default().build().execute_with(|| {
+		let org_id = create_org();
+		let campaign_id = create_campaign(org_id, vec![(ACC2, 15 * DOLLARS), (ACC3, 5 * DOLLARS)], Some(FlowState::Success), None);
 		let (start, expiry) = (3, 15);
 		System::set_block_number(start);
 		let (proposal_id1, _): (H256, _) = <Test as Config>::Randomness::random(&vec![0]);
@@ -628,7 +726,7 @@ fn signal_on_finalize_success() {
 		assert_ok!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				H256::random(),  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
 				start,  // start
@@ -638,7 +736,7 @@ fn signal_on_finalize_success() {
 		assert_ok!(
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),  // origin
-				H256::random(),  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
 				10,  // amount
@@ -666,7 +764,7 @@ fn signal_on_finalize_success() {
 		}
 
 		let mut events_before = System::events().len();
-		assert_eq!(events_before, 10);
+		assert_eq!(events_before, 19);
 		Signal::on_finalize(start);
 		assert_eq!(System::events().len(), events_before);
 
@@ -695,12 +793,11 @@ fn signal_on_finalize_success() {
 			ProposalState::Accepted
 		);
 
-		events_before = 12;
-		let ctx_id = H256::random();
+		events_before = 21;
 		assert_ok!(
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),  // origin
-				ctx_id,  // context id
+				campaign_id,  // context id
 				vec![1,2,3],  // title
 				vec![1,2,3],  // cid
 				10,  // amount
@@ -710,12 +807,8 @@ fn signal_on_finalize_success() {
 		);
 		assert_eq!(System::events().len(), events_before + 1);
 
-		let res = <<Test as Config>::Currency as MultiReservableCurrency<AccountId>>::
-			reserve(<Test as Config>::FundingCurrencyId::get(), &TREASURY_ACC, 25);
-		match res {
-			Ok(_) => {},
-			Err(_) => panic!("Failed to reserve treasury balance")
-		}
+		<<Test as Config>::Currency as MultiReservableCurrency<AccountId>>::
+			reserve(<Test as Config>::FundingCurrencyId::get(), &TREASURY_ACC, 25).expect("Failed to reserve treasury balance");
 		assert_ok!(
 			Signal::simple_vote(
 				Origin::signed(ACC1),
@@ -723,21 +816,28 @@ fn signal_on_finalize_success() {
 				true
 			)
 		);
-		assert_eq!(System::events().len(), events_before + 5);
+		assert_ok!(
+			Signal::simple_vote(
+				Origin::signed(ACC2),
+				proposal_id3,
+				true
+			)
+		);
+		assert_eq!(System::events().len(), events_before + 6);
 		System::set_block_number(16);
 		Signal::on_finalize(16);
 		let mut events = System::events();
-		assert_eq!(events.len(), events_before + 5);
+		assert_eq!(events.len(), events_before + 6);
 		assert_eq!(
 			events.pop().unwrap().event,
-			Event::Signal(crate::Event::ProposalVoted {sender_id: ACC1, proposal_id: proposal_id3, vote: true})
+			Event::Signal(crate::Event::ProposalVoted {sender_id: ACC2, proposal_id: proposal_id3, vote: true})
 		);
 		assert_eq!(
 			events.pop().unwrap().event,
 			Event::Signal(crate::Event::WithdrawalGranted {
 				proposal_id: proposal_id3,
-				context_id: ctx_id,
-				body_id: flow_fixture.with(|v| v.borrow().campaign_org)
+				context_id: campaign_id,
+				body_id: org_id
 			})
 		);
 		assert_eq!(
@@ -750,7 +850,7 @@ fn signal_on_finalize_success() {
 				)
 			)
 		);
-		assert_eq!(<CampaignBalanceUsed<Test>>::get(ctx_id), 10);
+		assert_eq!(<CampaignBalanceUsed<Test>>::get(campaign_id), 10);
 		assert_eq!(<ProposalStates<Test>>::get(proposal_id3), ProposalState::Finalized);
 
 	});

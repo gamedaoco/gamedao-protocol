@@ -29,7 +29,7 @@ use frame_support::{
 use scale_info::TypeInfo;
 use sp_std::{ fmt::Debug, vec::Vec };
 use orml_traits::{ MultiCurrency, MultiReservableCurrency };
-use primitives::{ Balance, CurrencyId, BlockNumber };
+use primitives::{ Balance, CurrencyId };
 use gamedao_traits::ControlTrait;
 
 
@@ -423,6 +423,7 @@ pub mod pallet {
 			// controller and treasury must not be equal
 			ensure!(&controller != &treasury, Error::<T>::DuplicateAddress );
 
+			// todo: update to use one nonce object
 			let index = Nonce::<T>::get();
 			let nonce = Self::get_and_increment_nonce();
 			let (hash, _) = T::Randomness::random(&nonce);
@@ -584,19 +585,14 @@ pub mod pallet {
 			// let balance = <balances::Pallet<T>>::free_balance(&sender);
 			// let dao_fee = _fee.checked_mul(0.25);
 
-			let res = T::Currency::transfer(
+			T::Currency::transfer(
 				T::FundingCurrencyId::get(),
 				&sender,
 				&T::GameDAOTreasury::get(),
 				creation_fee
-			);
-			match res {
-				Ok(_) => {},
-				Err(err) => {return Err(err);}
-			}
+			)?;
 
-			// nonce
-			Nonce::<T>::mutate(|n| *n += 1);  // todo: change work with nonce and randomness
+			Nonce::<T>::mutate(|n| *n += 1);  // todo: remove this once unified work with nonce
 
 			// dispatch event
 			Self::deposit_event(
@@ -904,21 +900,16 @@ impl<T: Config> Pallet<T> {
 
 impl <T: Config>ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 
-	type ControlMemberState = ControlMemberState;
-	type ControlState = ControlState;
-
-	// TODO: add check methods
-
-	fn body_controller(org: &T::Hash) -> T::AccountId {
+	fn org_controller_account(org: &T::Hash) -> T::AccountId {
 		OrgController::<T>::get(org)
 	}
-	fn body_treasury(org: &T::Hash) -> T::AccountId {
+	fn org_treasury_account(org: &T::Hash) -> T::AccountId {
 		OrgTreasury::<T>::get(org)
 	}
-	fn body_member_state(hash: &T::Hash, account_id: &T::AccountId) -> Self::ControlMemberState {
-		OrgMemberState::<T>::get((hash, account_id))
+	fn is_org_active(org: &T::Hash) -> bool {
+		OrgState::<T>::get(org) == ControlState::Active
 	}
-	fn body_state(hash: &T::Hash) -> Self::ControlState {
-		OrgState::<T>::get(hash)
+	fn is_org_member_active(org: &T::Hash, account_id: &T::AccountId) -> bool {
+		OrgMemberState::<T>::get((org, account_id)) == ControlMemberState::Active
 	}
 }

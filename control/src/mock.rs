@@ -134,7 +134,6 @@ impl pallet_control::Config for Test {
 	type MaxDAOsPerAccount = MaxDAOsPerAccount;
 	type MaxMembersPerDAO = MaxMembersPerDAO;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
-	type NetworkCurrencyId = NetworkCurrencyId;
 	type FundingCurrencyId = FundingCurrencyId;
 	type DepositCurrencyId = DepositCurrencyId;
 	type CreationFee = CreationFee;
