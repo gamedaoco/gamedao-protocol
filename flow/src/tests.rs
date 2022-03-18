@@ -5,24 +5,56 @@ use codec::Encode;
 use frame_support::{assert_noop, assert_ok};
 use frame_support::traits::Hooks;
 use frame_system::{EventRecord, Phase};
-use mock::{
-	new_test_ext, Flow, FlowProtocol, FlowGovernance, Event, Origin, Test, System, ALICE,
-	BOB, BOGDANA, TREASURY, MAX_DURATION, GAME_CURRENCY_ID, GAMEDAO_TREASURY
-};
-use gamedao_protocol_support::{FlowState};
+use mock::{Event, *};
 use sp_core::H256;
+
+use gamedao_control::{OrgType, AccessModel, FeeModel};
+
+
+fn create_org() -> H256 {
+	let nonce = Control::nonce().encode();
+	assert_ok!(Control::create(
+		Origin::signed(BOB), BOB, TREASURY, vec![1, 2], vec![1, 2], 
+		OrgType::default(), AccessModel::default(), FeeModel::default(), 0, 0, 0, 0
+	));
+	<Test as gamedao_control::Config>::Randomness::random(&nonce).0
+}
+
+impl Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, FlowGovernance> {
+	pub fn new(campaign_id: Hash, expiry: BlockNumber) -> Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, FlowGovernance> {
+		Campaign {
+			id: campaign_id,
+			org: H256::random(),
+			name: vec![1, 2],
+			owner: BOB,
+			admin: BOB,
+			deposit: 10,
+			expiry: expiry,
+			cap: 110,
+			protocol: FlowProtocol::Raise,
+			governance: FlowGovernance::No,
+			cid: vec![1, 2],
+			token_symbol: vec![1, 2],
+			token_name: vec![1, 2],
+			created: PalletTimestamp::now(),
+		}
+	}
+}
+
 
 #[test]
 fn flow_create_errors() {
 	new_test_ext().execute_with(|| {
+		let org = create_org();
 		let current_block = 3;
 		System::set_block_number(current_block);
+
 		// Check if creator is the controller of organization
 		// Error: AuthorizationError
 		let not_creator = ALICE;
 		assert_noop!(
 			Flow::create(
-				Origin::signed(not_creator), H256::random(), not_creator, vec![1, 2], 0, 0, 0, 
+				Origin::signed(not_creator), org, not_creator, vec![1, 2], 0, 0, 0, 
 				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
 			Error::<Test>::AuthorizationError
 		);
@@ -31,7 +63,7 @@ fn flow_create_errors() {
 		let deposit_more_than_treasury = 1000;
 		assert_noop!(
 			Flow::create(
-				Origin::signed(BOB), H256::random(), BOB, vec![1, 2], 0, deposit_more_than_treasury, 0, 
+				Origin::signed(BOB), org, BOB, vec![1, 2], 0, deposit_more_than_treasury, 0, 
 				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
 			Error::<Test>::TreasuryBalanceTooLow
 		);
@@ -41,7 +73,7 @@ fn flow_create_errors() {
 		let deposit_more_than_target = 20;
 		assert_noop!(
 			Flow::create(
-				Origin::signed(BOB), H256::random(), BOB, vec![1, 2], target, deposit_more_than_target, 0, 
+				Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit_more_than_target, 0, 
 				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
 			Error::<Test>::DepositTooHigh
 		);
@@ -50,7 +82,7 @@ fn flow_create_errors() {
 		let short_name = vec![1];
 		assert_noop!(
 			Flow::create(
-				Origin::signed(BOB), H256::random(), BOB, short_name, 20, 10, 0, 
+				Origin::signed(BOB), org, BOB, short_name, 20, 10, 0, 
 				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
 			Error::<Test>::NameTooShort
 		);
@@ -58,7 +90,7 @@ fn flow_create_errors() {
 		let long_name = vec![1, 2, 3, 4, 5];
 		assert_noop!(
 			Flow::create(
-				Origin::signed(BOB), H256::random(), BOB, long_name, 20, 10, 0, 
+				Origin::signed(BOB), org, BOB, long_name, 20, 10, 0, 
 				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
 			Error::<Test>::NameTooLong
 		);
@@ -67,16 +99,16 @@ fn flow_create_errors() {
 		let expiration_block = current_block - 1;
 		assert_noop!(
 			Flow::create(
-				Origin::signed(BOB), H256::random(), BOB, vec![1, 2], 20, 10, expiration_block, 
+				Origin::signed(BOB), org, BOB, vec![1, 2], 20, 10, expiration_block, 
 				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
 			Error::<Test>::EndTooEarly
 		);
 		// Ensure campaign expires before expiration limit
 		// Error: EndTooLate
-		let expiration_block = MAX_DURATION + current_block + 1;
+		let expiration_block = MaxCampaignDuration::get() + current_block + 1;
 		assert_noop!(
 			Flow::create(
-				Origin::signed(BOB), H256::random(), BOB, vec![1, 2], 20, 10, expiration_block, 
+				Origin::signed(BOB), org, BOB, vec![1, 2], 20, 10, expiration_block, 
 				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
 			Error::<Test>::EndTooLate
 		);
@@ -87,7 +119,7 @@ fn flow_create_errors() {
 		});
 		assert_noop!(
 			Flow::create(
-				Origin::signed(BOB), H256::random(), BOB, vec![1, 2], 20, 10, current_block + 1, 
+				Origin::signed(BOB), org, BOB, vec![1, 2], 20, 10, current_block + 1, 
 				FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]),
 			Error::<Test>::ContributionsPerBlockExceeded
 		);
@@ -98,12 +130,12 @@ fn flow_create_errors() {
 #[test]
 fn flow_create_success() {
 	new_test_ext().execute_with(|| {
+		let org = create_org();
 		let current_block = 3;
 		System::set_block_number(current_block);
 
 		let nonce = Nonce::<Test>::get().encode();
 		let id: H256 = <Test as Config>::Randomness::random(&nonce).0;
-		let org = H256::random();
 		let expiry = current_block + 1;
 		let deposit = 10;
 		let target = 20;
@@ -119,7 +151,7 @@ fn flow_create_success() {
 		assert_eq!(CampaignOrg::<Test>::get(id), org);
 		assert_eq!(CampaignOwner::<Test>::get(id), Some(BOB));
 		assert_eq!(CampaignAdmin::<Test>::get(id), Some(BOB));
-		assert_eq!(CampaignsByBody::<Test>::get(org), vec![id]);
+		assert_eq!(CampaignsByOrg::<Test>::get(org), vec![id]);
 		assert_eq!(CampaignsByBlock::<Test>::get(expiry), vec![id]);
 		assert_eq!(CampaignsCount::<Test>::get(), 1);
 		assert_eq!(CampaignsArray::<Test>::get(0), id);
@@ -322,6 +354,7 @@ fn flow_contribute_success() {
 #[test]
 fn flow_on_finalize_campaign_succeess() {
 	new_test_ext().execute_with(|| {
+		let org = create_org();
 		let current_block = 3;
 		System::set_block_number(current_block);
 
@@ -334,7 +367,7 @@ fn flow_on_finalize_campaign_succeess() {
 		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
 		assert_ok!(
 			Flow::create(
-				Origin::signed(BOB), H256::random(), BOB, vec![1, 2], target, deposit,  expiry, 
+				Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit,  expiry, 
 				FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![])
 		);
 		// Contribute (60/100)
@@ -411,6 +444,7 @@ fn flow_on_finalize_campaign_succeess() {
 #[test]
 fn flow_on_finalize_campaign_failed() {
 	new_test_ext().execute_with(|| {
+		let org = create_org();
 		let current_block = 3;
 		System::set_block_number(current_block);
 
@@ -423,7 +457,7 @@ fn flow_on_finalize_campaign_failed() {
 		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
 		assert_ok!(
 			Flow::create(
-				Origin::signed(BOB), H256::random(), BOB, vec![1, 2], target, deposit,  expiry, 
+				Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit,  expiry, 
 				FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![])
 		);
 		// Contribute (60/100)

@@ -11,38 +11,39 @@ use sp_core::H256;
 use sp_runtime::{traits::{IdentityLookup},Permill};
 
 use orml_traits::parameter_type_with_key;
-use gamedao_traits::{ControlTrait, ControlMemberState, ControlState};
-use zero_primitives::{Amount, CurrencyId, TokenSymbol, Header};
 
+
+// Types:
 pub type AccountId = u32;
-pub type BlockNumber = u32;
+pub type BlockNumber = u64;
 pub type Hash = H256;
 pub type Timestamp = u64;
+pub type Moment = u64;
+pub type Balance = u128;
+pub type Amount = i128;
+pub type CurrencyId = u32;
+// pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
 
-
-// TODO: move it to constants-------
+// Constants:
 pub const MILLICENTS: Balance = 1_000_000_000;
 pub const CENTS: Balance = 1_000 * MILLICENTS;
 pub const DOLLARS: Balance = 100 * CENTS;
-
 pub const MILLISECS_PER_BLOCK: u64 = 6000;
-
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-// ---------------------------------
+pub const GAME_CURRENCY_ID: CurrencyId = 1;
 
+// Accounts:
 pub const ALICE: AccountId = 1;
 pub const BOB: AccountId = 2;
 pub const BOGDANA: AccountId = 3;
 pub const TREASURY: AccountId = 4;
 pub const GAMEDAO_TREASURY: AccountId = 5;
 
-pub const MAX_DURATION: BlockNumber = DAYS * 100;
-pub const GAME_CURRENCY_ID: CurrencyId = TokenSymbol::GAME as u32;
-
-
-mod pallet_flow {
+mod gamedao_flow {
 	pub use super::super::*;
 }
 
@@ -59,7 +60,7 @@ impl frame_system::Config for Test {
 	type Hashing = ::sp_runtime::traits::BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
+	type Header = sp_runtime::testing::Header;
 	type Event = Event;
 	type BlockHashCount = BlockHashCount;
 	type BlockWeights = ();
@@ -130,38 +131,38 @@ impl pallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
-// #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
-// #[repr(u8)]
-// pub enum ControlMemberState {
-//     Inactive = 0, // eg inactive after threshold period
-//     Active = 1,
-//     Pending = 2,  // application voting pending
-//     Kicked = 3,
-//     Banned = 4,
-//     Exited = 5,
-// }
-// TODO:
+frame_support::parameter_types! {
+	pub const MaxDAOsPerAccount: u32 = 2;
+	pub const MaxMembersPerDAO: u32 = 2;
+	pub const MaxCreationsPerBlock: u32 = 2;
+	pub const ProtocolTokenId: u32 = GAME_CURRENCY_ID;
+	pub const DepositCurrencyId: u32 = GAME_CURRENCY_ID;
+	pub const CreationFee: Balance = 1;
+}
 
-pub struct ControlPalletMock;
-
-impl ControlTrait<AccountId, Hash> for ControlPalletMock {
-
-    type ControlMemberState = ControlMemberState;
-
-	fn body_controller(_org: &Hash) -> AccountId { BOB }
-	fn body_treasury(_org: &Hash) -> AccountId { TREASURY }
-	fn body_state(_hash: &Hash) -> ControlState { ControlState::Active }
-	fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> Self::ControlMemberState { Self::ControlMemberState::Active }
+impl gamedao_control::Config for Test {
+	type WeightInfo = ();
+	type Event = Event;
+	type Currency = Currencies;
+	type Randomness = TestRandomness<Self>;
+	type GameDAOTreasury = GameDAOTreasury;
+	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type MaxDAOsPerAccount = MaxDAOsPerAccount;
+	type MaxMembersPerDAO = MaxMembersPerDAO;
+	type MaxCreationsPerBlock = MaxCreationsPerBlock;
+	type FundingCurrencyId = ProtocolTokenId;
+	type DepositCurrencyId = ProtocolTokenId;
+	type CreationFee = CreationFee;
 }
 
 parameter_types! {
-	pub const MinLength: u32 = 2;
-	pub const MaxLength: u32 = 4;
+	pub const MinNameLength: u32 = 2;
+	pub const MaxNameLength: u32 = 4;
 	pub const MaxCampaignsPerAddress: u32 = 3;
 	pub const MaxCampaignsPerBlock: u32 = 1;
 	pub const MaxContributionsPerBlock: u32 = 3;
-	pub const MinDuration: BlockNumber = 1 * DAYS;
-	pub const MaxDuration: BlockNumber = MAX_DURATION;
+	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
+	pub const MaxCampaignDuration: BlockNumber = 100 * DAYS;
 	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
 	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
@@ -171,56 +172,28 @@ parameter_types! {
 }
 
 impl Config for Test {
+    type Balance = Balance;
+	// type Moment = Moment;
+	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
-	type FundingCurrencyId = GAMECurrencyId;
+	type ProtocolTokenId = GAMECurrencyId;
 	type UnixTime = PalletTimestamp;
 	type Randomness = TestRandomness<Self>;
-
-	type Control = ControlPalletMock;
-
-	// TODO: type GameDAOAdminOrigin = EnsureRootOrHalfCouncil
+	type Control = Control;
 	type GameDAOAdminOrigin = EnsureRoot<Self::AccountId>;
 	type GameDAOTreasury = GameDAOTreasury;
-
-	type MinLength = MinLength;
-	type MaxLength = MaxLength;
-
+	type MinNameLength = MinNameLength;
+	type MaxNameLength = MaxNameLength;
 	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
 	type MaxContributionsPerBlock = MaxContributionsPerBlock;
-
-	type MinDuration = MinDuration;
-	type MaxDuration = MaxDuration;
+	type MinCampaignDuration = MinCampaignDuration;
+	type MaxCampaignDuration = MaxCampaignDuration;
 	type MinCreatorDeposit = MinCreatorDeposit;
 	type MinContribution = MinContribution;
-
 	type CampaignFee = CampaignFee;
-}
-
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-type Block = frame_system::mocking::MockBlock<Test>;
-
-impl Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, FlowGovernance> {
-	pub fn new(campaign_id: Hash, expiry: BlockNumber) -> Campaign<Hash, AccountId, Balance, BlockNumber, Timestamp, FlowProtocol, FlowGovernance> {
-		Campaign {
-			id: campaign_id,
-			org: H256::random(),
-			name: vec![1, 2],
-			owner: BOB,
-			admin: BOB,
-			deposit: 10,
-			expiry: expiry,
-			cap: 110,
-			protocol: FlowProtocol::Raise,
-			governance: FlowGovernance::No,
-			cid: vec![1, 2],
-			token_symbol: vec![1, 2],
-			token_name: vec![1, 2],
-			created: PalletTimestamp::now(),
-		}
-	}
 }
 
 construct_runtime!(
@@ -234,7 +207,8 @@ construct_runtime!(
 		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
 		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		PalletTimestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
-		Flow: pallet_flow,
+		Flow: gamedao_flow,
+        Control: gamedao_control,
 	}
 );
 

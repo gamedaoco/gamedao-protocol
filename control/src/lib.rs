@@ -182,8 +182,6 @@ pub mod pallet {
 		type MaxCreationsPerBlock: Get<u32>;
 
 		#[pallet::constant]
-		type NetworkCurrencyId: Get<CurrencyId>;
-		#[pallet::constant]
 		type FundingCurrencyId: Get<CurrencyId>;
 		#[pallet::constant]
 		type DepositCurrencyId: Get<CurrencyId>;
@@ -192,10 +190,6 @@ pub mod pallet {
 		type CreationFee: Get<Balance>;
 
 	}
-
-	//
-	//	Pallet Storage
-	//
 
 	/// Get an Org by its hash
 	#[pallet::storage]
@@ -279,6 +273,7 @@ pub mod pallet {
 
 	/// the goode olde nonce
 	#[pallet::storage]
+    #[pallet::getter(fn nonce)]
 	pub(super) type Nonce<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::event]
@@ -428,9 +423,10 @@ pub mod pallet {
 			// controller and treasury must not be equal
 			ensure!(&controller != &treasury, Error::<T>::DuplicateAddress );
 
-			let (hash, _) = T::Randomness::random(&name);
-			let index = Nonce::<T>::get();
-			let now   = <frame_system::Pallet<T>>::block_number();
+            let index = Nonce::<T>::get();
+            let nonce = Self::get_and_increment_nonce();
+			let (hash, _) = T::Randomness::random(&nonce);
+			let current_block = <frame_system::Pallet<T>>::block_number();
 
 			let new_org = Org {
 				id: hash.clone(),
@@ -439,11 +435,11 @@ pub mod pallet {
 				name: name.clone(),
 				cid: cid,
 				org_type: org_type.clone(),
-				created: now.clone(),
-				mutated: now.clone(),
+				created: current_block.clone(),
+				mutated: current_block.clone(),
 			};
 
-			// membership fees
+            // TODO: membership fees
 			let mut _fee = fee;
 			match &fee_model {
 				FeeModel::Reserve => { _fee = fee },
@@ -607,7 +603,7 @@ pub mod pallet {
 				Event::OrgCreated {
 					sender_id: sender,
 					org_id: hash,
-					created_at: now,
+					created_at: current_block,
 					realm_index: 0
 				}
 			);
@@ -896,6 +892,12 @@ impl<T: Config> Pallet<T> {
 		_account: T::AccountId
 	) {
 
+	}
+
+    fn get_and_increment_nonce() -> Vec<u8> {
+		let nonce = Nonce::<T>::get();
+		Nonce::<T>::put(nonce.wrapping_add(1));
+		nonce.encode()
 	}
 
 }
