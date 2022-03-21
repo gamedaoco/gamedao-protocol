@@ -1,0 +1,59 @@
+[package]
+name = 'pallet-tangram'
+version = '3.0.0'
+authors = ['2075']
+edition = '2018'
+license = 'GPL-3.0-or-later'
+description = 'Pallet Tangram'
+repository = 'https://github.com/gamedaoco/gamedao-protocol'
+
+[package.metadata.substrate]
+categories = [
+	'zero',
+	'core'
+]
+
+[dependencies]
+serde = { version = "1.0.124", optional = true }
+codec = { package = "parity-scale-codec", version = "2.3.1", default-features = false }
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false }
+frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false, optional = true }
+
+orml-traits = { path = "../../orml/traits", default-features = false }
+zero-primitives = { package = "zero-primitives", path = "../../primitives", default-features = false }
+gamedao-protocol-support = { package = "gamedao-protocol-support", path = "../support", default-features = false }
+
+[dev-dependencies]
+frame-support-test = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+
+pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+
+orml-tokens = { path = "../../orml/tokens", default-features = false }
+orml-currencies = { path = "../../orml/currencies", default-features = false }
+
+[features]
+default = ['std']
+runtime-benchmarks = ['frame-benchmarking']
+std = [
+	'codec/std',
+	'serde/std',
+	'scale-info/std',
+
+	'frame-support/std',
+	'frame-system/std',
+	'frame-benchmarking/std',
+
+	'sp-core/std',
+	'sp-std/std',
+	'sp-runtime/std',
+]
+try-runtime = ['frame-support/try-runtime']
