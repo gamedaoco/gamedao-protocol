@@ -150,7 +150,6 @@ pub mod pallet {
 
 	/// Campaign
 	#[pallet::storage]
-	#[pallet::getter(fn campaign_by_id)]
 	pub(super) type Campaigns<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
@@ -160,9 +159,7 @@ pub mod pallet {
 			T::AccountId,
 			T::Balance,
 			T::BlockNumber,
-			Moment,
-			FlowProtocol,
-			FlowGovernance,
+            Moment
 		>,
 		ValueQuery,
 	>;
@@ -390,7 +387,7 @@ pub mod pallet {
 			// iterate over campaigns ending in this block
 			for campaign_id in &campaign_hashes {
 				// get campaign struct
-				let campaign = Self::campaign_by_id(campaign_id);
+				let campaign = Campaigns::<T>::get(campaign_id);
 				let campaign_balance = CampaignBalance::<T>::get(campaign_id);
 				let org = CampaignOrg::<T>::get(&campaign_id);
 				let org_treasury = T::Control::org_treasury_account(&org);
@@ -528,7 +525,7 @@ pub mod pallet {
 		#[pallet::weight(5_000_000)]
 		// Reason for using transactional is get_and_increment_nonce
 		#[transactional]
-		pub fn create(
+		pub fn create_campaign(
 			origin: OriginFor<T>,
 			org: T::Hash,
 			admin: T::AccountId, // supervision, should be dao provided!
@@ -578,7 +575,7 @@ pub mod pallet {
 
 			// generate the unique campaign id + ensure uniqueness
 			let nonce = Self::get_and_increment_nonce();
-			let (id, _) = T::Randomness::random(&nonce);
+			let (id, _) = T::Randomness::random(&nonce.encode());
 			// ensure!(!<CampaignOwner<T>>::exists(&id), Error::<T>::IdExists ); // check for collision
 
 			// check contribution limit per block
@@ -588,7 +585,7 @@ pub mod pallet {
 				Error::<T>::ContributionsPerBlockExceeded
 			);
 
-			let new_campaign = Campaign {
+			let campaign = Campaign {
 				id: id.clone(),
 				org: org.clone(),
 				name: name.clone(),
@@ -607,7 +604,7 @@ pub mod pallet {
 			};
 
 			// mint the campaign
-			Self::mint(new_campaign)?;
+			Self::mint_campaign(campaign)?;
 
 			// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
 			Self::set_state(id.clone(), FlowState::Active);
@@ -637,7 +634,7 @@ pub mod pallet {
 			ensure!(sender == admin, Error::<T>::AuthorizationError);
 
 			// expired?
-			let campaign = Self::campaign_by_id(&campaign_id);
+			let campaign = Campaigns::<T>::get(&campaign_id);
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			ensure!(current_block < campaign.expiry, Error::<T>::CampaignExpired);
 
@@ -682,7 +679,7 @@ pub mod pallet {
 				state == FlowState::Active,
 				Error::<T>::NoContributionsAllowed
 			);
-			let campaign = Self::campaign_by_id(&campaign_id);
+			let campaign = Campaigns::<T>::get(&campaign_id);
 			ensure!(
 				<frame_system::Pallet<T>>::block_number() < campaign.expiry,
 				Error::<T>::CampaignExpired
@@ -743,15 +740,13 @@ impl<T: Config> Pallet<T> {
 	// happens after successful funding of the campaing
 	// protocol: u8,
 	// campaign object
-	pub fn mint(
+	pub fn mint_campaign(
 		campaign: Campaign<
 			T::Hash,
 			T::AccountId,
 			T::Balance,
 			T::BlockNumber,
-			Moment,
-			FlowProtocol,
-			FlowGovernance,
+            Moment
 		>,
 	) -> DispatchResult {
 		// add campaign to campaigns
@@ -871,10 +866,10 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	fn get_and_increment_nonce() -> Vec<u8> {
+	fn get_and_increment_nonce() -> u128 {
 		let nonce = Nonce::<T>::get();
 		Nonce::<T>::put(nonce.wrapping_add(1));
-		nonce.encode()
+		nonce
 	}
 }
 

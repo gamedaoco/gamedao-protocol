@@ -141,6 +141,9 @@ frame_support::parameter_types! {
 }
 
 impl gamedao_control::Config for Test {
+	type Balance = Balance;
+	// type Moment = Moment;
+	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
@@ -150,8 +153,8 @@ impl gamedao_control::Config for Test {
 	type MaxDAOsPerAccount = MaxDAOsPerAccount;
 	type MaxMembersPerDAO = MaxMembersPerDAO;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
-	type FundingCurrencyId = ProtocolTokenId;
-	type DepositCurrencyId = ProtocolTokenId;
+	type ProtocolTokenId = ProtocolTokenId;
+	type PaymentTokenId = ProtocolTokenId;
 	type CreationFee = CreationFee;
 }
 

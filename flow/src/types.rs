@@ -1,9 +1,8 @@
-// use super::*;
-// use frame_support::pallet_prelude::*;
-use frame_support::pallet_prelude::{Encode, Decode};
-use scale_info::TypeInfo;
+use super::*;
+use frame_support::pallet_prelude::*;
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 #[repr(u8)]
 pub enum FlowProtocol {
 	Grant = 0,
@@ -20,7 +19,8 @@ impl Default for FlowProtocol {
 	}
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 #[repr(u8)]
 pub enum FlowState {
 	Init = 0,
@@ -37,7 +37,8 @@ impl Default for FlowState {
 	}
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 #[repr(u8)]
 pub enum FlowGovernance {
 	No = 0,  // 100% unreserved upon completion
@@ -52,7 +53,8 @@ impl Default for FlowGovernance {
 
 // TODO: this can be decomposed to improve weight
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo)]
-pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Moment, FlowProtocol, FlowGovernance>
+#[cfg_attr(feature = "std", derive(Debug))]
+pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Moment>
 {
 	// unique hash to identify campaign (generated)
 	pub(super) id: Hash,

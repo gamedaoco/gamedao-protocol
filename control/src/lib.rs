@@ -12,12 +12,10 @@
 //! Create and manage DAO like organizations.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-pub use pallet::*;
+pub mod types;
+pub use types::*;
 
-#[cfg(test)]
 mod mock;
-
-#[cfg(test)]
 mod tests;
 
 use frame_support::{
@@ -28,128 +26,16 @@ use frame_support::{
 };
 use scale_info::TypeInfo;
 use sp_std::{ fmt::Debug, vec::Vec };
+use sp_runtime::traits::AtLeast32BitUnsigned;
 use orml_traits::{ MultiCurrency, MultiReservableCurrency };
-use primitives::{ Balance, CurrencyId };
+use codec::HasCompact;
 use gamedao_traits::ControlTrait;
 
-
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub enum OrgType {
-	Individual = 0,
-	Company = 1,
-	Dao = 2,
-	Hybrid = 3,
-}
-impl Default for OrgType {
-	fn default() -> Self {
-		Self::Individual
-	}
-}
-
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
-#[repr(u8)]
-pub enum ControlMemberState {
-	Inactive = 0, // eg inactive after threshold period
-	Active = 1,
-	Pending = 2,  // application voting pending
-	Kicked = 3,
-	Banned = 4,
-	Exited = 5,
-}
-
-impl Default for ControlMemberState {
-	fn default() -> Self {
-		Self::Inactive
-	}
-}
-
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
-#[repr(u8)]
-pub enum ControlState {
-	Inactive = 0,
-	Active = 1,
-	Locked = 2,
-}
-
-impl Default for ControlState {
-	fn default() -> Self {
-		Self::Inactive
-	}
-}
-
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub enum FeeModel {
-	NoFees = 0,		// feeless
-	Reserve = 1,	// amount is reserved in user account
-	Transfer = 2,	// amount is transfered to Org treasury
-}
-impl Default for FeeModel {
-	fn default() -> Self {
-		Self::NoFees
-	}
-}
-
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub enum AccessModel {
-	Open = 0,		// anyDAO can join
-	Voting = 1,		// application creates membership voting
-	Controller = 2,	// controller invites
-}
-impl Default for AccessModel {
-	fn default() -> Self {
-		Self::Open
-	}
-}
-
-
-/// Organization
-#[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub struct Org<Hash, AccountId, BlockNumber, OrgType> {
-	/// Org Hash
-	id: Hash,
-	/// Org global index
-	index: u64,
-	/// Org Creator
-	creator: AccountId,
-	/// Org Name
-	name: Vec<u8>,
-	/// IPFS Hash
-	cid: Vec<u8>,
-	/// Organization Type
-	org_type: OrgType,
-	/// Creation Block
-	created: BlockNumber,
-	/// Last Mutation Block
-	mutated: BlockNumber,
-}
-
-/// Organization Config
-// TODO: refactor to bit flags
-#[derive(Encode, Decode, PartialEq, Eq, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub struct OrgConfig<Balance, FeeModel, AccessModel> {
-	/// Fee Model: TX only | Reserve | Transfer
-	pub fee_model: FeeModel,
-	/// Fee amount
-	pub fee: Balance,
-	/// Governance Asset
-	pub gov_asset: u8,
-	/// Payment Asset
-	pub pay_asset: u8,
-	/// Access Model
-	pub access: AccessModel,
-	/// Max Member Limit
-	pub member_limit: u64,
-}
+pub use pallet::*;
 
 
 #[frame_support::pallet]
 pub mod pallet {
-
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
@@ -161,12 +47,30 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 
+		type Balance: Member
+			+ Parameter
+			+ AtLeast32BitUnsigned
+			+ Default
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen
+			+ TypeInfo;
+
+		type CurrencyId: Member
+			+ Parameter
+			+ Default
+			+ Copy
+			+ HasCompact
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen
+			+ TypeInfo;
+
 		type ForceOrigin: EnsureOrigin<Self::Origin>;
 		type WeightInfo: frame_system::weights::WeightInfo;
 		type Event: From<Event<Self>>
 			+ IsType<<Self as frame_system::Config>::Event>
 			+ Into<<Self as frame_system::Config>::Event>;
-		type Currency: MultiCurrency<Self::AccountId, CurrencyId = CurrencyId, Balance = Balance>
+		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
 		// type UnixTime: UnixTime;
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
@@ -182,29 +86,29 @@ pub mod pallet {
 		type MaxCreationsPerBlock: Get<u32>;
 
 		#[pallet::constant]
-		type FundingCurrencyId: Get<CurrencyId>;
+		type ProtocolTokenId: Get<Self::CurrencyId>;
 		#[pallet::constant]
-		type DepositCurrencyId: Get<CurrencyId>;
+		type PaymentTokenId: Get<Self::CurrencyId>;
 
 		#[pallet::constant]
-		type CreationFee: Get<Balance>;
+		type CreationFee: Get<Self::Balance>;
 
 	}
 
 	/// Get an Org by its hash
 	#[pallet::storage]
-	pub(super) type OrgByHash<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, Org<T::Hash, T::AccountId, T::BlockNumber, OrgType>, ValueQuery>;
+	pub(super) type Orgs<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::Hash, Org<T::Hash, T::AccountId, T::BlockNumber>, ValueQuery>;
 
 	/// Get an Org by its nonce
 	#[pallet::storage]
 	pub(super) type OrgByNonce<T: Config> =
-		StorageMap<_, Blake2_128Concat, u64, T::Hash>;
+		StorageMap<_, Blake2_128Concat, u128, T::Hash>;
 
 	/// Org settings
 	#[pallet::storage]
 	pub(super) type OrgConfiguration<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, OrgConfig<Balance, FeeModel, AccessModel>, OptionQuery>;
+		StorageMap<_, Blake2_128Concat, T::Hash, OrgConfig<T::Balance>, OptionQuery>;
 
 	/// Global Org State
 	#[pallet::storage]
@@ -274,7 +178,7 @@ pub mod pallet {
 	/// the goode olde nonce
 	#[pallet::storage]
 	#[pallet::getter(fn nonce)]
-	pub(super) type Nonce<T: Config> = StorageValue<_, u64, ValueQuery>;
+	pub(super) type Nonce<T: Config> = StorageValue<_, u128, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -288,7 +192,6 @@ pub mod pallet {
 		OrgUpdated( T::AccountId, T::Hash, T::BlockNumber),
 		OrgEnabled( T::Hash ),
 		OrgDisabled( T::Hash ),
-		//
 		AddMember {
 			org_id: T::Hash,
 			account_id: T::AccountId,
@@ -300,9 +203,7 @@ pub mod pallet {
 			account_id: T::AccountId,
 			removed_at: T::BlockNumber
 		},
-		//
 		ControllerUpdated( T::Hash, T::AccountId ),
-		//
 		IsAMember {
 			org_id: T::Hash,
 			account_id: T::AccountId
@@ -342,30 +243,30 @@ pub mod pallet {
 		// Enable Org
 		// currently root, layer supervisor
 		// enables an org to be used
-		// hash: an organisations hash
+		// org_id: an organisations hash
 		#[pallet::weight(1_000_000)]
 		pub fn enable(
 			origin: OriginFor<T>,
-			hash: T::Hash,
+			org_id: T::Hash,
 		) -> DispatchResult {
 			ensure_root(origin)?;
-			OrgState::<T>::insert( hash.clone(), ControlState::Active );
-			Self::deposit_event( Event::OrgEnabled( hash ) );
+			OrgState::<T>::insert( org_id.clone(), ControlState::Active );
+			Self::deposit_event( Event::OrgEnabled( org_id ) );
 			Ok(())
 		}
 
 		// Disable Org
 		// currently root, layer supervisor
 		// disables an org to be used
-		// hash: an organisations hash
+		// org_id: an organisations hash
 		#[pallet::weight(1_000_000)]
 		pub fn disable(
 			origin: OriginFor<T>,
-			hash: T::Hash,
+			org_id: T::Hash,
 		) -> DispatchResult {
 			ensure_root(origin)?;
-			OrgState::<T>::insert( hash.clone(), ControlState::Inactive );
-			Self::deposit_event( Event::OrgDisabled( hash ) );
+			OrgState::<T>::insert( org_id.clone(), ControlState::Inactive );
+			Self::deposit_event( Event::OrgDisabled( org_id ) );
 			Ok(())
 		}
 
@@ -396,7 +297,7 @@ pub mod pallet {
 			org_type: OrgType,
 			access: AccessModel,
 			fee_model: FeeModel,
-			fee: Balance,
+			fee: T::Balance,
 			gov_asset: u8,
 			pay_asset: u8,
 			member_limit: u64,
@@ -409,13 +310,13 @@ pub mod pallet {
 
 			let creation_fee = T::CreationFee::get();
 			let free_balance = T::Currency::free_balance(
-				T::DepositCurrencyId::get(),
+				T::PaymentTokenId::get(),
 				&sender
 			);
 			ensure!( free_balance > creation_fee, Error::<T>::BalanceTooLow );
 
 			let free_balance_treasury = T::Currency::free_balance(
-				T::DepositCurrencyId::get(),
+				T::PaymentTokenId::get(),
 				&treasury
 			);
 			ensure!( free_balance_treasury > creation_fee, Error::<T>::BalanceTooLow );
@@ -423,15 +324,13 @@ pub mod pallet {
 			// controller and treasury must not be equal
 			ensure!(&controller != &treasury, Error::<T>::DuplicateAddress );
 
-			// todo: update to use one nonce object
-			let index = Nonce::<T>::get();
 			let nonce = Self::get_and_increment_nonce();
-			let (hash, _) = T::Randomness::random(&nonce);
+			let (org_id, _) = T::Randomness::random(&nonce.encode());
 			let current_block = <frame_system::Pallet<T>>::block_number();
 
-			let new_org = Org {
-				id: hash.clone(),
-				index: index.clone(),
+			let org = Org {
+				id: org_id.clone(),
+				index: nonce.clone(),
 				creator: sender.clone(),
 				name: name.clone(),
 				cid: cid,
@@ -440,15 +339,15 @@ pub mod pallet {
 				mutated: current_block.clone(),
 			};
 
-			// TODO: membership fees
 			let mut _fee = fee;
 			match &fee_model {
+				// TODO: membership fees
 				FeeModel::Reserve => { _fee = fee },
 				FeeModel::Transfer => { _fee = fee },
 				_ => { }
 			};
 
-			let new_org_config = OrgConfig {
+			let org_config = OrgConfig {
 				fee_model: fee_model.clone(),
 				fee: _fee.clone(),
 				gov_asset: gov_asset.clone(),
@@ -457,149 +356,15 @@ pub mod pallet {
 				access: access.clone()
 			};
 
-			OrgByHash::<T>::insert( hash.clone(), new_org );
-			OrgConfiguration::<T>::insert( hash.clone(), new_org_config );
-
-			OrgByNonce::<T>::insert( index.clone(), hash.clone() );
-			OrgAccess::<T>::insert( hash.clone(), access.clone() );
-			OrgCreator::<T>::insert( hash.clone(), sender.clone() );
-			OrgController::<T>::insert( hash.clone(), controller.clone() );
-			OrgTreasury::<T>::insert( hash.clone(), treasury.clone() );
-			OrgState::<T>::insert( hash.clone(), ControlState::Active );
-
-			// let mut controlled = OrgsControlled::<T>::get(&controller);
-			// controlled.push(hash.clone());
-			OrgsControlled::<T>::mutate(
-				&controller,
-				|controlled| controlled.push(hash.clone())
-			);
-
-			// TODO: this needs a separate add / removal function
-			// whenever the controller of an organisation changes!
-			OrgsControlledCount::<T>::mutate(
-				&controller,
-				|controlled_count| *controlled_count += 1
-			);
-
-
-			// let mut created = OrgsCreated::<Test>>::get(&sender);
-			// created.push(hash.clone());
-			OrgsCreated::<T>::mutate(
-				&sender,
-				|created| created.push(hash.clone())
-			);
-
-			// initiate member registry -> consumes fees
-			// creator and controller can be equal
-			// controller and treasury cannot be equal
-			// match Self::add( &hash, creator.clone() ) {
-			// 		Ok(_) => {},
-			// 		Err(err) => { panic!("{err}") }
-			// };
-			match Self::add( hash.clone(), controller.clone() ) {
-					Ok(_) => {},
-					Err(err) => { return Err(err); }
-			};
-			// match Self::add( hash.clone(), treasury.clone() ) {
-			// 		Ok(_) => {},
-			// 		Err(err) => { panic!("{err}") }
-			// };
-
-			// todo: work with tangram nfts
-			// generate nft realm
-
-			// // get the current realm index
-			// let current_realm_index = tangram::NextRealmIndex::get();
-
-			// // every org receives a token realm by default
-			// let realm = tangram::Pallet::<T>::create_realm(origin.clone(), hash.clone());
-			// let realm = match realm {
-			// 		Ok(_) => {},
-			// 		Err(err) => { return Err(err) }
-			// };
-
-			// // get current class index
-			// let current_class_index = tangram::NextClassIndex::get(current_realm_index);
-
-			// // generate a class name
-			// let name:Vec<u8> = b"game".to_vec();
-			// // every org receives a token class for collectables by default
-			// let max = 1000; // TODO: externalise max
-			// let class = tangram::Pallet::<T>::create_class(
-			// 	origin.clone(),
-			// 	current_realm_index.clone(),
-			// 	name,
-			// 	max,
-			// 	// mint,
-			// 	// burn,
-			// 	strategy
-			// );
-			// let class = match class {
-			// 		Ok(_) => {},
-			// 		Err(err) => { return Err(err) }
-			// };
-
-			// // get the next realm index...
-			// let next_realm_index = tangram::NextRealmIndex::get();
-
-
-			// disabled due to weight overload
-			// disabled due to weight overload
-			// disabled due to weight overload
-
-			// mint an item for creator
-			// let item_name:Vec<u8> = b"creator".to_vec();
-			// let item_cid:Vec<u8> = b"0".to_vec();
-
-			// let item = tangram::Pallet::<T>::create_item(
-			// 	origin.clone(),
-			// 	current_realm_index,
-			// 	current_class_index,
-			// 	item_name,
-			// 	item_cid,
-			// 	creator.clone()
-			// );
-			// let item = match item {
-			// 		Ok(_) => {},
-			// 		Err(err) => { return Err(err) }
-			// };
-
-			// mint an item for controller
-			// let ctrl_item_name:Vec<u8> = b"controller".to_vec();
-			// let ctrl_item_cid:Vec<u8> = b"1".to_vec();
-
-			// let ctrl_item = tangram::Pallet::<T>::create_item(
-			// 	origin.clone(),
-			// 	current_realm_index,
-			// 	current_class_index,
-			// 	ctrl_item_name,
-			// 	ctrl_item_cid,
-			// 	controller.clone()
-			// );
-			// let ctrl_item = match ctrl_item {
-			// 		Ok(_) => {},
-			// 		Err(err) => { return Err(err) }
-			// };
-
-			// pay tribute
-			// let balance = <balances::Pallet<T>>::free_balance(&sender);
-			// let dao_fee = _fee.checked_mul(0.25);
-
-			T::Currency::transfer(
-				T::FundingCurrencyId::get(),
-				&sender,
-				&T::GameDAOTreasury::get(),
-				creation_fee
-			)?;
-
-			Nonce::<T>::mutate(|n| *n += 1);  // todo: remove this once unified work with nonce
+			Self::create_org(org, org_config, controller, treasury)?;
 
 			// dispatch event
 			Self::deposit_event(
 				Event::OrgCreated {
 					sender_id: sender,
-					org_id: hash,
+					org_id: org_id,
 					created_at: current_block,
+					// TODO: tangram::NextRealmIndex::get()
 					realm_index: 0
 				}
 			);
@@ -610,22 +375,18 @@ pub mod pallet {
 		#[pallet::weight(1_000_000)]
 		pub fn add_member(
 			origin: OriginFor<T>,
-			hash: T::Hash,
+			org_id: T::Hash,
 			account: T::AccountId
 		) -> DispatchResult {
 
 			ensure_signed(origin)?;
 			// TODO: ensure not a member yet, org exists
-			let add = Self::add( hash.clone(), account.clone() );
-			match add {
-				Ok(_) => {},
-				Err(err) => { return Err(err) }
-			};
+			Self::add_org_member( org_id.clone(), account.clone() )?;
 
 			let now = <frame_system::Pallet<T>>::block_number();
 			Self::deposit_event(
 				Event::AddMember {
-					org_id: hash,
+					org_id: org_id,
 					account_id: account,
 					added_at: now
 				}
@@ -639,24 +400,19 @@ pub mod pallet {
 		#[pallet::weight(1_000_000)]
 		pub fn remove_member(
 			origin: OriginFor<T>,
-			hash: T::Hash,
+			org_id: T::Hash,
 			account: T::AccountId,
 		) -> DispatchResult {
 
 			// TODO:
 			// when fees==1 unreserve fees
 			ensure_signed(origin)?;
-			let remove = Self::remove( hash.clone(), account.clone());
-			match remove {
-					Ok(_) => {},
-					Err(err) => { return Err(err) }
-			};
-			let now = <frame_system::Pallet<T>>::block_number();
+			Self::remove( org_id.clone(), account.clone())?;
 			Self::deposit_event(
 				Event::RemoveMember {
-					org_id: hash,
+					org_id: org_id,
 					account_id: account,
-					removed_at: now
+					removed_at: <frame_system::Pallet<T>>::block_number()
 				}
 			);
 			Ok(())
@@ -667,27 +423,27 @@ pub mod pallet {
 		// #[weight = 5_000]
 		// fn update_state(
 		// 	origin: OriginFor<T>,
-		// 	hash: T::Hash,
+		// 	org_id: T::Hash,
 		// 	state: u8
 		// ) {
 
 		// 	let sender = ensure_root(origin)?;
-		// 	Self::set_state(hash.clone(), state.clone());
+		// 	Self::set_state(org_id.clone(), state.clone());
 
 		// }
 
 		#[pallet::weight(1_000_000)]
 		pub fn check_membership(
 			origin: OriginFor<T>,
-			hash: T::Hash
+			org_id: T::Hash
 		) -> DispatchResult {
 
 			let caller = ensure_signed(origin)?;
-			let members = OrgMembers::<T>::get(hash);
+			let members = OrgMembers::<T>::get(org_id);
 			ensure!(members.contains(&caller), Error::<T>::MemberUnknown);
 			Self::deposit_event(
 				Event::IsAMember {
-					org_id: hash,
+					org_id: org_id,
 					account_id: caller
 				}
 			);
@@ -725,27 +481,167 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
 
 	// fn set_state(
-	// 	hash: T::Hash,
+	// 	org_id: T::Hash,
 	// 	state: u8
 	// ) -> DispatchResult {
 
-	// 	<DAOState<T>>::insert( hash.clone(), state.clone() );
+	// 	<DAOState<T>>::insert( org_id.clone(), state.clone() );
 
 	// 	let now = <frame_system::Pallet<T>>::block_number();
-	// 	Self::deposit_event( Event::DAOUpdated(hash, state, now ) );
+	// 	Self::deposit_event( Event::DAOUpdated(org_id, state, now ) );
 	// 	Ok(())
 
 	// }
 
+	fn create_org(
+		org: Org<T::Hash, T::AccountId, T::BlockNumber>,
+		org_config: OrgConfig<T::Balance>,
+		controller: T::AccountId,
+		treasury: T::AccountId
+	) -> DispatchResult {
+		let org_id = org.id.clone();
+		let access = org_config.access.clone();
+		let creator = org.creator.clone();
+		let nonce = org.index.clone();
+
+		Orgs::<T>::insert( org_id.clone(), org );
+		OrgConfiguration::<T>::insert( org_id.clone(), org_config );
+
+		OrgByNonce::<T>::insert(nonce.clone(), org_id.clone());
+		OrgAccess::<T>::insert( org_id.clone(), access.clone() );
+		OrgCreator::<T>::insert( org_id.clone(), creator.clone() );
+		OrgController::<T>::insert( org_id.clone(), controller.clone() );
+		OrgTreasury::<T>::insert( org_id.clone(), treasury.clone() );
+		OrgState::<T>::insert( org_id.clone(), ControlState::Active );
+		OrgsControlled::<T>::mutate(
+			&controller,
+			|controlled| controlled.push(org_id.clone())
+		);
+
+		// TODO: this needs a separate add / removal function
+		// whenever the controller of an organisation changes!
+		OrgsControlledCount::<T>::mutate(
+			&controller,
+			|controlled_count| *controlled_count += 1
+		);
+		OrgsCreated::<T>::mutate(
+			&creator,
+			|created| created.push(org_id.clone())
+		);
+
+		// initiate member registry -> consumes fees
+		// creator and controller can be equal
+		// controller and treasury cannot be equal
+		// match Self::add_org_member( &org_id, creator.clone() ) {
+		// 		Ok(_) => {},
+		// 		Err(err) => { panic!("{err}") }
+		// };
+		Self::add_org_member( org_id.clone(), controller.clone() )?;
+
+		Self::mint_nft()?;
+
+		T::Currency::transfer(
+			T::ProtocolTokenId::get(),
+			&creator,
+			&T::GameDAOTreasury::get(),
+			T::CreationFee::get()
+		)?;
+
+		Ok(())
+	}
+
+	fn mint_nft() -> DispatchResult {
+		// todo: work with tangram nfts
+		// generate nft realm
+
+		// // get the current realm index
+		// let current_realm_index = tangram::NextRealmIndex::get();
+
+		// // every org receives a token realm by default
+		// let realm = tangram::Pallet::<T>::create_realm(origin.clone(), org_id.clone());
+		// let realm = match realm {
+		// 		Ok(_) => {},
+		// 		Err(err) => { return Err(err) }
+		// };
+
+		// // get current class index
+		// let current_class_index = tangram::NextClassIndex::get(current_realm_index);
+
+		// // generate a class name
+		// let name:Vec<u8> = b"game".to_vec();
+		// // every org receives a token class for collectables by default
+		// let max = 1000; // TODO: externalise max
+		// let class = tangram::Pallet::<T>::create_class(
+		// 	origin.clone(),
+		// 	current_realm_index.clone(),
+		// 	name,
+		// 	max,
+		// 	// mint,
+		// 	// burn,
+		// 	strategy
+		// );
+		// let class = match class {
+		// 		Ok(_) => {},
+		// 		Err(err) => { return Err(err) }
+		// };
+
+		// // get the next realm index...
+		// let next_realm_index = tangram::NextRealmIndex::get();
+
+
+		// disabled due to weight overload
+		// disabled due to weight overload
+		// disabled due to weight overload
+
+		// mint an item for creator
+		// let item_name:Vec<u8> = b"creator".to_vec();
+		// let item_cid:Vec<u8> = b"0".to_vec();
+
+		// let item = tangram::Pallet::<T>::create_item(
+		// 	origin.clone(),
+		// 	current_realm_index,
+		// 	current_class_index,
+		// 	item_name,
+		// 	item_cid,
+		// 	creator.clone()
+		// );
+		// let item = match item {
+		// 		Ok(_) => {},
+		// 		Err(err) => { return Err(err) }
+		// };
+
+		// mint an item for controller
+		// let ctrl_item_name:Vec<u8> = b"controller".to_vec();
+		// let ctrl_item_cid:Vec<u8> = b"1".to_vec();
+
+		// let ctrl_item = tangram::Pallet::<T>::create_item(
+		// 	origin.clone(),
+		// 	current_realm_index,
+		// 	current_class_index,
+		// 	ctrl_item_name,
+		// 	ctrl_item_cid,
+		// 	controller.clone()
+		// );
+		// let ctrl_item = match ctrl_item {
+		// 		Ok(_) => {},
+		// 		Err(err) => { return Err(err) }
+		// };
+
+		// pay tribute
+		// let balance = <balances::Pallet<T>>::free_balance(&sender);
+		// let dao_fee = _fee.checked_mul(0.25);
+		Ok(())
+	}
+
 	fn set_member_state(
-		hash: T::Hash,
+		org_id: T::Hash,
 		account: T::AccountId,
 		member_state: ControlMemberState
 	) -> DispatchResult {
 
-		ensure!(OrgByHash::<T>::contains_key(&hash), Error::<T>::OrganizationUnknown );
-		let config = OrgConfiguration::<T>::get(&hash).ok_or(Error::<T>::OrganizationUnknown)?;
-		let _current_state = OrgMemberState::<T>::get(( &hash, &account ));
+		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown );
+		let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
+		let _current_state = OrgMemberState::<T>::get(( &org_id, &account ));
 		let _new_state = match config.access {
 			AccessModel::Open => member_state, // when open use desired state
 			_ => ControlMemberState::Pending, // else pending
@@ -756,25 +652,25 @@ impl<T: Config> Pallet<T> {
 
 	}
 
-	fn add(
-		hash: T::Hash,
+	fn add_org_member(
+		org_id: T::Hash,
 		account: T::AccountId
 	) -> DispatchResult {
 
-		ensure!( OrgByHash::<T>::contains_key(&hash), Error::<T>::OrganizationUnknown );
+		ensure!( Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown );
 
-		let mut members = OrgMembers::<T>::get(&hash);
+		let mut members = OrgMembers::<T>::get(&org_id);
 		let max_members = T::MaxMembersPerDAO::get();
 		ensure!((members.len() as u32) < max_members, Error::<T>::MembershipLimitReached);
 
-		let config = OrgConfiguration::<T>::get(&hash).ok_or(Error::<T>::OrganizationUnknown)?;
+		let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
 		let state = match config.access {
 			AccessModel::Open => ControlMemberState::Active, // active
 			_ => ControlMemberState::Pending, // pending
 		};
 
-		// todo: Should this be FundingCurrencyId or other currency id?
-		let currency_id = T::FundingCurrencyId::get();
+		// todo: Should this be ProtocolTokenId or other currency id?
+		let currency_id = T::ProtocolTokenId::get();
 		let fee = config.fee;
 		ensure!(
 			T::Currency::free_balance(currency_id, &account) > fee,
@@ -792,7 +688,7 @@ impl<T: Config> Pallet<T> {
 			},
 			// transfer to treasury
 			FeeModel::Transfer => {
-				let treasury = OrgTreasury::<T>::get(hash);
+				let treasury = OrgTreasury::<T>::get(org_id);
 				T::Currency::transfer(currency_id, &account, &treasury, config.fee)?;
 			}
 		}
@@ -808,19 +704,19 @@ impl<T: Config> Pallet<T> {
 			Err(index) => {
 
 				members.insert(index, account.clone());
-				// OrgMembers::<T>::mutate( &hash, |members| members.push(account.clone()) );
-				OrgMembers::<T>::insert( &hash, members.clone() );
+				// OrgMembers::<T>::mutate( &org_id, |members| members.push(account.clone()) );
+				OrgMembers::<T>::insert( &org_id, members.clone() );
 
 				// counter
 				let count = members.len();
-				OrgMemberCount::<T>::insert( &hash, count as u64 );
+				OrgMemberCount::<T>::insert( &org_id, count as u64 );
 
 				let mut memberships = Memberships::<T>::get(&account);
-				memberships.push( hash.clone() );
+				memberships.push( org_id.clone() );
 				Memberships::<T>::insert( &account, memberships );
 
 				// state
-				OrgMemberState::<T>::insert(( hash.clone(), account.clone() ), state);
+				OrgMemberState::<T>::insert(( org_id.clone(), account.clone() ), state);
 
 
 				Ok(())
@@ -831,25 +727,25 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn remove(
-		hash: T::Hash,
+		org_id: T::Hash,
 		account: T::AccountId,
 	) -> DispatchResult {
 
 		// existence
-		ensure!( OrgByHash::<T>::contains_key(&hash), Error::<T>::OrganizationUnknown );
+		ensure!( Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown );
 
-		let mut members = OrgMembers::<T>::get(hash);
+		let mut members = OrgMembers::<T>::get(org_id);
 		match members.binary_search(&account) {
 
 			Ok(index) => {
 
 				// remove member from Org
 				members.remove(index);
-				OrgMembers::<T>::insert(&hash, members.clone());
+				OrgMembers::<T>::insert(&org_id, members.clone());
 
 				// remove Org from member's Orgs
 				let mut memberships = Memberships::<T>::get(&account);
-				match memberships.binary_search(&hash) {
+				match memberships.binary_search(&org_id) {
 					Ok(index) => {
 						memberships.remove(index);
 						Memberships::<T>::insert(&account, memberships);
@@ -857,20 +753,20 @@ impl<T: Config> Pallet<T> {
 					Err(_) => {},
 				}
 
-				// todo: Should this be FundingCurrencyId or other currency id?
-				let currency_id = T::FundingCurrencyId::get();
+				// todo: Should this be ProtocolTokenId or other currency id?
+				let currency_id = T::ProtocolTokenId::get();
 				// unreserve?
-				let config = OrgConfiguration::<T>::get(&hash).ok_or(Error::<T>::OrganizationUnknown)?;
+				let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
 				if config.fee_model == FeeModel::Reserve {
 					T::Currency::unreserve(currency_id, &account, config.fee);
 				}
 
 				// counter --
 				let count = members.len();
-				OrgMemberCount::<T>::insert( &hash, count as u64 );
+				OrgMemberCount::<T>::insert( &org_id, count as u64 );
 
 				// member state
-				OrgMemberState::<T>::insert(( hash.clone(), account.clone() ), ControlMemberState::Inactive);
+				OrgMemberState::<T>::insert(( org_id.clone(), account.clone() ), ControlMemberState::Inactive);
 
 
 				Ok(())
@@ -882,18 +778,12 @@ impl<T: Config> Pallet<T> {
 
 	}
 
-	// transfer control of a Org
-	fn transfer(
-		_hash: T::Hash,
-		_account: T::AccountId
-	) {
+	// TODO: transfer control of a Org fn transfer(_hash: T::Hash, _account: T::AccountId)
 
-	}
-
-	fn get_and_increment_nonce() -> Vec<u8> {
+	fn get_and_increment_nonce() -> u128 {
 		let nonce = Nonce::<T>::get();
 		Nonce::<T>::put(nonce.wrapping_add(1));
-		nonce.encode()
+		nonce
 	}
 
 }

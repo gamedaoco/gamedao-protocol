@@ -38,34 +38,34 @@ frame_support::construct_runtime!(
 frame_support::parameter_types! {
 	pub const BlockHashCount: u32 = 250;
 	pub const SS58Prefix: u8 = 42;
-    pub BlockWeights: frame_system::limits::BlockWeights =
-        frame_system::limits::BlockWeights::simple_max(1024);
+	pub BlockWeights: frame_system::limits::BlockWeights =
+		frame_system::limits::BlockWeights::simple_max(1024);
 }
 
 impl frame_system::Config for Test {
-    type BaseCallFilter = frame_support::traits::Everything;
-    type BlockWeights = ();
-    type BlockLength = ();
-    type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
-    type Index = u64;
-    type BlockNumber = u64;
-    type Hash = Hash;
-    type Hashing = sp_runtime::traits::BlakeTwo256;
-    type AccountId = AccountId;
-    type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
-    type Event = Event;
-    type BlockHashCount = BlockHashCount;
-    type Version = ();
-    type PalletInfo = PalletInfo;
-    type AccountData = pallet_balances::AccountData<Balance>;
-    type OnNewAccount = ();
-    type OnKilledAccount = ();
-    type SystemWeightInfo = ();
-    type SS58Prefix = SS58Prefix;
-    type OnSetCode = ();
+	type BaseCallFilter = frame_support::traits::Everything;
+	type BlockWeights = ();
+	type BlockLength = ();
+	type DbWeight = ();
+	type Origin = Origin;
+	type Call = Call;
+	type Index = u64;
+	type BlockNumber = u64;
+	type Hash = Hash;
+	type Hashing = sp_runtime::traits::BlakeTwo256;
+	type AccountId = AccountId;
+	type Lookup = IdentityLookup<Self::AccountId>;
+	type Header = Header;
+	type Event = Event;
+	type BlockHashCount = BlockHashCount;
+	type Version = ();
+	type PalletInfo = PalletInfo;
+	type AccountData = pallet_balances::AccountData<Balance>;
+	type OnNewAccount = ();
+	type OnKilledAccount = ();
+	type SystemWeightInfo = ();
+	type SS58Prefix = SS58Prefix;
+	type OnSetCode = ();
 }
 
 orml_traits::parameter_type_with_key! {
@@ -145,9 +145,9 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	let cent = 1_000_000_000_000;
 	orml_tokens::GenesisConfig::<Test> {
 		balances: vec![
-            (TREASURY_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
-            (CONTROLLER_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
-            (USER_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
+			(TREASURY_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
+			(CONTROLLER_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
+			(USER_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
 		],
 	}.assimilate_storage(&mut t).unwrap();
 	t.into()
