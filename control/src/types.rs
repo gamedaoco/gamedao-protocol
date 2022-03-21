@@ -80,7 +80,7 @@ pub struct Org<Hash, AccountId, BlockNumber, OrgType> {
 	/// Org Hash
 	pub(super) id: Hash,
 	/// Org global index
-	pub(super) index: u64,
+	pub(super) index: u128,
 	/// Org Creator
 	pub(super) creator: AccountId,
 	/// Org Name

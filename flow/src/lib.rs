@@ -577,7 +577,7 @@ pub mod pallet {
 
 			// generate the unique campaign id + ensure uniqueness
 			let nonce = Self::get_and_increment_nonce();
-			let (id, _) = T::Randomness::random(&nonce);
+			let (id, _) = T::Randomness::random(&nonce.encode());
 			// ensure!(!<CampaignOwner<T>>::exists(&id), Error::<T>::IdExists ); // check for collision
 
 			// check contribution limit per block
@@ -870,10 +870,10 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	fn get_and_increment_nonce() -> Vec<u8> {
+	fn get_and_increment_nonce() -> u128 {
 		let nonce = Nonce::<T>::get();
 		Nonce::<T>::put(nonce.wrapping_add(1));
-		nonce.encode()
+		nonce
 	}
 }
 
