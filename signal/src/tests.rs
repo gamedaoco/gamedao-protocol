@@ -2,8 +2,10 @@
 
 use super::{
 	*,
-	voting_structs::{Proposal, ProposalMetadata},
-	voting_enums::{VotingType, ProposalType, ProposalState},
+	types::{
+		Proposal, ProposalMetadata,
+		VotingType, ProposalType, ProposalState
+	},
 	mock::{
 		Test, ExtBuilder, DOLLARS, Balance,
 		AccountId, ACC1, ACC2, ACC3, TREASURY_ACC,
@@ -112,14 +114,14 @@ fn signal_general_proposal_success() {
 		);
 		assert_eq!(
 			<Proposals<Test>>::get(&proposal_id),
-			Proposal {
+			Some(Proposal {
 				proposal_id,
 				context_id: org_id,
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start: 3,
 				expiry: 15
-			}
+			})
 		);
 		assert_eq!(
 			<Metadata<Test>>::get(&proposal_id),
@@ -330,14 +332,14 @@ fn signal_withdraw_proposal_success() {
 		);
 		assert_eq!(
 			<Proposals<Test>>::get(&proposal_id),
-			Proposal {
+			Some(Proposal {
 				proposal_id,
 				context_id: campaign_id,
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start: 3,
 				expiry: 15
-			}
+			})
 		);
 		assert_eq!(
 			<Metadata<Test>>::get(&proposal_id),
@@ -640,7 +642,7 @@ fn signal_simple_vote_success() {
 			)
 		);
 		assert_eq!(<ProposalSimpleVotes<Test>>::get(&proposal_id), (2, 0));
-		assert_eq!(<ProposalApprovers<Test>>::get(&proposal_id), 4);  // todo: this seems like incorrect?
+		assert_eq!(<ProposalApprovers<Test>>::get(&proposal_id), 2);
 
 	});
 }
