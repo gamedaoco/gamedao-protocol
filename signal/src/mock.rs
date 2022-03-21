@@ -1,17 +1,16 @@
 #[cfg(test)]
-
 use crate as gamedao_signal;
 use frame_support::parameter_types;
 use frame_support::traits::{GenesisBuild, Nothing};
-use frame_system;
 use frame_support_test::TestRandomness;
+use frame_system;
+use orml_traits::parameter_type_with_key;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 	Permill,
 };
-use orml_traits::parameter_type_with_key;
 
 pub type AccountId = u64;
 pub type Amount = i128;
@@ -29,12 +28,11 @@ pub const MILLISECS_PER_BLOCK: u64 = 6000;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-pub const CURRENCY_ID: CurrencyId = 2;  // TokenSymbol::GAME
+pub const CURRENCY_ID: CurrencyId = 2; // TokenSymbol::GAME
 pub const ACC1: AccountId = 1;
 pub const ACC2: AccountId = 2;
 pub const ACC3: AccountId = 3;
 pub const TREASURY_ACC: AccountId = 4;
-
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -96,7 +94,6 @@ impl orml_currencies::Config for Test {
 	type WeightInfo = ();
 }
 
-
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 	pub const SS58Prefix: u8 = 42;
@@ -145,12 +142,15 @@ parameter_types! {
 	pub const MaxMembersPerDAO: u32 = 2;
 	pub const MaxCreationsPerBlock: u32 = 2;
 	// pub const NetworkCurrencyId: u32 = CURRENCY_ID;
-	pub const FundingCurrencyId: u32 = CURRENCY_ID;
-	pub const DepositCurrencyId: u32 = CURRENCY_ID;
+	pub const ProtocolTokenId: u32 = CURRENCY_ID;
+	pub const PaymentTokenId: u32 = CURRENCY_ID;
 	pub const CreationFee: Balance = 25_000_000_000_000;
 	pub const GameDAOTreasury: AccountId = TREASURY_ACC;
 }
 impl gamedao_control::Config for Test {
+	type Balance = Balance;
+	// type Moment = Moment;
+	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
@@ -163,9 +163,8 @@ impl gamedao_control::Config for Test {
 	type MaxDAOsPerAccount = MaxDAOsPerAccount;
 	type MaxMembersPerDAO = MaxMembersPerDAO;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
-	// type ProtocolTokenId = NetworkCurrencyId;
-	type FundingCurrencyId = FundingCurrencyId;
-	type DepositCurrencyId = DepositCurrencyId;
+	type ProtocolTokenId = ProtocolTokenId;
+	type PaymentTokenId = PaymentTokenId;
 	type CreationFee = CreationFee;
 }
 
@@ -220,7 +219,7 @@ impl gamedao_signal::Config for Test {
 	type Flow = Flow;
 	type MaxProposalsPerBlock = MaxProposalsPerBlock;
 	type MaxProposalDuration = MaxProposalDuration;
-	type FundingCurrencyId = FundingCurrencyId;
+	type ProtocolTokenId = ProtocolTokenId;
 	type Randomness = TestRandomness<Self>;
 	type Currency = Currencies;
 }
@@ -235,11 +234,13 @@ impl ExtBuilder {
 				(ACC1, CURRENCY_ID, 100 * DOLLARS),
 				(ACC2, CURRENCY_ID, 100 * DOLLARS),
 				(ACC3, CURRENCY_ID, 100 * DOLLARS),
-				(TREASURY_ACC, CURRENCY_ID, 25 * DOLLARS)
+				(TREASURY_ACC, CURRENCY_ID, 25 * DOLLARS),
 			],
-		}.assimilate_storage(&mut t).unwrap();
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));
-  		ext
+		ext
 	}
 }

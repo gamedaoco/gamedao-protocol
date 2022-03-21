@@ -1,30 +1,27 @@
 #![cfg(test)]
 
 use super::*;
-use mock::{Control, new_test_ext, Origin, Test, TREASURY_ACCOUNT, USER_ACCOUNT};
-use frame_support::{assert_ok, assert_noop};
+use frame_support::{assert_noop, assert_ok};
+use mock::{new_test_ext, Control, Origin, Test, TREASURY_ACCOUNT, USER_ACCOUNT};
 
 #[test]
 fn control_create_campaign_success() {
 	new_test_ext().execute_with(|| {
-
 		// create a DAO with account #5.
-		assert_ok!(
-			Control::create(
-				Origin::signed(USER_ACCOUNT),	// creator == account 5
-				4,	// controller == account 4
-				TREASURY_ACCOUNT,	// treasury == account 3
-				vec![12,56],		// name
-				vec![11,111],		// cid
-				Default::default(),
-				Default::default(),
-				Default::default(),
-				100,
-				0,
-				0,
-				10
-			)
-		);
+		assert_ok!(Control::create(
+			Origin::signed(USER_ACCOUNT), // creator == account 5
+			4,                            // controller == account 4
+			TREASURY_ACCOUNT,             // treasury == account 3
+			vec![12, 56],                 // name
+			vec![11, 111],                // cid
+			Default::default(),
+			Default::default(),
+			Default::default(),
+			100,
+			0,
+			0,
+			10
+		));
 
 		// check that there are now 1 Control in storage
 		assert_eq!(Nonce::<Test>::get(), 1);
@@ -55,6 +52,5 @@ fn control_create_campaign_success() {
 
 		// // let other_hash = Control::campaigns_owned_index(5, 0);
 		// // assert_eq!(hash, other_hash);
-
 	})
 }

@@ -11,7 +11,8 @@
 //! FLOW
 //! # Crowdfunding Campaign Factory + Treasury
 //!
-//! Run `cargo doc --package module-crowdfunding --open` to view this pallet's documentation.
+//! Run `cargo doc --package module-crowdfunding --open` to view this pallet's
+//! documentation.
 //!
 //! ## Overview
 //!
@@ -30,7 +31,6 @@
 //!
 //! TODO:
 //! - supervisor can lock, cancel campaigns
-//!
 
 // 1. create campaigns with custom funding goal and runtime
 // 2. invest into open campaigns
@@ -52,19 +52,19 @@ mod tests;
 // mod errors;
 
 use frame_support::{
-	transactional,
 	codec::Encode,
 	dispatch::DispatchResult,
-	traits::{Randomness, UnixTime, Get}
+	traits::{Get, Randomness, UnixTime},
+	transactional,
 };
 
 use scale_info::TypeInfo;
+use sp_runtime::{traits::AtLeast32BitUnsigned, Permill};
 use sp_std::vec::Vec;
-use sp_runtime::{traits::{AtLeast32BitUnsigned}, Permill};
 
-use orml_traits::{MultiCurrency, MultiReservableCurrency};
-use gamedao_traits::{ControlTrait, FlowTrait};
 use codec::HasCompact;
+use gamedao_traits::{ControlTrait, FlowTrait};
+use orml_traits::{MultiCurrency, MultiReservableCurrency};
 
 pub use pallet::*;
 
@@ -83,7 +83,6 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-
 		type Balance: Member
 			+ Parameter
 			+ AtLeast32BitUnsigned
@@ -154,41 +153,32 @@ pub mod pallet {
 		_,
 		Blake2_128Concat,
 		T::Hash,
-		Campaign<
-			T::Hash,
-			T::AccountId,
-			T::Balance,
-			T::BlockNumber,
-            Moment
-		>,
+		Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment>,
 		ValueQuery,
 	>;
 
 	/// Associated Body
 	#[pallet::storage]
-	pub(super) type CampaignOrg<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, T::Hash, ValueQuery>;
+	pub(super) type CampaignOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Hash, ValueQuery>;
 
 	/// Get Campaign Owner (body controller) by campaign id
 	#[pallet::storage]
-	pub(super) type CampaignOwner<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
+	pub(super) type CampaignOwner<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
 
 	/// Get Campaign Admin (supervision) by campaign id
 	#[pallet::storage]
-	pub(super) type CampaignAdmin<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
+	pub(super) type CampaignAdmin<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
 
 	/// Campaign state
-	/// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
+	/// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5
+	/// authority lock
 	#[pallet::storage]
 	pub(super) type CampaignState<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, FlowState, ValueQuery, GetDefault>;
 
 	/// Get Campaigns for a certain state
 	#[pallet::storage]
-	pub(super) type CampaignsByState<T: Config> =
-		StorageMap<_, Blake2_128Concat, FlowState, Vec<T::Hash>, ValueQuery>;
+	pub(super) type CampaignsByState<T: Config> = StorageMap<_, Blake2_128Concat, FlowState, Vec<T::Hash>, ValueQuery>;
 
 	/// Campaigns ending in block x
 	#[pallet::storage]
@@ -197,21 +187,17 @@ pub mod pallet {
 
 	/// Total number of campaigns -> all campaigns
 	#[pallet::storage]
-	pub(super) type CampaignsArray<T: Config> =
-		StorageMap<_, Blake2_128Concat, u64, T::Hash, ValueQuery>;
+	pub(super) type CampaignsArray<T: Config> = StorageMap<_, Blake2_128Concat, u64, T::Hash, ValueQuery>;
 	#[pallet::storage]
 	pub type CampaignsCount<T: Config> = StorageValue<_, u64, ValueQuery>;
 	#[pallet::storage]
-	pub(super) type CampaignsIndex<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
+	pub(super) type CampaignsIndex<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
 	// caller owned campaigns -> my campaigns
 	#[pallet::storage]
-	pub(super) type CampaignsOwnedArray<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, T::Hash, ValueQuery>;
+	pub(super) type CampaignsOwnedArray<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Hash, ValueQuery>;
 	#[pallet::storage]
-	pub(super) type CampaignsOwnedCount<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
+	pub(super) type CampaignsOwnedCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 	#[pallet::storage]
 	pub(super) type CampaignsOwnedIndex<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::Hash, T::Hash), u64, ValueQuery>;
@@ -223,8 +209,7 @@ pub mod pallet {
 
 	/// campaigns related to an organisation
 	#[pallet::storage]
-	pub(super) type CampaignsByOrg<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::Hash>, ValueQuery>;
+	pub(super) type CampaignsByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::Hash>, ValueQuery>;
 
 	// caller contributed campaigns -> contributed campaigns
 	#[pallet::storage]
@@ -239,8 +224,7 @@ pub mod pallet {
 
 	// Total contributions balance per campaign
 	#[pallet::storage]
-	pub(super) type CampaignBalance<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, T::Balance, ValueQuery>;
+	pub(super) type CampaignBalance<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Balance, ValueQuery>;
 
 	// Contributions per user
 	#[pallet::storage]
@@ -252,11 +236,11 @@ pub mod pallet {
 	pub(super) type CampaignContributors<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::AccountId>, ValueQuery>;
 	#[pallet::storage]
-	pub(super) type CampaignContributorsCount<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
+	pub(super) type CampaignContributorsCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
 	// Max campaign block limit
-	// CampaignMaxCampaignDuration get(fn get_max_duration) config(): T::BlockNumber = T::BlockNumber::from(T::MaxCampaignDuration::get());
+	// CampaignMaxCampaignDuration get(fn get_max_duration) config(): T::BlockNumber
+	// = T::BlockNumber::from(T::MaxCampaignDuration::get());
 
 	// Campaign nonce, increases per created campaign
 	#[pallet::storage]
@@ -266,10 +250,10 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		CampaignDestroyed{
-			campaign_id: T::Hash
+		CampaignDestroyed {
+			campaign_id: T::Hash,
 		},
-		CampaignCreated{
+		CampaignCreated {
 			campaign_id: T::Hash,
 			creator: T::AccountId,
 			admin: T::AccountId,
@@ -278,28 +262,28 @@ pub mod pallet {
 			expiry: T::BlockNumber,
 			name: Vec<u8>,
 		},
-		CampaignContributed{
+		CampaignContributed {
 			campaign_id: T::Hash,
 			sender: T::AccountId,
 			contribution: T::Balance,
-			block_number: T::BlockNumber
+			block_number: T::BlockNumber,
 		},
-		CampaignFinalized{
+		CampaignFinalized {
 			campaign_id: T::Hash,
 			campaign_balance: T::Balance,
 			block_number: T::BlockNumber,
-			success: bool
+			success: bool,
 		},
-		CampaignFailed{
+		CampaignFailed {
 			campaign_id: T::Hash,
 			campaign_balance: T::Balance,
 			block_number: T::BlockNumber,
-			success: bool
+			success: bool,
 		},
-		CampaignUpdated{
+		CampaignUpdated {
 			campaign_id: T::Hash,
 			state: FlowState,
-			block_number: T::BlockNumber
+			block_number: T::BlockNumber,
 		},
 		Message(Vec<u8>),
 	}
@@ -308,7 +292,6 @@ pub mod pallet {
 	pub enum Error<T> {
 		//
 		//	general
-		//
 		/// Must contribute at least the minimum amount of Campaigns
 		ContributionTooSmall,
 		/// Balance too low.
@@ -317,13 +300,16 @@ pub mod pallet {
 		TreasuryBalanceTooLow,
 		/// The Campaign id specified does not exist
 		InvalidId,
-		/// The Campaign's contribution period has ended; no more contributions will be accepted
+		/// The Campaign's contribution period has ended; no more contributions
+		/// will be accepted
 		ContributionPeriodOver,
-		/// You may not withdraw or dispense Campaigns while the Campaign is still active
+		/// You may not withdraw or dispense Campaigns while the Campaign is
+		/// still active
 		CampaignStillActive,
 		/// You cannot withdraw Campaigns because you have not contributed any
 		NoContribution,
-		/// You cannot dissolve a Campaign that has not yet completed its retirement period
+		/// You cannot dissolve a Campaign that has not yet completed its
+		/// retirement period
 		CampaignNotRetired,
 		/// Campaign expired
 		CampaignExpired,
@@ -332,7 +318,6 @@ pub mod pallet {
 
 		//
 		//	create
-		//
 		/// Campaign must end after it starts
 		EndTooEarly,
 		/// Campaign expiry has be lower than the block number limit
@@ -350,7 +335,6 @@ pub mod pallet {
 
 		//
 		//	mint
-		//
 		/// Overflow adding a new campaign to total fundings
 		AddCampaignOverflow,
 		/// Overflow adding a new owner
@@ -414,10 +398,8 @@ pub mod pallet {
 								}
 
 								// get amount from contributor
-								let contributor_balance = CampaignContribution::<T>::get((
-									*campaign_id,
-									contributor.clone(),
-								));
+								let contributor_balance =
+									CampaignContribution::<T>::get((*campaign_id, contributor.clone()));
 
 								// unreserve the amount in contributor balance
 								T::Currency::unreserve(
@@ -475,7 +457,7 @@ pub mod pallet {
 								Self::set_state(campaign.id.clone(), FlowState::Success);
 
 								// finalized event
-								Self::deposit_event(Event::CampaignFinalized{
+								Self::deposit_event(Event::CampaignFinalized {
 									campaign_id: *campaign_id,
 									campaign_balance,
 									block_number,
@@ -492,8 +474,7 @@ pub mod pallet {
 
 					let contributors = CampaignContributors::<T>::get(campaign_id);
 					for account in contributors {
-						let contribution =
-							CampaignContribution::<T>::get((*campaign_id, account.clone()));
+						let contribution = CampaignContribution::<T>::get((*campaign_id, account.clone()));
 						T::Currency::unreserve(T::ProtocolTokenId::get(), &account, contribution);
 					}
 
@@ -502,14 +483,10 @@ pub mod pallet {
 
 					// unreserve DEPOSIT
 
-					T::Currency::unreserve(
-						T::ProtocolTokenId::get(),
-						&org_treasury,
-						campaign.deposit,
-					);
+					T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, campaign.deposit);
 
 					// failed event
-					Self::deposit_event(Event::CampaignFailed{
+					Self::deposit_event(Event::CampaignFailed {
 						campaign_id: *campaign_id,
 						campaign_balance,
 						block_number,
@@ -535,11 +512,11 @@ pub mod pallet {
 			expiry: T::BlockNumber,
 			protocol: FlowProtocol,
 			governance: FlowGovernance,
-			cid: Vec<u8>,		  // content cid
+			cid: Vec<u8>,          // content cid
 			token_symbol: Vec<u8>, // up to 5
-			token_name: Vec<u8>,   // cleartext
-								   // token_curve_a: u8,	  // preset
-								   // token_curve_b: Vec<u8>, // custom
+			token_name: Vec<u8>,   /* cleartext
+			                        * token_curve_a: u8,	  // preset
+			                        * token_curve_b: Vec<u8>, // custom */
 		) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
 
@@ -555,14 +532,8 @@ pub mod pallet {
 			ensure!(deposit <= target, Error::<T>::DepositTooHigh);
 
 			// check name length boundary
-			ensure!(
-				(name.len() as u32) >= T::MinNameLength::get(),
-				Error::<T>::NameTooShort
-			);
-			ensure!(
-				(name.len() as u32) <= T::MaxNameLength::get(),
-				Error::<T>::NameTooLong
-			);
+			ensure!((name.len() as u32) >= T::MinNameLength::get(), Error::<T>::NameTooShort);
+			ensure!((name.len() as u32) <= T::MaxNameLength::get(), Error::<T>::NameTooLong);
 
 			let current_block = <frame_system::Pallet<T>>::block_number();
 
@@ -576,7 +547,8 @@ pub mod pallet {
 			// generate the unique campaign id + ensure uniqueness
 			let nonce = Self::get_and_increment_nonce();
 			let (id, _) = T::Randomness::random(&nonce.encode());
-			// ensure!(!<CampaignOwner<T>>::exists(&id), Error::<T>::IdExists ); // check for collision
+			// ensure!(!<CampaignOwner<T>>::exists(&id), Error::<T>::IdExists ); // check
+			// for collision
 
 			// check contribution limit per block
 			let contributions = CampaignsByBlock::<T>::get(expiry);
@@ -606,26 +578,30 @@ pub mod pallet {
 			// mint the campaign
 			Self::mint_campaign(campaign)?;
 
-			// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
+			// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5
+			// authority lock
 			Self::set_state(id.clone(), FlowState::Active);
 
 			// deposit the event
-			Self::deposit_event(Event::CampaignCreated{
-				campaign_id: id, creator, admin, target, deposit, expiry, name,
+			Self::deposit_event(Event::CampaignCreated {
+				campaign_id: id,
+				creator,
+				admin,
+				target,
+				deposit,
+				expiry,
+				name,
 			});
 			Ok(())
 
 			// No fees are paid here if we need to create this account;
 			// that's why we don't just use the stock `transfer`.
-			// T::Currency::resolve_creating(&Self::campaign_account_id(index), imb);
+			// T::Currency::resolve_creating(&Self::campaign_account_id(index),
+			// imb);
 		}
 
 		#[pallet::weight(1_000_000)]
-		pub fn update_state(
-			origin: OriginFor<T>,
-			campaign_id: T::Hash,
-			state: FlowState,
-		) -> DispatchResult {
+		pub fn update_state(origin: OriginFor<T>, campaign_id: T::Hash, state: FlowState) -> DispatchResult {
 			// access control
 			let sender = ensure_signed(origin)?;
 
@@ -640,26 +616,23 @@ pub mod pallet {
 
 			// not finished or locked?
 			let current_state = CampaignState::<T>::get(campaign_id);
-			ensure!(
-				current_state < FlowState::Success,
-				Error::<T>::CampaignExpired
-			);
+			ensure!(current_state < FlowState::Success, Error::<T>::CampaignExpired);
 
 			Self::set_state(campaign_id.clone(), state.clone());
 
 			// dispatch status update event
-			Self::deposit_event(Event::CampaignUpdated{campaign_id, state, block_number: current_block});
+			Self::deposit_event(Event::CampaignUpdated {
+				campaign_id,
+				state,
+				block_number: current_block,
+			});
 
 			Ok(())
 		}
 
 		/// contribute to project
 		#[pallet::weight(5_000_000)]
-		pub fn contribute(
-			origin: OriginFor<T>,
-			campaign_id: T::Hash,
-			contribution: T::Balance,
-		) -> DispatchResult {
+		pub fn contribute(origin: OriginFor<T>, campaign_id: T::Hash, contribution: T::Balance) -> DispatchResult {
 			// check
 
 			let sender = ensure_signed(origin)?;
@@ -670,15 +643,9 @@ pub mod pallet {
 			let owner = CampaignOwner::<T>::get(campaign_id).ok_or(Error::<T>::OwnerUnknown)?;
 			ensure!(owner != sender, Error::<T>::NoContributionToOwnCampaign);
 
-			ensure!(
-				Campaigns::<T>::contains_key(campaign_id),
-				Error::<T>::InvalidId
-			);
+			ensure!(Campaigns::<T>::contains_key(campaign_id), Error::<T>::InvalidId);
 			let state = CampaignState::<T>::get(campaign_id);
-			ensure!(
-				state == FlowState::Active,
-				Error::<T>::NoContributionsAllowed
-			);
+			ensure!(state == FlowState::Active, Error::<T>::NoContributionsAllowed);
 			let campaign = Campaigns::<T>::get(&campaign_id);
 			ensure!(
 				<frame_system::Pallet<T>>::block_number() < campaign.expiry,
@@ -691,7 +658,7 @@ pub mod pallet {
 
 			// event
 
-			Self::deposit_event(Event::CampaignContributed{
+			Self::deposit_event(Event::CampaignContributed {
 				campaign_id,
 				sender,
 				contribution,
@@ -741,13 +708,7 @@ impl<T: Config> Pallet<T> {
 	// protocol: u8,
 	// campaign object
 	pub fn mint_campaign(
-		campaign: Campaign<
-			T::Hash,
-			T::AccountId,
-			T::Balance,
-			T::BlockNumber,
-            Moment
-		>,
+		campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment>,
 	) -> DispatchResult {
 		// add campaign to campaigns
 		Campaigns::<T>::insert(&campaign.id, campaign.clone());
@@ -761,16 +722,12 @@ impl<T: Config> Pallet<T> {
 		CampaignsByOrg::<T>::mutate(&campaign.org, |campaigns| campaigns.push(campaign.id));
 
 		// expiration
-		CampaignsByBlock::<T>::mutate(&campaign.expiry, |campaigns| {
-			campaigns.push(campaign.id.clone())
-		});
+		CampaignsByBlock::<T>::mutate(&campaign.expiry, |campaigns| campaigns.push(campaign.id.clone()));
 
 		// global campaigns count
 
 		let campaigns_count = CampaignsCount::<T>::get();
-		let update_campaigns_count = campaigns_count
-			.checked_add(1)
-			.ok_or(Error::<T>::AddCampaignOverflow)?;
+		let update_campaigns_count = campaigns_count.checked_add(1).ok_or(Error::<T>::AddCampaignOverflow)?;
 
 		// update global campaign count
 		CampaignsArray::<T>::insert(&campaigns_count, campaign.id.clone());
@@ -794,36 +751,21 @@ impl<T: Config> Pallet<T> {
 		// to reserve some of the staked GAME
 		let treasury = T::Control::org_treasury_account(&campaign.org);
 
-		T::Currency::reserve(
-			T::ProtocolTokenId::get(),
-			&treasury,
-			campaign.deposit.clone(),
-		)?;
+		T::Currency::reserve(T::ProtocolTokenId::get(), &treasury, campaign.deposit.clone())?;
 
 		Ok(())
 	}
-	
-	fn create_contribution(
-		sender: T::AccountId,
-		campaign_id: T::Hash,
-		contribution: T::Balance,
-	) -> DispatchResult {
-		let returning_contributor =
-			CampaignContribution::<T>::contains_key((&campaign_id, &sender));
+
+	fn create_contribution(sender: T::AccountId, campaign_id: T::Hash, contribution: T::Balance) -> DispatchResult {
+		let returning_contributor = CampaignContribution::<T>::contains_key((&campaign_id, &sender));
 
 		// check if contributor exists
 		// if not, update metadata
 		if !returning_contributor {
 			// increase the number of contributors
 			let campaigns_contributed = CampaignsContributedCount::<T>::get(&sender);
-			CampaignsContributedArray::<T>::insert(
-				(sender.clone(), campaigns_contributed),
-				campaign_id,
-			);
-			CampaignsContributedIndex::<T>::insert(
-				(sender.clone(), campaign_id.clone()),
-				campaigns_contributed,
-			);
+			CampaignsContributedArray::<T>::insert((sender.clone(), campaigns_contributed), campaign_id);
+			CampaignsContributedIndex::<T>::insert((sender.clone(), campaign_id.clone()), campaigns_contributed);
 
 			let update_campaigns_contributed = campaigns_contributed
 				.checked_add(1)
@@ -838,9 +780,7 @@ impl<T: Config> Pallet<T> {
 			CampaignContributorsCount::<T>::insert(campaign_id.clone(), update_contributors);
 
 			// add contibutor to campaign contributors
-			CampaignContributors::<T>::mutate(&campaign_id, |accounts| {
-				accounts.push(sender.clone())
-			});
+			CampaignContributors::<T>::mutate(&campaign_id, |accounts| accounts.push(sender.clone()));
 		}
 
 		// check if campaign is in contributions map of contributor and add
@@ -873,7 +813,7 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl <T: Config>FlowTrait<T::Hash, T::Balance> for Pallet<T> {
+impl<T: Config> FlowTrait<T::Hash, T::Balance> for Pallet<T> {
 	fn campaign_balance(hash: &T::Hash) -> T::Balance {
 		CampaignBalance::<T>::get(hash)
 	}

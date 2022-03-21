@@ -21,7 +21,7 @@ impl Default for OrgType {
 pub enum ControlMemberState {
 	Inactive = 0, // eg inactive after threshold period
 	Active = 1,
-	Pending = 2,  // application voting pending
+	Pending = 2, // application voting pending
 	Kicked = 3,
 	Banned = 4,
 	Exited = 5,
@@ -51,9 +51,9 @@ impl Default for ControlState {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum FeeModel {
-	NoFees = 0,		// feeless
-	Reserve = 1,	// amount is reserved in user account
-	Transfer = 2,	// amount is transfered to Org treasury
+	NoFees = 0,   // feeless
+	Reserve = 1,  // amount is reserved in user account
+	Transfer = 2, // amount is transfered to Org treasury
 }
 impl Default for FeeModel {
 	fn default() -> Self {
@@ -64,16 +64,15 @@ impl Default for FeeModel {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum AccessModel {
-	Open = 0,		// anyDAO can join
-	Voting = 1,		// application creates membership voting
-	Controller = 2,	// controller invites
+	Open = 0,       // anyDAO can join
+	Voting = 1,     // application creates membership voting
+	Controller = 2, // controller invites
 }
 impl Default for AccessModel {
 	fn default() -> Self {
 		Self::Open
 	}
 }
-
 
 /// Organization
 #[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo)]

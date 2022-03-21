@@ -3,15 +3,14 @@
 pub use super::*;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Everything, Nothing, GenesisBuild}
+	traits::{Everything, GenesisBuild, Nothing},
 };
 use frame_support_test::TestRandomness;
 use frame_system::EnsureRoot;
 use sp_core::H256;
-use sp_runtime::{traits::{IdentityLookup},Permill};
+use sp_runtime::{traits::IdentityLookup, Permill};
 
 use orml_traits::parameter_type_with_key;
-
 
 // Types:
 pub type AccountId = u32;
@@ -225,6 +224,8 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 			(TREASURY, GAME_CURRENCY_ID, 100),
 			(GAMEDAO_TREASURY, GAME_CURRENCY_ID, 0),
 		],
-	}.assimilate_storage(&mut t).unwrap();
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
 	t.into()
 }

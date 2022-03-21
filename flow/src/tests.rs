@@ -2,20 +2,29 @@
 
 use super::*;
 use codec::Encode;
-use frame_support::{assert_noop, assert_ok};
 use frame_support::traits::Hooks;
+use frame_support::{assert_noop, assert_ok};
 use frame_system::{EventRecord, Phase};
 use mock::{Event, Moment, *};
 use sp_core::H256;
 
-use gamedao_control::{OrgType, AccessModel, FeeModel};
-
+use gamedao_control::{AccessModel, FeeModel, OrgType};
 
 fn create_org() -> H256 {
 	let nonce = Control::nonce().encode();
 	assert_ok!(Control::create(
-		Origin::signed(BOB), BOB, TREASURY, vec![1, 2], vec![1, 2], 
-		OrgType::default(), AccessModel::default(), FeeModel::default(), 0, 0, 0, 0
+		Origin::signed(BOB),
+		BOB,
+		TREASURY,
+		vec![1, 2],
+		vec![1, 2],
+		OrgType::default(),
+		AccessModel::default(),
+		FeeModel::default(),
+		0,
+		0,
+		0,
+		0
 	));
 	<Test as gamedao_control::Config>::Randomness::random(&nonce).0
 }
@@ -41,7 +50,6 @@ impl Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
 	}
 }
 
-
 #[test]
 fn flow_create_errors() {
 	new_test_ext().execute_with(|| {
@@ -54,8 +62,19 @@ fn flow_create_errors() {
 		let not_creator = ALICE;
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(not_creator), org, not_creator, vec![1, 2], 0, 0, 0, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
+				Origin::signed(not_creator),
+				org,
+				not_creator,
+				vec![1, 2],
+				0,
+				0,
+				0,
+				FlowProtocol::Raise,
+				FlowGovernance::No,
+				vec![],
+				vec![],
+				vec![]
+			),
 			Error::<Test>::AuthorizationError
 		);
 		// Check if organization's treasury has enough deposit
@@ -63,8 +82,19 @@ fn flow_create_errors() {
 		let deposit_more_than_treasury = 1000;
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2], 0, deposit_more_than_treasury, 0, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
+				Origin::signed(BOB),
+				org,
+				BOB,
+				vec![1, 2],
+				0,
+				deposit_more_than_treasury,
+				0,
+				FlowProtocol::Raise,
+				FlowGovernance::No,
+				vec![],
+				vec![],
+				vec![]
+			),
 			Error::<Test>::TreasuryBalanceTooLow
 		);
 		// Check if deposit is not too high
@@ -73,8 +103,19 @@ fn flow_create_errors() {
 		let deposit_more_than_target = 20;
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit_more_than_target, 0, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
+				Origin::signed(BOB),
+				org,
+				BOB,
+				vec![1, 2],
+				target,
+				deposit_more_than_target,
+				0,
+				FlowProtocol::Raise,
+				FlowGovernance::No,
+				vec![],
+				vec![],
+				vec![]
+			),
 			Error::<Test>::DepositTooHigh
 		);
 		// Check Campaign name length
@@ -82,16 +123,38 @@ fn flow_create_errors() {
 		let short_name = vec![1];
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, short_name, 20, 10, 0, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
+				Origin::signed(BOB),
+				org,
+				BOB,
+				short_name,
+				20,
+				10,
+				0,
+				FlowProtocol::Raise,
+				FlowGovernance::No,
+				vec![],
+				vec![],
+				vec![]
+			),
 			Error::<Test>::NameTooShort
 		);
 		// Error: NameTooLong
 		let long_name = vec![1, 2, 3, 4, 5];
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, long_name, 20, 10, 0, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
+				Origin::signed(BOB),
+				org,
+				BOB,
+				long_name,
+				20,
+				10,
+				0,
+				FlowProtocol::Raise,
+				FlowGovernance::No,
+				vec![],
+				vec![],
+				vec![]
+			),
 			Error::<Test>::NameTooLong
 		);
 		// Ensure campaign expires after the current block
@@ -99,8 +162,19 @@ fn flow_create_errors() {
 		let expiration_block = current_block - 1;
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2], 20, 10, expiration_block, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
+				Origin::signed(BOB),
+				org,
+				BOB,
+				vec![1, 2],
+				20,
+				10,
+				expiration_block,
+				FlowProtocol::Raise,
+				FlowGovernance::No,
+				vec![],
+				vec![],
+				vec![]
+			),
 			Error::<Test>::EndTooEarly
 		);
 		// Ensure campaign expires before expiration limit
@@ -108,22 +182,41 @@ fn flow_create_errors() {
 		let expiration_block = MaxCampaignDuration::get() + current_block + 1;
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2], 20, 10, expiration_block, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]),
+				Origin::signed(BOB),
+				org,
+				BOB,
+				vec![1, 2],
+				20,
+				10,
+				expiration_block,
+				FlowProtocol::Raise,
+				FlowGovernance::No,
+				vec![],
+				vec![],
+				vec![]
+			),
 			Error::<Test>::EndTooLate
 		);
 		// Check contribution limit per block
 		// Error: ContributionsPerBlockExceeded
-		CampaignsByBlock::<Test>::mutate(current_block + 1, |campaigns| {
-			campaigns.push(H256::random())
-		});
+		CampaignsByBlock::<Test>::mutate(current_block + 1, |campaigns| campaigns.push(H256::random()));
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2], 20, 10, current_block + 1, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]),
+				Origin::signed(BOB),
+				org,
+				BOB,
+				vec![1, 2],
+				20,
+				10,
+				current_block + 1,
+				FlowProtocol::Raise,
+				FlowGovernance::No,
+				vec![1, 2],
+				vec![],
+				vec![]
+			),
 			Error::<Test>::ContributionsPerBlockExceeded
 		);
-
 	});
 }
 
@@ -140,13 +233,22 @@ fn flow_create_success() {
 		let deposit = 10;
 		let target = 20;
 		let name = vec![1, 2];
-		
-		assert_ok!(
-			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, name.clone(), target, deposit,  expiry, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![])
-		);
-		
+
+		assert_ok!(Flow::create_campaign(
+			Origin::signed(BOB),
+			org,
+			BOB,
+			name.clone(),
+			target,
+			deposit,
+			expiry,
+			FlowProtocol::Raise,
+			FlowGovernance::No,
+			vec![1, 2],
+			vec![],
+			vec![]
+		));
+
 		assert_eq!(Campaigns::<Test>::get(id).id, id);
 		assert_eq!(CampaignOrg::<Test>::get(id), org);
 		assert_eq!(CampaignOwner::<Test>::get(id), Some(BOB));
@@ -165,7 +267,7 @@ fn flow_create_success() {
 
 		// Events
 		assert_eq!(
-		System::events(),
+			System::events(),
 			vec![
 				EventRecord {
 					phase: Phase::Initialization,
@@ -174,14 +276,19 @@ fn flow_create_success() {
 				},
 				EventRecord {
 					phase: Phase::Initialization,
-					event: Event::Flow(crate::Event::CampaignCreated{
-						campaign_id: id, creator: BOB, admin: BOB, target, deposit, expiry, name
+					event: Event::Flow(crate::Event::CampaignCreated {
+						campaign_id: id,
+						creator: BOB,
+						admin: BOB,
+						target,
+						deposit,
+						expiry,
+						name
 					}),
 					topics: vec![],
 				},
 			]
 		);
-
 	});
 }
 
@@ -198,7 +305,7 @@ fn flow_update_state_errors() {
 			Flow::update_state(Origin::signed(BOB), campaign_id, FlowState::Active),
 			Error::<Test>::OwnerUnknown
 		);
-		// Check if caller is 
+		// Check if caller is
 		// Error: AdminUnknown
 		CampaignOwner::<Test>::insert(campaign_id, BOB);
 		assert_noop!(
@@ -333,20 +440,23 @@ fn flow_contribute_success() {
 		// Events
 		assert_eq!(
 			System::events(),
-				vec![
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Tokens(orml_tokens::Event::Reserved(GAME_CURRENCY_ID, ALICE, contribution)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Flow(crate::Event::CampaignContributed{
-							campaign_id, sender: ALICE, contribution, block_number: current_block
-						}),
-						topics: vec![],
-					},
-				]
+			vec![
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Tokens(orml_tokens::Event::Reserved(GAME_CURRENCY_ID, ALICE, contribution)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Flow(crate::Event::CampaignContributed {
+						campaign_id,
+						sender: ALICE,
+						contribution,
+						block_number: current_block
+					}),
+					topics: vec![],
+				},
+			]
 		);
 	});
 }
@@ -361,15 +471,24 @@ fn flow_on_finalize_campaign_succeess() {
 		let expiry = current_block + 1;
 		let deposit = 60;
 		let target = 100;
-		
+
 		// Create Campaign
 		let nonce = Nonce::<Test>::get().encode();
 		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
-		assert_ok!(
-			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit,  expiry, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![])
-		);
+		assert_ok!(Flow::create_campaign(
+			Origin::signed(BOB),
+			org,
+			BOB,
+			vec![1, 2],
+			target,
+			deposit,
+			expiry,
+			FlowProtocol::Raise,
+			FlowGovernance::No,
+			vec![1, 2],
+			vec![],
+			vec![]
+		));
 		// Contribute (60/100)
 		assert_ok!(Flow::contribute(Origin::signed(ALICE), campaign_id, deposit));
 		// Contribute (120/100)
@@ -378,7 +497,7 @@ fn flow_on_finalize_campaign_succeess() {
 		// deposit > capacity
 		System::set_block_number(expiry);
 		Flow::on_finalize(expiry);
-		
+
 		let commission = <Test as Config>::CampaignFee::get().mul_floor(deposit * 2);
 		assert_eq!(
 			<Test as Config>::Currency::total_balance(GAME_CURRENCY_ID, &TREASURY),
@@ -392,52 +511,69 @@ fn flow_on_finalize_campaign_succeess() {
 		assert_eq!(
 			// Skip events from create and contribute extrinsics
 			System::events()[6..],
-				vec![
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, ALICE, deposit)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, ALICE, TREASURY, deposit)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, BOGDANA, deposit)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, BOGDANA, TREASURY, deposit)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Tokens(orml_tokens::Event::Reserved(GAME_CURRENCY_ID, TREASURY, deposit * 2)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, TREASURY, commission)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Currencies(orml_currencies::Event::Transferred(GAME_CURRENCY_ID, TREASURY, GAMEDAO_TREASURY, commission)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Flow(crate::Event::CampaignFinalized{
-							campaign_id, campaign_balance: deposit * 2, block_number: expiry, success: true
-						}),
-						topics: vec![],
-					},
-				]
+			vec![
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, ALICE, deposit)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Currencies(orml_currencies::Event::Transferred(
+						GAME_CURRENCY_ID,
+						ALICE,
+						TREASURY,
+						deposit
+					)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, BOGDANA, deposit)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Currencies(orml_currencies::Event::Transferred(
+						GAME_CURRENCY_ID,
+						BOGDANA,
+						TREASURY,
+						deposit
+					)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Tokens(orml_tokens::Event::Reserved(GAME_CURRENCY_ID, TREASURY, deposit * 2)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, TREASURY, commission)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Currencies(orml_currencies::Event::Transferred(
+						GAME_CURRENCY_ID,
+						TREASURY,
+						GAMEDAO_TREASURY,
+						commission
+					)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Flow(crate::Event::CampaignFinalized {
+						campaign_id,
+						campaign_balance: deposit * 2,
+						block_number: expiry,
+						success: true
+					}),
+					topics: vec![],
+				},
+			]
 		);
-
 	});
 }
 
@@ -451,22 +587,31 @@ fn flow_on_finalize_campaign_failed() {
 		let expiry = current_block + 1;
 		let deposit = 60;
 		let target = 100;
-		
+
 		// Create Campaign
 		let nonce = Nonce::<Test>::get().encode();
 		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
-		assert_ok!(
-			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit,  expiry, 
-				FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![])
-		);
+		assert_ok!(Flow::create_campaign(
+			Origin::signed(BOB),
+			org,
+			BOB,
+			vec![1, 2],
+			target,
+			deposit,
+			expiry,
+			FlowProtocol::Raise,
+			FlowGovernance::No,
+			vec![1, 2],
+			vec![],
+			vec![]
+		));
 		// Contribute (60/100)
 		assert_ok!(Flow::contribute(Origin::signed(ALICE), campaign_id, deposit));
 
 		// deposit < capacity
 		System::set_block_number(expiry);
 		Flow::on_finalize(expiry);
-		
+
 		assert_eq!(
 			<Test as Config>::Currency::total_balance(GAME_CURRENCY_ID, &TREASURY),
 			100
@@ -480,25 +625,28 @@ fn flow_on_finalize_campaign_failed() {
 		assert_eq!(
 			// Skip events from create and contribute extrinsics
 			System::events()[4..],
-				vec![
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, ALICE, deposit)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, TREASURY, deposit)),
-						topics: vec![],
-					},
-					EventRecord {
-						phase: Phase::Initialization,
-						event: Event::Flow(crate::Event::CampaignFailed{
-							campaign_id, campaign_balance: deposit, block_number: expiry, success: false
-						}),
-						topics: vec![],
-					},
-				]
+			vec![
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, ALICE, deposit)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Tokens(orml_tokens::Event::Unreserved(GAME_CURRENCY_ID, TREASURY, deposit)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Flow(crate::Event::CampaignFailed {
+						campaign_id,
+						campaign_balance: deposit,
+						block_number: expiry,
+						success: false
+					}),
+					topics: vec![],
+				},
+			]
 		);
 	});
 }

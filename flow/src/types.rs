@@ -54,8 +54,7 @@ impl Default for FlowGovernance {
 // TODO: this can be decomposed to improve weight
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Moment>
-{
+pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
 	// unique hash to identify campaign (generated)
 	pub(super) id: Hash,
 	// hash of the overarching body from module-control

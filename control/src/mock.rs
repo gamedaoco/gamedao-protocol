@@ -1,14 +1,11 @@
 #![cfg(test)]
 
 use crate as pallet_control;
-use frame_system;
 use frame_support::traits::GenesisBuild;
 use frame_support_test::TestRandomness;
+use frame_system;
 use primitives::{Amount, Balance, CurrencyId, Hash, TokenSymbol};
-use sp_runtime::{
-	testing::Header,
-	traits::{IdentityLookup},
-};
+use sp_runtime::{testing::Header, traits::IdentityLookup};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -149,6 +146,8 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 			(CONTROLLER_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
 			(USER_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
 		],
-	}.assimilate_storage(&mut t).unwrap();
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
 	t.into()
 }

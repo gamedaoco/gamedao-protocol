@@ -1,21 +1,24 @@
-use frame_support::pallet_prelude::{Encode, Decode};
-use sp_std::vec::Vec;
+use frame_support::pallet_prelude::{Decode, Encode};
 use scale_info::TypeInfo;
+use sp_std::vec::Vec;
 
-// #[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord, TypeInfo)]
+// #[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord,
+// TypeInfo)]
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum ProposalState {
-	Init = 0,		// waiting for start block
-	Active = 1,		// voting is active
-	Accepted = 2,	// voters did approve
-	Rejected = 3,	// voters did not approve
-	Expired = 4,	// ended without votes
-	Aborted = 5,	// sudo abort
-	Finalized = 6,	// accepted withdrawal proposal is processed
+	Init = 0,      // waiting for start block
+	Active = 1,    // voting is active
+	Accepted = 2,  // voters did approve
+	Rejected = 3,  // voters did not approve
+	Expired = 4,   // ended without votes
+	Aborted = 5,   // sudo abort
+	Finalized = 6, // accepted withdrawal proposal is processed
 }
 impl Default for ProposalState {
-	fn default() -> Self { ProposalState::Init }
+	fn default() -> Self {
+		ProposalState::Init
+	}
 }
 
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo)]
@@ -25,10 +28,12 @@ pub enum ProposalType {
 	Multiple = 1,
 	Member = 2,
 	Withdrawal = 3,
-	Spending = 4
+	Spending = 4,
 }
 impl Default for ProposalType {
-	fn default() -> Self { ProposalType::General }
+	fn default() -> Self {
+		ProposalType::General
+	}
 }
 
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo)]
@@ -39,10 +44,12 @@ pub enum VotingType {
 	Absolute = 2, // votes vs all eligible voters
 	Quadratic = 3,
 	Ranked = 4,
-	Conviction = 5
+	Conviction = 5,
 }
 impl Default for VotingType {
-	fn default() -> Self { VotingType::Simple }
+	fn default() -> Self {
+		VotingType::Simple
+	}
 }
 
 #[derive(Encode, Decode, Default, Clone, PartialEq, TypeInfo)]
@@ -53,7 +60,7 @@ pub struct Proposal<Hash, BlockNumber> {
 	pub proposal_type: ProposalType,
 	pub voting_type: VotingType,
 	pub start: BlockNumber,
-	pub expiry: BlockNumber
+	pub expiry: BlockNumber,
 }
 
 #[derive(Encode, Decode, Default, Clone, PartialEq, TypeInfo)]
