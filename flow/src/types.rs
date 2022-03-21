@@ -1,7 +1,5 @@
-// use super::*;
-// use frame_support::pallet_prelude::*;
-use frame_support::pallet_prelude::{Encode, Decode};
-use scale_info::TypeInfo;
+use super::*;
+use frame_support::pallet_prelude::*;
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, Debug)]
 #[repr(u8)]

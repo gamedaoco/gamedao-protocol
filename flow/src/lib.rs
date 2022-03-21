@@ -150,7 +150,6 @@ pub mod pallet {
 
 	/// Campaign
 	#[pallet::storage]
-	#[pallet::getter(fn campaign_by_id)]
 	pub(super) type Campaigns<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
@@ -390,7 +389,7 @@ pub mod pallet {
 			// iterate over campaigns ending in this block
 			for campaign_id in &campaign_hashes {
 				// get campaign struct
-				let campaign = Self::campaign_by_id(campaign_id);
+				let campaign = Campaigns::<T>::get(campaign_id);
 				let campaign_balance = CampaignBalance::<T>::get(campaign_id);
 				let org = CampaignOrg::<T>::get(&campaign_id);
 				let org_treasury = T::Control::org_treasury_account(&org);
@@ -637,7 +636,7 @@ pub mod pallet {
 			ensure!(sender == admin, Error::<T>::AuthorizationError);
 
 			// expired?
-			let campaign = Self::campaign_by_id(&campaign_id);
+			let campaign = Campaigns::<T>::get(&campaign_id);
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			ensure!(current_block < campaign.expiry, Error::<T>::CampaignExpired);
 
@@ -682,7 +681,7 @@ pub mod pallet {
 				state == FlowState::Active,
 				Error::<T>::NoContributionsAllowed
 			);
-			let campaign = Self::campaign_by_id(&campaign_id);
+			let campaign = Campaigns::<T>::get(&campaign_id);
 			ensure!(
 				<frame_system::Pallet<T>>::block_number() < campaign.expiry,
 				Error::<T>::CampaignExpired
