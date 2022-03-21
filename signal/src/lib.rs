@@ -15,15 +15,14 @@
 
 pub use pallet::*;
 
-pub mod voting_enums;
-pub mod voting_structs;
+pub mod types;
 
 #[cfg(test)]
 pub mod mock;
 #[cfg(test)]
 mod tests;
-// #[cfg(feature = "runtime-benchmarks")]  // todo
-// mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 
 
 #[frame_support::pallet]
@@ -45,8 +44,10 @@ pub mod pallet {
 	use gamedao_traits::{ControlTrait, FlowTrait};
 
 	use super::*;
-	use voting_enums::{ProposalState, ProposalType, VotingType};
-	use voting_structs::{Proposal, ProposalMetadata};
+	use types::{
+		ProposalState, ProposalType, VotingType,
+		Proposal, ProposalMetadata
+	};
 
 	type Balance = u128;
 	type CurrencyId = u32;
@@ -81,7 +82,7 @@ pub mod pallet {
 
 	/// Global status
 	#[pallet::storage]
-	pub(super) type Proposals<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Proposal<T::Hash, T::BlockNumber, ProposalType, VotingType>, ValueQuery>;
+	pub(super) type Proposals<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Proposal<T::Hash, T::BlockNumber>, OptionQuery>;
 
 	#[pallet::storage]
 	pub(super) type Metadata<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, ProposalMetadata<Balance>, ValueQuery>;
@@ -260,6 +261,8 @@ pub mod pallet {
 		UnknownAccount,
 		/// Too Many Proposals for block
 		TooManyProposals,
+		/// Proposal has no owner
+		NoProposalOwner,
 		/// Overflow Error
 		OverflowError,
 		/// Division Error
@@ -284,93 +287,42 @@ pub mod pallet {
 
 			let sender = ensure_signed(origin)?;
 
-			// active/existing dao?
 			ensure!(T::Control::is_org_active(&context_id), Error::<T>::DAOInactive);
-
-			// member of body?
 			ensure!(T::Control::is_org_member_active(&context_id, &sender), Error::<T>::AuthorizationError);
 
-			// ensure that start and expiry are in bounds
 			let current_block = <frame_system::Pallet<T>>::block_number();
-			// ensure!(start > current_block, Error::<T>::OutOfBounds );
-			ensure!(expiry > current_block, Error::<T>::OutOfBounds );
-			ensure!(expiry <= current_block + <ProposalTimeLimit::<T>>::get(), Error::<T>::OutOfBounds );
+			// ensure!(start > current_block, Error::<T>::OutOfBounds);
+			ensure!(expiry > current_block, Error::<T>::OutOfBounds);
+			ensure!(expiry <= current_block + ProposalTimeLimit::<T>::get(), Error::<T>::OutOfBounds);
 
-			// ensure that number of proposals
-			// ending in target block
-			// do not exceed the maximum
-			let proposals = <ProposalsByBlock::<T>>::get(expiry);
+			let proposals = ProposalsByBlock::<T>::get(expiry);
 			ensure!((proposals.len() as u32) < T::MaxProposalsPerBlock::get(), Error::<T>::TooManyProposals);
-
-			let proposal_type = ProposalType::General;
-			let proposal_state = ProposalState::Active;
-			let voting_type = VotingType::Simple;
 
 			let nonce = Self::get_and_increment_nonce();
 			let (proposal_id, _) = <T::Randomness>::random(&nonce);
-			ensure!(!<Proposals<T>>::contains_key(&proposal_id), Error::<T>::ProposalExists);
+			ensure!(!Proposals::<T>::contains_key(&proposal_id), Error::<T>::ProposalExists);
 
-
-			// check add
-			let proposals_count = <ProposalsCount::<T>>::get();
-			let updated_proposals_count = proposals_count.checked_add(1).ok_or( Error::<T>::OverflowError)?;
-			let proposals_by_campaign_count = <ProposalsByContextCount::<T>>::get(&context_id);
-			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
-			let proposals_by_owner_count = <ProposalsByOwnerCount::<T>>::get(&sender);
-			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
-
-			// proposal
 			let new_proposal = Proposal {
 				proposal_id: proposal_id.clone(),
 				context_id: context_id.clone(),
-				proposal_type,
-				voting_type,
+				proposal_type: ProposalType::General,
+				voting_type: VotingType::Simple,
 				start,
 				expiry,
 			};
-
-			// metadata
-
 			let metadata = ProposalMetadata {
 				title: title,
 				cid: cid,
 				amount: 0
 			};
 
-			//
-			//
-			//
+			Self::insert_proposal(&sender, &new_proposal, metadata, expiry)?;
 
-			// insert proposals
-			<Proposals::<T>>::insert(proposal_id.clone(), new_proposal.clone());
-			<Metadata::<T>>::insert(proposal_id.clone(), metadata.clone());
-			<Owners::<T>>::insert(proposal_id.clone(), sender.clone());
-			<ProposalStates::<T>>::insert(proposal_id.clone(), proposal_state);
-			// update max per block
-			<ProposalsByBlock::<T>>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
-			// update proposal map
-			<ProposalsArray::<T>>::insert(&proposals_count, proposal_id.clone());
-			<ProposalsCount::<T>>::put(updated_proposals_count);
-			<ProposalsIndex::<T>>::insert(proposal_id.clone(), proposals_count);
-			// update campaign map
-			<ProposalsByContextArray::<T>>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
-			<ProposalsByContextCount::<T>>::insert(context_id.clone(), updated_proposals_by_campaign_count);
-			<ProposalsByContextIndex::<T>>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
-			<ProposalsByContext::<T>>::mutate( context_id.clone(), |proposals| proposals.push(proposal_id.clone()) );
-			// update owner map
-			<ProposalsByOwnerArray::<T>>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
-			<ProposalsByOwnerCount::<T>>::insert(sender.clone(), updated_proposals_by_owner_count);
-			<ProposalsByOwnerIndex::<T>>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
-			// init votes
-			<ProposalSimpleVotes::<T>>::insert(context_id, (0,0));
-
-			// deposit event
 			Self::deposit_event(
-				Event::<T>::Proposal{sender_id: sender, proposal_id}
+				Event::<T>::Proposal {sender_id: sender, proposal_id}
 			);
 			Ok(())
 		}
-
 
 		// TODO: membership proposal for a DAO
 
@@ -412,15 +364,11 @@ pub mod pallet {
 
 			let sender = ensure_signed(origin)?;
 
-			//  A C C E S S
-
 			ensure!(T::Flow::is_campaign_succeeded(&context_id), Error::<T>::CampaignFailed);
 
 			// todo: should this checks be performed?
 			// let owner = T::Flow::campaign_owner(&context_id);
 			// ensure!( sender == owner, Error::<T>::AuthorizationError );
-
-			//  B O U N D S
 
 			// todo: should this checks be performed or not?
 			// let current_block = <frame_system::Pallet<T>>::block_number();
@@ -428,70 +376,32 @@ pub mod pallet {
 			// ensure!(expiry > start, Error::<T>::OutOfBounds );
 			// ensure!(expiry <= current_block + Self::proposal_time_limit(), Error::<T>::OutOfBounds );
 
-			//  B A L A N C E
-
-			let used_balance = <CampaignBalanceUsed<T>>::get(&context_id);
+			let used_balance = CampaignBalanceUsed::<T>::get(&context_id);
 			let total_balance = T::Flow::campaign_balance(&context_id);
-			let remaining_balance = total_balance.checked_sub(used_balance).ok_or(Error::<T>::BalanceInsufficient)? ;
-			ensure!(remaining_balance >= amount, Error::<T>::BalanceInsufficient );
-
-			//  T R A F F I C
+			let remaining_balance = total_balance.checked_sub(used_balance).ok_or(Error::<T>::BalanceInsufficient)?;
+			ensure!(remaining_balance >= amount, Error::<T>::BalanceInsufficient);
 
 			let nonce = Self::get_and_increment_nonce();
 			let (proposal_id, _) = <T as Config>::Randomness::random(&nonce);
-			let proposals = <ProposalsByBlock<T>>::get(expiry);
+			let proposals = ProposalsByBlock::<T>::get(expiry);
 			ensure!((proposals.len() as u32) < T::MaxProposalsPerBlock::get(), Error::<T>::TooManyProposals);
-			ensure!(!<Proposals<T>>::contains_key(&proposal_id), Error::<T>::ProposalExists);
-
-			//  C O U N T S
-
-			let proposals_count = <ProposalsCount<T>>::get();
-			let updated_proposals_count = proposals_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-			let proposals_by_campaign_count = <ProposalsByContextCount<T>>::get(&context_id);
-			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-			let proposals_by_owner_count = <ProposalsByOwnerCount<T>>::get(&sender);
-			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-
-			//  C O N F I G
-
-			let proposal_type = ProposalType::Withdrawal; // treasury
-			let voting_type = VotingType::Simple; // votes
+			ensure!(!Proposals::<T>::contains_key(&proposal_id), Error::<T>::ProposalExists);
 
 			let proposal = Proposal {
 				proposal_id: proposal_id.clone(),
 				context_id: context_id.clone(),
-				proposal_type,
-				voting_type,
+				proposal_type: ProposalType::Withdrawal,
+				voting_type: VotingType::Simple,
 				start,
 				expiry
 			};
-
 			let metadata = ProposalMetadata {
 				title,
 				cid,
-				amount,
+				amount
 			};
 
-			//  W R I T E
-
-			Proposals::<T>::insert(&proposal_id, proposal.clone());
-			<Metadata<T>>::insert(&proposal_id, metadata.clone());
-			<Owners<T>>::insert(&proposal_id, sender.clone());
-			<ProposalStates<T>>::insert(proposal_id.clone(), ProposalState::Active);
-
-			<ProposalsByBlock<T>>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
-			<ProposalsArray<T>>::insert(&proposals_count, proposal_id.clone());
-			<ProposalsCount<T>>::put(updated_proposals_count);
-			<ProposalsIndex<T>>::insert(proposal_id.clone(), proposals_count);
-			<ProposalsByContextArray<T>>::insert((context_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
-			<ProposalsByContextCount<T>>::insert(context_id.clone(), updated_proposals_by_campaign_count);
-			<ProposalsByContextIndex<T>>::insert((context_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
-			<ProposalsByOwnerArray<T>>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
-			<ProposalsByOwnerCount<T>>::insert(sender.clone(), updated_proposals_by_owner_count);
-			<ProposalsByOwnerIndex<T>>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
-			<ProposalsByContext<T>>::mutate( context_id.clone(), |proposals| proposals.push(proposal_id.clone()) );
-
-			//  E V E N T
+			Self::insert_proposal(&sender, &proposal, metadata, expiry)?;
 
 			Self::deposit_event(
 				Event::<T>::ProposalCreated {
@@ -521,18 +431,15 @@ pub mod pallet {
 
 			let sender = ensure_signed(origin)?;
 
-			// Ensure the proposal exists
-			ensure!(<Proposals<T>>::contains_key(&proposal_id), Error::<T>::ProposalUnknown);
+			let proposal = Proposals::<T>::get(&proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
 
 			// Ensure the proposal has not ended
-			let proposal_state = <ProposalStates<T>>::get(&proposal_id);
+			let proposal_state = ProposalStates::<T>::get(&proposal_id);
 			ensure!(proposal_state == ProposalState::Active, Error::<T>::ProposalEnded);
 
 			// Ensure the contributor did not vote before
-			ensure!(!<VotedBefore<T>>::get((sender.clone(), proposal_id.clone())), Error::<T>::AlreadyVoted);
+			ensure!(!VotedBefore::<T>::get((sender.clone(), proposal_id.clone())), Error::<T>::AlreadyVoted);
 
-			// Get the proposal
-			let proposal = <Proposals<T>>::get(&proposal_id);
 			// Ensure the proposal is not expired
 			ensure!(<frame_system::Pallet<T>>::block_number() < proposal.expiry, Error::<T>::ProposalExpired);
 
@@ -543,75 +450,267 @@ pub mod pallet {
 			// let sender_balance = <campaign::Module<T>>::campaign_contribution(proposal.campaign_id, sender.clone());
 			// ensure!( sender_balance > T::Balance::from(0), "You are not a contributor of this Campaign");
 
+			Self::perform_vote(&sender, &proposal, vote)?;
+
+			// dispatch vote event
+			Self::deposit_event(
+				Event::<T>::ProposalVoted {
+					sender_id: sender,
+					proposal_id:proposal_id.clone(),
+					vote
+				}
+			);
+			Ok(())
+
+		}
+
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_finalize(block_number: T::BlockNumber) {
+
+			let proposal_hashes = ProposalsByBlock::<T>::get(&block_number);
+
+			for proposal_id in &proposal_hashes {
+
+				let mut proposal_state = ProposalStates::<T>::get(&proposal_id);
+				if proposal_state != ProposalState::Active { continue };
+
+				let item = Proposals::<T>::get(&proposal_id);
+				if item.is_none() {
+					continue;  // should never happen
+				}
+				let proposal = item.unwrap();
+
+				// TODO:
+				// a. result( accepted, rejected )
+				// b. result( accepted, rejected, total_allowed )
+				// c. result( required_majority, staked_accept, staked_reject, slash_amount )
+				// d. threshold reached
+				// e. conviction
+
+				match &proposal.proposal_type {
+					ProposalType::General => {
+						// simple vote
+						let (yes,no) = ProposalSimpleVotes::<T>::get(&proposal_id);
+						if yes > no { proposal_state = ProposalState::Accepted; }
+						if yes <= no { proposal_state = ProposalState::Rejected; }
+						if yes == 0 && no == 0 { proposal_state = ProposalState::Expired; }
+					},
+					ProposalType::Withdrawal => {
+						// treasury
+						// 50% majority of eligible voters
+						let (yes,_no) = ProposalSimpleVotes::<T>::get(&proposal_id);
+						let contributors = T::Flow::campaign_contributors_count(&proposal.context_id);
+						// TODO: dynamic threshold
+						let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError);
+						match threshold {
+							Ok(t) => {
+								if yes > t {
+									proposal_state = ProposalState::Accepted;
+                                    // TODO: handle an error
+									Self::unlock_balance(&proposal, yes);
+								} else {
+									proposal_state = ProposalState::Rejected;
+								}
+							},
+							Err(_err) => {
+								// todo: logic on error event
+							}
+						}
+					},
+					ProposalType::Member => {
+						// membership
+						//
+					},
+					_ => {
+						// no result - fail
+						proposal_state = ProposalState::Expired;
+					}
+				}
+
+				ProposalStates::<T>::insert(&proposal_id, proposal_state.clone());
+
+				match proposal_state {
+					ProposalState::Accepted => {
+						Self::deposit_event(
+							Event::<T>::ProposalApproved {proposal_id: proposal_id.clone()}
+						);
+					},
+					ProposalState::Rejected => {
+						Self::deposit_event(
+							Event::<T>::ProposalRejected {proposal_id: proposal_id.clone()}
+						);
+					},
+					ProposalState::Expired => {
+						Self::deposit_event(
+							Event::<T>::ProposalExpired {proposal_id: proposal_id.clone()}
+						);
+					},
+					_ => {}
+				}
+
+			}
+
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+
+		// TODO: DISCUSSION
+		// withdrawal proposals are accepted
+		// when the number of approvals is higher
+		// than the number of rejections
+		// accepted / denied >= 1
+		fn unlock_balance(
+			proposal: &Proposal<T::Hash, T::BlockNumber>,
+			_supported_count: u64
+		) -> Result<(), Error<T>> {
+
+			let metadata = Metadata::<T>::get(&proposal.proposal_id);
+
+			// Ensure sufficient balance
+			let proposal_balance = metadata.amount;
+			let total_balance = T::Flow::campaign_balance(&proposal.context_id);
+			let used_balance = CampaignBalanceUsed::<T>::get(proposal.context_id);
+			let available_balance = total_balance.checked_sub(used_balance).ok_or(Error::<T>::BalanceInsufficient)?;
+			ensure!(available_balance >= proposal_balance, Error::<T>::BalanceInsufficient);
+
+			// Get the owner of the campaign
+			let _owner = Owners::<T>::get(&proposal.proposal_id).ok_or(Error::<T>::NoProposalOwner)?;
+
+			// get treasury account for related body and unlock balance
+			let body = T::Flow::campaign_org(&proposal.context_id);
+			let treasury_account = T::Control::org_treasury_account(&body);
+			T::Currency::unreserve(T::FundingCurrencyId::get(), &treasury_account, proposal_balance);
+
+			// Change the used amount
+			let new_used_balance = used_balance.checked_add(proposal_balance).ok_or(Error::<T>::OverflowError)?;
+			CampaignBalanceUsed::<T>::insert(proposal.context_id, new_used_balance);
+
+			// proposal completed
+			ProposalStates::<T>::insert(proposal.proposal_id, ProposalState::Finalized);
+
+			Self::deposit_event(
+				Event::<T>::WithdrawalGranted {
+					proposal_id: proposal.proposal_id,
+					context_id: proposal.context_id,
+					body_id: body
+				}
+			);
+			Ok(())
+
+		}
+
+		fn insert_proposal(
+			sender: &T::AccountId,
+			proposal: &Proposal<T::Hash, T::BlockNumber>,
+			metadata: ProposalMetadata<Balance>,
+			expiry: T::BlockNumber
+		) -> Result<(), Error<T>> {
+			let proposal_id = &proposal.proposal_id;
+			let campaign_id = &proposal.context_id;
+			let proposals_count = ProposalsCount::<T>::get();
+			let updated_proposals_count = proposals_count.checked_add(1).ok_or( Error::<T>::OverflowError)?;
+			let proposals_by_campaign_count = ProposalsByContextCount::<T>::get(&campaign_id);
+			let updated_proposals_by_campaign_count = proposals_by_campaign_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
+			let proposals_by_owner_count = ProposalsByOwnerCount::<T>::get(&sender);
+			let updated_proposals_by_owner_count = proposals_by_owner_count.checked_add(1).ok_or( Error::<T>::OverflowError )?;
+
+			// insert proposals
+			Proposals::<T>::insert(proposal_id.clone(), proposal.clone());
+			Metadata::<T>::insert(proposal_id.clone(), metadata.clone());
+			Owners::<T>::insert(proposal_id.clone(), sender.clone());
+			ProposalStates::<T>::insert(proposal_id.clone(), ProposalState::Active);
+			// update max per block
+			ProposalsByBlock::<T>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
+			// update proposal map
+			ProposalsArray::<T>::insert(&proposals_count, proposal_id.clone());
+			ProposalsCount::<T>::put(updated_proposals_count);
+			ProposalsIndex::<T>::insert(proposal_id.clone(), proposals_count);
+			// update campaign map
+			ProposalsByContextArray::<T>::insert((campaign_id.clone(), proposals_by_campaign_count.clone()), proposal_id.clone());
+			ProposalsByContextCount::<T>::insert(campaign_id.clone(), updated_proposals_by_campaign_count);
+			ProposalsByContextIndex::<T>::insert((campaign_id.clone(), proposal_id.clone()), proposals_by_campaign_count);
+			ProposalsByContext::<T>::mutate( campaign_id.clone(), |proposals| proposals.push(proposal_id.clone()) );
+			// update owner map
+			ProposalsByOwnerArray::<T>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
+			ProposalsByOwnerCount::<T>::insert(sender.clone(), updated_proposals_by_owner_count);
+			ProposalsByOwnerIndex::<T>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
+			// init votes
+			ProposalSimpleVotes::<T>::insert(campaign_id, (0,0));
+
+			return Ok(());
+		}
+
+		fn perform_vote(
+			sender: &T::AccountId,
+			proposal: &Proposal<T::Hash, T::BlockNumber>,
+			vote: bool
+		) -> Result<(), Error<T>> {
+			let proposal_id = &proposal.proposal_id;
+
 			match &proposal.proposal_type {
 				// DAO Democratic Proposal
 				// simply one member one vote yes / no,
 				// TODO: ratio definable, now > 50% majority wins
 				ProposalType::General => {
 
-					let (mut yes, mut no) = <ProposalSimpleVotes<T>>::get(&proposal_id);
+					let (mut yes, mut no) = ProposalSimpleVotes::<T>::get(&proposal_id);
 
 					match vote {
 						true => {
 							yes = yes.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-							let proposal_approvers = <ProposalApprovers<T>>::get(&proposal_id);
+							let proposal_approvers = ProposalApprovers::<T>::get(&proposal_id);
 							let updated_proposal_approvers = proposal_approvers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-							<ProposalApprovers<T>>::insert(
+							ProposalApprovers::<T>::insert(
 								proposal_id.clone(),
 								updated_proposal_approvers.clone()
 							);
 						},
 						false => {
 							no = no.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-							let proposal_deniers = <ProposalDeniers<T>>::get(&proposal_id);
+							let proposal_deniers = ProposalDeniers::<T>::get(&proposal_id);
 							let updated_proposal_deniers = proposal_deniers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-							<ProposalDeniers<T>>::insert(
+							ProposalDeniers::<T>::insert(
 								proposal_id.clone(),
 								updated_proposal_deniers.clone()
 							);
 						}
 					}
 
-					<ProposalSimpleVotes<T>>::insert(
-						proposal_id.clone(),
-						(yes,no)
-					);
+					ProposalSimpleVotes::<T>::insert(proposal_id.clone(), (yes,no));
 
 				},
 				// 50% majority over total number of campaign contributors
 				ProposalType::Withdrawal => {
 
-					let (mut yes, mut no) = <ProposalSimpleVotes<T>>::get(&proposal_id);
+					let (mut yes, mut no) = ProposalSimpleVotes::<T>::get(&proposal_id);
 
 					match vote {
 						true => {
 							yes = yes.checked_add(1).ok_or(Error::<T>::OverflowError)?;
 
-							let current_approvers = <ProposalApprovers<T>>::get(&proposal_id);
+							let current_approvers = ProposalApprovers::<T>::get(&proposal_id);
 							let updated_approvers = current_approvers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-							<ProposalApprovers<T>>::insert(proposal_id.clone(), updated_approvers.clone());
+							ProposalApprovers::<T>::insert(proposal_id.clone(), updated_approvers.clone());
 
 							let contributors = T::Flow::campaign_contributors_count(&proposal.context_id);
 							// TODO: make this variable
 							let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError)?;
 							if updated_approvers > threshold {
-								Self::unlock_balance(proposal_id, updated_approvers)?;
+								// todo: if proposal finished ahead of expiry, probably remove it from expiry proposals mapping?
+								Self::unlock_balance(&proposal, updated_approvers)?;
 							}
-							// remove
-							let proposal_approvers = <ProposalApprovers<T>>::get(&proposal_id);
-							let updated_proposal_approvers = proposal_approvers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-							<ProposalApprovers<T>>::insert(
-								proposal_id.clone(),
-								updated_proposal_approvers.clone()
-							);
 
 						},
 						false => {
 							no = no.checked_add(1).ok_or(Error::<T>::OverflowError)?;
 							// remove
-							let proposal_deniers = <ProposalDeniers<T>>::get(&proposal_id);
+							let proposal_deniers = ProposalDeniers::<T>::get(&proposal_id);
 							let updated_proposal_deniers = proposal_deniers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-							<ProposalDeniers<T>>::insert(
+							ProposalDeniers::<T>::insert(
 								proposal_id.clone(),
 								updated_proposal_deniers.clone()
 							);
@@ -659,166 +758,7 @@ pub mod pallet {
 					ProposalVoters::<T>::insert( &proposal_id, voters );
 				}
 			}
-
-			// dispatch vote event
-			Self::deposit_event(
-				Event::<T>::ProposalVoted {
-					sender_id: sender,
-					proposal_id:proposal_id.clone(),
-					vote
-				}
-			);
 			Ok(())
-
-		}
-
-	}
-
-	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_finalize(_n: T::BlockNumber) {
-
-			// i'm still jenny from the block
-			let block_number = _n.clone();
-			let proposal_hashes = <ProposalsByBlock<T>>::get(block_number);
-
-			for proposal_id in &proposal_hashes {
-
-				let mut proposal_state = <ProposalStates<T>>::get(&proposal_id);
-				if proposal_state != ProposalState::Active { continue };
-
-				let proposal = <Proposals<T>>::get(&proposal_id);
-
-				// TODO:
-				// a. result( accepted, rejected )
-				// b. result( accepted, rejected, total_allowed )
-				// c. result( required_majority, staked_accept, staked_reject, slash_amount )
-				// d. threshold reached
-				// e. conviction
-
-				match &proposal.proposal_type {
-					ProposalType::General => {
-						// simple vote
-						let (yes,no) = <ProposalSimpleVotes<T>>::get(&proposal_id);
-						if yes > no { proposal_state = ProposalState::Accepted; }
-						if yes <= no { proposal_state = ProposalState::Rejected; }
-						if yes == 0 && no == 0 { proposal_state = ProposalState::Expired; }
-					},
-					ProposalType::Withdrawal => {
-						// treasury
-						// 50% majority of eligible voters
-						let (yes,_no) = <ProposalSimpleVotes<T>>::get(&proposal_id);
-						let context = proposal.context_id.clone();
-						let contributors = T::Flow::campaign_contributors_count(&context);
-						// TODO: dynamic threshold
-						let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError);
-						match threshold {
-							Ok(t) => {
-								if yes > t {
-									proposal_state = ProposalState::Accepted;
-                                    // TODO: handle an error
-									Self::unlock_balance(proposal.proposal_id, yes);
-								} else {
-									proposal_state = ProposalState::Rejected;
-								}
-							},
-							Err(_err) => {
-								// todo: logic on error event
-							}
-						}
-					},
-					ProposalType::Member => {
-						// membership
-						//
-					},
-					_ => {
-						// no result - fail
-						proposal_state = ProposalState::Expired;
-					}
-				}
-
-				<ProposalStates<T>>::insert(&proposal_id, proposal_state.clone());
-
-				match proposal_state {
-					ProposalState::Accepted => {
-						Self::deposit_event(
-							Event::<T>::ProposalApproved {proposal_id: proposal_id.clone()}
-						);
-					},
-					ProposalState::Rejected => {
-						Self::deposit_event(
-							Event::<T>::ProposalRejected {proposal_id: proposal_id.clone()}
-						);
-					},
-					ProposalState::Expired => {
-						Self::deposit_event(
-							Event::<T>::ProposalExpired {proposal_id: proposal_id.clone()}
-						);
-					},
-					_ => {}
-				}
-
-			}
-
-		}
-	}
-
-	impl<T: Config> Pallet<T> {
-
-		// TODO: DISCUSSION
-		// withdrawal proposals are accepted
-		// when the number of approvals is higher
-		// than the number of rejections
-		// accepted / denied >= 1
-		fn unlock_balance(
-			proposal_id: T::Hash,
-			_supported_count: u64
-		) -> DispatchResult {
-
-			// Get proposal and metadata
-			let proposal = <Proposals<T>>::get(proposal_id.clone());
-			let metadata = <Metadata<T>>::get(proposal_id.clone());
-
-			// Ensure sufficient balance
-			let proposal_balance = metadata.amount;
-			let total_balance = T::Flow::campaign_balance(&proposal.context_id);
-
-			// let used_balance = Self::balance_used(proposal.context_id);
-			let used_balance = <CampaignBalanceUsed<T>>::get(proposal.context_id);
-			let available_balance = total_balance - used_balance.clone();
-			ensure!(available_balance >= proposal_balance, Error::<T>::BalanceInsufficient);
-
-			// Get the owner of the campaign
-			let _owner = <Owners<T>>::get(&proposal_id).ok_or("No owner for proposal")?;  // todo: use error enum
-
-			// get treasury account for related body and unlock balance
-			let body = T::Flow::campaign_org(&proposal.context_id);
-			let treasury_account = T::Control::org_treasury_account(&body);
-			T::Currency::unreserve(
-				T::FundingCurrencyId::get(),
-				&treasury_account,
-				proposal_balance.clone()
-			);
-
-			// Change the used amount
-			let new_used_balance = used_balance + proposal_balance;
-			<CampaignBalanceUsed<T>>::insert(proposal.context_id, new_used_balance);
-
-			// proposal completed
-			let proposal_state = ProposalState::Finalized;
-			<ProposalStates<T>>::insert(proposal_id.clone(), proposal_state);
-
-			<Proposals<T>>::insert(proposal_id.clone(), proposal.clone());
-
-			Self::deposit_event(
-				Event::<T>::WithdrawalGranted {
-					proposal_id,
-					context_id: proposal.context_id,
-					body_id: body
-				}
-			);
-			Ok(())
-
 		}
 
 		fn get_and_increment_nonce() -> Vec<u8> {
