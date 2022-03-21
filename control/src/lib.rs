@@ -47,23 +47,23 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 
-        type Balance: Member
-            + Parameter
-            + AtLeast32BitUnsigned
-            + Default
-            + Copy
-            + MaybeSerializeDeserialize
-            + MaxEncodedLen
-            + TypeInfo;
+		type Balance: Member
+			+ Parameter
+			+ AtLeast32BitUnsigned
+			+ Default
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen
+			+ TypeInfo;
 
-        type CurrencyId: Member
-            + Parameter
-            + Default
-            + Copy
-            + HasCompact
-            + MaybeSerializeDeserialize
-            + MaxEncodedLen
-            + TypeInfo;
+		type CurrencyId: Member
+			+ Parameter
+			+ Default
+			+ Copy
+			+ HasCompact
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen
+			+ TypeInfo;
 
 		type ForceOrigin: EnsureOrigin<Self::Origin>;
 		type WeightInfo: frame_system::weights::WeightInfo;
@@ -341,7 +341,7 @@ pub mod pallet {
 
 			let mut _fee = fee;
 			match &fee_model {
-                // TODO: membership fees
+				// TODO: membership fees
 				FeeModel::Reserve => { _fee = fee },
 				FeeModel::Transfer => { _fee = fee },
 				_ => { }
@@ -356,7 +356,7 @@ pub mod pallet {
 				access: access.clone()
 			};
 
-            Self::create_org(org, org_config, controller, treasury)?;
+			Self::create_org(org, org_config, controller, treasury)?;
 
 			// dispatch event
 			Self::deposit_event(
@@ -364,7 +364,7 @@ pub mod pallet {
 					sender_id: sender,
 					org_id: org_id,
 					created_at: current_block,
-                    // TODO: tangram::NextRealmIndex::get()
+					// TODO: tangram::NextRealmIndex::get()
 					realm_index: 0
 				}
 			);
@@ -493,145 +493,145 @@ impl<T: Config> Pallet<T> {
 
 	// }
 
-    fn create_org(
-        org: Org<T::Hash, T::AccountId, T::BlockNumber, OrgType>,
-        org_config: OrgConfig<T::Balance, FeeModel, AccessModel>,
-        controller: T::AccountId,
-        treasury: T::AccountId
-    ) -> DispatchResult {
-        let org_id = org.id.clone();
-        let access = org_config.access.clone();
-        let creator = org.creator.clone();
-        let nonce = org.index.clone();
+	fn create_org(
+		org: Org<T::Hash, T::AccountId, T::BlockNumber, OrgType>,
+		org_config: OrgConfig<T::Balance, FeeModel, AccessModel>,
+		controller: T::AccountId,
+		treasury: T::AccountId
+	) -> DispatchResult {
+		let org_id = org.id.clone();
+		let access = org_config.access.clone();
+		let creator = org.creator.clone();
+		let nonce = org.index.clone();
 
-        Orgs::<T>::insert( org_id.clone(), org );
-        OrgConfiguration::<T>::insert( org_id.clone(), org_config );
+		Orgs::<T>::insert( org_id.clone(), org );
+		OrgConfiguration::<T>::insert( org_id.clone(), org_config );
 
-        OrgByNonce::<T>::insert(nonce.clone(), org_id.clone());
-        OrgAccess::<T>::insert( org_id.clone(), access.clone() );
-        OrgCreator::<T>::insert( org_id.clone(), creator.clone() );
-        OrgController::<T>::insert( org_id.clone(), controller.clone() );
-        OrgTreasury::<T>::insert( org_id.clone(), treasury.clone() );
-        OrgState::<T>::insert( org_id.clone(), ControlState::Active );
-        OrgsControlled::<T>::mutate(
-            &controller,
-            |controlled| controlled.push(org_id.clone())
-        );
+		OrgByNonce::<T>::insert(nonce.clone(), org_id.clone());
+		OrgAccess::<T>::insert( org_id.clone(), access.clone() );
+		OrgCreator::<T>::insert( org_id.clone(), creator.clone() );
+		OrgController::<T>::insert( org_id.clone(), controller.clone() );
+		OrgTreasury::<T>::insert( org_id.clone(), treasury.clone() );
+		OrgState::<T>::insert( org_id.clone(), ControlState::Active );
+		OrgsControlled::<T>::mutate(
+			&controller,
+			|controlled| controlled.push(org_id.clone())
+		);
 
-        // TODO: this needs a separate add / removal function
-        // whenever the controller of an organisation changes!
-        OrgsControlledCount::<T>::mutate(
-            &controller,
-            |controlled_count| *controlled_count += 1
-        );
-        OrgsCreated::<T>::mutate(
-            &creator,
-            |created| created.push(org_id.clone())
-        );
+		// TODO: this needs a separate add / removal function
+		// whenever the controller of an organisation changes!
+		OrgsControlledCount::<T>::mutate(
+			&controller,
+			|controlled_count| *controlled_count += 1
+		);
+		OrgsCreated::<T>::mutate(
+			&creator,
+			|created| created.push(org_id.clone())
+		);
 
-        // initiate member registry -> consumes fees
-        // creator and controller can be equal
-        // controller and treasury cannot be equal
-        // match Self::add_org_member( &org_id, creator.clone() ) {
-        // 		Ok(_) => {},
-        // 		Err(err) => { panic!("{err}") }
-        // };
-        Self::add_org_member( org_id.clone(), controller.clone() )?;
+		// initiate member registry -> consumes fees
+		// creator and controller can be equal
+		// controller and treasury cannot be equal
+		// match Self::add_org_member( &org_id, creator.clone() ) {
+		// 		Ok(_) => {},
+		// 		Err(err) => { panic!("{err}") }
+		// };
+		Self::add_org_member( org_id.clone(), controller.clone() )?;
 
-        Self::mint_nft()?;
+		Self::mint_nft()?;
 
-        T::Currency::transfer(
-            T::ProtocolTokenId::get(),
-            &creator,
-            &T::GameDAOTreasury::get(),
-            T::CreationFee::get()
-        )?;
+		T::Currency::transfer(
+			T::ProtocolTokenId::get(),
+			&creator,
+			&T::GameDAOTreasury::get(),
+			T::CreationFee::get()
+		)?;
 
-        Ok(())
-    }
+		Ok(())
+	}
 
-    fn mint_nft() -> DispatchResult {
-        // todo: work with tangram nfts
-        // generate nft realm
+	fn mint_nft() -> DispatchResult {
+		// todo: work with tangram nfts
+		// generate nft realm
 
-        // // get the current realm index
-        // let current_realm_index = tangram::NextRealmIndex::get();
+		// // get the current realm index
+		// let current_realm_index = tangram::NextRealmIndex::get();
 
-        // // every org receives a token realm by default
-        // let realm = tangram::Pallet::<T>::create_realm(origin.clone(), org_id.clone());
-        // let realm = match realm {
-        // 		Ok(_) => {},
-        // 		Err(err) => { return Err(err) }
-        // };
+		// // every org receives a token realm by default
+		// let realm = tangram::Pallet::<T>::create_realm(origin.clone(), org_id.clone());
+		// let realm = match realm {
+		// 		Ok(_) => {},
+		// 		Err(err) => { return Err(err) }
+		// };
 
-        // // get current class index
-        // let current_class_index = tangram::NextClassIndex::get(current_realm_index);
+		// // get current class index
+		// let current_class_index = tangram::NextClassIndex::get(current_realm_index);
 
-        // // generate a class name
-        // let name:Vec<u8> = b"game".to_vec();
-        // // every org receives a token class for collectables by default
-        // let max = 1000; // TODO: externalise max
-        // let class = tangram::Pallet::<T>::create_class(
-        // 	origin.clone(),
-        // 	current_realm_index.clone(),
-        // 	name,
-        // 	max,
-        // 	// mint,
-        // 	// burn,
-        // 	strategy
-        // );
-        // let class = match class {
-        // 		Ok(_) => {},
-        // 		Err(err) => { return Err(err) }
-        // };
+		// // generate a class name
+		// let name:Vec<u8> = b"game".to_vec();
+		// // every org receives a token class for collectables by default
+		// let max = 1000; // TODO: externalise max
+		// let class = tangram::Pallet::<T>::create_class(
+		// 	origin.clone(),
+		// 	current_realm_index.clone(),
+		// 	name,
+		// 	max,
+		// 	// mint,
+		// 	// burn,
+		// 	strategy
+		// );
+		// let class = match class {
+		// 		Ok(_) => {},
+		// 		Err(err) => { return Err(err) }
+		// };
 
-        // // get the next realm index...
-        // let next_realm_index = tangram::NextRealmIndex::get();
+		// // get the next realm index...
+		// let next_realm_index = tangram::NextRealmIndex::get();
 
 
-        // disabled due to weight overload
-        // disabled due to weight overload
-        // disabled due to weight overload
+		// disabled due to weight overload
+		// disabled due to weight overload
+		// disabled due to weight overload
 
-        // mint an item for creator
-        // let item_name:Vec<u8> = b"creator".to_vec();
-        // let item_cid:Vec<u8> = b"0".to_vec();
+		// mint an item for creator
+		// let item_name:Vec<u8> = b"creator".to_vec();
+		// let item_cid:Vec<u8> = b"0".to_vec();
 
-        // let item = tangram::Pallet::<T>::create_item(
-        // 	origin.clone(),
-        // 	current_realm_index,
-        // 	current_class_index,
-        // 	item_name,
-        // 	item_cid,
-        // 	creator.clone()
-        // );
-        // let item = match item {
-        // 		Ok(_) => {},
-        // 		Err(err) => { return Err(err) }
-        // };
+		// let item = tangram::Pallet::<T>::create_item(
+		// 	origin.clone(),
+		// 	current_realm_index,
+		// 	current_class_index,
+		// 	item_name,
+		// 	item_cid,
+		// 	creator.clone()
+		// );
+		// let item = match item {
+		// 		Ok(_) => {},
+		// 		Err(err) => { return Err(err) }
+		// };
 
-        // mint an item for controller
-        // let ctrl_item_name:Vec<u8> = b"controller".to_vec();
-        // let ctrl_item_cid:Vec<u8> = b"1".to_vec();
+		// mint an item for controller
+		// let ctrl_item_name:Vec<u8> = b"controller".to_vec();
+		// let ctrl_item_cid:Vec<u8> = b"1".to_vec();
 
-        // let ctrl_item = tangram::Pallet::<T>::create_item(
-        // 	origin.clone(),
-        // 	current_realm_index,
-        // 	current_class_index,
-        // 	ctrl_item_name,
-        // 	ctrl_item_cid,
-        // 	controller.clone()
-        // );
-        // let ctrl_item = match ctrl_item {
-        // 		Ok(_) => {},
-        // 		Err(err) => { return Err(err) }
-        // };
+		// let ctrl_item = tangram::Pallet::<T>::create_item(
+		// 	origin.clone(),
+		// 	current_realm_index,
+		// 	current_class_index,
+		// 	ctrl_item_name,
+		// 	ctrl_item_cid,
+		// 	controller.clone()
+		// );
+		// let ctrl_item = match ctrl_item {
+		// 		Ok(_) => {},
+		// 		Err(err) => { return Err(err) }
+		// };
 
-        // pay tribute
-        // let balance = <balances::Pallet<T>>::free_balance(&sender);
-        // let dao_fee = _fee.checked_mul(0.25);
-        Ok(())
-    }
+		// pay tribute
+		// let balance = <balances::Pallet<T>>::free_balance(&sender);
+		// let dao_fee = _fee.checked_mul(0.25);
+		Ok(())
+	}
 
 	fn set_member_state(
 		hash: T::Hash,

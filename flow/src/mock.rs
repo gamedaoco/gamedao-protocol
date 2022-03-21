@@ -141,7 +141,7 @@ frame_support::parameter_types! {
 }
 
 impl gamedao_control::Config for Test {
-    type Balance = Balance;
+	type Balance = Balance;
 	// type Moment = Moment;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
