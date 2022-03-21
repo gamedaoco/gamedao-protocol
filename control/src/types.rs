@@ -15,7 +15,8 @@ impl Default for OrgType {
 	}
 }
 
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
+#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 #[repr(u8)]
 pub enum ControlMemberState {
 	Inactive = 0, // eg inactive after threshold period
@@ -32,7 +33,8 @@ impl Default for ControlMemberState {
 	}
 }
 
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, Debug)]
+#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Debug))]
 #[repr(u8)]
 pub enum ControlState {
 	Inactive = 0,
@@ -76,7 +78,7 @@ impl Default for AccessModel {
 /// Organization
 #[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Org<Hash, AccountId, BlockNumber, OrgType> {
+pub struct Org<Hash, AccountId, BlockNumber> {
 	/// Org Hash
 	pub(super) id: Hash,
 	/// Org global index
@@ -99,7 +101,7 @@ pub struct Org<Hash, AccountId, BlockNumber, OrgType> {
 // TODO: refactor to bit flags
 #[derive(Encode, Decode, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct OrgConfig<Balance, FeeModel, AccessModel> {
+pub struct OrgConfig<Balance> {
 	/// Fee Model: TX only | Reserve | Transfer
 	pub(super) fee_model: FeeModel,
 	/// Fee amount

@@ -159,9 +159,7 @@ pub mod pallet {
 			T::AccountId,
 			T::Balance,
 			T::BlockNumber,
-			Moment,
-			FlowProtocol,
-			FlowGovernance,
+            Moment
 		>,
 		ValueQuery,
 	>;
@@ -527,7 +525,7 @@ pub mod pallet {
 		#[pallet::weight(5_000_000)]
 		// Reason for using transactional is get_and_increment_nonce
 		#[transactional]
-		pub fn create(
+		pub fn create_campaign(
 			origin: OriginFor<T>,
 			org: T::Hash,
 			admin: T::AccountId, // supervision, should be dao provided!
@@ -587,7 +585,7 @@ pub mod pallet {
 				Error::<T>::ContributionsPerBlockExceeded
 			);
 
-			let new_campaign = Campaign {
+			let campaign = Campaign {
 				id: id.clone(),
 				org: org.clone(),
 				name: name.clone(),
@@ -606,7 +604,7 @@ pub mod pallet {
 			};
 
 			// mint the campaign
-			Self::mint(new_campaign)?;
+			Self::mint_campaign(campaign)?;
 
 			// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
 			Self::set_state(id.clone(), FlowState::Active);
@@ -742,15 +740,13 @@ impl<T: Config> Pallet<T> {
 	// happens after successful funding of the campaing
 	// protocol: u8,
 	// campaign object
-	pub fn mint(
+	pub fn mint_campaign(
 		campaign: Campaign<
 			T::Hash,
 			T::AccountId,
 			T::Balance,
 			T::BlockNumber,
-			Moment,
-			FlowProtocol,
-			FlowGovernance,
+            Moment
 		>,
 	) -> DispatchResult {
 		// add campaign to campaigns
