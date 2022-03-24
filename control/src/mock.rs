@@ -7,7 +7,6 @@ use frame_system;
 use sp_core::H256;
 use sp_runtime::{testing::Header, traits::IdentityLookup};
 
-
 // Types:
 pub type AccountId = u32;
 pub type BlockNumber = u64;
@@ -132,12 +131,12 @@ frame_support::parameter_types! {
 	pub const MaxMembersPerDAO: u32 = 2;
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
-    pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
+	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
 	pub const CreationFee: Balance = 1 * DOLLARS;
 	pub const GameDAOTreasury: AccountId = TREASURY;
 }
 impl pallet_control::Config for Test {
-    type Balance = Balance;
+	type Balance = Balance;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Event = Event;
@@ -163,13 +162,13 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	orml_tokens::GenesisConfig::<Test> {
 		balances: vec![
 			(ALICE, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-            (ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
 			(BOB, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-            (BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
 			(TREASURY, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-            (TREASURY, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(TREASURY, PAYMENT_TOKEN_ID, 100 * DOLLARS),
 			(GAMEDAO_TREASURY, PROTOCOL_TOKEN_ID, 0),
-            (GAMEDAO_TREASURY, PAYMENT_TOKEN_ID, 0),
+			(GAMEDAO_TREASURY, PAYMENT_TOKEN_ID, 0),
 		],
 	}
 	.assimilate_storage(&mut t)

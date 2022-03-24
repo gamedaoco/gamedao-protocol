@@ -136,7 +136,7 @@ frame_support::parameter_types! {
 	pub const MaxMembersPerDAO: u32 = 2;
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
-    pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
+	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
 	pub const CreationFee: Balance = 1 * DOLLARS;
 }
 
@@ -181,7 +181,7 @@ impl Config for Test {
 	type Event = Event;
 	type Currency = Currencies;
 	type ProtocolTokenId = ProtocolTokenId;
-    type PaymentTokenId = PaymentTokenId;
+	type PaymentTokenId = PaymentTokenId;
 	type UnixTime = PalletTimestamp;
 	type Randomness = TestRandomness<Self>;
 	type Control = Control;
@@ -220,15 +220,15 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	orml_tokens::GenesisConfig::<Test> {
 		balances: vec![
 			(ALICE, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-            (ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
 			(BOB, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-            (BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
 			(BOGDANA, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-            (BOGDANA, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(BOGDANA, PAYMENT_TOKEN_ID, 100 * DOLLARS),
 			(TREASURY, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-            (TREASURY, PAYMENT_TOKEN_ID, 0),
+			(TREASURY, PAYMENT_TOKEN_ID, 0),
 			(GAMEDAO_TREASURY, PROTOCOL_TOKEN_ID, 0),
-            (GAMEDAO_TREASURY, PAYMENT_TOKEN_ID, 0),
+			(GAMEDAO_TREASURY, PAYMENT_TOKEN_ID, 0),
 		],
 	}
 	.assimilate_storage(&mut t)

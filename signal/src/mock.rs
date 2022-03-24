@@ -232,13 +232,13 @@ impl ExtBuilder {
 		orml_tokens::GenesisConfig::<Test> {
 			balances: vec![
 				(ACC1, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-                (ACC1, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(ACC1, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
 				(ACC2, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-                (ACC2, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(ACC2, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
 				(ACC3, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-                (ACC3, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(ACC3, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
 				(TREASURY_ACC, PAYMENT_TOKEN_ID, 25 * DOLLARS),
-                (TREASURY_ACC, PROTOCOL_TOKEN_ID, 25 * DOLLARS),
+				(TREASURY_ACC, PROTOCOL_TOKEN_ID, 25 * DOLLARS),
 			],
 		}
 		.assimilate_storage(&mut t)

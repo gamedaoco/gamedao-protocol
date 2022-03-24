@@ -252,29 +252,31 @@ pub mod pallet {
 
 		/// Create Org
 		/// create an on chain organisation
-        /// 
-        /// - `creator`: creator
-        /// - `controller`: current controller
-        /// - `treasury`: treasury
-        /// - `name`: Org name
-        /// - `cid`: IPFS
-        /// - `org_type`: individual | legal Org | dao
-        /// - `access`: anyDAO can join | only member can add | only
-        /// - `fee_model`: only TX by OS | fees are reserved | fees are moved to treasury
-        /// - `fee`: fee
-        /// - `gov_asset`: control assets to empower actors
-        /// - `pay_asset`: 
-        /// - `member_limit`: max members, if 0 == no limit
-        /// - `member_limit`: max members, if 0 == no limit
-        /// 
-        /// Emits `OrgCreated` event when successful.
-        /// 
-        /// Weight:
+		///
+		/// - `creator`: creator
+		/// - `controller`: current controller
+		/// - `treasury`: treasury
+		/// - `name`: Org name
+		/// - `cid`: IPFS
+		/// - `org_type`: individual | legal Org | dao
+		/// - `access`: anyDAO can join | only member can add | only
+		/// - `fee_model`: only TX by OS | fees are reserved | fees are moved to
+		///   treasury
+		/// - `fee`: fee
+		/// - `gov_asset`: control assets to empower actors
+		/// - `pay_asset`:
+		/// - `member_limit`: max members, if 0 == no limit
+		/// - `member_limit`: max members, if 0 == no limit
+		///
+		/// Emits `OrgCreated` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(5_000_000)]
 		pub fn create_org(
 			origin: OriginFor<T>,
 			controller: T::AccountId,
-            // TODO: treasury shouldn't be provided here. Ink contract as an option. How to dynamically init the pallet?
+			// TODO: treasury shouldn't be provided here. Ink contract as an option. How to dynamically init the
+			// pallet?
 			treasury: T::AccountId,
 			name: Vec<u8>,
 			cid: Vec<u8>,
@@ -377,15 +379,16 @@ pub mod pallet {
 			Ok(())
 		}
 
-        // TODO: fn update_state(origin: OriginFor<T>, org_id: T::Hash, state: u8), Disable an org
+		// TODO: fn update_state(origin: OriginFor<T>, org_id: T::Hash, state: u8),
+		// Disable an org
 
-        /// Check membership
-        /// 
-        /// - `org_id`: Org id
-        ///
-        /// Emits `IsAMember` event when successful.
-        /// 
-        /// Weight:
+		/// Check membership
+		///
+		/// - `org_id`: Org id
+		///
+		/// Emits `IsAMember` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(1_000_000)]
 		pub fn check_membership(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
@@ -398,8 +401,8 @@ pub mod pallet {
 			Ok(())
 		}
 
-        // TODO: transfer control of a Org
-        // Refactoring, user FRAME Membership partially.
+		// TODO: transfer control of a Org
+		// Refactoring, user FRAME Membership partially.
 
 		// /// Set controller. Must be a current member.
 		// ///

@@ -470,7 +470,7 @@ fn flow_on_finalize_campaign_succeess() {
 
 		let expiry = current_block + 1;
 		let deposit = 10 * DOLLARS;
-        let contribution = 60 * DOLLARS;
+		let contribution = 60 * DOLLARS;
 		let target = 100 * DOLLARS;
 
 		// Create Campaign
@@ -505,10 +505,7 @@ fn flow_on_finalize_campaign_succeess() {
 			<Test as Config>::Currency::total_balance(PAYMENT_TOKEN_ID, &TREASURY),
 			contribution * 2 - commission
 		);
-        assert_eq!(
-			<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &TREASURY),
-			0
-		);
+		assert_eq!(<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &TREASURY), 0);
 		assert_eq!(
 			<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &TREASURY),
 			100 * DOLLARS - deposit
@@ -550,7 +547,11 @@ fn flow_on_finalize_campaign_succeess() {
 				},
 				EventRecord {
 					phase: Phase::Initialization,
-					event: Event::Tokens(orml_tokens::Event::Reserved(PAYMENT_TOKEN_ID, TREASURY, contribution * 2)),
+					event: Event::Tokens(orml_tokens::Event::Reserved(
+						PAYMENT_TOKEN_ID,
+						TREASURY,
+						contribution * 2
+					)),
 					topics: vec![],
 				},
 				EventRecord {
@@ -592,7 +593,7 @@ fn flow_on_finalize_campaign_failed() {
 
 		let expiry = current_block + 1;
 		let deposit = 10 * DOLLARS;
-        let contribution = 60 * DOLLARS;
+		let contribution = 60 * DOLLARS;
 		let target = 100 * DOLLARS;
 
 		// Create Campaign

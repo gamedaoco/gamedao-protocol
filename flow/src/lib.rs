@@ -372,12 +372,12 @@ pub mod pallet {
 
 			// iterate over campaigns ending in this block
 			for campaign_id in &campaign_hashes {
-                // TODO: Reduce complexity of N^2 with unknown amount of contributors.
-                // Priority - after NFT Uniques.
-                // 1. Save all campaigns to be finalized in the current block into a stack
-                // 2. Finalize N campaigns from the stack
-                // 3. If error - save campaign into a stack (to be reversed)
-                // 4. Reverse N campaigns from the stack
+				// TODO: Reduce complexity of N^2 with unknown amount of contributors.
+				// Priority - after NFT Uniques.
+				// 1. Save all campaigns to be finalized in the current block into a stack
+				// 2. Finalize N campaigns from the stack
+				// 3. If error - save campaign into a stack (to be reversed)
+				// 4. Reverse N campaigns from the stack
 
 				// get campaign struct
 				let campaign = Campaigns::<T>::get(campaign_id);
@@ -508,25 +508,24 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-
-        /// Create campaign
-        /// 
-        /// - `org`:
-        /// - `admin`: Campaign admin. Supervision, should be dao provided!
-        /// - `treasury`:
-        /// - `name`: Campaign name
-        /// - `target`: 
-        /// - `deposit`: 
-        /// - `expiry`: 
-        /// - `protocol`: 
-        /// - `governance`: 
-        /// - `cid`: IPFS
-        /// - `token_symbol`: 
-        /// - `token_name`: 
-        /// 
-        /// Emits `CampaignCreated` event when successful.
-        /// 
-        /// Weight:
+		/// Create campaign
+		///
+		/// - `org`:
+		/// - `admin`: Campaign admin. Supervision, should be dao provided!
+		/// - `treasury`:
+		/// - `name`: Campaign name
+		/// - `target`:
+		/// - `deposit`:
+		/// - `expiry`:
+		/// - `protocol`:
+		/// - `governance`:
+		/// - `cid`: IPFS
+		/// - `token_symbol`:
+		/// - `token_name`:
+		///
+		/// Emits `CampaignCreated` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(5_000_000)]
 		#[transactional]
 		pub fn create_campaign(
@@ -556,9 +555,10 @@ pub mod pallet {
 
 			let free_balance = T::Currency::free_balance(T::ProtocolTokenId::get(), &treasury);
 			ensure!(free_balance > deposit, Error::<T>::TreasuryBalanceTooLow);
-            // TODO: Fix deposit check
-            // First iteration: MinimumDeposit >= 10% target with 1:1
-            // Second iteration: check if deposit is N% worth of the target. Pallet Oracle (price provider)
+			// TODO: Fix deposit check
+			// First iteration: MinimumDeposit >= 10% target with 1:1
+			// Second iteration: check if deposit is N% worth of the target. Pallet Oracle
+			// (price provider)
 			ensure!(deposit <= target, Error::<T>::DepositTooHigh);
 
 			// check name length boundary
@@ -629,14 +629,14 @@ pub mod pallet {
 			// imb);
 		}
 
-        /// Update campaign state
-        /// 
-        /// - `campaign_id`:
-        /// - `state`:
-        /// 
-        /// Emits `CampaignUpdated` event when successful.
-        /// 
-        /// Weight:
+		/// Update campaign state
+		///
+		/// - `campaign_id`:
+		/// - `state`:
+		///
+		/// Emits `CampaignUpdated` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(1_000_000)]
 		pub fn update_state(origin: OriginFor<T>, campaign_id: T::Hash, state: FlowState) -> DispatchResult {
 			// access control
@@ -667,14 +667,14 @@ pub mod pallet {
 			Ok(())
 		}
 
-        /// Contribute to project
-        /// 
-        /// - `campaign_id`:
-        /// - `contribution`:
-        /// 
-        /// Emits `CampaignContributed` event when successful.
-        /// 
-        /// Weight:
+		/// Contribute to project
+		///
+		/// - `campaign_id`:
+		/// - `contribution`:
+		///
+		/// Emits `CampaignContributed` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(5_000_000)]
 		pub fn contribute(origin: OriginFor<T>, campaign_id: T::Hash, contribution: T::Balance) -> DispatchResult {
 			// check
@@ -734,9 +734,7 @@ impl<T: Config> Pallet<T> {
 		CampaignState::<T>::insert(id, state);
 	}
 
-	fn mint_campaign(
-		campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment>,
-	) -> DispatchResult {
+	fn mint_campaign(campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment>) -> DispatchResult {
 		// add campaign to campaigns
 		Campaigns::<T>::insert(&campaign.id, campaign.clone());
 		// add org to index

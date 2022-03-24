@@ -64,7 +64,7 @@ pub mod pallet {
 
 		#[pallet::constant]
 		type PaymentTokenId: Get<CurrencyId>;
-        #[pallet::constant]
+		#[pallet::constant]
 		type ProtocolTokenId: Get<CurrencyId>;
 	}
 
@@ -278,20 +278,21 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		// TODO: One create proposal Extrinsic. Optional parameters (struct, parameter or None) - not yet clear
-        // TODO: Remove all mutable data from the respective structs. Ex. title -> ipfs (mutation should be cheap)
+		// TODO: One create proposal Extrinsic. Optional parameters (struct, parameter
+		// or None) - not yet clear TODO: Remove all mutable data from the respective
+		// structs. Ex. title -> ipfs (mutation should be cheap)
 
-        /// Create a general proposal
-        /// 
-        /// - `context_id`:
-        /// - `title`:
-        /// - `cid`:
-        /// - `start`:
-        /// - `expiry`:
-        /// 
-        /// Emits `Proposal` event when successful.
-        /// 
-        /// Weight:
+		/// Create a general proposal
+		///
+		/// - `context_id`:
+		/// - `title`:
+		/// - `cid`:
+		/// - `start`:
+		/// - `expiry`:
+		///
+		/// Emits `Proposal` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(5_000_000)]
 		#[transactional]
 		pub fn general_proposal(
@@ -353,17 +354,17 @@ pub mod pallet {
 
 		// TODO: membership proposal for a DAO
 
-        /// Create a membership proposal
-        /// 
-        /// - `context_id`:
-        /// - `_member`:
-        /// - `_action`:
-        /// - `_start`:
-        /// - `_expiry`:
-        /// 
-        /// Emits `Proposal` event when successful.
-        /// 
-        /// Weight:
+		/// Create a membership proposal
+		///
+		/// - `context_id`:
+		/// - `_member`:
+		/// - `_action`:
+		/// - `_start`:
+		/// - `_expiry`:
+		///
+		/// Emits `Proposal` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(5_000_000)]
 		pub fn membership_proposal(
 			origin: OriginFor<T>,
@@ -386,24 +387,24 @@ pub mod pallet {
 			Ok(())
 		}
 
-        /// Create a withdrawal proposal
-        /// origin must be controller of the campaign == controller of the dao
-        /// beneficiary must be the treasury of the dao
-        /// 
-        /// - `context_id`:
-        /// - `_member`:
-        /// - `_action`:
-        /// - `_start`:
-        /// - `_expiry`:
-        /// 
-        /// Emits `Proposal` event when successful.
-        /// 
-        /// Weight:
+		/// Create a withdrawal proposal
+		/// origin must be controller of the campaign == controller of the dao
+		/// beneficiary must be the treasury of the dao
+		///
+		/// - `context_id`:
+		/// - `_member`:
+		/// - `_action`:
+		/// - `_start`:
+		/// - `_expiry`:
+		///
+		/// Emits `Proposal` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(5_000_000)]
 		#[transactional]
 		pub fn withdraw_proposal(
 			origin: OriginFor<T>,
-            // TODO: maybe use org_id instead?
+			// TODO: maybe use org_id instead?
 			context_id: T::Hash,
 			title: Vec<u8>,
 			cid: Vec<u8>,
@@ -414,14 +415,14 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(T::Flow::is_campaign_succeeded(&context_id), Error::<T>::CampaignFailed);
-            
-            // TODO ASAP: fix this
+
+			// TODO ASAP: fix this
 			// Should this checks be performed? - YES
-            
+
 			// let owner = T::Flow::campaign_owner(&context_id);
 			// ensure!( sender == owner, Error::<T>::AuthorizationError );
 
-            // TODO ASAP: fix this
+			// TODO ASAP: fix this
 			// Should this checks be performed or not? - YES
 
 			// let current_block = <frame_system::Pallet<T>>::block_number();
@@ -473,14 +474,14 @@ pub mod pallet {
 		// 2. conviction voting requires ongoing staking
 		// 3. quadratic voting
 
-        /// Create a simple voting 
-        /// 
-        /// - `proposal_id`:
-        /// - `vote`:
-        /// 
-        /// Emits `ProposalVoted` event when successful.
-        /// 
-        /// Weight:
+		/// Create a simple voting
+		///
+		/// - `proposal_id`:
+		/// - `vote`:
+		///
+		/// Emits `ProposalVoted` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(5_000_000)]
 		pub fn simple_vote(origin: OriginFor<T>, proposal_id: T::Hash, vote: bool) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
