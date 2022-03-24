@@ -2,22 +2,22 @@
 
 use super::*;
 use frame_support::{assert_noop, assert_ok};
-use mock::{new_test_ext, Control, Origin, Test, TREASURY_ACCOUNT, USER_ACCOUNT};
+use mock::*;
 
 #[test]
 fn control_create_campaign_success() {
 	new_test_ext().execute_with(|| {
 		// create a DAO with account #5.
-		assert_ok!(Control::create(
-			Origin::signed(USER_ACCOUNT), // creator == account 5
-			4,                            // controller == account 4
-			TREASURY_ACCOUNT,             // treasury == account 3
-			vec![12, 56],                 // name
-			vec![11, 111],                // cid
+		assert_ok!(Control::create_org(
+			Origin::signed(ALICE),
+			BOB,
+			TREASURY,
+			vec![12, 56],
+			vec![11, 111],
 			Default::default(),
 			Default::default(),
 			Default::default(),
-			100,
+			1 * DOLLARS,
 			0,
 			0,
 			10

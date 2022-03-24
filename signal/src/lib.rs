@@ -9,7 +9,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! SIGNAL
-//! TODO: description (toml as well)
+//! TODO: add description (module, function, Cargo.toml)
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -63,6 +63,8 @@ pub mod pallet {
 		type MaxProposalDuration: Get<u32>; // 864000, 60 * 60 * 24 * 30 / 3
 
 		#[pallet::constant]
+		type PaymentTokenId: Get<CurrencyId>;
+        #[pallet::constant]
 		type ProtocolTokenId: Get<CurrencyId>;
 	}
 
@@ -276,7 +278,20 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		// TODO: general proposal for a DAO
+		// TODO: One create proposal Extrinsic. Optional parameters (struct, parameter or None) - not yet clear
+        // TODO: Remove all mutable data from the respective structs. Ex. title -> ipfs (mutation should be cheap)
+
+        /// Create a general proposal
+        /// 
+        /// - `context_id`:
+        /// - `title`:
+        /// - `cid`:
+        /// - `start`:
+        /// - `expiry`:
+        /// 
+        /// Emits `Proposal` event when successful.
+        /// 
+        /// Weight:
 		#[pallet::weight(5_000_000)]
 		#[transactional]
 		pub fn general_proposal(
@@ -338,10 +353,21 @@ pub mod pallet {
 
 		// TODO: membership proposal for a DAO
 
+        /// Create a membership proposal
+        /// 
+        /// - `context_id`:
+        /// - `_member`:
+        /// - `_action`:
+        /// - `_start`:
+        /// - `_expiry`:
+        /// 
+        /// Emits `Proposal` event when successful.
+        /// 
+        /// Weight:
 		#[pallet::weight(5_000_000)]
 		pub fn membership_proposal(
 			origin: OriginFor<T>,
-			context: T::Hash,
+			context_id: T::Hash,
 			_member: T::Hash,
 			_action: u8,
 			_start: T::BlockNumber,
@@ -355,19 +381,29 @@ pub mod pallet {
 			// deposit event
 			Self::deposit_event(Event::<T>::Proposal {
 				sender_id: sender,
-				proposal_id: context,
+				proposal_id: context_id,
 			});
 			Ok(())
 		}
 
-		//  create a withdrawal proposal
-		//  origin must be controller of the campaign == controller of the dao
-		//  beneficiary must be the treasury of the dao
-
+        /// Create a withdrawal proposal
+        /// origin must be controller of the campaign == controller of the dao
+        /// beneficiary must be the treasury of the dao
+        /// 
+        /// - `context_id`:
+        /// - `_member`:
+        /// - `_action`:
+        /// - `_start`:
+        /// - `_expiry`:
+        /// 
+        /// Emits `Proposal` event when successful.
+        /// 
+        /// Weight:
 		#[pallet::weight(5_000_000)]
 		#[transactional]
 		pub fn withdraw_proposal(
 			origin: OriginFor<T>,
+            // TODO: maybe use org_id instead?
 			context_id: T::Hash,
 			title: Vec<u8>,
 			cid: Vec<u8>,
@@ -378,12 +414,16 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(T::Flow::is_campaign_succeeded(&context_id), Error::<T>::CampaignFailed);
-
-			// todo: should this checks be performed?
+            
+            // TODO ASAP: fix this
+			// Should this checks be performed? - YES
+            
 			// let owner = T::Flow::campaign_owner(&context_id);
 			// ensure!( sender == owner, Error::<T>::AuthorizationError );
 
-			// todo: should this checks be performed or not?
+            // TODO ASAP: fix this
+			// Should this checks be performed or not? - YES
+
 			// let current_block = <frame_system::Pallet<T>>::block_number();
 			// ensure!(start > current_block, Error::<T>::OutOfBounds );
 			// ensure!(expiry > start, Error::<T>::OutOfBounds );
@@ -428,12 +468,19 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO:
-		// voting vs staking, e.g.
+		// TODO: voting vs staking, e.g.
 		// 1. token weighted and democratic voting require yes/no
 		// 2. conviction voting requires ongoing staking
 		// 3. quadratic voting
 
+        /// Create a simple voting 
+        /// 
+        /// - `proposal_id`:
+        /// - `vote`:
+        /// 
+        /// Emits `ProposalVoted` event when successful.
+        /// 
+        /// Weight:
 		#[pallet::weight(5_000_000)]
 		pub fn simple_vote(origin: OriginFor<T>, proposal_id: T::Hash, vote: bool) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -456,8 +503,7 @@ pub mod pallet {
 				Error::<T>::ProposalExpired
 			);
 
-			// TODO:
-			// ensure origin is one of:
+			// TODO: ensure origin is one of:
 			// a. member when the proposal is general
 			// b. contributor when the proposal is a withdrawal request
 			// let sender_balance =
@@ -595,7 +641,7 @@ pub mod pallet {
 			// get treasury account for related body and unlock balance
 			let body = T::Flow::campaign_org(&proposal.context_id);
 			let treasury_account = T::Control::org_treasury_account(&body);
-			T::Currency::unreserve(T::ProtocolTokenId::get(), &treasury_account, proposal_balance);
+			T::Currency::unreserve(T::PaymentTokenId::get(), &treasury_account, proposal_balance);
 
 			// Change the used amount
 			let new_used_balance = used_balance

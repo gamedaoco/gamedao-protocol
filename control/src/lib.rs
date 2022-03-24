@@ -17,6 +17,8 @@ pub use types::*;
 
 mod mock;
 mod tests;
+// #[cfg(feature = "runtime-benchmarks")]
+// mod benchmarking;
 
 use codec::HasCompact;
 use frame_support::{
@@ -229,7 +231,7 @@ pub mod pallet {
 		// enables an org to be used
 		// org_id: an organisations hash
 		#[pallet::weight(1_000_000)]
-		pub fn enable(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
+		pub fn enable_org(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			ensure_root(origin)?;
 			OrgState::<T>::insert(org_id.clone(), ControlState::Active);
 			Self::deposit_event(Event::OrgEnabled(org_id));
@@ -248,27 +250,31 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// Create Org
-		// create an on chain organisation
-		// creator: T::AccountId,      // creator
-		// controller: T::AccountId,   // current controller
-		// treasury: T::AccountId,     // treasury
-		// name: Vec<u8>,              // Org name
-		// cid: Vec<u8>,               // cid -> ipfs
-		// Org: u8,                   // individual | legal Org | dao
-		// access: u8,                 // anyDAO can join | only member can add | only
-		// controller can add fee_model: u8,              // only TX by OS | fees are
-		// reserved | fees are moved to treasury fee: T::Balance,
-		// gov_asset: u8,              // control assets to empower actors
-		// pay_asset: u8,
-		// member_limit: u64,          // max members, if 0 == no limit
-		// // mint: T::Balance,		// cost to mint
-		// // burn: T::Balance,		// cost to burn
-		// // strategy: u16,
+		/// Create Org
+		/// create an on chain organisation
+        /// 
+        /// - `creator`: creator
+        /// - `controller`: current controller
+        /// - `treasury`: treasury
+        /// - `name`: Org name
+        /// - `cid`: IPFS
+        /// - `org_type`: individual | legal Org | dao
+        /// - `access`: anyDAO can join | only member can add | only
+        /// - `fee_model`: only TX by OS | fees are reserved | fees are moved to treasury
+        /// - `fee`: fee
+        /// - `gov_asset`: control assets to empower actors
+        /// - `pay_asset`: 
+        /// - `member_limit`: max members, if 0 == no limit
+        /// - `member_limit`: max members, if 0 == no limit
+        /// 
+        /// Emits `OrgCreated` event when successful.
+        /// 
+        /// Weight:
 		#[pallet::weight(5_000_000)]
-		pub fn create(
+		pub fn create_org(
 			origin: OriginFor<T>,
 			controller: T::AccountId,
+            // TODO: treasury shouldn't be provided here. Ink contract as an option. How to dynamically init the pallet?
 			treasury: T::AccountId,
 			name: Vec<u8>,
 			cid: Vec<u8>,
@@ -327,7 +333,7 @@ pub mod pallet {
 				access: access.clone(),
 			};
 
-			Self::create_org(org, org_config, controller, treasury)?;
+			Self::do_create_org(org, org_config, controller, treasury)?;
 
 			// dispatch event
 			Self::deposit_event(Event::OrgCreated {
@@ -360,8 +366,7 @@ pub mod pallet {
 		// Remove Member from Org
 		#[pallet::weight(1_000_000)]
 		pub fn remove_member(origin: OriginFor<T>, org_id: T::Hash, account: T::AccountId) -> DispatchResult {
-			// TODO:
-			// when fees==1 unreserve fees
+			// TODO ASAP: when fees==1 unreserve fees
 			ensure_signed(origin)?;
 			Self::remove(org_id.clone(), account.clone())?;
 			Self::deposit_event(Event::RemoveMember {
@@ -372,19 +377,15 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// Update State of Org
-		// #[weight = 5_000]
-		// fn update_state(
-		// 	origin: OriginFor<T>,
-		// 	org_id: T::Hash,
-		// 	state: u8
-		// ) {
+        // TODO: fn update_state(origin: OriginFor<T>, org_id: T::Hash, state: u8), Disable an org
 
-		// 	let sender = ensure_root(origin)?;
-		// 	Self::set_state(org_id.clone(), state.clone());
-
-		// }
-
+        /// Check membership
+        /// 
+        /// - `org_id`: Org id
+        ///
+        /// Emits `IsAMember` event when successful.
+        /// 
+        /// Weight:
 		#[pallet::weight(1_000_000)]
 		pub fn check_membership(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
@@ -396,6 +397,9 @@ pub mod pallet {
 			});
 			Ok(())
 		}
+
+        // TODO: transfer control of a Org
+        // Refactoring, user FRAME Membership partially.
 
 		// /// Set controller. Must be a current member.
 		// ///
@@ -434,7 +438,7 @@ impl<T: Config> Pallet<T> {
 
 	// }
 
-	fn create_org(
+	fn do_create_org(
 		org: Org<T::Hash, T::AccountId, T::BlockNumber>,
 		org_config: OrgConfig<T::Balance>,
 		controller: T::AccountId,
@@ -455,8 +459,6 @@ impl<T: Config> Pallet<T> {
 		OrgState::<T>::insert(org_id.clone(), ControlState::Active);
 		OrgsControlled::<T>::mutate(&controller, |controlled| controlled.push(org_id.clone()));
 
-		// TODO: this needs a separate add / removal function
-		// whenever the controller of an organisation changes!
 		OrgsControlledCount::<T>::mutate(&controller, |controlled_count| *controlled_count += 1);
 		OrgsCreated::<T>::mutate(&creator, |created| created.push(org_id.clone()));
 
@@ -482,7 +484,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn mint_nft() -> DispatchResult {
-		// todo: work with tangram nfts
+		// TODO ASAP: work with tangram nfts
 		// generate nft realm
 
 		// // get the current realm index
@@ -571,7 +573,7 @@ impl<T: Config> Pallet<T> {
 			AccessModel::Open => member_state, // when open use desired state
 			_ => ControlMemberState::Pending,  // else pending
 		};
-		// todo: save new_state to storage
+		// TODO ASAP: save new_state to storage
 
 		Ok(())
 	}
@@ -585,11 +587,10 @@ impl<T: Config> Pallet<T> {
 
 		let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
 		let state = match config.access {
-			AccessModel::Open => ControlMemberState::Active, // active
-			_ => ControlMemberState::Pending,                // pending
+			AccessModel::Open => ControlMemberState::Active,
+			_ => ControlMemberState::Pending,
 		};
 
-		// todo: Should this be ProtocolTokenId or other currency id?
 		let currency_id = T::ProtocolTokenId::get();
 		let fee = config.fee;
 		ensure!(
@@ -610,8 +611,6 @@ impl<T: Config> Pallet<T> {
 				T::Currency::transfer(currency_id, &account, &treasury, config.fee)?;
 			}
 		}
-
-		// 5. add
 
 		match members.binary_search(&account) {
 			// already a member, return
@@ -681,9 +680,6 @@ impl<T: Config> Pallet<T> {
 			Err(_) => Err(Error::<T>::MemberUnknown.into()),
 		}
 	}
-
-	// TODO: transfer control of a Org fn transfer(_hash: T::Hash, _account:
-	// T::AccountId)
 
 	fn get_and_increment_nonce() -> u128 {
 		let nonce = Nonce::<T>::get();

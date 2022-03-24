@@ -33,7 +33,8 @@ pub const MILLISECS_PER_BLOCK: u64 = 6000;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-pub const GAME_CURRENCY_ID: CurrencyId = 1;
+pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
+pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
 // Accounts:
 pub const ALICE: AccountId = 1;
@@ -134,9 +135,9 @@ frame_support::parameter_types! {
 	pub const MaxDAOsPerAccount: u32 = 2;
 	pub const MaxMembersPerDAO: u32 = 2;
 	pub const MaxCreationsPerBlock: u32 = 2;
-	pub const ProtocolTokenId: u32 = GAME_CURRENCY_ID;
-	pub const DepositCurrencyId: u32 = GAME_CURRENCY_ID;
-	pub const CreationFee: Balance = 1;
+	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
+    pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
+	pub const CreationFee: Balance = 1 * DOLLARS;
 }
 
 impl gamedao_control::Config for Test {
@@ -169,7 +170,6 @@ parameter_types! {
 	pub const MinContribution: Balance = 1 * DOLLARS;
 	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
 	// pub const CampaignFee: Balance = 25 * CENTS;
-	pub const GAMECurrencyId: CurrencyId = GAME_CURRENCY_ID;
 	pub const GameDAOTreasury: AccountId = GAMEDAO_TREASURY;
 }
 
@@ -180,7 +180,8 @@ impl Config for Test {
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
-	type ProtocolTokenId = GAMECurrencyId;
+	type ProtocolTokenId = ProtocolTokenId;
+    type PaymentTokenId = PaymentTokenId;
 	type UnixTime = PalletTimestamp;
 	type Randomness = TestRandomness<Self>;
 	type Control = Control;
@@ -218,11 +219,16 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	orml_tokens::GenesisConfig::<Test> {
 		balances: vec![
-			(ALICE, GAME_CURRENCY_ID, 100),
-			(BOB, GAME_CURRENCY_ID, 100),
-			(BOGDANA, GAME_CURRENCY_ID, 100),
-			(TREASURY, GAME_CURRENCY_ID, 100),
-			(GAMEDAO_TREASURY, GAME_CURRENCY_ID, 0),
+			(ALICE, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+            (ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(BOB, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+            (BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(BOGDANA, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+            (BOGDANA, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(TREASURY, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+            (TREASURY, PAYMENT_TOKEN_ID, 0),
+			(GAMEDAO_TREASURY, PROTOCOL_TOKEN_ID, 0),
+            (GAMEDAO_TREASURY, PAYMENT_TOKEN_ID, 0),
 		],
 	}
 	.assimilate_storage(&mut t)

@@ -43,12 +43,13 @@ pub use types::*;
 mod mock;
 mod tests;
 
+// #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
 
 // TODO: weights
 // mod default_weights;
 
-// TODO: externalise error messages
+// TODO: externalise error messages - Enum: number and text description
 // mod errors;
 
 use frame_support::{
@@ -141,8 +142,9 @@ pub mod pallet {
 
 		#[pallet::constant]
 		type ProtocolTokenId: Get<Self::CurrencyId>;
+		#[pallet::constant]
+		type PaymentTokenId: Get<Self::CurrencyId>;
 
-		// TODO: collect fees for treasury
 		#[pallet::constant]
 		type CampaignFee: Get<Permill>;
 	}
@@ -370,6 +372,13 @@ pub mod pallet {
 
 			// iterate over campaigns ending in this block
 			for campaign_id in &campaign_hashes {
+                // TODO: Reduce complexity of N^2 with unknown amount of contributors.
+                // Priority - after NFT Uniques.
+                // 1. Save all campaigns to be finalized in the current block into a stack
+                // 2. Finalize N campaigns from the stack
+                // 3. If error - save campaign into a stack (to be reversed)
+                // 4. Reverse N campaigns from the stack
+
 				// get campaign struct
 				let campaign = Campaigns::<T>::get(campaign_id);
 				let campaign_balance = CampaignBalance::<T>::get(campaign_id);
@@ -403,14 +412,14 @@ pub mod pallet {
 
 								// unreserve the amount in contributor balance
 								T::Currency::unreserve(
-									T::ProtocolTokenId::get(),
+									T::PaymentTokenId::get(),
 									&contributor,
 									contributor_balance.clone(),
 								);
 
 								// transfer from contributor
 								let transfer_amount = T::Currency::transfer(
-									T::ProtocolTokenId::get(),
+									T::PaymentTokenId::get(),
 									&contributor,
 									&org_treasury,
 									contributor_balance.clone(),
@@ -432,17 +441,17 @@ pub mod pallet {
 							if transaction_complete {
 								// reserve campaign volume
 								let _reserve_campaign_amount = T::Currency::reserve(
-									T::ProtocolTokenId::get(),
+									T::PaymentTokenId::get(),
 									&org_treasury,
 									campaign_balance.clone(),
 								);
 
 								let fee = T::CampaignFee::get();
 								let commission = fee.mul_floor(campaign_balance.clone());
-								T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, commission.clone());
+								T::Currency::unreserve(T::PaymentTokenId::get(), &org_treasury, commission.clone());
 
 								let _transfer_commission = T::Currency::transfer(
-									T::ProtocolTokenId::get(),
+									T::PaymentTokenId::get(),
 									&org_treasury,
 									&T::GameDAOTreasury::get(),
 									commission,
@@ -475,7 +484,7 @@ pub mod pallet {
 					let contributors = CampaignContributors::<T>::get(campaign_id);
 					for account in contributors {
 						let contribution = CampaignContribution::<T>::get((*campaign_id, account.clone()));
-						T::Currency::unreserve(T::ProtocolTokenId::get(), &account, contribution);
+						T::Currency::unreserve(T::PaymentTokenId::get(), &account, contribution);
 					}
 
 					// update campaign state to failed
@@ -499,20 +508,38 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+
+        /// Create campaign
+        /// 
+        /// - `org`:
+        /// - `admin`: Campaign admin. Supervision, should be dao provided!
+        /// - `treasury`:
+        /// - `name`: Campaign name
+        /// - `target`: 
+        /// - `deposit`: 
+        /// - `expiry`: 
+        /// - `protocol`: 
+        /// - `governance`: 
+        /// - `cid`: IPFS
+        /// - `token_symbol`: 
+        /// - `token_name`: 
+        /// 
+        /// Emits `CampaignCreated` event when successful.
+        /// 
+        /// Weight:
 		#[pallet::weight(5_000_000)]
-		// Reason for using transactional is get_and_increment_nonce
 		#[transactional]
 		pub fn create_campaign(
 			origin: OriginFor<T>,
 			org: T::Hash,
-			admin: T::AccountId, // supervision, should be dao provided!
+			admin: T::AccountId,
 			name: Vec<u8>,
 			target: T::Balance,
 			deposit: T::Balance,
 			expiry: T::BlockNumber,
 			protocol: FlowProtocol,
 			governance: FlowGovernance,
-			cid: Vec<u8>,          // content cid
+			cid: Vec<u8>,
 			token_symbol: Vec<u8>, // up to 5
 			token_name: Vec<u8>,   /* cleartext
 			                        * token_curve_a: u8,	  // preset
@@ -529,6 +556,9 @@ pub mod pallet {
 
 			let free_balance = T::Currency::free_balance(T::ProtocolTokenId::get(), &treasury);
 			ensure!(free_balance > deposit, Error::<T>::TreasuryBalanceTooLow);
+            // TODO: Fix deposit check
+            // First iteration: MinimumDeposit >= 10% target with 1:1
+            // Second iteration: check if deposit is N% worth of the target. Pallet Oracle (price provider)
 			ensure!(deposit <= target, Error::<T>::DepositTooHigh);
 
 			// check name length boundary
@@ -571,7 +601,6 @@ pub mod pallet {
 				cid: cid.clone(),
 				token_symbol: token_symbol.clone(),
 				token_name: token_name.clone(),
-				// created: T::UnixTime::now(),
 				created: T::UnixTime::now().as_secs(),
 			};
 
@@ -600,6 +629,14 @@ pub mod pallet {
 			// imb);
 		}
 
+        /// Update campaign state
+        /// 
+        /// - `campaign_id`:
+        /// - `state`:
+        /// 
+        /// Emits `CampaignUpdated` event when successful.
+        /// 
+        /// Weight:
 		#[pallet::weight(1_000_000)]
 		pub fn update_state(origin: OriginFor<T>, campaign_id: T::Hash, state: FlowState) -> DispatchResult {
 			// access control
@@ -630,7 +667,14 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// contribute to project
+        /// Contribute to project
+        /// 
+        /// - `campaign_id`:
+        /// - `contribution`:
+        /// 
+        /// Emits `CampaignContributed` event when successful.
+        /// 
+        /// Weight:
 		#[pallet::weight(5_000_000)]
 		pub fn contribute(origin: OriginFor<T>, campaign_id: T::Hash, contribution: T::Balance) -> DispatchResult {
 			// check
@@ -690,24 +734,7 @@ impl<T: Config> Pallet<T> {
 		CampaignState::<T>::insert(id, state);
 	}
 
-	// campaign creator
-	// sender: T::AccountId,
-	// generated campaign id
-	// campaign_id: T::Hash,
-	// expiration blocktime
-	// example: desired lifetime == 30 days
-	// 30 days * 24h * 60m / 5s avg blocktime ==
-	// 2592000s / 5s == 518400 blocks from now.
-	// expiry: T::BlockNumber,
-	// campaign creator deposit to invoke the campaign
-	// deposit: Balance,
-	// funding protocol
-	// 0 grant, 1 prepaid, 2 loan, 3 shares, 4 dao, 5 pool
-	// proper assignment of funds into the instrument
-	// happens after successful funding of the campaing
-	// protocol: u8,
-	// campaign object
-	pub fn mint_campaign(
+	fn mint_campaign(
 		campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment>,
 	) -> DispatchResult {
 		// add campaign to campaigns
@@ -791,7 +818,7 @@ impl<T: Config> Pallet<T> {
 		}
 
 		// reserve contributed amount
-		T::Currency::reserve(T::ProtocolTokenId::get(), &sender, contribution)?;
+		T::Currency::reserve(T::PaymentTokenId::get(), &sender, contribution)?;
 
 		// update contributor balance for campaign
 		let total_contribution = CampaignContribution::<T>::get((&campaign_id, &sender));
