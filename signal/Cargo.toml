@@ -5,19 +5,19 @@
 # ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 
 [package]
-name = 'pallet-signal'
-version = '0.1.0'
-authors = ['zero.io','gamedao.co']
-repository = 'https://github.com/gamedaoco/gamedao-protocol'
-edition = '2018'
-license = 'GPL-3.0-or-later'
-description = 'Signal pallet'
+name = "gamedao-signal"
+version = "0.1.0"
+authors = ["zero.io","gamedao.co"]
+repository = "https://github.com/gamedaoco/gamedao-protocol"
+edition = "2018"
+license = "GPL-3.0-or-later"
+description = "Signal pallet"
 
 [package.metadata.substrate]
 categories = [
-	'zero',
-	'core',
-	'pallet'
+	"zero",
+	"core",
+	"pallet"
 ]
 
 [dependencies]
@@ -30,8 +30,7 @@ frame-support = { git = "https://github.com/paritytech/substrate", branch = "pol
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false }
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 orml-traits = { path = "../../orml/traits", default-features = false }
-zero-primitives = { package = "zero-primitives", path = "../../primitives", default-features = false }
-support = { package = "gamedao-protocol-support", path = "../support", default-features = false }
+gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 
 [dev-dependencies]
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
@@ -39,30 +38,34 @@ sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 frame-support-test = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 
 orml-tokens = { path = "../../orml/tokens", default-features = false }
 orml-currencies = { path = "../../orml/currencies", default-features = false }
 
+gamedao-control = { path = "../control", default-features = true }
+gamedao-flow = { path = "../flow", default-features = true }
+
 [features]
-default = ['std']
-runtime-benchmarks = ['frame-benchmarking']
+default = ["std"]
+runtime-benchmarks = ["frame-benchmarking"]
 std = [
-	'codec/std',
-	'serde/std',
-	'scale-info/std',
+	"codec/std",
+	"serde/std",
+	"scale-info/std",
 
-	'frame-support/std',
-	'frame-system/std',
-	'frame-benchmarking/std',
+	"frame-support/std",
+	"frame-system/std",
+	"frame-benchmarking/std",
 
-	'sp-core/std',
-	'sp-std/std',
-	'sp-runtime/std',
+	"sp-core/std",
+	"sp-std/std",
+	"sp-runtime/std",
 
 	"orml-traits/std",
 	"orml-tokens/std",
 	"orml-currencies/std",
 
-	"support/std"
+	"gamedao-traits/std"
 ]
-try-runtime = ['frame-support/try-runtime']
+try-runtime = ["frame-support/try-runtime"]

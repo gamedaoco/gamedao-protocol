@@ -1,5 +1,10 @@
+# ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+# ███░▄▄▄█░▄▄▀█░▄▀▄░█░▄▄█░▄▀█░▄▄▀█▀▄▄▀██
+# ███░█▄▀█░▀▀░█░█▄█░█░▄▄█░█░█░▀▀░█░██░██
+# ███▄▄▄▄█▄██▄█▄███▄█▄▄▄█▄▄██▄██▄██▄▄███
+# ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 [package]
-name = "pallet-flow"
+name = "gamedao-flow"
 version = "1.0.1-dev"
 authors = ["zero.io","gamedao.co"]
 edition = "2018"
@@ -18,20 +23,20 @@ frame-system = { git = "https://github.com/paritytech/substrate", branch = "polk
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 
 orml-traits = { path = "../../orml/traits", default-features = false }
-zero-primitives = { package = "zero-primitives", path = "../../primitives", default-features = false }
-gamedao-protocol-support = { package = "gamedao-protocol-support", path = "../support", default-features = false }
+gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 
 [dev-dependencies]
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 frame-support-test = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 
 pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 
 orml-tokens = { path = "../../orml/tokens", default-features = false }
 orml-currencies = { path = "../../orml/currencies", default-features = false }
+
+gamedao-control = { package = "gamedao-control", path = "../control", default-features = true }
 
 [features]
 default = ["std"]
@@ -51,6 +56,7 @@ std = [
 	"orml-traits/std",
 	"orml-tokens/std",
 	"orml-currencies/std",
-	"gamedao-protocol-support/std",
+	"gamedao-traits/std",
+    "gamedao-control/std",
 ]
 try-runtime = ["frame-support/try-runtime"]

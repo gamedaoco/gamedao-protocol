@@ -1,75 +1,39 @@
 #[cfg(test)]
-
-use crate as pallet_signal;
+use crate as gamedao_signal;
 use frame_support::parameter_types;
 use frame_support::traits::{GenesisBuild, Nothing};
-use frame_system;
 use frame_support_test::TestRandomness;
-use sp_std::cell::RefCell;
+use frame_system;
+use orml_traits::parameter_type_with_key;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
+	Permill,
 };
-use orml_traits::parameter_type_with_key;
-use support::{
-	ControlPalletStorage, ControlState, ControlMemberState,
-	FlowPalletStorage, FlowState
-};
-use zero_primitives::{Amount, Balance, BlockNumber, CurrencyId, Hash, TokenSymbol};
 
 pub type AccountId = u64;
+pub type Amount = i128;
+pub type Balance = u128;
+pub type BlockNumber = u32;
+pub type CurrencyId = u32;
+pub type Hash = H256;
+pub type Moment = u64;
 
+pub const MILLICENTS: Balance = 1_000_000_000;
+pub const CENTS: Balance = 1_000 * MILLICENTS;
+pub const DOLLARS: Balance = 100 * CENTS;
+pub const MAX_DURATION: BlockNumber = DAYS * 100;
+pub const MILLISECS_PER_BLOCK: u64 = 6000;
+pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
+pub const HOURS: BlockNumber = MINUTES * 60;
+pub const DAYS: BlockNumber = HOURS * 24;
 pub const ACC1: AccountId = 1;
 pub const ACC2: AccountId = 2;
-pub const TREASURY_ACC: AccountId = 3;
-
-pub struct ControlFixture {
-	pub body_controller: AccountId,
-	pub body_treasury: AccountId,
-	pub body_member_state: ControlMemberState,
-	pub body_state: ControlState
-}
-
-pub struct FlowFixture {
-	pub campaign_balance: Balance,
-	pub campaign_state: FlowState,
-	pub campaign_contributors_count: u64,
-	pub campaign_org: Hash
-}
-
-// todo: use actual Control & Flow pallets once they are done
-thread_local!(
-	pub static control_fixture: RefCell<ControlFixture> = RefCell::new(ControlFixture {
-		body_controller: ACC1,
-		body_treasury: TREASURY_ACC,
-		body_member_state: ControlMemberState::Active,
-		body_state: ControlState::Active
-	});
-	pub static flow_fixture: RefCell<FlowFixture> = RefCell::new(FlowFixture {
-		campaign_balance: 15,
-		campaign_state: FlowState::Success,
-		campaign_contributors_count: 0,
-		campaign_org: H256::random()
-	});
-);
-
-
-pub struct ControlMock;
-impl ControlPalletStorage<AccountId, Hash> for ControlMock {
-	fn body_controller(_org: &Hash) -> AccountId { control_fixture.with(|v| v.borrow().body_controller.clone()) }
-	fn body_treasury(_org: &Hash) -> AccountId { control_fixture.with(|v| v.borrow().body_treasury.clone()) }
-	fn body_member_state(_hash: &Hash, _account_id: &AccountId) -> ControlMemberState { control_fixture.with(|v| v.borrow().body_member_state.clone()) }
-	fn body_state(_hash: &Hash) -> ControlState { control_fixture.with(|v| v.borrow().body_state.clone()) }
-}
-
-pub struct FlowMock;
-impl FlowPalletStorage<Hash, Balance> for FlowMock {
-	fn campaign_balance(_hash: &Hash) -> Balance { flow_fixture.with(|v| v.borrow().campaign_balance.clone()) }
-	fn campaign_state(_hash: &Hash) -> FlowState { flow_fixture.with(|v| v.borrow().campaign_state.clone()) }
-	fn campaign_contributors_count(_hash: &Hash) -> u64 { flow_fixture.with(|v| v.borrow().campaign_contributors_count.clone()) }
-	fn campaign_org(_hash: &Hash) -> Hash { flow_fixture.with(|v| v.borrow().campaign_org.clone()) }
-}
+pub const ACC3: AccountId = 3;
+pub const TREASURY_ACC: AccountId = 4;
+pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
+pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -82,10 +46,13 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Signal: pallet_signal,
 		Currencies: orml_currencies::{Pallet, Call, Event<T>},
 		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
 		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
+		PalletTimestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+		Flow: gamedao_flow,
+		Control: gamedao_control,
+		Signal: gamedao_signal,
 	}
 );
 
@@ -128,22 +95,13 @@ impl orml_currencies::Config for Test {
 	type WeightInfo = ();
 }
 
-
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 	pub const SS58Prefix: u8 = 42;
 	pub BlockWeights: frame_system::limits::BlockWeights =
 		frame_system::limits::BlockWeights::simple_max(1024);
-
 	pub const ExistentialDeposit: Balance = 1;
-
-	pub const MaxProposalsPerBlock: u32 = 2;
-	pub const MaxProposalDuration: u32 = 20;
-	pub const FundingCurrencyId: CurrencyId = TokenSymbol::GAME as u32;
 }
-
-// impl pallet_randomness_collective_flip::Config for Test {}
-
 impl frame_system::Config for Test {
 	type BaseCallFilter = frame_support::traits::Everything;
 	type BlockWeights = ();
@@ -170,17 +128,102 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl pallet_signal::Config for Test {
+parameter_types! {
+	pub const MinimumPeriod: Moment = 1000;
+}
+impl pallet_timestamp::Config for Test {
+	type Moment = Moment;
+	type OnTimestampSet = ();
+	type MinimumPeriod = MinimumPeriod;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const MaxDAOsPerAccount: u32 = 2;
+	pub const MaxMembersPerDAO: u32 = 2;
+	pub const MaxCreationsPerBlock: u32 = 2;
+	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
+	pub const PaymentTokenId: u32 = PAYMENT_TOKEN_ID;
+	pub const CreationFee: Balance = 25_000_000_000_000;
+	pub const GameDAOTreasury: AccountId = TREASURY_ACC;
+}
+impl gamedao_control::Config for Test {
+	type Balance = Balance;
+	// type Moment = Moment;
+	type CurrencyId = CurrencyId;
+	type WeightInfo = ();
+	type Event = Event;
+	type Currency = Currencies;
+	type Randomness = TestRandomness<Self>;
+
+	type GameDAOTreasury = GameDAOTreasury;
+
+	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
+
+	type MaxDAOsPerAccount = MaxDAOsPerAccount;
+	type MaxMembersPerDAO = MaxMembersPerDAO;
+	type MaxCreationsPerBlock = MaxCreationsPerBlock;
+	type ProtocolTokenId = ProtocolTokenId;
+	type PaymentTokenId = PaymentTokenId;
+	type CreationFee = CreationFee;
+}
+
+parameter_types! {
+	pub const MinNameLength: u32 = 2;
+	pub const MaxNameLength: u32 = 4;
+	pub const MaxCampaignsPerAddress: u32 = 3;
+	pub const MaxCampaignsPerBlock: u32 = 1;
+	pub const MaxContributionsPerBlock: u32 = 3;
+	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
+	pub const MaxCampaignDuration: BlockNumber = 100 * DAYS;
+	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
+	pub const MinContribution: Balance = 1 * DOLLARS;
+	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
+}
+impl gamedao_flow::Config for Test {
+	type Balance = Balance;
+	// type Moment = Moment;
+	type CurrencyId = CurrencyId;
+	type WeightInfo = ();
+	type Event = Event;
+	type Currency = Currencies;
+	type ProtocolTokenId = ProtocolTokenId;
+	type PaymentTokenId = PaymentTokenId;
+	type UnixTime = PalletTimestamp;
+	type Randomness = TestRandomness<Self>;
+	type Control = Control;
+	type GameDAOAdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type GameDAOTreasury = GameDAOTreasury;
+	type MinNameLength = MinNameLength;
+	type MaxNameLength = MaxNameLength;
+	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
+	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
+	type MaxContributionsPerBlock = MaxContributionsPerBlock;
+	type MinCampaignDuration = MinCampaignDuration;
+	type MaxCampaignDuration = MaxCampaignDuration;
+	type MinCreatorDeposit = MinCreatorDeposit;
+	type MinContribution = MinContribution;
+	type CampaignFee = CampaignFee;
+}
+
+parameter_types! {
+	pub const MaxProposalsPerBlock: u32 = 2;
+	pub const MaxProposalDuration: u32 = 20;
+}
+impl gamedao_signal::Config for Test {
 	type Event = Event;
 	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type WeightInfo = ();
-	type Control = ControlMock;
-	type Flow = FlowMock;
+	type Control = Control;
+	type Flow = Flow;
 	type MaxProposalsPerBlock = MaxProposalsPerBlock;
 	type MaxProposalDuration = MaxProposalDuration;
-	type FundingCurrencyId = FundingCurrencyId;
+	type ProtocolTokenId = ProtocolTokenId;
+	type PaymentTokenId = PaymentTokenId;
 	type Randomness = TestRandomness<Self>;
 	type Currency = Currencies;
+	type Balance = Balance;
+	type CurrencyId = CurrencyId;
 }
 
 #[derive(Default)]
@@ -188,16 +231,22 @@ pub struct ExtBuilder;
 impl ExtBuilder {
 	pub fn build(self) -> sp_io::TestExternalities {
 		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-		let currency_id = TokenSymbol::GAME as u32;
 		orml_tokens::GenesisConfig::<Test> {
 			balances: vec![
-				(ACC1, currency_id, 100),
-				(ACC2, currency_id, 100),
-				(TREASURY_ACC, currency_id, 25)
+				(ACC1, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+				(ACC1, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(ACC2, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+				(ACC2, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(ACC3, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+				(ACC3, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(TREASURY_ACC, PAYMENT_TOKEN_ID, 25 * DOLLARS),
+				(TREASURY_ACC, PROTOCOL_TOKEN_ID, 25 * DOLLARS),
 			],
-		}.assimilate_storage(&mut t).unwrap();
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));
-  		ext
+		ext
 	}
 }

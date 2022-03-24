@@ -1,39 +1,16 @@
+# ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+# ███░▄▄▄█░▄▄▀█░▄▀▄░█░▄▄█░▄▀█░▄▄▀█▀▄▄▀██
+# ███░█▄▀█░▀▀░█░█▄█░█░▄▄█░█░█░▀▀░█░██░██
+# ███▄▄▄▄█▄██▄█▄███▄█▄▄▄█▄▄██▄██▄██▄▄███
+# ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 [package]
-name = "pallet-control"
+name = "gamedao-control"
 version = "1.0.1-dev"
 authors = ["zero.io","gamedao.co"]
 repository = "https://github.com/gamedaoco/gamedao-protocol"
 edition = "2018"
 license = "GPL-3.0-or-later"
 description = "DAO Factory"
-
-[features]
-default = ["std"]
-std = [
-	"codec/std",
-	"serde/std",
-	"scale-info/std",
-	"num_enum/std",
-
-	# "pallet-assets/std",
-	# "pallet-balances/std",
-	"frame-support/std",
-	"frame-system/std",
-	"frame-benchmarking/std",
-
-	"sp-core/std",
-	"sp-std/std",
-	"sp-runtime/std",
-	# "sp-storage/std",
-
-	# "tangram/std",
-	"orml-traits/std",
-	"orml-tokens/std",
-	"orml-currencies/std",
-
-	"gamedao-protocol-support/std",
-
-]
 
 [dependencies]
 hex-literal = "0.3.1"
@@ -56,8 +33,7 @@ pallet-assets = {  default-features = false, git = "https://github.com/paritytec
 pallet-balances = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 
 orml-traits = { path = "../../orml/traits", default-features = false }
-primitives = { package = "zero-primitives", path = "../../primitives", default-features = false }
-gamedao-protocol-support = { package = "gamedao-protocol-support", path = "../support", default-features = false }
+gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 
 # tangram = { package = "module-tangram", path = "../../zero/tangram", default-features = false }
 
@@ -69,3 +45,32 @@ frame-support-test = { git = "https://github.com/paritytech/substrate.git", bran
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 orml-tokens = { path = "../../orml/tokens", default-features = false }
 orml-currencies = { path = "../../orml/currencies", default-features = false }
+
+[features]
+default = ["std"]
+runtime-benchmarks = ["frame-benchmarking"]
+std = [
+	"codec/std",
+	"serde/std",
+	"scale-info/std",
+	"num_enum/std",
+
+	# "pallet-assets/std",
+	# "pallet-balances/std",
+	"frame-support/std",
+	"frame-system/std",
+	"frame-benchmarking/std",
+
+	"sp-core/std",
+	"sp-std/std",
+	"sp-runtime/std",
+	# "sp-storage/std",
+
+	# "tangram/std",
+	"orml-traits/std",
+	"orml-tokens/std",
+	"orml-currencies/std",
+
+	"gamedao-traits/std",
+
+]
