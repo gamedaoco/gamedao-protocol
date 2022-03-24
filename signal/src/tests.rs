@@ -106,7 +106,7 @@ fn signal_general_proposal_success() {
 			<Proposals<Test>>::get(&proposal_id),
 			Some(Proposal {
 				proposal_id,
-				context_id: org_id,
+				campaign_id: org_id,
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start: 3,
@@ -182,7 +182,7 @@ fn signal_general_proposal_error() {
 			campaign_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				campaign_id: campaign_id,
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -296,7 +296,7 @@ fn signal_withdraw_proposal_success() {
 			event,
 			Event::Signal(crate::Event::ProposalCreated {
 				sender_id: ACC1,
-				context_id: campaign_id,
+				campaign_id: campaign_id,
 				proposal_id,
 				amount: 10 * DOLLARS,
 				expiry: 15
@@ -306,7 +306,7 @@ fn signal_withdraw_proposal_success() {
 			<Proposals<Test>>::get(&proposal_id),
 			Some(Proposal {
 				proposal_id,
-				context_id: campaign_id,
+				campaign_id: campaign_id,
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start: 3,
@@ -388,7 +388,7 @@ fn signal_withdraw_proposal_error() {
 			campaign_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				campaign_id: campaign_id,
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -496,7 +496,7 @@ fn signal_simple_vote_success() {
 			proposal_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				campaign_id: campaign_id,
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -552,7 +552,7 @@ fn signal_simple_vote_success() {
 			proposal_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				campaign_id: campaign_id,
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -582,7 +582,7 @@ fn signal_simple_vote_success() {
 			proposal_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				campaign_id: campaign_id,
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -608,7 +608,7 @@ fn signal_simple_vote_success() {
 			event,
 			Event::Signal(crate::Event::WithdrawalGranted {
 				proposal_id,
-				context_id: campaign_id,
+				campaign_id: campaign_id,
 				body_id: org_id
 			})
 		);
@@ -629,7 +629,7 @@ fn signal_simple_vote_error() {
 			proposal_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				campaign_id: campaign_id,
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -744,7 +744,7 @@ fn signal_on_finalize_success() {
 		assert_eq!(System::events().len(), events_before + 1);
 
 		<<Test as Config>::Currency as MultiReservableCurrency<AccountId>>::reserve(
-			<Test as Config>::ProtocolTokenId::get(),
+			<Test as Config>::PaymentTokenId::get(),
 			&TREASURY_ACC,
 			25,
 		)
@@ -768,19 +768,18 @@ fn signal_on_finalize_success() {
 			events.pop().unwrap().event,
 			Event::Signal(crate::Event::WithdrawalGranted {
 				proposal_id: proposal_id3,
-				context_id: campaign_id,
+				campaign_id: campaign_id,
 				body_id: org_id
 			})
 		);
-		// TODO: Fix this test
-		// assert_eq!(
-		// 	events.pop().unwrap().event,
-		// 	Event::Tokens(TokensEvent::Unreserved(
-		// 		<Test as Config>::PaymentTokenId::get(),
-		// 		TREASURY_ACC,
-		// 		10
-		// 	))
-		// );
+		assert_eq!(
+			events.pop().unwrap().event,
+			Event::Tokens(TokensEvent::Unreserved(
+				<Test as Config>::PaymentTokenId::get(),
+				TREASURY_ACC,
+				10
+			))
+		);
 		assert_eq!(<CampaignBalanceUsed<Test>>::get(campaign_id), 10);
 		assert_eq!(<ProposalStates<Test>>::get(proposal_id3), ProposalState::Finalized);
 	});

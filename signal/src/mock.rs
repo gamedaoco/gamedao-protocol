@@ -222,6 +222,8 @@ impl gamedao_signal::Config for Test {
 	type PaymentTokenId = PaymentTokenId;
 	type Randomness = TestRandomness<Self>;
 	type Currency = Currencies;
+	type Balance = Balance;
+	type CurrencyId = CurrencyId;
 }
 
 #[derive(Default)]
