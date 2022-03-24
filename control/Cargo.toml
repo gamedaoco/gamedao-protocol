@@ -33,7 +33,6 @@ pallet-assets = {  default-features = false, git = "https://github.com/paritytec
 pallet-balances = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 
 orml-traits = { path = "../../orml/traits", default-features = false }
-primitives = { package = "zero-primitives", path = "../../primitives", default-features = false }
 gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 
 # tangram = { package = "module-tangram", path = "../../zero/tangram", default-features = false }
@@ -49,6 +48,7 @@ orml-currencies = { path = "../../orml/currencies", default-features = false }
 
 [features]
 default = ["std"]
+runtime-benchmarks = ["frame-benchmarking"]
 std = [
 	"codec/std",
 	"serde/std",

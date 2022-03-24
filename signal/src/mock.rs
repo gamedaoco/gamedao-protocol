@@ -28,11 +28,12 @@ pub const MILLISECS_PER_BLOCK: u64 = 6000;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-pub const CURRENCY_ID: CurrencyId = 2; // TokenSymbol::GAME
 pub const ACC1: AccountId = 1;
 pub const ACC2: AccountId = 2;
 pub const ACC3: AccountId = 3;
 pub const TREASURY_ACC: AccountId = 4;
+pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
+pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -141,9 +142,8 @@ parameter_types! {
 	pub const MaxDAOsPerAccount: u32 = 2;
 	pub const MaxMembersPerDAO: u32 = 2;
 	pub const MaxCreationsPerBlock: u32 = 2;
-	// pub const NetworkCurrencyId: u32 = CURRENCY_ID;
-	pub const ProtocolTokenId: u32 = CURRENCY_ID;
-	pub const PaymentTokenId: u32 = CURRENCY_ID;
+	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
+	pub const PaymentTokenId: u32 = PAYMENT_TOKEN_ID;
 	pub const CreationFee: Balance = 25_000_000_000_000;
 	pub const GameDAOTreasury: AccountId = TREASURY_ACC;
 }
@@ -179,8 +179,6 @@ parameter_types! {
 	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
 	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
-	pub const GAMECurrencyId: CurrencyId = CURRENCY_ID;
-	// pub const GameDAOTreasury: AccountId = TREASURY_ACC;
 }
 impl gamedao_flow::Config for Test {
 	type Balance = Balance;
@@ -189,7 +187,8 @@ impl gamedao_flow::Config for Test {
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
-	type ProtocolTokenId = GAMECurrencyId;
+	type ProtocolTokenId = ProtocolTokenId;
+	type PaymentTokenId = PaymentTokenId;
 	type UnixTime = PalletTimestamp;
 	type Randomness = TestRandomness<Self>;
 	type Control = Control;
@@ -220,8 +219,11 @@ impl gamedao_signal::Config for Test {
 	type MaxProposalsPerBlock = MaxProposalsPerBlock;
 	type MaxProposalDuration = MaxProposalDuration;
 	type ProtocolTokenId = ProtocolTokenId;
+	type PaymentTokenId = PaymentTokenId;
 	type Randomness = TestRandomness<Self>;
 	type Currency = Currencies;
+	type Balance = Balance;
+	type CurrencyId = CurrencyId;
 }
 
 #[derive(Default)]
@@ -231,10 +233,14 @@ impl ExtBuilder {
 		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		orml_tokens::GenesisConfig::<Test> {
 			balances: vec![
-				(ACC1, CURRENCY_ID, 100 * DOLLARS),
-				(ACC2, CURRENCY_ID, 100 * DOLLARS),
-				(ACC3, CURRENCY_ID, 100 * DOLLARS),
-				(TREASURY_ACC, CURRENCY_ID, 25 * DOLLARS),
+				(ACC1, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+				(ACC1, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(ACC2, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+				(ACC2, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(ACC3, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+				(ACC3, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(TREASURY_ACC, PAYMENT_TOKEN_ID, 25 * DOLLARS),
+				(TREASURY_ACC, PROTOCOL_TOKEN_ID, 25 * DOLLARS),
 			],
 		}
 		.assimilate_storage(&mut t)

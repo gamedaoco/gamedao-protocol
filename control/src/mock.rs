@@ -4,18 +4,38 @@ use crate as pallet_control;
 use frame_support::traits::GenesisBuild;
 use frame_support_test::TestRandomness;
 use frame_system;
-use primitives::{Amount, Balance, CurrencyId, Hash, TokenSymbol};
+use sp_core::H256;
 use sp_runtime::{testing::Header, traits::IdentityLookup};
 
+// Types:
+pub type AccountId = u32;
+pub type BlockNumber = u64;
+pub type Hash = H256;
+pub type Timestamp = u64;
+pub type Moment = u64;
+pub type Balance = u128;
+pub type Amount = i128;
+pub type CurrencyId = u32;
+// pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
-type AccountId = u64;
-type BlockNumber = u32;
-const GAME_CURRENCY_ID: u32 = TokenSymbol::GAME as u32;
 
-pub const TREASURY_ACCOUNT: AccountId = 3;
-pub const CONTROLLER_ACCOUNT: AccountId = 4;
-pub const USER_ACCOUNT: AccountId = 5;
+// Constants:
+pub const MILLICENTS: Balance = 1_000_000_000;
+pub const CENTS: Balance = 1_000 * MILLICENTS;
+pub const DOLLARS: Balance = 100 * CENTS;
+pub const MILLISECS_PER_BLOCK: u64 = 6000;
+pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
+pub const HOURS: BlockNumber = MINUTES * 60;
+pub const DAYS: BlockNumber = HOURS * 24;
+pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
+pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
+
+// Accounts:
+pub const ALICE: AccountId = 1;
+pub const BOB: AccountId = 2;
+pub const TREASURY: AccountId = 3;
+pub const GAMEDAO_TREASURY: AccountId = 4;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -110,13 +130,14 @@ frame_support::parameter_types! {
 	pub const MaxDAOsPerAccount: u32 = 2;
 	pub const MaxMembersPerDAO: u32 = 2;
 	pub const MaxCreationsPerBlock: u32 = 2;
-	pub const NetworkCurrencyId: u32 = GAME_CURRENCY_ID;
-	pub const FundingCurrencyId: u32 = GAME_CURRENCY_ID;
-	pub const DepositCurrencyId: u32 = GAME_CURRENCY_ID;
-	pub const CreationFee: Balance = 25_000_000_000_000;
-	pub const GameDAOTreasury: AccountId = TREASURY_ACCOUNT;
+	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
+	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
+	pub const CreationFee: Balance = 1 * DOLLARS;
+	pub const GameDAOTreasury: AccountId = TREASURY;
 }
 impl pallet_control::Config for Test {
+	type Balance = Balance;
+	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
@@ -131,20 +152,23 @@ impl pallet_control::Config for Test {
 	type MaxDAOsPerAccount = MaxDAOsPerAccount;
 	type MaxMembersPerDAO = MaxMembersPerDAO;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
-	type FundingCurrencyId = FundingCurrencyId;
-	type DepositCurrencyId = DepositCurrencyId;
+	type ProtocolTokenId = ProtocolTokenId;
+	type PaymentTokenId = PaymentTokenId;
 	type CreationFee = CreationFee;
 }
 
-// Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-	let cent = 1_000_000_000_000;
 	orml_tokens::GenesisConfig::<Test> {
 		balances: vec![
-			(TREASURY_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
-			(CONTROLLER_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
-			(USER_ACCOUNT, GAME_CURRENCY_ID, 100 * 100 * cent),
+			(ALICE, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+			(ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(BOB, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+			(BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(TREASURY, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+			(TREASURY, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(GAMEDAO_TREASURY, PROTOCOL_TOKEN_ID, 0),
+			(GAMEDAO_TREASURY, PAYMENT_TOKEN_ID, 0),
 		],
 	}
 	.assimilate_storage(&mut t)
