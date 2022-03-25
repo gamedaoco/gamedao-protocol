@@ -838,7 +838,7 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl<T: Config> FlowTrait<T::Hash, T::Balance> for Pallet<T> {
+impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
 	fn campaign_balance(hash: &T::Hash) -> T::Balance {
 		CampaignBalance::<T>::get(hash)
 	}
@@ -847,6 +847,9 @@ impl<T: Config> FlowTrait<T::Hash, T::Balance> for Pallet<T> {
 	}
 	fn campaign_org(hash: &T::Hash) -> T::Hash {
 		CampaignOrg::<T>::get(hash)
+	}
+	fn campaign_owner(hash: &T::Hash) -> Option<T::AccountId> {
+		CampaignOwner::<T>::get(hash)
 	}
 	fn is_campaign_succeeded(hash: &T::Hash) -> bool {
 		CampaignState::<T>::get(hash) == FlowState::Success

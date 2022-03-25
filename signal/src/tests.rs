@@ -251,7 +251,7 @@ fn signal_general_proposal_error() {
 			Error::<Test>::AuthorizationError
 		);
 
-		assert_ok!(Control::disable(Origin::root(), campaign_id));
+		assert_ok!(Control::disable_org(Origin::root(), campaign_id));
 		assert_noop!(
 			Signal::general_proposal(Origin::signed(ACC1), campaign_id, vec![1, 2, 3], vec![1, 2, 3], 3, 15),
 			Error::<Test>::DAOInactive
@@ -288,7 +288,7 @@ fn signal_withdraw_proposal_success() {
 			vec![1, 2, 3],        // title
 			vec![1, 2, 3],        // cid
 			10 * DOLLARS,         // amount
-			3,                    // start
+			4,                    // start
 			15                    // expiry
 		));
 		let event = System::events().pop().expect("No event generated").event;
@@ -309,7 +309,7 @@ fn signal_withdraw_proposal_success() {
 				campaign_id: campaign_id,
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
-				start: 3,
+				start: 4,
 				expiry: 15
 			})
 		);
@@ -346,7 +346,7 @@ fn signal_withdraw_proposal_success() {
 			campaign_id,   // context id
 			vec![2, 3, 4], // title
 			vec![2, 3, 4], // cid
-			3,             // start
+			4,             // start
 			15             // expiry
 		));
 		assert_eq!(
@@ -391,7 +391,7 @@ fn signal_withdraw_proposal_error() {
 				campaign_id: campaign_id,
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
-				start: 2,
+				start: 4,
 				expiry: 13,
 			},
 		);
@@ -402,7 +402,7 @@ fn signal_withdraw_proposal_error() {
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
-				3,                    // start
+				4,                    // start
 				15                    // expiry
 			),
 			Error::<Test>::ProposalExists
@@ -417,7 +417,7 @@ fn signal_withdraw_proposal_error() {
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
-				3,                    // start
+				4,                    // start
 				15                    // expiry
 			),
 			Error::<Test>::TooManyProposals
@@ -431,7 +431,7 @@ fn signal_withdraw_proposal_error() {
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
-				3,                    // start
+				4,                    // start
 				15                    // expiry
 			),
 			Error::<Test>::BalanceInsufficient
@@ -445,14 +445,62 @@ fn signal_withdraw_proposal_error() {
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
-				3,                    // start
+				4,                    // start
 				15                    // expiry
 			),
 			Error::<Test>::BalanceInsufficient
 		);
 
-		// CampaignState::<Test>::insert(campaign_id, FlowState::Failed);
-		// System::set_block_number(4);
+		assert_noop!(
+			Signal::withdraw_proposal(
+				Origin::signed(ACC1), // origin
+				campaign_id,          // context id
+				vec![1, 2, 3],        // title
+				vec![1, 2, 3],        // cid
+				10 * DOLLARS,         // amount
+				3,                    // start
+				15                    // expiry
+			),
+			Error::<Test>::OutOfBounds
+		);
+		assert_noop!(
+			Signal::withdraw_proposal(
+				Origin::signed(ACC1), // origin
+				campaign_id,          // context id
+				vec![1, 2, 3],        // title
+				vec![1, 2, 3],        // cid
+				10 * DOLLARS,         // amount
+				4,                    // start
+				4                    // expiry
+			),
+			Error::<Test>::OutOfBounds
+		);
+		assert_noop!(
+			Signal::withdraw_proposal(
+				Origin::signed(ACC1), // origin
+				campaign_id,          // context id
+				vec![1, 2, 3],        // title
+				vec![1, 2, 3],        // cid
+				10 * DOLLARS,         // amount
+				4,                    // start
+				4 + ProposalTimeLimit::<Test>::get() + 1
+			),
+			Error::<Test>::OutOfBounds
+		);
+
+		assert_noop!(
+			Signal::withdraw_proposal(
+				Origin::signed(ACC2), // origin
+				campaign_id,          // context id
+				vec![1, 2, 3],        // title
+				vec![1, 2, 3],        // cid
+				10 * DOLLARS,         // amount
+				4,                    // start
+				15
+			),
+			Error::<Test>::AuthorizationError
+		);
+
 		let campaign_id = create_campaign(org_id, vec![], Some(FlowState::Failed), Some(101));
 		<CampaignBalanceUsed<Test>>::insert(campaign_id, 11);
 		assert_noop!(
@@ -608,8 +656,8 @@ fn signal_simple_vote_success() {
 			event,
 			Event::Signal(crate::Event::WithdrawalGranted {
 				proposal_id,
-				campaign_id: campaign_id,
-				body_id: org_id
+				campaign_id,
+				org_id
 			})
 		);
 		assert_eq!(<ProposalSimpleVotes<Test>>::get(&proposal_id), (2, 0));
@@ -673,8 +721,8 @@ fn signal_on_finalize_success() {
 			Some(FlowState::Success),
 			None,
 		);
-		let (start, expiry) = (3, 15);
-		System::set_block_number(start);
+		let (start, expiry) = (4, 15);
+		System::set_block_number(start-1);
 		let (proposal_id1, _): (H256, _) = <Test as Config>::Randomness::random(&vec![0]);
 		let (proposal_id2, _): (H256, _) = <Test as Config>::Randomness::random(&vec![1]);
 		let (proposal_id3, _): (H256, _) = <Test as Config>::Randomness::random(&vec![2]);
@@ -738,8 +786,8 @@ fn signal_on_finalize_success() {
 			vec![1, 2, 3],        // title
 			vec![1, 2, 3],        // cid
 			10,                   // amount
-			15,                   // start
-			16                    // expiry
+			16,                   // start
+			17                    // expiry
 		));
 		assert_eq!(System::events().len(), events_before + 1);
 
@@ -768,8 +816,8 @@ fn signal_on_finalize_success() {
 			events.pop().unwrap().event,
 			Event::Signal(crate::Event::WithdrawalGranted {
 				proposal_id: proposal_id3,
-				campaign_id: campaign_id,
-				body_id: org_id
+				campaign_id,
+				org_id
 			})
 		);
 		assert_eq!(
