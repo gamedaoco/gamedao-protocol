@@ -22,7 +22,7 @@ mod tests;
 
 use codec::HasCompact;
 use frame_support::{
-	codec::{Decode, Encode},
+	codec::{Encode},
 	dispatch::DispatchResult,
 	ensure,
 	traits::{Get, Randomness},
@@ -243,7 +243,7 @@ pub mod pallet {
 		// disables an org to be used
 		// org_id: an organisations hash
 		#[pallet::weight(1_000_000)]
-		pub fn disable(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
+		pub fn disable_org(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			ensure_root(origin)?;
 			OrgState::<T>::insert(org_id.clone(), ControlState::Inactive);
 			Self::deposit_event(Event::OrgDisabled(org_id));
@@ -265,7 +265,6 @@ pub mod pallet {
 		/// - `fee`: fee
 		/// - `gov_asset`: control assets to empower actors
 		/// - `pay_asset`:
-		/// - `member_limit`: max members, if 0 == no limit
 		/// - `member_limit`: max members, if 0 == no limit
 		///
 		/// Emits `OrgCreated` event when successful.
@@ -348,12 +347,19 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// Add Member to Org
+		/// Add Member to Org
+		///
+		/// - `org_id`: Org id
+		/// - `account`: Account to be added
+		///
+		/// Emits `AddMember` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(1_000_000)]
 		pub fn add_member(origin: OriginFor<T>, org_id: T::Hash, account: T::AccountId) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: ensure not a member yet, org exists
-			Self::add_org_member(org_id.clone(), account.clone())?;
+			Self::do_add_member(org_id.clone(), account.clone())?;
 
 			let now = <frame_system::Pallet<T>>::block_number();
 			Self::deposit_event(Event::AddMember {
@@ -365,12 +371,22 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// Remove Member from Org
+		/// Remove Member from Org
+		///
+		/// - `org_id`: Org id
+		/// - `account`: Account to be removed
+		///
+		/// Emits `RemoveMember` event when successful.
+		///
+		/// Weight:
 		#[pallet::weight(1_000_000)]
 		pub fn remove_member(origin: OriginFor<T>, org_id: T::Hash, account: T::AccountId) -> DispatchResult {
-			// TODO ASAP: when fees==1 unreserve fees
 			ensure_signed(origin)?;
-			Self::remove(org_id.clone(), account.clone())?;
+			Self::do_remove_member(org_id.clone(), account.clone())?;
+			let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
+			if config.fee_model == FeeModel::Reserve {
+				T::Currency::unreserve(T::ProtocolTokenId::get(), &account, config.fee);
+			}
 			Self::deposit_event(Event::RemoveMember {
 				org_id: org_id,
 				account_id: account,
@@ -472,7 +488,7 @@ impl<T: Config> Pallet<T> {
 		// 		Ok(_) => {},
 		// 		Err(err) => { panic!("{err}") }
 		// };
-		Self::add_org_member(org_id.clone(), controller.clone())?;
+		Self::do_add_member(org_id.clone(), controller.clone())?;
 
 		Self::mint_nft()?;
 
@@ -569,19 +585,19 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn set_member_state(org_id: T::Hash, account: T::AccountId, member_state: ControlMemberState) -> DispatchResult {
+		// TODO: we would like to update member state based on voting result
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
 		let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
-		let _current_state = OrgMemberState::<T>::get((&org_id, &account));
-		let _new_state = match config.access {
+		let new_state = match config.access {
 			AccessModel::Open => member_state, // when open use desired state
 			_ => ControlMemberState::Pending,  // else pending
 		};
-		// TODO ASAP: save new_state to storage
+		OrgMemberState::<T>::insert((&org_id, &account), new_state);
 
 		Ok(())
 	}
 
-	fn add_org_member(org_id: T::Hash, account: T::AccountId) -> DispatchResult {
+	fn do_add_member(org_id: T::Hash, account: T::AccountId) -> DispatchResult {
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
 
 		let mut members = OrgMembers::<T>::get(&org_id);
@@ -641,7 +657,7 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	fn remove(org_id: T::Hash, account: T::AccountId) -> DispatchResult {
+	fn do_remove_member(org_id: T::Hash, account: T::AccountId) -> DispatchResult {
 		// existence
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
 

@@ -21,10 +21,11 @@ pub trait ControlTrait<AccountId, Hash> {
     fn is_org_member_active(org: &Hash, accont_id: &AccountId) -> bool;
 }
 
-pub trait FlowTrait<Hash, Balance> {
+pub trait FlowTrait<AccountId, Balance, Hash> {
 
     fn campaign_balance(hash: &Hash) -> Balance;
     fn is_campaign_succeeded(hash: &Hash) -> bool;
     fn campaign_contributors_count(hash: &Hash) -> u64;
     fn campaign_org(hash: &Hash) -> Hash;
+    fn campaign_owner(hash: &Hash) -> Option<AccountId>;
 }
