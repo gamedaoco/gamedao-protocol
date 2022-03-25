@@ -70,7 +70,7 @@ pub mod pallet {
 			+ MultiReservableCurrency<Self::AccountId>;
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 		type Control: ControlTrait<Self::AccountId, Self::Hash>;
-		type Flow: FlowTrait<Self::Hash, Self::Balance>;
+		type Flow: FlowTrait<Self::AccountId, Self::Balance, Self::Hash>;
 		type ForceOrigin: EnsureOrigin<Self::Origin>;
 		type WeightInfo: WeightInfo;
 
@@ -246,7 +246,7 @@ pub mod pallet {
 		WithdrawalGranted {
 			proposal_id: T::Hash,
 			campaign_id: T::Hash,
-			body_id: T::Hash,
+			org_id: T::Hash,
 		},
 	}
 
@@ -330,7 +330,6 @@ pub mod pallet {
 			);
 
 			let current_block = <frame_system::Pallet<T>>::block_number();
-			// ensure!(start > current_block, Error::<T>::OutOfBounds);
 			ensure!(expiry > current_block, Error::<T>::OutOfBounds);
 			ensure!(
 				expiry <= current_block + ProposalTimeLimit::<T>::get(),
@@ -422,7 +421,6 @@ pub mod pallet {
 		#[transactional]
 		pub fn withdraw_proposal(
 			origin: OriginFor<T>,
-			// TODO: maybe use org_id instead?
 			campaign_id: T::Hash,
 			title: Vec<u8>,
 			cid: Vec<u8>,
@@ -434,20 +432,16 @@ pub mod pallet {
 
 			ensure!(T::Flow::is_campaign_succeeded(&campaign_id), Error::<T>::CampaignFailed);
 
-			// TODO ASAP: fix this
-			// Should this checks be performed? - YES
+			let owner = T::Flow::campaign_owner(&campaign_id).ok_or(Error::<T>::AuthorizationError)?;
+			ensure!(sender == owner, Error::<T>::AuthorizationError);
 
-			// let owner = T::Flow::campaign_owner(&campaign_id);
-			// ensure!( sender == owner, Error::<T>::AuthorizationError );
-
-			// TODO ASAP: fix this
-			// Should this checks be performed or not? - YES
-
-			// let current_block = <frame_system::Pallet<T>>::block_number();
-			// ensure!(start > current_block, Error::<T>::OutOfBounds );
-			// ensure!(expiry > start, Error::<T>::OutOfBounds );
-			// ensure!(expiry <= current_block + Self::proposal_time_limit(),
-			// Error::<T>::OutOfBounds );
+			let current_block = <frame_system::Pallet<T>>::block_number();
+			ensure!(start > current_block, Error::<T>::OutOfBounds );
+			ensure!(expiry > start, Error::<T>::OutOfBounds );
+			ensure!(
+				expiry <= current_block + ProposalTimeLimit::<T>::get(),
+				Error::<T>::OutOfBounds
+			);
 
 			let used_balance = CampaignBalanceUsed::<T>::get(&campaign_id);
 			let total_balance = T::Flow::campaign_balance(&campaign_id);
@@ -657,9 +651,9 @@ pub mod pallet {
 			// Get the owner of the campaign
 			let _owner = Owners::<T>::get(&proposal.proposal_id).ok_or(Error::<T>::NoProposalOwner)?;
 
-			// get treasury account for related body and unlock balance
-			let body = T::Flow::campaign_org(&proposal.campaign_id);
-			let treasury_account = T::Control::org_treasury_account(&body);
+			// get treasury account for related org and unlock balance
+			let org_id = T::Flow::campaign_org(&proposal.campaign_id);
+			let treasury_account = T::Control::org_treasury_account(&org_id);
 			T::Currency::unreserve(T::PaymentTokenId::get(), &treasury_account, proposal_balance);
 
 			// Change the used amount
@@ -674,7 +668,7 @@ pub mod pallet {
 			Self::deposit_event(Event::<T>::WithdrawalGranted {
 				proposal_id: proposal.proposal_id,
 				campaign_id: proposal.campaign_id,
-				body_id: body,
+				org_id
 			});
 			Ok(())
 		}
