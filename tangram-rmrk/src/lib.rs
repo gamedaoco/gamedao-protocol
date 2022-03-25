@@ -2,7 +2,7 @@
 // TODO: Tangram functions: do_mint_nft, do_create_collection, do_create_realm
 
 
-        /// Mints an NFT in the specified collection
+		/// Mints an NFT in the specified collection
 		/// Sets metadata and the royalty attribute
 		///
 		/// Parameters:
@@ -31,27 +31,27 @@
 				return Err(Error::<T>::CollectionUnknown.into())
 			}
 
-            // RMRK NFT mint
+			// RMRK NFT mint
 			let (collection_id, nft_id) =
-                pallet_rmrk::Pallet::<T>::nft_mint(sender.clone(), owner, collection_id, recipient, royalty, metadata)?;
+				pallet_rmrk::Pallet::<T>::nft_mint(sender.clone(), owner, collection_id, recipient, royalty, metadata)?;
 
-            // Uniques NFT mint
+			// Uniques NFT mint
 			pallet_uniques::Pallet::<T>::do_mint(
 				collection_id,
 				nft_id,
 				sender.clone(),
 				|_details| Ok(()),
 			)?;
-            
+			
 			// TODO: Tangram NFT mint
-            // Self::do_mint_nft()
+			// Self::do_mint_nft()
 
-            // TODO: Emit Tangram Event
+			// TODO: Emit Tangram Event
 
 			Ok(())
 		}
 
-        /// Create a collection
+		/// Create a collection
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
 		pub fn create_collection(
@@ -62,10 +62,10 @@
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 
-            // RMRK Collection create
+			// RMRK Collection create
 			let collection_id = pallet_rmrk::Pallet::<T>::collection_create(sender.clone(), metadata, max, symbol)?;
-            
-            // Uniques Collection create
+			
+			// Uniques Collection create
 			pallet_uniques::Pallet::<T>::do_create_class(
 				collection_id,
 				sender.clone(),
@@ -79,15 +79,15 @@
 				},
 			)?;
 
-            // TODO: Tangram Collection create
-            // Self::do_create_collection()
+			// TODO: Tangram Collection create
+			// Self::do_create_collection()
 
-            // TODO: Emit Tangram Event
+			// TODO: Emit Tangram Event
 			
 			Ok(())
 		}
 
-        /// Create a realm
+		/// Create a realm
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		#[transactional]
 		pub fn create_realm(
@@ -101,8 +101,8 @@
 			let realm_id = Self::do_create_realm(sender.clone(), metadata, max, symbol)?;
 
 			// TODO: Tangram Realm create
-            // Self::do_create_realm()
+			// Self::do_create_realm()
 
-            // TODO: Emit Tangram Event
+			// TODO: Emit Tangram Event
 			Ok(())
 		}
