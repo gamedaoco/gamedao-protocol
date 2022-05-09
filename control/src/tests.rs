@@ -1,17 +1,17 @@
 #![cfg(test)]
 
-use super::*;
 use frame_support::{assert_noop, assert_ok};
+use super::*;
 use mock::*;
 
 #[test]
 fn control_create_campaign_success() {
 	new_test_ext().execute_with(|| {
+		System::set_block_number(3);
 		// create a DAO with account #5.
 		assert_ok!(Control::create_org(
 			Origin::signed(ALICE),
 			BOB,
-			TREASURY,
 			vec![12, 56],
 			vec![11, 111],
 			Default::default(),
@@ -25,6 +25,19 @@ fn control_create_campaign_success() {
 
 		// check that there are now 1 Control in storage
 		assert_eq!(Nonce::<Test>::get(), 1);
+		let created_org_id = OrgByNonce::<Test>::get(0).unwrap();
+		let treasury = OrgTreasury::<Test>::get(created_org_id);
+		System::assert_has_event(
+			mock::Event::Control(
+				crate::Event::OrgCreated {
+					sender_id: ALICE,
+					org_id: created_org_id,
+					treasury_id: treasury,
+					created_at: System::block_number(),
+					realm_index: 0
+				}
+			)
+		);
 
 		// // check that account #5 is creator
 		// let creator_hash = <OrgByHash<Test>>::get(0);
