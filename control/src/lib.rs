@@ -20,7 +20,7 @@ mod tests;
 // #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
 
-use codec::HasCompact;
+use codec::{HasCompact, Decode};
 use frame_support::{
 	codec::{Encode},
 	dispatch::DispatchResult,
@@ -30,7 +30,7 @@ use frame_support::{
 use gamedao_traits::ControlTrait;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use scale_info::TypeInfo;
-use sp_runtime::traits::AtLeast32BitUnsigned;
+use sp_runtime::traits::{AtLeast32BitUnsigned, TrailingZeroInput};
 use sp_std::{fmt::Debug, vec::Vec};
 
 pub use pallet::*;
@@ -38,7 +38,7 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::pallet_prelude::*;
+	use frame_support::{pallet_prelude::*, transactional};
 	use frame_system::pallet_prelude::*;
 
 	#[pallet::pallet]
@@ -76,7 +76,6 @@ pub mod pallet {
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 
 		// type GameDAOAdminOrigin: EnsureOrigin<Self::Origin>;
-		type GameDAOTreasury: Get<Self::AccountId>;
 
 		#[pallet::constant]
 		type MaxDAOsPerAccount: Get<u32>;
@@ -91,7 +90,7 @@ pub mod pallet {
 		type PaymentTokenId: Get<Self::CurrencyId>;
 
 		#[pallet::constant]
-		type CreationFee: Get<Self::Balance>;
+		type InitialDeposit: Get<Self::Balance>;
 	}
 
 	/// Get an Org by its hash
@@ -173,6 +172,7 @@ pub mod pallet {
 		OrgCreated {
 			sender_id: T::AccountId,
 			org_id: T::Hash,
+			treasury_id: T::AccountId,
 			created_at: T::BlockNumber,
 			realm_index: u64,
 		},
@@ -222,6 +222,10 @@ pub mod pallet {
 		UnknownError,
 		/// Guru Meditation
 		GuruMeditation,
+		/// Failed to create treasury for organization
+		TreasuryCreationIssue,
+		/// Treasury account already exists
+		TreasuryExists
 	}
 
 	#[pallet::call]
@@ -255,13 +259,11 @@ pub mod pallet {
 		///
 		/// - `creator`: creator
 		/// - `controller`: current controller
-		/// - `treasury`: treasury
 		/// - `name`: Org name
 		/// - `cid`: IPFS
 		/// - `org_type`: individual | legal Org | dao
 		/// - `access`: anyDAO can join | only member can add | only
-		/// - `fee_model`: only TX by OS | fees are reserved | fees are moved to
-		///   treasury
+		/// - `fee_model`: only TX by OS | fees are reserved | fees are moved to treasury
 		/// - `fee`: fee
 		/// - `gov_asset`: control assets to empower actors
 		/// - `pay_asset`:
@@ -271,12 +273,10 @@ pub mod pallet {
 		///
 		/// Weight:
 		#[pallet::weight(5_000_000)]
+		#[transactional]
 		pub fn create_org(
 			origin: OriginFor<T>,
 			controller: T::AccountId,
-			// TODO: treasury shouldn't be provided here. Ink contract as an option. How to dynamically init the
-			// pallet?
-			treasury: T::AccountId,
 			name: Vec<u8>,
 			cid: Vec<u8>,
 			org_type: OrgType,
@@ -292,18 +292,14 @@ pub mod pallet {
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-			let creation_fee = T::CreationFee::get();
-			let free_balance = T::Currency::free_balance(T::PaymentTokenId::get(), &sender);
-			ensure!(free_balance > creation_fee, Error::<T>::BalanceTooLow);
-
-			let free_balance_treasury = T::Currency::free_balance(T::PaymentTokenId::get(), &treasury);
-			ensure!(free_balance_treasury > creation_fee, Error::<T>::BalanceTooLow);
-
-			// controller and treasury must not be equal
-			ensure!(&controller != &treasury, Error::<T>::DuplicateAddress);
+			let initial_deposit = T::InitialDeposit::get();
+			let free_balance = T::Currency::free_balance(T::ProtocolTokenId::get(), &sender);
+			ensure!(free_balance > initial_deposit, Error::<T>::BalanceTooLow);
 
 			let nonce = Self::get_and_increment_nonce();
 			let (org_id, _) = T::Randomness::random(&nonce.encode());
+			let treasury = Self::generate_treasury_account_id(org_id)?;
+			ensure!(!<frame_system::Pallet<T>>::account_exists(&treasury), Error::<T>::TreasuryExists);
 			let current_block = <frame_system::Pallet<T>>::block_number();
 
 			let org = Org {
@@ -334,12 +330,13 @@ pub mod pallet {
 				access: access.clone(),
 			};
 
-			Self::do_create_org(org, org_config, controller, treasury)?;
+			Self::do_create_org(org, org_config, controller, &treasury)?;
 
 			// dispatch event
 			Self::deposit_event(Event::OrgCreated {
 				sender_id: sender,
 				org_id: org_id,
+				treasury_id: treasury,
 				created_at: current_block,
 				// TODO: tangram::NextRealmIndex::get()
 				realm_index: 0,
@@ -461,7 +458,7 @@ impl<T: Config> Pallet<T> {
 		org: Org<T::Hash, T::AccountId, T::BlockNumber>,
 		org_config: OrgConfig<T::Balance>,
 		controller: T::AccountId,
-		treasury: T::AccountId,
+		treasury: &T::AccountId,
 	) -> DispatchResult {
 		let org_id = org.id.clone();
 		let access = org_config.access.clone();
@@ -495,8 +492,8 @@ impl<T: Config> Pallet<T> {
 		T::Currency::transfer(
 			T::ProtocolTokenId::get(),
 			&creator,
-			&T::GameDAOTreasury::get(),
-			T::CreationFee::get(),
+			treasury,
+			T::InitialDeposit::get(),
 		)?;
 
 		Ok(())
@@ -698,6 +695,13 @@ impl<T: Config> Pallet<T> {
 
 			Err(_) => Err(Error::<T>::MemberUnknown.into()),
 		}
+	}
+
+	fn generate_treasury_account_id(org_id: T::Hash) -> Result<T::AccountId, Error<T>> {
+		let encoded = &org_id.encode();
+		let mut trailing = TrailingZeroInput::new(&encoded);
+		T::AccountId::decode(&mut trailing).
+			map_err(|_| <Error<T>>::TreasuryCreationIssue)
 	}
 
 	fn get_and_increment_nonce() -> u128 {

@@ -132,8 +132,7 @@ frame_support::parameter_types! {
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
-	pub const CreationFee: Balance = 1 * DOLLARS;
-	pub const GameDAOTreasury: AccountId = TREASURY;
+	pub const InitialDeposit: Balance = 1 * DOLLARS;
 }
 impl pallet_control::Config for Test {
 	type Balance = Balance;
@@ -145,7 +144,6 @@ impl pallet_control::Config for Test {
 	type Randomness = TestRandomness<Self>;
 
 	// type GameDAOAdminOrigin: EnsureOrigin<Self::Origin>;
-	type GameDAOTreasury = GameDAOTreasury;
 
 	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
 
@@ -154,7 +152,7 @@ impl pallet_control::Config for Test {
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
-	type CreationFee = CreationFee;
+	type InitialDeposit = InitialDeposit;
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
