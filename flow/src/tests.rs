@@ -23,7 +23,8 @@ fn create_org_treasury() -> (H256, AccountId) {
 		0,
 		0,
 		0,
-		0
+		0,
+        1 * DOLLARS
 	));
     let org_id = <Test as gamedao_control::Config>::Randomness::random(&nonce).0;
     let treasury_id = Control::org_treasury_account(&org_id);

@@ -144,7 +144,7 @@ parameter_types! {
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: u32 = PAYMENT_TOKEN_ID;
-	pub const InitialDeposit: Balance = 25_000_000_000_000;
+	pub const InitialDeposit: Balance = 1 * DOLLARS;
 	pub const GameDAOTreasury: AccountId = TREASURY_ACC;
 }
 impl gamedao_control::Config for Test {
