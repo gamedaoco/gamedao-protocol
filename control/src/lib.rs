@@ -225,7 +225,9 @@ pub mod pallet {
 		/// Failed to create treasury for organization
 		TreasuryCreationIssue,
 		/// Treasury account already exists
-		TreasuryExists
+		TreasuryExists,
+		/// Initial deposit to Treasury too low
+		InitialDepositTooLow
 	}
 
 	#[pallet::call]
@@ -268,6 +270,7 @@ pub mod pallet {
 		/// - `gov_asset`: control assets to empower actors
 		/// - `pay_asset`:
 		/// - `member_limit`: max members, if 0 == no limit
+		/// - `deposit`: initial deposit for the org treasury
 		///
 		/// Emits `OrgCreated` event when successful.
 		///
@@ -276,7 +279,7 @@ pub mod pallet {
 		#[transactional]
 		pub fn create_org(
 			origin: OriginFor<T>,
-			controller: T::AccountId,
+			controller_id: T::AccountId,
 			name: Vec<u8>,
 			cid: Vec<u8>,
 			org_type: OrgType,
@@ -286,20 +289,21 @@ pub mod pallet {
 			gov_asset: u8,
 			pay_asset: u8,
 			member_limit: u64,
+			deposit: T::Balance,
 			// mint: T::Balance,
 			// burn: T::Balance,
 			// strategy: u16,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-			let initial_deposit = T::InitialDeposit::get();
+			ensure!(deposit >= T::InitialDeposit::get(), Error::<T>::InitialDepositTooLow);
 			let free_balance = T::Currency::free_balance(T::ProtocolTokenId::get(), &sender);
-			ensure!(free_balance > initial_deposit, Error::<T>::BalanceTooLow);
+			ensure!(free_balance > deposit, Error::<T>::BalanceTooLow);
 
 			let nonce = Self::get_and_increment_nonce();
 			let (org_id, _) = T::Randomness::random(&nonce.encode());
-			let treasury = Self::generate_treasury_account_id(org_id)?;
-			ensure!(!<frame_system::Pallet<T>>::account_exists(&treasury), Error::<T>::TreasuryExists);
+			let treasury_id = Self::generate_treasury_account_id(org_id)?;
+			ensure!(!<frame_system::Pallet<T>>::account_exists(&treasury_id), Error::<T>::TreasuryExists);
 			let current_block = <frame_system::Pallet<T>>::block_number();
 
 			let org = Org {
@@ -330,13 +334,13 @@ pub mod pallet {
 				access: access.clone(),
 			};
 
-			Self::do_create_org(org, org_config, controller, &treasury)?;
+			Self::do_create_org(org, org_config, controller_id, &treasury_id, deposit)?;
 
 			// dispatch event
 			Self::deposit_event(Event::OrgCreated {
 				sender_id: sender,
-				org_id: org_id,
-				treasury_id: treasury,
+				org_id,
+				treasury_id,
 				created_at: current_block,
 				// TODO: tangram::NextRealmIndex::get()
 				realm_index: 0,
@@ -353,15 +357,15 @@ pub mod pallet {
 		///
 		/// Weight:
 		#[pallet::weight(1_000_000)]
-		pub fn add_member(origin: OriginFor<T>, org_id: T::Hash, account: T::AccountId) -> DispatchResult {
+		pub fn add_member(origin: OriginFor<T>, org_id: T::Hash, account_id: T::AccountId) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: ensure not a member yet, org exists
-			Self::do_add_member(org_id.clone(), account.clone())?;
+			Self::do_add_member(org_id.clone(), account_id.clone())?;
 
 			let now = <frame_system::Pallet<T>>::block_number();
 			Self::deposit_event(Event::AddMember {
 				org_id: org_id,
-				account_id: account,
+				account_id,
 				added_at: now,
 			});
 
@@ -377,16 +381,16 @@ pub mod pallet {
 		///
 		/// Weight:
 		#[pallet::weight(1_000_000)]
-		pub fn remove_member(origin: OriginFor<T>, org_id: T::Hash, account: T::AccountId) -> DispatchResult {
+		pub fn remove_member(origin: OriginFor<T>, org_id: T::Hash, account_id: T::AccountId) -> DispatchResult {
 			ensure_signed(origin)?;
-			Self::do_remove_member(org_id.clone(), account.clone())?;
+			Self::do_remove_member(org_id.clone(), account_id.clone())?;
 			let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
 			if config.fee_model == FeeModel::Reserve {
-				T::Currency::unreserve(T::ProtocolTokenId::get(), &account, config.fee);
+				T::Currency::unreserve(T::ProtocolTokenId::get(), &account_id, config.fee);
 			}
 			Self::deposit_event(Event::RemoveMember {
 				org_id: org_id,
-				account_id: account,
+				account_id,
 				removed_at: <frame_system::Pallet<T>>::block_number(),
 			});
 			Ok(())
@@ -457,8 +461,9 @@ impl<T: Config> Pallet<T> {
 	fn do_create_org(
 		org: Org<T::Hash, T::AccountId, T::BlockNumber>,
 		org_config: OrgConfig<T::Balance>,
-		controller: T::AccountId,
-		treasury: &T::AccountId,
+		controller_id: T::AccountId,
+		treasury_id: &T::AccountId,
+		deposit: T::Balance,
 	) -> DispatchResult {
 		let org_id = org.id.clone();
 		let access = org_config.access.clone();
@@ -470,12 +475,12 @@ impl<T: Config> Pallet<T> {
 		OrgByNonce::<T>::insert(nonce.clone(), org_id.clone());
 		OrgAccess::<T>::insert(org_id.clone(), access.clone());
 		OrgCreator::<T>::insert(org_id.clone(), creator.clone());
-		OrgController::<T>::insert(org_id.clone(), controller.clone());
-		OrgTreasury::<T>::insert(org_id.clone(), treasury.clone());
+		OrgController::<T>::insert(org_id.clone(), controller_id.clone());
+		OrgTreasury::<T>::insert(org_id.clone(), treasury_id.clone());
 		OrgState::<T>::insert(org_id.clone(), ControlState::Active);
-		OrgsControlled::<T>::mutate(&controller, |controlled| controlled.push(org_id.clone()));
+		OrgsControlled::<T>::mutate(&controller_id, |controlled| controlled.push(org_id.clone()));
 
-		OrgsControlledCount::<T>::mutate(&controller, |controlled_count| *controlled_count += 1);
+		OrgsControlledCount::<T>::mutate(&controller_id, |controlled_count| *controlled_count += 1);
 		OrgsCreated::<T>::mutate(&creator, |created| created.push(org_id.clone()));
 
 		// initiate member registry -> consumes fees
@@ -485,15 +490,15 @@ impl<T: Config> Pallet<T> {
 		// 		Ok(_) => {},
 		// 		Err(err) => { panic!("{err}") }
 		// };
-		Self::do_add_member(org_id.clone(), controller.clone())?;
+		Self::do_add_member(org_id.clone(), controller_id.clone())?;
 
 		Self::mint_nft()?;
 
 		T::Currency::transfer(
 			T::ProtocolTokenId::get(),
 			&creator,
-			treasury,
-			T::InitialDeposit::get(),
+			treasury_id,
+			deposit,
 		)?;
 
 		Ok(())
@@ -581,7 +586,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	fn set_member_state(org_id: T::Hash, account: T::AccountId, member_state: ControlMemberState) -> DispatchResult {
+	fn set_member_state(org_id: T::Hash, account_id: T::AccountId, member_state: ControlMemberState) -> DispatchResult {
 		// TODO: we would like to update member state based on voting result
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
 		let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
@@ -589,12 +594,12 @@ impl<T: Config> Pallet<T> {
 			AccessModel::Open => member_state, // when open use desired state
 			_ => ControlMemberState::Pending,  // else pending
 		};
-		OrgMemberState::<T>::insert((&org_id, &account), new_state);
+		OrgMemberState::<T>::insert((&org_id, &account_id), new_state);
 
 		Ok(())
 	}
 
-	fn do_add_member(org_id: T::Hash, account: T::AccountId) -> DispatchResult {
+	fn do_add_member(org_id: T::Hash, account_id: T::AccountId) -> DispatchResult {
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
 
 		let mut members = OrgMembers::<T>::get(&org_id);
@@ -610,7 +615,7 @@ impl<T: Config> Pallet<T> {
 		let currency_id = T::ProtocolTokenId::get();
 		let fee = config.fee;
 		ensure!(
-			T::Currency::free_balance(currency_id, &account) > fee,
+			T::Currency::free_balance(currency_id, &account_id) > fee,
 			Error::<T>::BalanceTooLow
 		);
 
@@ -619,58 +624,58 @@ impl<T: Config> Pallet<T> {
 			FeeModel::NoFees => {}
 			// reserve
 			FeeModel::Reserve => {
-				T::Currency::reserve(currency_id, &account, config.fee)?;
+				T::Currency::reserve(currency_id, &account_id, config.fee)?;
 			}
 			// transfer to treasury
 			FeeModel::Transfer => {
 				let treasury = OrgTreasury::<T>::get(org_id);
-				T::Currency::transfer(currency_id, &account, &treasury, config.fee)?;
+				T::Currency::transfer(currency_id, &account_id, &treasury, config.fee)?;
 			}
 		}
 
-		match members.binary_search(&account) {
+		match members.binary_search(&account_id) {
 			// already a member, return
 			Ok(_) => Err(Error::<T>::MemberExists.into()),
 
 			// not a member, insert at index
 			Err(index) => {
-				members.insert(index, account.clone());
-				// OrgMembers::<T>::mutate( &org_id, |members| members.push(account.clone()) );
+				members.insert(index, account_id.clone());
+				// OrgMembers::<T>::mutate( &org_id, |members| members.push(account_id.clone()) );
 				OrgMembers::<T>::insert(&org_id, members.clone());
 
 				// counter
 				let count = members.len();
 				OrgMemberCount::<T>::insert(&org_id, count as u64);
 
-				let mut memberships = Memberships::<T>::get(&account);
+				let mut memberships = Memberships::<T>::get(&account_id);
 				memberships.push(org_id.clone());
-				Memberships::<T>::insert(&account, memberships);
+				Memberships::<T>::insert(&account_id, memberships);
 
 				// state
-				OrgMemberState::<T>::insert((org_id.clone(), account.clone()), state);
+				OrgMemberState::<T>::insert((org_id.clone(), account_id.clone()), state);
 
 				Ok(())
 			}
 		}
 	}
 
-	fn do_remove_member(org_id: T::Hash, account: T::AccountId) -> DispatchResult {
+	fn do_remove_member(org_id: T::Hash, account_id: T::AccountId) -> DispatchResult {
 		// existence
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
 
 		let mut members = OrgMembers::<T>::get(org_id);
-		match members.binary_search(&account) {
+		match members.binary_search(&account_id) {
 			Ok(index) => {
 				// remove member from Org
 				members.remove(index);
 				OrgMembers::<T>::insert(&org_id, members.clone());
 
 				// remove Org from member's Orgs
-				let mut memberships = Memberships::<T>::get(&account);
+				let mut memberships = Memberships::<T>::get(&account_id);
 				match memberships.binary_search(&org_id) {
 					Ok(index) => {
 						memberships.remove(index);
-						Memberships::<T>::insert(&account, memberships);
+						Memberships::<T>::insert(&account_id, memberships);
 					}
 					Err(_) => {}
 				}
@@ -680,7 +685,7 @@ impl<T: Config> Pallet<T> {
 				// unreserve?
 				let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
 				if config.fee_model == FeeModel::Reserve {
-					T::Currency::unreserve(currency_id, &account, config.fee);
+					T::Currency::unreserve(currency_id, &account_id, config.fee);
 				}
 
 				// counter --
@@ -688,7 +693,7 @@ impl<T: Config> Pallet<T> {
 				OrgMemberCount::<T>::insert(&org_id, count as u64);
 
 				// member state
-				OrgMemberState::<T>::insert((org_id.clone(), account.clone()), ControlMemberState::Inactive);
+				OrgMemberState::<T>::insert((org_id.clone(), account_id.clone()), ControlMemberState::Inactive);
 
 				Ok(())
 			}
@@ -712,16 +717,16 @@ impl<T: Config> Pallet<T> {
 }
 
 impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
-	fn org_controller_account(org: &T::Hash) -> T::AccountId {
-		OrgController::<T>::get(org)
+	fn org_controller_account(org_id: &T::Hash) -> T::AccountId {
+		OrgController::<T>::get(org_id)
 	}
-	fn org_treasury_account(org: &T::Hash) -> T::AccountId {
-		OrgTreasury::<T>::get(org)
+	fn org_treasury_account(org_id: &T::Hash) -> T::AccountId {
+		OrgTreasury::<T>::get(org_id)
 	}
-	fn is_org_active(org: &T::Hash) -> bool {
-		OrgState::<T>::get(org) == ControlState::Active
+	fn is_org_active(org_id: &T::Hash) -> bool {
+		OrgState::<T>::get(org_id) == ControlState::Active
 	}
-	fn is_org_member_active(org: &T::Hash, account_id: &T::AccountId) -> bool {
-		OrgMemberState::<T>::get((org, account_id)) == ControlMemberState::Active
+	fn is_org_member_active(org_id: &T::Hash, account_id: &T::AccountId) -> bool {
+		OrgMemberState::<T>::get((org_id, account_id)) == ControlMemberState::Active
 	}
 }

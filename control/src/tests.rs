@@ -20,7 +20,8 @@ fn control_create_campaign_success() {
 			1 * DOLLARS,
 			0,
 			0,
-			10
+			10,
+            1 * DOLLARS
 		));
 
 		// check that there are now 1 Control in storage

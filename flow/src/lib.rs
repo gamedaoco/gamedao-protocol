@@ -530,8 +530,8 @@ pub mod pallet {
 		#[transactional]
 		pub fn create_campaign(
 			origin: OriginFor<T>,
-			org: T::Hash,
-			admin: T::AccountId,
+			org_id: T::Hash,
+			admin_id: T::AccountId,
 			name: Vec<u8>,
 			target: T::Balance,
 			deposit: T::Balance,
@@ -546,14 +546,14 @@ pub mod pallet {
 		) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
 
-			let owner = T::Control::org_controller_account(&org);
+			let owner = T::Control::org_controller_account(&org_id);
 
 			ensure!(creator == owner, Error::<T>::AuthorizationError);
 
 			// Get Treasury account for deposits and fees
-			let treasury = T::Control::org_treasury_account(&org);
+			let treasury_id = T::Control::org_treasury_account(&org_id);
 
-			let free_balance = T::Currency::free_balance(T::ProtocolTokenId::get(), &treasury);
+			let free_balance = T::Currency::free_balance(T::ProtocolTokenId::get(), &treasury_id);
 			ensure!(free_balance > deposit, Error::<T>::TreasuryBalanceTooLow);
 			// TODO: Fix deposit check
 			// First iteration: MinimumDeposit >= 10% target with 1:1
@@ -589,10 +589,10 @@ pub mod pallet {
 
 			let campaign = Campaign {
 				id: id.clone(),
-				org: org.clone(),
+				org: org_id.clone(),
 				name: name.clone(),
 				owner: creator.clone(),
-				admin: admin.clone(),
+				admin: admin_id.clone(),
 				deposit: deposit.clone(),
 				expiry: expiry.clone(),
 				cap: target.clone(),
@@ -615,7 +615,7 @@ pub mod pallet {
 			Self::deposit_event(Event::CampaignCreated {
 				campaign_id: id,
 				creator,
-				admin,
+				admin: admin_id,
 				target,
 				deposit,
 				expiry,
@@ -681,7 +681,7 @@ pub mod pallet {
 
 			let sender = ensure_signed(origin)?;
 			ensure!(
-				T::Currency::free_balance(T::ProtocolTokenId::get(), &sender) >= contribution,
+				T::Currency::free_balance(T::PaymentTokenId::get(), &sender) >= contribution,
 				Error::<T>::BalanceTooLow
 			);
 			let owner = CampaignOwner::<T>::get(campaign_id).ok_or(Error::<T>::OwnerUnknown)?;
@@ -715,13 +715,13 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	fn set_state(id: T::Hash, state: FlowState) {
-		let current_state = CampaignState::<T>::get(&id);
+	fn set_state(campaign_id: T::Hash, state: FlowState) {
+		let current_state = CampaignState::<T>::get(&campaign_id);
 
 		// remove
 
 		let mut current_state_members = CampaignsByState::<T>::get(&current_state);
-		match current_state_members.binary_search(&id) {
+		match current_state_members.binary_search(&campaign_id) {
 			Ok(index) => {
 				current_state_members.remove(index);
 				CampaignsByState::<T>::insert(&current_state, current_state_members);
@@ -730,8 +730,8 @@ impl<T: Config> Pallet<T> {
 		}
 
 		// add
-		CampaignsByState::<T>::mutate(&state, |campaigns| campaigns.push(id.clone()));
-		CampaignState::<T>::insert(id, state);
+		CampaignsByState::<T>::mutate(&state, |campaigns| campaigns.push(campaign_id.clone()));
+		CampaignState::<T>::insert(campaign_id, state);
 	}
 
 	fn mint_campaign(campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment>) -> DispatchResult {
@@ -839,19 +839,19 @@ impl<T: Config> Pallet<T> {
 }
 
 impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
-	fn campaign_balance(hash: &T::Hash) -> T::Balance {
-		CampaignBalance::<T>::get(hash)
+	fn campaign_balance(campaign_id: &T::Hash) -> T::Balance {
+		CampaignBalance::<T>::get(campaign_id)
 	}
-	fn campaign_contributors_count(hash: &T::Hash) -> u64 {
-		CampaignContributorsCount::<T>::get(hash)
+	fn campaign_contributors_count(campaign_id: &T::Hash) -> u64 {
+		CampaignContributorsCount::<T>::get(campaign_id)
 	}
-	fn campaign_org(hash: &T::Hash) -> T::Hash {
-		CampaignOrg::<T>::get(hash)
+	fn campaign_org(campaign_id: &T::Hash) -> T::Hash {
+		CampaignOrg::<T>::get(campaign_id)
 	}
-	fn campaign_owner(hash: &T::Hash) -> Option<T::AccountId> {
-		CampaignOwner::<T>::get(hash)
+	fn campaign_owner(campaign_id: &T::Hash) -> Option<T::AccountId> {
+		CampaignOwner::<T>::get(campaign_id)
 	}
-	fn is_campaign_succeeded(hash: &T::Hash) -> bool {
-		CampaignState::<T>::get(hash) == FlowState::Success
+	fn is_campaign_succeeded(campaign_id: &T::Hash) -> bool {
+		CampaignState::<T>::get(campaign_id) == FlowState::Success
 	}
 }

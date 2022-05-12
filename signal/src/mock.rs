@@ -144,7 +144,7 @@ parameter_types! {
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: u32 = PAYMENT_TOKEN_ID;
-	pub const CreationFee: Balance = 25_000_000_000_000;
+	pub const InitialDeposit: Balance = 1 * DOLLARS;
 	pub const GameDAOTreasury: AccountId = TREASURY_ACC;
 }
 impl gamedao_control::Config for Test {
@@ -156,8 +156,6 @@ impl gamedao_control::Config for Test {
 	type Currency = Currencies;
 	type Randomness = TestRandomness<Self>;
 
-	type GameDAOTreasury = GameDAOTreasury;
-
 	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
 
 	type MaxDAOsPerAccount = MaxDAOsPerAccount;
@@ -165,7 +163,7 @@ impl gamedao_control::Config for Test {
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
-	type CreationFee = CreationFee;
+	type InitialDeposit = InitialDeposit;
 }
 
 parameter_types! {
@@ -239,8 +237,6 @@ impl ExtBuilder {
 				(ACC2, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
 				(ACC3, PAYMENT_TOKEN_ID, 100 * DOLLARS),
 				(ACC3, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-				(TREASURY_ACC, PAYMENT_TOKEN_ID, 25 * DOLLARS),
-				(TREASURY_ACC, PROTOCOL_TOKEN_ID, 25 * DOLLARS),
 			],
 		}
 		.assimilate_storage(&mut t)
