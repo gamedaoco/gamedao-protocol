@@ -681,7 +681,7 @@ pub mod pallet {
 
 			let sender = ensure_signed(origin)?;
 			ensure!(
-				T::Currency::free_balance(T::ProtocolTokenId::get(), &sender) >= contribution,
+				T::Currency::free_balance(T::PaymentTokenId::get(), &sender) >= contribution,
 				Error::<T>::BalanceTooLow
 			);
 			let owner = CampaignOwner::<T>::get(campaign_id).ok_or(Error::<T>::OwnerUnknown)?;

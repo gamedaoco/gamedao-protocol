@@ -16,7 +16,6 @@ use orml_traits::parameter_type_with_key;
 pub type AccountId = u32;
 pub type BlockNumber = u64;
 pub type Hash = H256;
-pub type Timestamp = u64;
 pub type Moment = u64;
 pub type Balance = u128;
 pub type Amount = i128;
@@ -40,7 +39,6 @@ pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 pub const ALICE: AccountId = 1;
 pub const BOB: AccountId = 2;
 pub const BOGDANA: AccountId = 3;
-pub const TREASURY: AccountId = 4;
 pub const GAMEDAO_TREASURY: AccountId = 5;
 
 mod gamedao_flow {
@@ -137,7 +135,7 @@ frame_support::parameter_types! {
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
-	pub const CreationFee: Balance = 1 * DOLLARS;
+	pub const InitialDeposit: Balance = 1 * DOLLARS;
 }
 
 impl gamedao_control::Config for Test {
@@ -148,14 +146,13 @@ impl gamedao_control::Config for Test {
 	type Event = Event;
 	type Currency = Currencies;
 	type Randomness = TestRandomness<Self>;
-	type GameDAOTreasury = GameDAOTreasury;
 	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type MaxDAOsPerAccount = MaxDAOsPerAccount;
 	type MaxMembersPerDAO = MaxMembersPerDAO;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = ProtocolTokenId;
-	type CreationFee = CreationFee;
+	type InitialDeposit = InitialDeposit;
 }
 
 parameter_types! {
@@ -225,8 +222,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 			(BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
 			(BOGDANA, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
 			(BOGDANA, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(TREASURY, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-			(TREASURY, PAYMENT_TOKEN_ID, 0),
 			(GAMEDAO_TREASURY, PROTOCOL_TOKEN_ID, 0),
 			(GAMEDAO_TREASURY, PAYMENT_TOKEN_ID, 0),
 		],
