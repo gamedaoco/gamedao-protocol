@@ -226,8 +226,8 @@ pub mod pallet {
 		TreasuryCreationIssue,
 		/// Treasury account already exists
 		TreasuryExists,
-        /// Initial deposit to Treasury too low
-        InitialDepositTooLow
+		/// Initial deposit to Treasury too low
+		InitialDepositTooLow
 	}
 
 	#[pallet::call]
@@ -270,7 +270,7 @@ pub mod pallet {
 		/// - `gov_asset`: control assets to empower actors
 		/// - `pay_asset`:
 		/// - `member_limit`: max members, if 0 == no limit
-        /// - `deposit`: initial deposit for the org treasury
+		/// - `deposit`: initial deposit for the org treasury
 		///
 		/// Emits `OrgCreated` event when successful.
 		///
@@ -289,14 +289,14 @@ pub mod pallet {
 			gov_asset: u8,
 			pay_asset: u8,
 			member_limit: u64,
-            deposit: T::Balance,
+			deposit: T::Balance,
 			// mint: T::Balance,
 			// burn: T::Balance,
 			// strategy: u16,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-            ensure!(deposit >= T::InitialDeposit::get(), Error::<T>::InitialDepositTooLow);
+			ensure!(deposit >= T::InitialDeposit::get(), Error::<T>::InitialDepositTooLow);
 			let free_balance = T::Currency::free_balance(T::ProtocolTokenId::get(), &sender);
 			ensure!(free_balance > deposit, Error::<T>::BalanceTooLow);
 
@@ -463,7 +463,7 @@ impl<T: Config> Pallet<T> {
 		org_config: OrgConfig<T::Balance>,
 		controller_id: T::AccountId,
 		treasury_id: &T::AccountId,
-        deposit: T::Balance,
+		deposit: T::Balance,
 	) -> DispatchResult {
 		let org_id = org.id.clone();
 		let access = org_config.access.clone();
