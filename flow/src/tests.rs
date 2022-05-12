@@ -4,18 +4,17 @@ use super::*;
 use codec::Encode;
 use frame_support::traits::Hooks;
 use frame_support::{assert_noop, assert_ok};
-use frame_system::{EventRecord, Phase};
+use frame_system::{EventRecord, Phase, RawOrigin};
 use mock::{Event, Moment, *};
 use sp_core::H256;
 
 use gamedao_control::{AccessModel, FeeModel, OrgType};
 
-fn create_org() -> H256 {
+fn create_org_treasury() -> (H256, AccountId) {
 	let nonce = Control::nonce().encode();
 	assert_ok!(Control::create_org(
 		Origin::signed(BOB),
 		BOB,
-		TREASURY,
 		vec![1, 2],
 		vec![1, 2],
 		OrgType::default(),
@@ -24,9 +23,14 @@ fn create_org() -> H256 {
 		0,
 		0,
 		0,
-		0
+		0,
+        1 * DOLLARS
 	));
-	<Test as gamedao_control::Config>::Randomness::random(&nonce).0
+    let org_id = <Test as gamedao_control::Config>::Randomness::random(&nonce).0;
+    let treasury_id = Control::org_treasury_account(&org_id);
+    let _ = Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, 100 * DOLLARS, 0);
+
+    (org_id, treasury_id)
 }
 
 impl Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
@@ -53,7 +57,7 @@ impl Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
 #[test]
 fn flow_create_errors() {
 	new_test_ext().execute_with(|| {
-		let org = create_org();
+		let (org, _) = create_org_treasury();
 		let current_block = 3;
 		System::set_block_number(current_block);
 
@@ -223,7 +227,7 @@ fn flow_create_errors() {
 #[test]
 fn flow_create_success() {
 	new_test_ext().execute_with(|| {
-		let org = create_org();
+		let (org, treasury) = create_org_treasury();
 		let current_block = 3;
 		System::set_block_number(current_block);
 
@@ -271,7 +275,7 @@ fn flow_create_success() {
 			vec![
 				EventRecord {
 					phase: Phase::Initialization,
-					event: Event::Tokens(orml_tokens::Event::Reserved(PROTOCOL_TOKEN_ID, TREASURY, deposit)),
+					event: Event::Tokens(orml_tokens::Event::Reserved(PROTOCOL_TOKEN_ID, treasury, deposit)),
 					topics: vec![],
 				},
 				EventRecord {
@@ -464,7 +468,7 @@ fn flow_contribute_success() {
 #[test]
 fn flow_on_finalize_campaign_succeess() {
 	new_test_ext().execute_with(|| {
-		let org = create_org();
+		let (org, treasury) = create_org_treasury();
 		let current_block = 3;
 		System::set_block_number(current_block);
 
@@ -502,12 +506,12 @@ fn flow_on_finalize_campaign_succeess() {
 		let commission = <Test as Config>::CampaignFee::get().mul_floor(contribution * 2);
 
 		assert_eq!(
-			<Test as Config>::Currency::total_balance(PAYMENT_TOKEN_ID, &TREASURY),
+			<Test as Config>::Currency::total_balance(PAYMENT_TOKEN_ID, &treasury),
 			contribution * 2 - commission
 		);
-		assert_eq!(<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &TREASURY), 0);
+		assert_eq!(<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &treasury), 0);
 		assert_eq!(
-			<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &TREASURY),
+			<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &treasury),
 			100 * DOLLARS - deposit
 		);
 
@@ -520,12 +524,17 @@ fn flow_on_finalize_campaign_succeess() {
 					event: Event::Tokens(orml_tokens::Event::Unreserved(PAYMENT_TOKEN_ID, ALICE, contribution)),
 					topics: vec![],
 				},
+                EventRecord {
+					phase: Phase::Initialization,
+					event: Event::Tokens(orml_tokens::Event::Endowed(PAYMENT_TOKEN_ID, treasury, contribution)),
+					topics: vec![],
+				},
 				EventRecord {
 					phase: Phase::Initialization,
 					event: Event::Currencies(orml_currencies::Event::Transferred(
 						PAYMENT_TOKEN_ID,
 						ALICE,
-						TREASURY,
+						treasury,
 						contribution
 					)),
 					topics: vec![],
@@ -540,7 +549,7 @@ fn flow_on_finalize_campaign_succeess() {
 					event: Event::Currencies(orml_currencies::Event::Transferred(
 						PAYMENT_TOKEN_ID,
 						BOGDANA,
-						TREASURY,
+						treasury,
 						contribution
 					)),
 					topics: vec![],
@@ -549,21 +558,21 @@ fn flow_on_finalize_campaign_succeess() {
 					phase: Phase::Initialization,
 					event: Event::Tokens(orml_tokens::Event::Reserved(
 						PAYMENT_TOKEN_ID,
-						TREASURY,
+						treasury,
 						contribution * 2
 					)),
 					topics: vec![],
 				},
 				EventRecord {
 					phase: Phase::Initialization,
-					event: Event::Tokens(orml_tokens::Event::Unreserved(PAYMENT_TOKEN_ID, TREASURY, commission)),
+					event: Event::Tokens(orml_tokens::Event::Unreserved(PAYMENT_TOKEN_ID, treasury, commission)),
 					topics: vec![],
 				},
 				EventRecord {
 					phase: Phase::Initialization,
 					event: Event::Currencies(orml_currencies::Event::Transferred(
 						PAYMENT_TOKEN_ID,
-						TREASURY,
+						treasury,
 						GAMEDAO_TREASURY,
 						commission
 					)),
@@ -587,7 +596,7 @@ fn flow_on_finalize_campaign_succeess() {
 #[test]
 fn flow_on_finalize_campaign_failed() {
 	new_test_ext().execute_with(|| {
-		let org = create_org();
+		let (org, treasury) = create_org_treasury();
 		let current_block = 3;
 		System::set_block_number(current_block);
 
@@ -621,12 +630,12 @@ fn flow_on_finalize_campaign_failed() {
 		Flow::on_finalize(expiry);
 
 		assert_eq!(
-			<Test as Config>::Currency::total_balance(PROTOCOL_TOKEN_ID, &TREASURY),
+			<Test as Config>::Currency::total_balance(PROTOCOL_TOKEN_ID, &treasury),
 			100 * DOLLARS
 		);
 
 		assert_eq!(
-			<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &TREASURY),
+			<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &treasury),
 			100 * DOLLARS
 		);
 
@@ -641,7 +650,7 @@ fn flow_on_finalize_campaign_failed() {
 				},
 				EventRecord {
 					phase: Phase::Initialization,
-					event: Event::Tokens(orml_tokens::Event::Unreserved(PROTOCOL_TOKEN_ID, TREASURY, deposit)),
+					event: Event::Tokens(orml_tokens::Event::Unreserved(PROTOCOL_TOKEN_ID, treasury, deposit)),
 					topics: vec![],
 				},
 				EventRecord {
