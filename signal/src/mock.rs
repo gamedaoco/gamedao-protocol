@@ -172,6 +172,7 @@ parameter_types! {
 	pub const MaxCampaignsPerAddress: u32 = 3;
 	pub const MaxCampaignsPerBlock: u32 = 1;
 	pub const MaxContributionsPerBlock: u32 = 3;
+	pub const MaxContributorsProcessing: u32 = 5;
 	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
 	pub const MaxCampaignDuration: BlockNumber = 100 * DAYS;
 	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
@@ -194,6 +195,7 @@ impl gamedao_flow::Config for Test {
 	type GameDAOTreasury = GameDAOTreasury;
 	type MinNameLength = MinNameLength;
 	type MaxNameLength = MaxNameLength;
+	type MaxContributorsProcessing = MaxContributorsProcessing;
 	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
 	type MaxContributionsPerBlock = MaxContributionsPerBlock;

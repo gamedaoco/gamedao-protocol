@@ -201,7 +201,6 @@ pub mod pallet {
 	pub(super) type CampaignsIndex<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
 	/// Number of contributors processed
-	// TODO: check default 0
 	#[pallet::storage]
 	pub(super) type ContributorsFinalized<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u32, ValueQuery, GetDefault>;
 	#[pallet::storage]
@@ -736,14 +735,12 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn schedule_campaign_settlements(block_number: T::BlockNumber) {
-		// which campaigns end in this block
-		let campaign_ids = CampaignsByBlock::<T>::get(block_number);
-
-		// iterate over campaigns ending in this block
-		for campaign_id in &campaign_ids {
+		// Iterate over campaigns ending in this block
+		for campaign_id in &CampaignsByBlock::<T>::get(block_number) {
 			let campaign = Campaigns::<T>::get(campaign_id);
 			let campaign_balance = CampaignBalance::<T>::get(campaign_id);
-			// check for cap reached
+			
+			// Campaign cap reached: Finalizing
 			if campaign_balance >= campaign.cap {
 				Self::set_state(campaign.id, FlowState::Finalizing);
 
@@ -754,7 +751,7 @@ impl<T: Config> Pallet<T> {
 					success: false,
 				});
 
-			// campaign cap not reached
+			// Campaign cap not reached: Reverting
 			} else {
 				Self::set_state(campaign.id, FlowState::Reverting);
 
@@ -784,7 +781,7 @@ impl<T: Config> Pallet<T> {
 						Self::finalize_campaign(&block_number, processed, &campaign, &campaign_balance, &org, &org_treasury, &contributors, &owner)
 					);
 				} else {
-					// TODO: If no campaign owner, what should be done?
+					// TODO: If no campaign owner: revert the campaign or leave it as is?
 				}
 			} else if state == FlowState::Reverting {
 				total_weight.saturating_add(
@@ -802,7 +799,7 @@ impl<T: Config> Pallet<T> {
 		contributors: &Vec<T::AccountId>, owner: &T::AccountId
 	) -> Weight {
 		let contributors = CampaignContributors::<T>::get(campaign.id);
-		let processed_offset = ContributorsReverted::<T>::get(campaign.id);
+		let processed_offset = ContributorsFinalized::<T>::get(campaign.id);
 		let offset: usize = usize::try_from(processed_offset).unwrap();
 		for contributor in &contributors[offset..] {
 			if contributor == owner {
@@ -810,15 +807,14 @@ impl<T: Config> Pallet<T> {
 			}
 			let contributor_balance = CampaignContribution::<T>::get((campaign.id, contributor));
 			
-			// Unreserve, transfer free balance from contributor to org treasury
+			// Unreserve, transfer balance from contributor to org treasury (reserved balance)
 			let transfer_amount = T::Currency::repatriate_reserved(
 				T::PaymentTokenId::get(),
 				&contributor,
 				&org_treasury,
 				contributor_balance.clone(),
-				BalanceStatus::Free
+				BalanceStatus::Reserved
 			);
-
 			match transfer_amount {
 				Err(_) => {
 					// TODO: Update CampaignContributors -> for proper revert_campaign processing
@@ -827,7 +823,6 @@ impl<T: Config> Pallet<T> {
 				},
 				Ok(_) => { }
 			}
-
 			*processed += 1;
 			if *processed >= T::MaxContributorsProcessing::get() {
 				ContributorsFinalized::<T>::insert(campaign.id, processed_offset + *processed);
@@ -835,24 +830,14 @@ impl<T: Config> Pallet<T> {
 				return 1 as Weight
 			}
 		}
-
+		ContributorsFinalized::<T>::insert(campaign.id, processed_offset + *processed);
+		// TODO: This doesn't make sense without "transfer_amount" error handling
 		if *campaign_balance < campaign.cap {
 			Self::set_state(campaign.id, FlowState::Reverting);
 			// TODO: return T::WeightInfo::finalize_campaign(processed)
 			return 1 as Weight
 		}
-
-		// reserve campaign volume
-		let _reserve_campaign_amount = T::Currency::reserve(
-			T::PaymentTokenId::get(),
-			&org_treasury,
-			campaign_balance.clone(),
-		);
-
-		let fee = T::CampaignFee::get();
-		let commission = fee.mul_floor(campaign_balance.clone());
-		// TODO: CampaignBalance substract comission
-
+		let commission = T::CampaignFee::get().mul_floor(campaign_balance.clone());
 		let _transfer_commission = T::Currency::repatriate_reserved(
 			T::PaymentTokenId::get(),
 			&org_treasury,
@@ -861,11 +846,15 @@ impl<T: Config> Pallet<T> {
 			BalanceStatus::Free
 		);
 
+		// Update campaign balance
+		let updated_balance = *campaign_balance - commission;
+		CampaignBalance::<T>::insert(campaign.id, updated_balance);
+
 		Self::set_state(campaign.id, FlowState::Success);
 
 		Self::deposit_event(Event::CampaignFinalized {
 			campaign_id: campaign.id,
-			campaign_balance: *campaign_balance,
+			campaign_balance: updated_balance,
 			block_number: *block_number,
 			success: true,
 		});
@@ -889,16 +878,15 @@ impl<T: Config> Pallet<T> {
 			*processed += 1;
 			if *processed >= T::MaxContributorsProcessing::get() {
 				ContributorsReverted::<T>::insert(campaign.id, processed_offset + *processed);
-
 				// TODO: return T::WeightInfo::revert_campaign(processed)
 				return 1 as Weight
 			}
 		}
-
-		Self::set_state(campaign.id, FlowState::Failed);
-
+		ContributorsReverted::<T>::insert(campaign.id, processed_offset + *processed);
+		// Unreserve Initial deposit
 		T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, campaign.deposit);
 
+		Self::set_state(campaign.id, FlowState::Failed);
 		Self::deposit_event(Event::CampaignFailed {
 			campaign_id: campaign.id,
 			campaign_balance: *campaign_balance,
