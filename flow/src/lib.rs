@@ -297,13 +297,11 @@ pub mod pallet {
 			campaign_id: T::Hash,
 			campaign_balance: T::Balance,
 			block_number: T::BlockNumber,
-			success: bool,
 		},
 		CampaignFinalising {
 			campaign_id: T::Hash,
 			campaign_balance: T::Balance,
 			block_number: T::BlockNumber,
-			success: bool,
 		},
 		CampaignUpdated {
 			campaign_id: T::Hash,
@@ -748,7 +746,6 @@ impl<T: Config> Pallet<T> {
 					campaign_id: *campaign_id,
 					campaign_balance,
 					block_number,
-					success: false,
 				});
 
 			// Campaign cap not reached: Reverting
@@ -759,7 +756,6 @@ impl<T: Config> Pallet<T> {
 					campaign_id: *campaign_id,
 					campaign_balance,
 					block_number,
-					success: false,
 				});
 			}
 		}

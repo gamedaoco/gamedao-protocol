@@ -359,18 +359,8 @@ fn flow_on_finalize_campaign_succeess() {
 		let nonce = Nonce::<Test>::get().encode();
 		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
 		assert_ok!(Flow::create_campaign(
-			Origin::signed(BOB),
-			org,
-			BOB,
-			vec![1, 2],
-			target,
-			deposit,
-			expiry,
-			FlowProtocol::Raise,
-			FlowGovernance::No,
-			vec![1, 2],
-			vec![],
-			vec![]
+			Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit, expiry,
+			FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]
 		));
 
 		let total_contributors: u128 = 10;
@@ -390,6 +380,12 @@ fn flow_on_finalize_campaign_succeess() {
 		// --------- Block 0 (expiry): Schedule settlements ---------
 		System::set_block_number(expiry);
 		Flow::on_finalize(expiry);
+
+		System::assert_has_event(Event::Flow(crate::Event::CampaignFinalising {
+			campaign_id,
+			campaign_balance: CampaignBalance::<Test>::get(campaign_id),
+			block_number: expiry,
+		}));
 
 		// Ensure that campaign was scheduled to be finalized
 		assert_eq!(CampaignsByState::<Test>::get(&FlowState::Finalizing), vec![campaign_id]);
@@ -478,18 +474,8 @@ fn flow_on_finalize_campaign_failed() {
 		let nonce = Nonce::<Test>::get().encode();
 		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
 		assert_ok!(Flow::create_campaign(
-			Origin::signed(BOB),
-			org,
-			BOB,
-			vec![1, 2],
-			target,
-			deposit,
-			expiry,
-			FlowProtocol::Raise,
-			FlowGovernance::No,
-			vec![1, 2],
-			vec![],
-			vec![]
+			Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit, expiry,
+			FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]
 		));
 
 		let total_contributors: u128 = 10;
@@ -509,6 +495,12 @@ fn flow_on_finalize_campaign_failed() {
 		// --------- Block 0 (expiry): Schedule settlements ---------
 		System::set_block_number(expiry);
 		Flow::on_finalize(expiry);
+
+		System::assert_has_event(Event::Flow(crate::Event::CampaignReverting {
+			campaign_id,
+			campaign_balance: CampaignBalance::<Test>::get(campaign_id),
+			block_number: expiry,
+		}));
 
 		// Ensure that campaign was scheduled to be reverted
 		assert_eq!(CampaignsByState::<Test>::get(&FlowState::Reverting), vec![campaign_id]);
