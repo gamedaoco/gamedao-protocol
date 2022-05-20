@@ -127,8 +127,8 @@ fn flow_create_errors() {
 			),
 			Error::<Test>::EndTooLate
 		);
-		// Check contribution limit per block
-		// Error: ContributionsPerBlockExceeded
+		// Check campaigns limit per block
+		// Error: CampaignsPerBlockExceeded
 		CampaignsByBlock::<Test>::mutate(current_block + 1, |campaigns| campaigns.push(H256::random()));
 		assert_noop!(
 			Flow::create_campaign(
@@ -136,7 +136,7 @@ fn flow_create_errors() {
 				current_block + 1, FlowProtocol::Raise, FlowGovernance::No,
 				vec![1, 2], vec![], vec![]
 			),
-			Error::<Test>::ContributionsPerBlockExceeded
+			Error::<Test>::CampaignsPerBlockExceeded
 		);
 	});
 }

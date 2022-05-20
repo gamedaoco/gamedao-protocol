@@ -345,8 +345,8 @@ pub mod pallet {
 		EndTooEarly,
 		/// Campaign expiry has be lower than the block number limit
 		EndTooLate,
-		/// Max contributions per block exceeded
-		ContributionsPerBlockExceeded,
+		/// Max campaigns per block exceeded
+		CampaignsPerBlockExceeded,
 		/// Name too long
 		NameTooLong,
 		/// Name too short
@@ -475,11 +475,10 @@ pub mod pallet {
 			// for collision
 
 			// check contribution limit per block
-			let contributions = CampaignsByBlock::<T>::get(expiry);
+			let camapaigns = CampaignsByBlock::<T>::get(expiry);
 			ensure!(
-				// TODO: fix this
-				(contributions.len() as u32) < T::MaxCampaignsPerBlock::get(),
-				Error::<T>::ContributionsPerBlockExceeded
+				(camapaigns.len() as u32) < T::MaxCampaignsPerBlock::get(),
+				Error::<T>::CampaignsPerBlockExceeded
 			);
 
 			let campaign = Campaign {
