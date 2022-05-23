@@ -35,11 +35,22 @@ pub const DAYS: BlockNumber = HOURS * 24;
 pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
 pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
-// Accounts:
-pub const ALICE: AccountId = 1;
-pub const BOB: AccountId = 2;
-pub const BOGDANA: AccountId = 3;
-pub const GAMEDAO_TREASURY: AccountId = 5;
+// Contributors:
+pub const ACC_1: AccountId = 1;
+pub const ACC_2: AccountId = 2;
+pub const ACC_3: AccountId = 3;
+pub const ACC_4: AccountId = 4;
+pub const ACC_5: AccountId = 5;
+pub const ACC_6: AccountId = 6;
+pub const ACC_7: AccountId = 7;
+pub const ACC_8: AccountId = 8;
+pub const ACC_9: AccountId = 9;
+pub const ACC_10: AccountId = 10;
+pub const ALICE: AccountId = 11;
+// Org creator:
+pub const BOB: AccountId = 12;
+
+pub const GAMEDAO_TREASURY: AccountId = 13;
 
 mod gamedao_flow {
 	pub use super::super::*;
@@ -161,6 +172,7 @@ parameter_types! {
 	pub const MaxCampaignsPerAddress: u32 = 3;
 	pub const MaxCampaignsPerBlock: u32 = 1;
 	pub const MaxContributionsPerBlock: u32 = 3;
+	pub const MaxContributorsProcessing: u32 = 4;
 	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
 	pub const MaxCampaignDuration: BlockNumber = 100 * DAYS;
 	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
@@ -184,6 +196,7 @@ impl Config for Test {
 	type Control = Control;
 	type GameDAOAdminOrigin = EnsureRoot<Self::AccountId>;
 	type GameDAOTreasury = GameDAOTreasury;
+	type MaxContributorsProcessing = MaxContributorsProcessing;
 	type MinNameLength = MinNameLength;
 	type MaxNameLength = MaxNameLength;
 	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
@@ -216,12 +229,23 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	orml_tokens::GenesisConfig::<Test> {
 		balances: vec![
-			(ALICE, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-			(ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			// BOB org creator
 			(BOB, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
 			(BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(BOGDANA, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-			(BOGDANA, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			
+			// Contributors
+			(ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ACC_1, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ACC_2, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ACC_3, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ACC_4, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ACC_5, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ACC_6, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ACC_7, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ACC_8, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ACC_9, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ACC_10, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+
 			(GAMEDAO_TREASURY, PROTOCOL_TOKEN_ID, 0),
 			(GAMEDAO_TREASURY, PAYMENT_TOKEN_ID, 0),
 		],
