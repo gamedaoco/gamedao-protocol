@@ -26,9 +26,11 @@ pub enum FlowState {
 	Init = 0,
 	Active = 1,
 	Paused = 2,
-	Success = 3,
-	Failed = 4,
-	Locked = 5,
+	Finalizing = 3,
+	Reverting = 4,
+	Success = 5,
+	Failed = 6,
+	Locked = 7,
 }
 
 impl Default for FlowState {

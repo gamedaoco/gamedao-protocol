@@ -55,13 +55,16 @@ mod tests;
 use frame_support::{
 	codec::Encode,
 	dispatch::DispatchResult,
-	traits::{Get, Randomness, UnixTime},
+	traits::{Get, Randomness, UnixTime, BalanceStatus},
 	transactional,
+	weights::Weight
 };
 
 use scale_info::TypeInfo;
-use sp_runtime::{traits::AtLeast32BitUnsigned, Permill};
+use sp_runtime::{traits::{AtLeast32BitUnsigned}, Permill};
 use sp_std::vec::Vec;
+
+use sp_std::convert::TryFrom;
 
 use codec::HasCompact;
 use gamedao_traits::{ControlTrait, FlowTrait};
@@ -130,6 +133,8 @@ pub mod pallet {
 		type MaxCampaignsPerBlock: Get<u32>;
 		#[pallet::constant]
 		type MaxContributionsPerBlock: Get<u32>;
+		#[pallet::constant]
+		type MaxContributorsProcessing: Get<u32>;
 
 		#[pallet::constant]
 		type MinCampaignDuration: Get<Self::BlockNumber>;
@@ -195,6 +200,12 @@ pub mod pallet {
 	#[pallet::storage]
 	pub(super) type CampaignsIndex<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
+	/// Number of contributors processed
+	#[pallet::storage]
+	pub(super) type ContributorsFinalized<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u32, ValueQuery, GetDefault>;
+	#[pallet::storage]
+	pub(super) type ContributorsReverted<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u32, ValueQuery, GetDefault>;
+	
 	// caller owned campaigns -> my campaigns
 	#[pallet::storage]
 	pub(super) type CampaignsOwnedArray<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Hash, ValueQuery>;
@@ -282,6 +293,16 @@ pub mod pallet {
 			block_number: T::BlockNumber,
 			success: bool,
 		},
+		CampaignReverting {
+			campaign_id: T::Hash,
+			campaign_balance: T::Balance,
+			block_number: T::BlockNumber,
+		},
+		CampaignFinalising {
+			campaign_id: T::Hash,
+			campaign_balance: T::Balance,
+			block_number: T::BlockNumber,
+		},
 		CampaignUpdated {
 			campaign_id: T::Hash,
 			state: FlowState,
@@ -324,8 +345,8 @@ pub mod pallet {
 		EndTooEarly,
 		/// Campaign expiry has be lower than the block number limit
 		EndTooLate,
-		/// Max contributions per block exceeded
-		ContributionsPerBlockExceeded,
+		/// Max campaigns per block exceeded
+		CampaignsPerBlockExceeded,
 		/// Name too long
 		NameTooLong,
 		/// Name too short
@@ -364,145 +385,18 @@ pub mod pallet {
 	}
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		/// Block finalization
-		fn on_finalize(block_number: BlockNumberFor<T>) {
-			// which campaigns end in this block
-			let campaign_hashes = CampaignsByBlock::<T>::get(block_number);
+	impl<T: Config> Hooks<T::BlockNumber> for Pallet<T> {
 
-			// iterate over campaigns ending in this block
-			for campaign_id in &campaign_hashes {
-				// TODO: Reduce complexity of N^2 with unknown amount of contributors.
-				// Priority - after NFT Uniques.
-				// 1. Save all campaigns to be finalized in the current block into a stack
-				// 2. Finalize N campaigns from the stack
-				// 3. If error - save campaign into a stack (to be reversed)
-				// 4. Reverse N campaigns from the stack
+        fn on_initialize(block_number: T::BlockNumber) -> Weight {
+			let mut processed: u32 = 0;
+			Self::process_campaigns(&block_number, FlowState::Finalizing, &mut processed)
+			.saturating_add(
+				Self::process_campaigns(&block_number, FlowState::Reverting, &mut processed)
+			)
+        }
 
-				// get campaign struct
-				let campaign = Campaigns::<T>::get(campaign_id);
-				let campaign_balance = CampaignBalance::<T>::get(campaign_id);
-				let org = CampaignOrg::<T>::get(&campaign_id);
-				let org_treasury = T::Control::org_treasury_account(&org);
-
-				// check for cap reached
-				if campaign_balance >= campaign.cap {
-					// get campaign owner
-					// should be controller --- test?
-					let _owner = CampaignOwner::<T>::get(campaign_id);
-
-					match _owner {
-						Some(owner) => {
-							// get all contributors
-							let contributors = CampaignContributors::<T>::get(campaign_id);
-							let mut transaction_complete = true;
-
-							// 1 iterate over contributors
-							// 2 unreserve contribution
-							// 3 transfer contribution to campaign treasury
-							'inner: for contributor in &contributors {
-								// if contributor == campaign owner, skip
-								if contributor == &owner {
-									continue;
-								}
-
-								// get amount from contributor
-								let contributor_balance =
-									CampaignContribution::<T>::get((*campaign_id, contributor.clone()));
-
-								// unreserve the amount in contributor balance
-								T::Currency::unreserve(
-									T::PaymentTokenId::get(),
-									&contributor,
-									contributor_balance.clone(),
-								);
-
-								// transfer from contributor
-								let transfer_amount = T::Currency::transfer(
-									T::PaymentTokenId::get(),
-									&contributor,
-									&org_treasury,
-									contributor_balance.clone(),
-								);
-
-								// success?
-								match transfer_amount {
-									Err(_e) => {
-										transaction_complete = false;
-										break 'inner;
-									}
-									Ok(_v) => {}
-								}
-							}
-
-							// If all transactions are settled
-							// 1. reserve campaign balance
-							// 2. unreserve and send the commission to operator treasury
-							if transaction_complete {
-								// reserve campaign volume
-								let _reserve_campaign_amount = T::Currency::reserve(
-									T::PaymentTokenId::get(),
-									&org_treasury,
-									campaign_balance.clone(),
-								);
-
-								let fee = T::CampaignFee::get();
-								let commission = fee.mul_floor(campaign_balance.clone());
-								T::Currency::unreserve(T::PaymentTokenId::get(), &org_treasury, commission.clone());
-
-								let _transfer_commission = T::Currency::transfer(
-									T::PaymentTokenId::get(),
-									&org_treasury,
-									&T::GameDAOTreasury::get(),
-									commission,
-								);
-
-								// TODO: TransferError?
-								// match transfer_commission {
-								// 	Err(_e) => {   }, //(Error::<T>::TransferError)
-								// 	Ok(_v) => {}
-								// }
-
-								Self::set_state(campaign.id.clone(), FlowState::Success);
-
-								// finalized event
-								Self::deposit_event(Event::CampaignFinalized {
-									campaign_id: *campaign_id,
-									campaign_balance,
-									block_number,
-									success: true,
-								});
-							}
-						}
-						None => continue,
-					}
-
-				// campaign cap not reached
-				} else {
-					// campaign failed, revert all contributions
-
-					let contributors = CampaignContributors::<T>::get(campaign_id);
-					for account in contributors {
-						let contribution = CampaignContribution::<T>::get((*campaign_id, account.clone()));
-						T::Currency::unreserve(T::PaymentTokenId::get(), &account, contribution);
-					}
-
-					// update campaign state to failed
-					Self::set_state(campaign.id, FlowState::Failed);
-
-					// unreserve DEPOSIT
-
-					T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, campaign.deposit);
-
-					// failed event
-					Self::deposit_event(Event::CampaignFailed {
-						campaign_id: *campaign_id,
-						campaign_balance,
-						block_number,
-						success: false,
-					});
-				}
-			}
+		fn on_finalize(block_number: T::BlockNumber) {
+			Self::schedule_campaign_settlements(block_number)
 		}
 	}
 
@@ -581,10 +475,10 @@ pub mod pallet {
 			// for collision
 
 			// check contribution limit per block
-			let contributions = CampaignsByBlock::<T>::get(expiry);
+			let camapaigns = CampaignsByBlock::<T>::get(expiry);
 			ensure!(
-				(contributions.len() as u32) < T::MaxCampaignsPerBlock::get(),
-				Error::<T>::ContributionsPerBlockExceeded
+				(camapaigns.len() as u32) < T::MaxCampaignsPerBlock::get(),
+				Error::<T>::CampaignsPerBlockExceeded
 			);
 
 			let campaign = Campaign {
@@ -836,6 +730,169 @@ impl<T: Config> Pallet<T> {
 		Nonce::<T>::put(nonce.wrapping_add(1));
 		nonce
 	}
+
+	fn schedule_campaign_settlements(block_number: T::BlockNumber) {
+		// Iterate over campaigns ending in this block
+		for campaign_id in &CampaignsByBlock::<T>::get(block_number) {
+			let campaign = Campaigns::<T>::get(campaign_id);
+			let campaign_balance = CampaignBalance::<T>::get(campaign_id);
+			
+			// Campaign cap reached: Finalizing
+			if campaign_balance >= campaign.cap {
+				Self::set_state(campaign.id, FlowState::Finalizing);
+
+				Self::deposit_event(Event::CampaignFinalising {
+					campaign_id: *campaign_id,
+					campaign_balance,
+					block_number,
+				});
+
+			// Campaign cap not reached: Reverting
+			} else {
+				Self::set_state(campaign.id, FlowState::Reverting);
+
+				Self::deposit_event(Event::CampaignReverting {
+					campaign_id: *campaign_id,
+					campaign_balance,
+					block_number,
+				});
+			}
+		}
+	}
+
+	fn process_campaigns(block_number: &T::BlockNumber, state: FlowState, processed: &mut u32) -> Weight {
+		let campaign_ids = CampaignsByState::<T>::get(&state);
+		let total_weight: Weight = 0;
+		for campaign_id in campaign_ids {
+			let campaign = Campaigns::<T>::get(campaign_id);
+			let campaign_balance = CampaignBalance::<T>::get(campaign_id);
+			let org = CampaignOrg::<T>::get(&campaign_id);
+			let org_treasury = T::Control::org_treasury_account(&org);
+			let contributors = CampaignContributors::<T>::get(campaign_id);
+
+			if state == FlowState::Finalizing {
+				if let Some(owner) = CampaignOwner::<T>::get(campaign.id) {
+					total_weight.saturating_add(
+						Self::finalize_campaign(&block_number, processed, &campaign, &campaign_balance, &org, &org_treasury, &contributors, &owner)
+					);
+				} else {
+					// TODO: If no campaign owner: revert the campaign or leave it as is?
+				}
+			} else if state == FlowState::Reverting {
+				total_weight.saturating_add(
+					Self::revert_campaign(&block_number, processed, &campaign, &campaign_balance, &org, &org_treasury, &contributors)
+				);
+			}
+		}
+		total_weight
+	}
+
+	fn finalize_campaign(
+		block_number: &T::BlockNumber, processed: &mut u32,
+		campaign: &Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment>,
+		campaign_balance: &T::Balance, org: &T::Hash, org_treasury: &T::AccountId,
+		contributors: &Vec<T::AccountId>, owner: &T::AccountId
+	) -> Weight {
+		let contributors = CampaignContributors::<T>::get(campaign.id);
+		let processed_offset = ContributorsFinalized::<T>::get(campaign.id);
+		let offset: usize = usize::try_from(processed_offset).unwrap();
+		for contributor in &contributors[offset..] {
+			if contributor == owner {
+				continue;
+			}
+			let contributor_balance = CampaignContribution::<T>::get((campaign.id, contributor));
+			
+			// Unreserve, transfer balance from contributor to org treasury (reserved balance)
+			let transfer_amount = T::Currency::repatriate_reserved(
+				T::PaymentTokenId::get(),
+				&contributor,
+				&org_treasury,
+				contributor_balance.clone(),
+				BalanceStatus::Reserved
+			);
+			match transfer_amount {
+				Err(_) => {
+					// TODO: Update CampaignContributors -> for proper revert_campaign processing
+					// TODO: Update CampaignBalance -> still possible to have < campaign.cap
+					// TODO: Probably create reverse function for "fn create_contribution" -> "fn remove_contribution"
+				},
+				Ok(_) => { }
+			}
+			*processed += 1;
+			if *processed >= T::MaxContributorsProcessing::get() {
+				ContributorsFinalized::<T>::insert(campaign.id, processed_offset + *processed);
+				// TODO: return T::WeightInfo::finalize_campaign(processed)
+				return 1 as Weight
+			}
+		}
+		ContributorsFinalized::<T>::insert(campaign.id, processed_offset + *processed);
+		// TODO: This doesn't make sense without "transfer_amount" error handling
+		if *campaign_balance < campaign.cap {
+			Self::set_state(campaign.id, FlowState::Reverting);
+			// TODO: return T::WeightInfo::finalize_campaign(processed)
+			return 1 as Weight
+		}
+		let commission = T::CampaignFee::get().mul_floor(campaign_balance.clone());
+		let _transfer_commission = T::Currency::repatriate_reserved(
+			T::PaymentTokenId::get(),
+			&org_treasury,
+			&T::GameDAOTreasury::get(),
+			commission,
+			BalanceStatus::Free
+		);
+
+		// Update campaign balance
+		let updated_balance = *campaign_balance - commission;
+		CampaignBalance::<T>::insert(campaign.id, updated_balance);
+
+		Self::set_state(campaign.id, FlowState::Success);
+
+		Self::deposit_event(Event::CampaignFinalized {
+			campaign_id: campaign.id,
+			campaign_balance: updated_balance,
+			block_number: *block_number,
+			success: true,
+		});
+
+		// TODO: return T::WeightInfo::finalize_campaign(processed)
+		1 as Weight
+	}
+
+	fn revert_campaign(
+		block_number: &T::BlockNumber, processed: &mut u32,
+		campaign: &Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment>,
+		campaign_balance: &T::Balance, org: &T::Hash, org_treasury: &T::AccountId,
+		contributors: &Vec<T::AccountId>
+	) -> Weight {
+		let processed_offset = ContributorsReverted::<T>::get(campaign.id);
+		let offset: usize = usize::try_from(processed_offset).unwrap();
+		for account in &contributors[offset..] {
+			let contribution = CampaignContribution::<T>::get((campaign.id, account.clone()));
+			T::Currency::unreserve(T::PaymentTokenId::get(), &account, contribution);
+
+			*processed += 1;
+			if *processed >= T::MaxContributorsProcessing::get() {
+				ContributorsReverted::<T>::insert(campaign.id, processed_offset + *processed);
+				// TODO: return T::WeightInfo::revert_campaign(processed)
+				return 1 as Weight
+			}
+		}
+		ContributorsReverted::<T>::insert(campaign.id, processed_offset + *processed);
+		// Unreserve Initial deposit
+		T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, campaign.deposit);
+
+		Self::set_state(campaign.id, FlowState::Failed);
+		Self::deposit_event(Event::CampaignFailed {
+			campaign_id: campaign.id,
+			campaign_balance: *campaign_balance,
+			block_number: *block_number,
+			success: false,
+		});
+		
+		// TODO: return T::WeightInfo::revert_campaign(processed)
+		1 as Weight
+	}
+
 }
 
 impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
