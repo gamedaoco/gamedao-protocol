@@ -164,6 +164,7 @@ pub mod pallet {
 		realm: RealmIndex,// auth realm
 		index: u64,	// class index
 		max: u64,	// max number of items in class
+		name: Vec<u8>,
 		// mint: Balance, // mint cost
 		// burn: Balance, // burn cost
 		strategy: u64, // cid to strategy //?
@@ -197,6 +198,11 @@ pub mod pallet {
 		cid: Vec<u8>,
 	}
 
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+	pub struct TangramItemExtended<Hash, MomentOf> {
+		item: TangramItem<Hash, MomentOf>,
+		meta: TangramItemMetadata,
+	}
 
 
 	#[pallet::pallet]
@@ -446,8 +452,11 @@ pub mod pallet {
 				realm: realm.clone(),
 				index: index.clone(),
 				max: max.clone(),
+				name: name.clone(),
 				strategy: 0 // (1,1,1)
 			};
+
+			let class_enc = new_class.encode();
 
 			ItemClass::<T>::insert( hash.clone(), new_class );
 			// ClassByIndex::<T>::insert( index.clone(), hash );
@@ -460,7 +469,7 @@ pub mod pallet {
 
 			pallet_rmrk_core::Pallet::<T>::create_collection(
 				origin,
-				name
+				class_enc
 			);
 
 	
@@ -470,6 +479,7 @@ pub mod pallet {
 
 
 		#[pallet::weight(<T as Config>::WeightInfo::create_item())]
+		#[transactional]
 		pub fn create_item(
 			origin: OriginFor<T>, //1
 			realm: RealmIndex, 	//+ associated realm 
@@ -503,11 +513,16 @@ pub mod pallet {
 				cid: cid.clone(),   // attr
 			};
 
+
+			let itemext = TangramItemExtended{
+				item: item,
+				meta: metadata
+			};
 			
 			let coll_id:  <T as pallet_rmrk_core::Config>::CollectionId = (class as u32).into();
 
 
-			let enc_meta = metadata.encode();
+			let enc_item = itemext.encode();
 			//SJ: Target to push all metadata to RMRK.
 
 			pallet_rmrk_core::Pallet::<T>::mint_nft(
@@ -516,7 +531,7 @@ pub mod pallet {
 				coll_id,
 				Some(who.clone()),
 				Some(20),
-				Some(enc_meta)
+				Some(enc_item)
 			);
 
 
@@ -533,6 +548,7 @@ pub mod pallet {
 			// 	},
 			// 	Err(err) => Err(err)?
 			// }
+
 
 			Ok(())
 
