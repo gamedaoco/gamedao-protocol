@@ -118,8 +118,7 @@ pub mod pallet {
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 		type Control: ControlTrait<Self::AccountId, Self::Hash>;
 
-		/// The origin that is allowed to make judgements.
-		type GameDAOAdminOrigin: EnsureOrigin<Self::Origin>;
+		#[pallet::constant]
 		type GameDAOTreasury: Get<Self::AccountId>;
 
 		#[pallet::constant]

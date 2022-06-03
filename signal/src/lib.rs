@@ -26,14 +26,14 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::Randomness, transactional};
+	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, transactional};
 	use frame_system::{
 		ensure_signed,
 		pallet_prelude::{BlockNumberFor, OriginFor},
 		WeightInfo,
 	};
 	use orml_traits::{MultiCurrency, MultiReservableCurrency};
-	use sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Zero};
+	use sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Zero, Hash};
 	use sp_std::vec::Vec;
 	use codec::HasCompact;
 
@@ -68,10 +68,8 @@ pub mod pallet {
 			+ TypeInfo;
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
-		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 		type Control: ControlTrait<Self::AccountId, Self::Hash>;
 		type Flow: FlowTrait<Self::AccountId, Self::Balance, Self::Hash>;
-		type ForceOrigin: EnsureOrigin<Self::Origin>;
 		type WeightInfo: WeightInfo;
 
 		#[pallet::constant]
@@ -343,7 +341,7 @@ pub mod pallet {
 			);
 
 			let nonce = Self::get_and_increment_nonce();
-			let (proposal_id, _) = <T::Randomness>::random(&nonce);
+			let proposal_id = T::Hashing::hash_of(&nonce);
 			ensure!(!Proposals::<T>::contains_key(&proposal_id), Error::<T>::ProposalExists);
 
 			let new_proposal = Proposal {
@@ -373,7 +371,7 @@ pub mod pallet {
 
 		/// Create a membership proposal
 		///
-		/// - `campaign_id`:
+		/// - `org_id`:
 		/// - `_member`:
 		/// - `_action`:
 		/// - `_start`:
@@ -385,7 +383,7 @@ pub mod pallet {
 		#[pallet::weight(5_000_000)]
 		pub fn membership_proposal(
 			origin: OriginFor<T>,
-			campaign_id: T::Hash,
+			org_id: T::Hash,
 			_member: T::Hash,
 			_action: u8,
 			_start: T::BlockNumber,
@@ -452,7 +450,7 @@ pub mod pallet {
 			ensure!(remaining_balance >= amount, Error::<T>::BalanceInsufficient);
 
 			let nonce = Self::get_and_increment_nonce();
-			let (proposal_id, _) = <T as Config>::Randomness::random(&nonce);
+			let proposal_id = T::Hashing::hash_of(&nonce);
 			let proposals = ProposalsByBlock::<T>::get(expiry);
 			ensure!(
 				(proposals.len() as u32) < T::MaxProposalsPerBlock::get(),

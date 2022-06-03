@@ -149,15 +149,10 @@ parameter_types! {
 }
 impl gamedao_control::Config for Test {
 	type Balance = Balance;
-	// type Moment = Moment;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
-	type Randomness = TestRandomness<Self>;
-
-	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
-
 	type MaxDAOsPerAccount = MaxDAOsPerAccount;
 	type MaxMembersPerDAO = MaxMembersPerDAO;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
@@ -191,7 +186,6 @@ impl gamedao_flow::Config for Test {
 	type UnixTime = PalletTimestamp;
 	type Randomness = TestRandomness<Self>;
 	type Control = Control;
-	type GameDAOAdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type GameDAOTreasury = GameDAOTreasury;
 	type MinNameLength = MinNameLength;
 	type MaxNameLength = MaxNameLength;
@@ -212,7 +206,6 @@ parameter_types! {
 }
 impl gamedao_signal::Config for Test {
 	type Event = Event;
-	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type WeightInfo = ();
 	type Control = Control;
 	type Flow = Flow;

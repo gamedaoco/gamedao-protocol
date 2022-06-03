@@ -12,6 +12,8 @@ fn control_create_campaign_success() {
 		assert_ok!(Control::create_org(
 			Origin::signed(ALICE),
 			BOB,
+			None,
+			// Some(BOB),
 			vec![12, 56],
 			vec![11, 111],
 			Default::default(),
