@@ -56,7 +56,8 @@ impl Default for VotingType {
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Proposal<Hash, BlockNumber> {
 	pub proposal_id: Hash,
-	pub context_id: Hash,
+	pub org_id: Hash,
+	pub campaign_id: Option<Hash>,
 	pub proposal_type: ProposalType,
 	pub voting_type: VotingType,
 	pub start: BlockNumber,

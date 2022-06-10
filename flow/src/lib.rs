@@ -55,13 +55,13 @@ mod tests;
 use frame_support::{
 	codec::Encode,
 	dispatch::DispatchResult,
-	traits::{Get, Randomness, UnixTime, BalanceStatus},
+	traits::{Get, UnixTime, BalanceStatus},
 	transactional,
 	weights::Weight
 };
 
 use scale_info::TypeInfo;
-use sp_runtime::{traits::{AtLeast32BitUnsigned}, Permill};
+use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash}, Permill};
 use sp_std::vec::Vec;
 
 use sp_std::convert::TryFrom;
@@ -115,7 +115,6 @@ pub mod pallet {
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
 		type UnixTime: UnixTime;
-		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 		type Control: ControlTrait<Self::AccountId, Self::Hash>;
 
 		#[pallet::constant]
@@ -438,9 +437,7 @@ pub mod pallet {
 			                        * token_curve_b: Vec<u8>, // custom */
 		) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
-
 			let owner = T::Control::org_controller_account(&org_id);
-
 			ensure!(creator == owner, Error::<T>::AuthorizationError);
 
 			// Get Treasury account for deposits and fees
@@ -469,7 +466,7 @@ pub mod pallet {
 
 			// generate the unique campaign id + ensure uniqueness
 			let nonce = Self::get_and_increment_nonce();
-			let (id, _) = T::Randomness::random(&nonce.encode());
+			let id = T::Hashing::hash_of(&nonce);
 			// ensure!(!<CampaignOwner<T>>::exists(&id), Error::<T>::IdExists ); // check
 			// for collision
 

@@ -1,8 +1,7 @@
 #[cfg(test)]
 use crate as gamedao_signal;
-use frame_support::parameter_types;
+use frame_support::{parameter_types, PalletId};
 use frame_support::traits::{GenesisBuild, Nothing};
-use frame_support_test::TestRandomness;
 use frame_system;
 use orml_traits::parameter_type_with_key;
 use sp_core::H256;
@@ -32,6 +31,8 @@ pub const ACC1: AccountId = 1;
 pub const ACC2: AccountId = 2;
 pub const ACC3: AccountId = 3;
 pub const TREASURY_ACC: AccountId = 4;
+pub const GAME3_TREASURY: AccountId = 5;
+pub const GAMEDAO_TREASURY: AccountId = 6;
 pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
 pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
@@ -146,6 +147,9 @@ parameter_types! {
 	pub const PaymentTokenId: u32 = PAYMENT_TOKEN_ID;
 	pub const InitialDeposit: Balance = 1 * DOLLARS;
 	pub const GameDAOTreasury: AccountId = TREASURY_ACC;
+	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
+	pub const Game3FoundationTreasuryAccountId: AccountId = GAME3_TREASURY;
+	pub const GameDAOTreasuryAccountId: AccountId = GAMEDAO_TREASURY;
 }
 impl gamedao_control::Config for Test {
 	type Balance = Balance;
@@ -159,6 +163,9 @@ impl gamedao_control::Config for Test {
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
 	type InitialDeposit = InitialDeposit;
+	type PalletId = ControlPalletId;
+	type Game3FoundationTreasury = Game3FoundationTreasuryAccountId;
+	type GameDAOTreasury = GameDAOTreasuryAccountId;
 }
 
 parameter_types! {
@@ -184,7 +191,6 @@ impl gamedao_flow::Config for Test {
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
 	type UnixTime = PalletTimestamp;
-	type Randomness = TestRandomness<Self>;
 	type Control = Control;
 	type GameDAOTreasury = GameDAOTreasury;
 	type MinNameLength = MinNameLength;
@@ -213,7 +219,6 @@ impl gamedao_signal::Config for Test {
 	type MaxProposalDuration = MaxProposalDuration;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
-	type Randomness = TestRandomness<Self>;
 	type Currency = Currencies;
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;

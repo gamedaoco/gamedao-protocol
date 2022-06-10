@@ -483,7 +483,7 @@ impl<T: Config> Pallet<T> {
 		nonce: u128
 	) -> T::Hash {
 		let now = <frame_system::Pallet<T>>::block_number();
-		let org_id = T::Hashing::hash_of(&treasury_id.encode());
+		let org_id = T::Hashing::hash_of(&treasury_id);
 
 		let org = Org {
 			id: org_id.clone(),

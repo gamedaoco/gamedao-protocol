@@ -123,21 +123,20 @@ pub mod pallet {
 	#[pallet::storage]
 	pub(super) type ProposalsIndex<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
-	/// Proposals by campaign / org
+	/// Proposals by org
 	#[pallet::storage]
-	pub(super) type ProposalsByContextArray<T: Config> =
+	pub(super) type ProposalsByOrgArray<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::Hash, u64), T::Hash, ValueQuery>;
 
 	#[pallet::storage]
-	pub(super) type ProposalsByContextCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
+	pub(super) type ProposalsByOrgCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
 	#[pallet::storage]
-	pub(super) type ProposalsByContextIndex<T: Config> =
+	pub(super) type ProposalsByOrgIndex<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::Hash, T::Hash), u64, ValueQuery>;
 
-	/// all proposals for a given context
 	#[pallet::storage]
-	pub(super) type ProposalsByContext<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::Hash>, ValueQuery>;
+	pub(super) type ProposalsByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::Hash>, ValueQuery>;
 
 	/// Proposals by owner
 	#[pallet::storage]
@@ -208,6 +207,7 @@ pub mod pallet {
 
 	/// The total number of proposals
 	#[pallet::storage]
+	#[pallet::getter(fn nonce)]
 	pub(super) type Nonce<T: Config> = StorageValue<_, u128, ValueQuery>;
 
 	#[pallet::event]
@@ -219,7 +219,8 @@ pub mod pallet {
 		},
 		ProposalCreated {
 			sender_id: T::AccountId,
-			context_id: T::Hash,
+			org_id: T::Hash,
+			campaign_id: Option<T::Hash>,
 			proposal_id: T::Hash,
 			amount: T::Balance,
 			expiry: T::BlockNumber,
@@ -346,7 +347,8 @@ pub mod pallet {
 
 			let new_proposal = Proposal {
 				proposal_id: proposal_id.clone(),
-				context_id: org_id.clone(),
+				org_id: org_id.clone(),
+				campaign_id: None,
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start,
@@ -358,7 +360,7 @@ pub mod pallet {
 				amount: T::Balance::zero(),
 			};
 
-			Self::insert_proposal(&sender, &new_proposal, metadata, expiry)?;
+			Self::insert_proposal(&sender, &new_proposal, org_id, None, metadata, expiry)?;
 
 			Self::deposit_event(Event::<T>::Proposal {
 				sender_id: sender,
@@ -457,22 +459,26 @@ pub mod pallet {
 				Error::<T>::TooManyProposals
 			);
 			ensure!(!Proposals::<T>::contains_key(&proposal_id), Error::<T>::ProposalExists);
+			let org_id = T::Flow::campaign_org(&campaign_id);
 
+			let campaign_id = Some(campaign_id);
 			let proposal = Proposal {
 				proposal_id: proposal_id.clone(),
-				context_id: campaign_id.clone(),
+				org_id: org_id.clone(),
+				campaign_id: campaign_id.clone(),
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start,
 				expiry,
 			};
 			let metadata = ProposalMetadata { title, cid, amount };
-
-			Self::insert_proposal(&sender, &proposal, metadata, expiry)?;
+			
+			Self::insert_proposal(&sender, &proposal, org_id, campaign_id.clone(), metadata, expiry)?;
 
 			Self::deposit_event(Event::<T>::ProposalCreated {
 				sender_id: sender,
-				context_id: campaign_id,
+				org_id,
+				campaign_id,
 				proposal_id,
 				amount,
 				expiry,
@@ -519,7 +525,7 @@ pub mod pallet {
 			// a. member when the proposal is general
 			// b. contributor when the proposal is a withdrawal request
 			// let sender_balance =
-			// <campaign::Module<T>>::campaign_contribution(proposal.context_id,
+			// <campaign::Module<T>>::campaign_contribution(proposal.campaign_id,
 			// sender.clone()); ensure!( sender_balance > T::Balance::from(0), "You are not
 			// a contributor of this Campaign");
 
@@ -577,7 +583,8 @@ pub mod pallet {
 						// treasury
 						// 50% majority of eligible voters
 						let (yes, _no) = ProposalSimpleVotes::<T>::get(&proposal_id);
-						let contributors = T::Flow::campaign_contributors_count(&proposal.context_id);
+						let campaign_id = &proposal.campaign_id.unwrap();
+						let contributors = T::Flow::campaign_contributors_count(&campaign_id);
 						// TODO: dynamic threshold
 						let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError);
 						match threshold {
@@ -640,8 +647,9 @@ pub mod pallet {
 
 			// Ensure sufficient balance
 			let proposal_balance = metadata.amount;
-			let total_balance = T::Flow::campaign_balance(&proposal.context_id);
-			let used_balance = CampaignBalanceUsed::<T>::get(proposal.context_id);
+			let campaign_id = proposal.campaign_id.unwrap();
+			let total_balance = T::Flow::campaign_balance(&campaign_id);
+			let used_balance = CampaignBalanceUsed::<T>::get(&campaign_id);
 			let available_balance = total_balance
 				.checked_sub(&used_balance)
 				.ok_or(Error::<T>::BalanceInsufficient)?;
@@ -651,7 +659,7 @@ pub mod pallet {
 			let _owner = Owners::<T>::get(&proposal.proposal_id).ok_or(Error::<T>::NoProposalOwner)?;
 
 			// get treasury account for related org and unlock balance
-			let org_id = T::Flow::campaign_org(&proposal.context_id);
+			let org_id = T::Flow::campaign_org(&campaign_id);
 			let treasury_account = T::Control::org_treasury_account(&org_id);
 			T::Currency::unreserve(T::PaymentTokenId::get(), &treasury_account, proposal_balance);
 
@@ -659,14 +667,14 @@ pub mod pallet {
 			let new_used_balance = used_balance
 				.checked_add(&proposal_balance)
 				.ok_or(Error::<T>::OverflowError)?;
-			CampaignBalanceUsed::<T>::insert(proposal.context_id, new_used_balance);
+			CampaignBalanceUsed::<T>::insert(&campaign_id, new_used_balance);
 
 			// proposal completed
 			ProposalStates::<T>::insert(proposal.proposal_id, ProposalState::Finalized);
 
 			Self::deposit_event(Event::<T>::WithdrawalGranted {
 				proposal_id: proposal.proposal_id,
-				campaign_id: proposal.context_id,
+				campaign_id,
 				org_id
 			});
 			Ok(())
@@ -675,15 +683,16 @@ pub mod pallet {
 		fn insert_proposal(
 			sender: &T::AccountId,
 			proposal: &Proposal<T::Hash, T::BlockNumber>,
+			org_id: T::Hash,
+			campaign_id: Option<T::Hash>,
 			metadata: ProposalMetadata<T::Balance>,
 			expiry: T::BlockNumber,
 		) -> Result<(), Error<T>> {
 			let proposal_id = &proposal.proposal_id;
-			let campaign_id = &proposal.context_id;
 			let proposals_count = ProposalsCount::<T>::get();
 			let updated_proposals_count = proposals_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
-			let proposals_by_campaign_count = ProposalsByContextCount::<T>::get(&campaign_id);
-			let updated_proposals_by_campaign_count = proposals_by_campaign_count
+			let proposals_by_org_count = ProposalsByOrgCount::<T>::get(&org_id);
+			let updated_proposals_by_org_count = proposals_by_org_count
 				.checked_add(1)
 				.ok_or(Error::<T>::OverflowError)?;
 			let proposals_by_owner_count = ProposalsByOwnerCount::<T>::get(&sender);
@@ -702,23 +711,24 @@ pub mod pallet {
 			ProposalsArray::<T>::insert(&proposals_count, proposal_id.clone());
 			ProposalsCount::<T>::put(updated_proposals_count);
 			ProposalsIndex::<T>::insert(proposal_id.clone(), proposals_count);
-			// update campaign map
-			ProposalsByContextArray::<T>::insert(
-				(campaign_id.clone(), proposals_by_campaign_count.clone()),
+			// update org map
+			ProposalsByOrgArray::<T>::insert(
+				(org_id.clone(), proposals_by_org_count.clone()),
 				proposal_id.clone(),
 			);
-			ProposalsByContextCount::<T>::insert(campaign_id.clone(), updated_proposals_by_campaign_count);
-			ProposalsByContextIndex::<T>::insert(
-				(campaign_id.clone(), proposal_id.clone()),
-				proposals_by_campaign_count,
+			ProposalsByOrgCount::<T>::insert(org_id.clone(), updated_proposals_by_org_count);
+			ProposalsByOrgIndex::<T>::insert(
+				(org_id.clone(), proposal_id.clone()),
+				proposals_by_org_count,
 			);
-			ProposalsByContext::<T>::mutate(campaign_id.clone(), |proposals| proposals.push(proposal_id.clone()));
+			ProposalsByOrg::<T>::mutate(org_id.clone(), |proposals| proposals.push(proposal_id.clone()));
 			// update owner map
 			ProposalsByOwnerArray::<T>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
 			ProposalsByOwnerCount::<T>::insert(sender.clone(), updated_proposals_by_owner_count);
 			ProposalsByOwnerIndex::<T>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
 			// init votes
-			ProposalSimpleVotes::<T>::insert(campaign_id, (0, 0));
+			// TODO: check what is the default value
+			// ProposalSimpleVotes::<T>::insert(campaign_id, (0, 0));
 
 			return Ok(());
 		}
@@ -769,7 +779,8 @@ pub mod pallet {
 								current_approvers.checked_add(1).ok_or(Error::<T>::OverflowError)?;
 							ProposalApprovers::<T>::insert(proposal_id.clone(), updated_approvers.clone());
 
-							let contributors = T::Flow::campaign_contributors_count(&proposal.context_id);
+							let campaign_id = &proposal.campaign_id.unwrap();
+							let contributors = T::Flow::campaign_contributors_count(&campaign_id);
 							// TODO: make this variable
 							let threshold = contributors.checked_div(2).ok_or(Error::<T>::DivisionError)?;
 							if updated_approvers > threshold {
@@ -826,10 +837,10 @@ pub mod pallet {
 			Ok(())
 		}
 
-		fn get_and_increment_nonce() -> Vec<u8> {
+		fn get_and_increment_nonce() -> u128 {
 			let nonce = Nonce::<T>::get();
 			Nonce::<T>::put(nonce.wrapping_add(1));
-			nonce.encode()
+			nonce
 		}
 	}
 }
