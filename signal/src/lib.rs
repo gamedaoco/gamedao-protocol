@@ -334,7 +334,6 @@ pub mod pallet {
 				expiry <= current_block + ProposalTimeLimit::<T>::get(),
 				Error::<T>::OutOfBounds
 			);
-
 			let proposals = ProposalsByBlock::<T>::get(expiry);
 			ensure!(
 				(proposals.len() as u32) < T::MaxProposalsPerBlock::get(),
@@ -345,22 +344,10 @@ pub mod pallet {
 			let proposal_id = T::Hashing::hash_of(&nonce);
 			ensure!(!Proposals::<T>::contains_key(&proposal_id), Error::<T>::ProposalExists);
 
-			let new_proposal = Proposal {
-				proposal_id: proposal_id.clone(),
-				org_id: org_id.clone(),
-				campaign_id: None,
-				proposal_type: ProposalType::General,
-				voting_type: VotingType::Simple,
-				start,
-				expiry,
-			};
-			let metadata = ProposalMetadata {
-				title: title,
-				cid: cid,
-				amount: T::Balance::zero(),
-			};
-
-			Self::insert_proposal(&sender, &new_proposal, org_id, None, metadata, expiry)?;
+			Self::create_proposal(
+				&sender, proposal_id.clone(), org_id, None, title, cid, T::Balance::zero(),
+				ProposalType::General, VotingType::Simple, start, expiry
+			)?;
 
 			Self::deposit_event(Event::<T>::Proposal {
 				sender_id: sender,
@@ -451,34 +438,26 @@ pub mod pallet {
 				.ok_or(Error::<T>::BalanceInsufficient)?;
 			ensure!(remaining_balance >= amount, Error::<T>::BalanceInsufficient);
 
-			let nonce = Self::get_and_increment_nonce();
-			let proposal_id = T::Hashing::hash_of(&nonce);
 			let proposals = ProposalsByBlock::<T>::get(expiry);
 			ensure!(
 				(proposals.len() as u32) < T::MaxProposalsPerBlock::get(),
 				Error::<T>::TooManyProposals
 			);
-			ensure!(!Proposals::<T>::contains_key(&proposal_id), Error::<T>::ProposalExists);
-			let org_id = T::Flow::campaign_org(&campaign_id);
-
-			let campaign_id = Some(campaign_id);
-			let proposal = Proposal {
-				proposal_id: proposal_id.clone(),
-				org_id: org_id.clone(),
-				campaign_id: campaign_id.clone(),
-				proposal_type: ProposalType::Withdrawal,
-				voting_type: VotingType::Simple,
-				start,
-				expiry,
-			};
-			let metadata = ProposalMetadata { title, cid, amount };
 			
-			Self::insert_proposal(&sender, &proposal, org_id, campaign_id.clone(), metadata, expiry)?;
+			let nonce = Self::get_and_increment_nonce();
+			let proposal_id = T::Hashing::hash_of(&nonce);
+			ensure!(!Proposals::<T>::contains_key(&proposal_id), Error::<T>::ProposalExists);
+
+			let org_id = T::Flow::campaign_org(&campaign_id);
+			Self::create_proposal(
+				&sender, proposal_id, org_id, Some(campaign_id), title, cid, amount,
+				ProposalType::Withdrawal, VotingType::Simple, start, expiry
+			);
 
 			Self::deposit_event(Event::<T>::ProposalCreated {
 				sender_id: sender,
 				org_id,
-				campaign_id,
+				campaign_id: Some(campaign_id),
 				proposal_id,
 				amount,
 				expiry,
@@ -680,15 +659,34 @@ pub mod pallet {
 			Ok(())
 		}
 
-		fn insert_proposal(
+		fn create_proposal(
 			sender: &T::AccountId,
-			proposal: &Proposal<T::Hash, T::BlockNumber>,
+			proposal_id: T::Hash,
 			org_id: T::Hash,
 			campaign_id: Option<T::Hash>,
-			metadata: ProposalMetadata<T::Balance>,
+			title: Vec<u8>,
+			cid: Vec<u8>,
+			amount: T::Balance,
+			proposal_type: ProposalType,
+			voting_type: VotingType,
+			start: T::BlockNumber,
 			expiry: T::BlockNumber,
-		) -> Result<(), Error<T>> {
-			let proposal_id = &proposal.proposal_id;
+		) -> Result<T::Hash, Error<T>> {
+			let proposal = Proposal {
+				proposal_id: proposal_id.clone(),
+				org_id: org_id.clone(),
+				campaign_id: campaign_id,
+				proposal_type: proposal_type,
+				voting_type: voting_type,
+				start,
+				expiry,
+			};
+			let metadata = ProposalMetadata {
+				title: title,
+				cid: cid,
+				amount: amount,
+			};
+
 			let proposals_count = ProposalsCount::<T>::get();
 			let updated_proposals_count = proposals_count.checked_add(1).ok_or(Error::<T>::OverflowError)?;
 			let proposals_by_org_count = ProposalsByOrgCount::<T>::get(&org_id);
@@ -730,7 +728,7 @@ pub mod pallet {
 			// TODO: check what is the default value
 			// ProposalSimpleVotes::<T>::insert(campaign_id, (0, 0));
 
-			return Ok(());
+			Ok(proposal_id)
 		}
 
 		fn perform_vote(

@@ -191,9 +191,11 @@ pub mod pallet {
 				.for_each(|(creator_id, controller_id, treasury_id, name, cid, org_type,
 					access, fee_model, fee, gov_asset, pay_asset, member_limit, deposit)| {
 						let nonce = Pallet::<T>::get_and_increment_nonce();
-						let org_id = Pallet::<T>::do_create_org(
-							creator_id.clone(), controller_id.clone(), treasury_id.clone(), name.clone(), cid.clone(), org_type.clone(), access.clone(),
-							fee_model.clone(), fee.clone(), gov_asset.clone(), pay_asset.clone(), member_limit.clone(), deposit.clone(), nonce
+						let org_id = T::Hashing::hash_of(&treasury_id);
+						Pallet::<T>::do_create_org(
+							creator_id.clone(), org_id.clone(), controller_id.clone(), treasury_id.clone(), name.clone(),
+							cid.clone(), org_type.clone(), access.clone(), fee_model.clone(), fee.clone(), gov_asset.clone(),
+							pay_asset.clone(), member_limit.clone(), deposit.clone(), nonce
 						);
 						Pallet::<T>::do_add_member(org_id, controller_id.clone()).unwrap();
 						Pallet::<T>::mint_nft().unwrap();
@@ -260,7 +262,9 @@ pub mod pallet {
 		/// Treasury account already exists
 		TreasuryExists,
 		/// Initial deposit to Treasury too low
-		InitialDepositTooLow
+		InitialDepositTooLow,
+		/// Organization already exists
+		OrgExists
 	}
 
 	#[pallet::call]
@@ -333,13 +337,16 @@ pub mod pallet {
 			ensure!(deposit >= T::InitialDeposit::get(), Error::<T>::InitialDepositTooLow);
 			ensure!(free_balance >= deposit, Error::<T>::BalanceTooLow);
 
-			// TODO validation: namce, cid ?
+			// TODO validation: name, cid ?
 			let nonce = Self::get_and_increment_nonce();
 			let treasury_account_id = T::PalletId::get().into_sub_account(nonce as i32);
 			ensure!(!<frame_system::Pallet<T>>::account_exists(&treasury_account_id), Error::<T>::TreasuryExists);
 
-			let org_id = Self::do_create_org(
-				sender.clone(), controller_id.clone(), treasury_account_id.clone(), name, cid,
+			let org_id = T::Hashing::hash_of(&treasury_account_id);
+			ensure!(!Orgs::<T>::contains_key(&org_id), Error::<T>::OrgExists);
+
+			Self::do_create_org(
+				sender.clone(), org_id.clone(), controller_id.clone(), treasury_account_id.clone(), name, cid,
 				org_type, access, fee_model, fee, gov_asset, pay_asset, member_limit, deposit, nonce
 			);
 			Self::do_add_member(org_id.clone(), controller_id)?;
@@ -468,6 +475,7 @@ impl<T: Config> Pallet<T> {
 
 	fn do_create_org(
 		creator: T::AccountId,
+		org_id: T::Hash,
 		controller_id: T::AccountId,
 		treasury_id: T::AccountId,
 		name: Vec<u8>,
@@ -481,9 +489,8 @@ impl<T: Config> Pallet<T> {
 		member_limit: u64,
 		deposit: T::Balance,
 		nonce: u128
-	) -> T::Hash {
+	) {
 		let now = <frame_system::Pallet<T>>::block_number();
-		let org_id = T::Hashing::hash_of(&treasury_id);
 
 		let org = Org {
 			id: org_id.clone(),
@@ -541,8 +548,6 @@ impl<T: Config> Pallet<T> {
 			deposit,
 		);
 		debug_assert!(res.is_ok());
-
-		org_id
 	}
 
 	fn mint_nft() -> DispatchResult {
