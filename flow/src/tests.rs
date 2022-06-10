@@ -16,7 +16,7 @@ fn create_org_treasury() -> (H256, AccountId, Balance) {
 	assert_ok!(Control::create_org(
 		Origin::signed(BOB), BOB, vec![1, 2], vec![1, 2],
 		OrgType::default(), AccessModel::default(), FeeModel::default(),
-		0, 0, 0, 0, 1 * DOLLARS
+		0, 0, 0, 0, Some(1 * DOLLARS)
 	));
 	let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account(nonce as i32);
     let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);

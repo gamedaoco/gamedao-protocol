@@ -94,7 +94,7 @@ pub mod pallet {
 		type PaymentTokenId: Get<Self::CurrencyId>;
 
 		#[pallet::constant]
-		type InitialDeposit: Get<Self::Balance>;
+		type MinimumDeposit: Get<Self::Balance>;
 	}
 
 	/// Get an Org by its hash
@@ -261,8 +261,8 @@ pub mod pallet {
 		GuruMeditation,
 		/// Treasury account already exists
 		TreasuryExists,
-		/// Initial deposit to Treasury too low
-		InitialDepositTooLow,
+		/// Minimum deposit to Treasury too low
+		MinimumDepositTooLow,
 		/// Organization already exists
 		OrgExists
 	}
@@ -326,16 +326,21 @@ pub mod pallet {
 			gov_asset: T::CurrencyId,
 			pay_asset: T::CurrencyId,
 			member_limit: u64,
-			deposit: T::Balance,
+			deposit: Option<T::Balance>,
 			// mint: T::Balance,
 			// burn: T::Balance,
 			// strategy: u16,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 
+			let mut org_deposit: T::Balance = T::MinimumDeposit::get();
+			if deposit.is_some() {
+				org_deposit = deposit.unwrap();
+				ensure!(org_deposit >= T::MinimumDeposit::get(), Error::<T>::MinimumDepositTooLow);
+			}
+			
 			let free_balance = T::Currency::free_balance(T::ProtocolTokenId::get(), &sender);
-			ensure!(deposit >= T::InitialDeposit::get(), Error::<T>::InitialDepositTooLow);
-			ensure!(free_balance >= deposit, Error::<T>::BalanceTooLow);
+			ensure!(free_balance >= org_deposit, Error::<T>::BalanceTooLow);
 
 			// TODO validation: name, cid ?
 			let nonce = Self::get_and_increment_nonce();
@@ -347,7 +352,7 @@ pub mod pallet {
 
 			Self::do_create_org(
 				sender.clone(), org_id.clone(), controller_id.clone(), treasury_account_id.clone(), name, cid,
-				org_type, access, fee_model, fee, gov_asset, pay_asset, member_limit, deposit, nonce
+				org_type, access, fee_model, fee, gov_asset, pay_asset, member_limit, org_deposit, nonce
 			);
 			Self::do_add_member(org_id.clone(), controller_id)?;
 			Self::mint_nft()?;

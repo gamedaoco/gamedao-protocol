@@ -35,7 +35,7 @@ fn create_org_treasury() -> (H256, AccountId) {
 		1,
 		1,
 		100,
-        1 * DOLLARS
+        Some(1 * DOLLARS)
 	));
     let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account(nonce as i32);
     let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);

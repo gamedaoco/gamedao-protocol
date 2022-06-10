@@ -167,7 +167,7 @@ frame_support::parameter_types! {
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
-	pub const InitialDeposit: Balance = 1 * DOLLARS;
+	pub const MinimumDeposit: Balance = 1 * DOLLARS;
 	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
 	pub const Game3FoundationTreasuryAccountId: AccountId = GAME3_TREASURY;
 	pub const GameDAOTreasuryAccountId: AccountId = GAMEDAO_TREASURY;
@@ -184,7 +184,7 @@ impl gamedao_control::Config for Test {
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = ProtocolTokenId;
-	type InitialDeposit = InitialDeposit;
+	type MinimumDeposit = MinimumDeposit;
 	type PalletId = ControlPalletId;
 	type Game3FoundationTreasury = Game3FoundationTreasuryAccountId;
 	type GameDAOTreasury = GameDAOTreasuryAccountId;
