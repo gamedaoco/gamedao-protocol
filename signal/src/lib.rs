@@ -13,9 +13,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet::*;
-
 pub mod types;
+pub mod migration;
 
 #[cfg(test)]
 pub mod mock;
@@ -24,23 +23,32 @@ mod tests;
 // #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
 
+use frame_support::{{traits::StorageVersion}, transactional, dispatch::DispatchResult, weights::{GetDispatchInfo, Weight}};
+use frame_system::{ensure_signed, WeightInfo};
+use orml_traits::{MultiCurrency, MultiReservableCurrency};
+use sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Zero, Hash};
+use sp_std::vec::Vec;
+use codec::HasCompact;
+
+use gamedao_traits::{ControlTrait, FlowTrait};
+
+use types::{Proposal, ProposalMetadata, ProposalState, ProposalType, VotingType};
+
+pub use pallet::*;
+
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, transactional};
-	use frame_system::{
-		ensure_signed,
-		pallet_prelude::{BlockNumberFor, OriginFor},
-		WeightInfo,
-	};
-	use orml_traits::{MultiCurrency, MultiReservableCurrency};
-	use sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Zero, Hash};
-	use sp_std::vec::Vec;
-	use codec::HasCompact;
-
-	use gamedao_traits::{ControlTrait, FlowTrait};
-
 	use super::*;
-	use types::{Proposal, ProposalMetadata, ProposalState, ProposalType, VotingType};
+	use frame_support::pallet_prelude::*;
+	use frame_system::pallet_prelude::*;
+
+	/// The current storage version.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
+
+	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::storage_version(STORAGE_VERSION)]
+	pub struct Pallet<T>(_);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -83,10 +91,6 @@ pub mod pallet {
 		#[pallet::constant]
 		type ProtocolTokenId: Get<Self::CurrencyId>;
 	}
-
-	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
-	pub struct Pallet<T>(_);
 
 	/// Global status
 	#[pallet::storage]
@@ -522,6 +526,11 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+
+		fn on_runtime_upgrade() -> frame_support::weights::Weight {
+			migration::migrate::<T>()
+		}
+
 		fn on_finalize(block_number: T::BlockNumber) {
 			let proposal_hashes = ProposalsByBlock::<T>::get(&block_number);
 
