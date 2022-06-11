@@ -733,9 +733,6 @@ pub mod pallet {
 			ProposalsByOwnerArray::<T>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
 			ProposalsByOwnerCount::<T>::insert(sender.clone(), updated_proposals_by_owner_count);
 			ProposalsByOwnerIndex::<T>::insert((sender.clone(), proposal_id.clone()), proposals_by_owner_count);
-			// init votes
-			// TODO: check what is the default value
-			// ProposalSimpleVotes::<T>::insert(campaign_id, (0, 0));
 
 			Ok(proposal_id)
 		}
