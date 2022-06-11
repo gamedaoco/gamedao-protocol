@@ -2,15 +2,35 @@
 
 pub use super::*;
 use frame_support::{
-	construct_runtime, parameter_types,
+	construct_runtime, parameter_types, PalletId,
 	traits::{Everything, GenesisBuild, Nothing},
 };
-use frame_support_test::TestRandomness;
 use frame_system::EnsureRoot;
 use sp_core::H256;
 use sp_runtime::{traits::IdentityLookup, Permill};
 
 use orml_traits::parameter_type_with_key;
+
+impl Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
+	pub fn new(campaign_id: Hash, expiry: BlockNumber) -> Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
+		Campaign {
+			id: campaign_id,
+			org: H256::random(),
+			name: vec![1, 2],
+			owner: BOB,
+			admin: BOB,
+			deposit: 10 * DOLLARS,
+			expiry: expiry,
+			cap: 110 * DOLLARS,
+			protocol: FlowProtocol::Raise,
+			governance: FlowGovernance::No,
+			cid: vec![1, 2],
+			token_symbol: vec![1, 2],
+			token_name: vec![1, 2],
+			created: PalletTimestamp::now(),
+		}
+	}
+}
 
 // Types:
 pub type AccountId = u32;
@@ -51,6 +71,7 @@ pub const ALICE: AccountId = 11;
 pub const BOB: AccountId = 12;
 
 pub const GAMEDAO_TREASURY: AccountId = 13;
+pub const GAME3_TREASURY: AccountId = 14;
 
 mod gamedao_flow {
 	pub use super::super::*;
@@ -146,24 +167,27 @@ frame_support::parameter_types! {
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
-	pub const InitialDeposit: Balance = 1 * DOLLARS;
+	pub const MinimumDeposit: Balance = 1 * DOLLARS;
+	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
+	pub const Game3FoundationTreasuryAccountId: AccountId = GAME3_TREASURY;
+	pub const GameDAOTreasuryAccountId: AccountId = GAMEDAO_TREASURY;
 }
 
 impl gamedao_control::Config for Test {
 	type Balance = Balance;
-	// type Moment = Moment;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
-	type Randomness = TestRandomness<Self>;
-	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type MaxDAOsPerAccount = MaxDAOsPerAccount;
 	type MaxMembersPerDAO = MaxMembersPerDAO;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = ProtocolTokenId;
-	type InitialDeposit = InitialDeposit;
+	type MinimumDeposit = MinimumDeposit;
+	type PalletId = ControlPalletId;
+	type Game3FoundationTreasury = Game3FoundationTreasuryAccountId;
+	type GameDAOTreasury = GameDAOTreasuryAccountId;
 }
 
 parameter_types! {
@@ -192,9 +216,7 @@ impl Config for Test {
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
 	type UnixTime = PalletTimestamp;
-	type Randomness = TestRandomness<Self>;
 	type Control = Control;
-	type GameDAOAdminOrigin = EnsureRoot<Self::AccountId>;
 	type GameDAOTreasury = GameDAOTreasury;
 	type MaxContributorsProcessing = MaxContributorsProcessing;
 	type MinNameLength = MinNameLength;

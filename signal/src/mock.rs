@@ -1,8 +1,7 @@
 #[cfg(test)]
 use crate as gamedao_signal;
-use frame_support::parameter_types;
+use frame_support::{parameter_types, PalletId};
 use frame_support::traits::{GenesisBuild, Nothing};
-use frame_support_test::TestRandomness;
 use frame_system;
 use orml_traits::parameter_type_with_key;
 use sp_core::H256;
@@ -32,6 +31,8 @@ pub const ACC1: AccountId = 1;
 pub const ACC2: AccountId = 2;
 pub const ACC3: AccountId = 3;
 pub const TREASURY_ACC: AccountId = 4;
+pub const GAME3_TREASURY: AccountId = 5;
+pub const GAMEDAO_TREASURY: AccountId = 6;
 pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
 pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
@@ -144,26 +145,27 @@ parameter_types! {
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: u32 = PAYMENT_TOKEN_ID;
-	pub const InitialDeposit: Balance = 1 * DOLLARS;
+	pub const MinimumDeposit: Balance = 1 * DOLLARS;
 	pub const GameDAOTreasury: AccountId = TREASURY_ACC;
+	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
+	pub const Game3FoundationTreasuryAccountId: AccountId = GAME3_TREASURY;
+	pub const GameDAOTreasuryAccountId: AccountId = GAMEDAO_TREASURY;
 }
 impl gamedao_control::Config for Test {
 	type Balance = Balance;
-	// type Moment = Moment;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
-	type Randomness = TestRandomness<Self>;
-
-	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
-
 	type MaxDAOsPerAccount = MaxDAOsPerAccount;
 	type MaxMembersPerDAO = MaxMembersPerDAO;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
-	type InitialDeposit = InitialDeposit;
+	type MinimumDeposit = MinimumDeposit;
+	type PalletId = ControlPalletId;
+	type Game3FoundationTreasury = Game3FoundationTreasuryAccountId;
+	type GameDAOTreasury = GameDAOTreasuryAccountId;
 }
 
 parameter_types! {
@@ -189,9 +191,7 @@ impl gamedao_flow::Config for Test {
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
 	type UnixTime = PalletTimestamp;
-	type Randomness = TestRandomness<Self>;
 	type Control = Control;
-	type GameDAOAdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type GameDAOTreasury = GameDAOTreasury;
 	type MinNameLength = MinNameLength;
 	type MaxNameLength = MaxNameLength;
@@ -212,7 +212,6 @@ parameter_types! {
 }
 impl gamedao_signal::Config for Test {
 	type Event = Event;
-	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type WeightInfo = ();
 	type Control = Control;
 	type Flow = Flow;
@@ -220,7 +219,6 @@ impl gamedao_signal::Config for Test {
 	type MaxProposalDuration = MaxProposalDuration;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
-	type Randomness = TestRandomness<Self>;
 	type Currency = Currencies;
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;

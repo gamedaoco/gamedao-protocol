@@ -7,43 +7,24 @@ use frame_support::{assert_noop, assert_ok};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use mock::{Event, Moment, *};
 use sp_core::H256;
+use sp_runtime::traits::{Hash, AccountIdConversion};
 
 use gamedao_control::{AccessModel, FeeModel, OrgType};
 
 fn create_org_treasury() -> (H256, AccountId, Balance) {
-	let nonce = Control::nonce().encode();
+	let nonce = Control::nonce();
 	assert_ok!(Control::create_org(
 		Origin::signed(BOB), BOB, vec![1, 2], vec![1, 2],
 		OrgType::default(), AccessModel::default(), FeeModel::default(),
-		0, 0, 0, 0, 1 * DOLLARS
+		0, 0, 0, 0, Some(1 * DOLLARS)
 	));
-    let org_id = <Test as gamedao_control::Config>::Randomness::random(&nonce).0;
-    let treasury_id = Control::org_treasury_account(&org_id);
+	let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account(nonce as i32);
+    let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);
+	assert_eq!(treasury_id, Control::org_treasury_account(&org_id));
 	let tbalance = 30 * DOLLARS;
     let _ = Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, tbalance, 0);
 
     (org_id, treasury_id, tbalance)
-}
-
-impl Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
-	pub fn new(campaign_id: Hash, expiry: BlockNumber) -> Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
-		Campaign {
-			id: campaign_id,
-			org: H256::random(),
-			name: vec![1, 2],
-			owner: BOB,
-			admin: BOB,
-			deposit: 10 * DOLLARS,
-			expiry: expiry,
-			cap: 110 * DOLLARS,
-			protocol: FlowProtocol::Raise,
-			governance: FlowGovernance::No,
-			cid: vec![1, 2],
-			token_symbol: vec![1, 2],
-			token_name: vec![1, 2],
-			created: PalletTimestamp::now(),
-		}
-	}
 }
 
 #[test]
@@ -148,8 +129,8 @@ fn flow_create_success() {
 		let current_block = 3;
 		System::set_block_number(current_block);
 
-		let nonce = Nonce::<Test>::get().encode();
-		let id: H256 = <Test as Config>::Randomness::random(&nonce).0;
+		let nonce = Nonce::<Test>::get();
+		let id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
 		let expiry = current_block + 1;
 		let deposit = 10 * DOLLARS;
 		let target = 20 * DOLLARS;
@@ -356,8 +337,8 @@ fn flow_on_finalize_campaign_succeess() {
 		let target = 500 * DOLLARS;
 
 		// Create Campaign
-		let nonce = Nonce::<Test>::get().encode();
-		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
+		let nonce = Nonce::<Test>::get();
+		let campaign_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
 		assert_ok!(Flow::create_campaign(
 			Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit, expiry,
 			FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]
@@ -471,8 +452,8 @@ fn flow_on_finalize_campaign_failed() {
 		let init_acc_balance = 100 * DOLLARS;
 
 		// Create Campaign
-		let nonce = Nonce::<Test>::get().encode();
-		let campaign_id: H256 = <Test as Config>::Randomness::random(&nonce).0;
+		let nonce = Nonce::<Test>::get();
+		let campaign_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
 		assert_ok!(Flow::create_campaign(
 			Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit, expiry,
 			FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]

@@ -2,7 +2,7 @@ use super::*;
 use frame_support::pallet_prelude::*;
 
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 pub enum OrgType {
 	Individual = 0,
 	Company = 1,
@@ -16,7 +16,7 @@ impl Default for OrgType {
 }
 
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[repr(u8)]
 pub enum ControlMemberState {
 	Inactive = 0, // eg inactive after threshold period
@@ -34,7 +34,7 @@ impl Default for ControlMemberState {
 }
 
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[repr(u8)]
 pub enum ControlState {
 	Inactive = 0,
@@ -49,7 +49,7 @@ impl Default for ControlState {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 pub enum FeeModel {
 	NoFees = 0,   // feeless
 	Reserve = 1,  // amount is reserved in user account
@@ -62,7 +62,7 @@ impl Default for FeeModel {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 pub enum AccessModel {
 	Open = 0,       // anyDAO can join
 	Voting = 1,     // application creates membership voting
@@ -76,7 +76,7 @@ impl Default for AccessModel {
 
 /// Organization
 #[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 pub struct Org<Hash, AccountId, BlockNumber> {
 	/// Org Hash
 	pub(super) id: Hash,
@@ -99,16 +99,16 @@ pub struct Org<Hash, AccountId, BlockNumber> {
 /// Organization Config
 // TODO: refactor to bit flags
 #[derive(Encode, Decode, PartialEq, Eq, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub struct OrgConfig<Balance> {
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+pub struct OrgConfig<Balance, CurrencyId> {
 	/// Fee Model: TX only | Reserve | Transfer
 	pub(super) fee_model: FeeModel,
 	/// Fee amount
 	pub(super) fee: Balance,
 	/// Governance Asset
-	pub(super) gov_asset: u8,
+	pub(super) gov_asset: CurrencyId,
 	/// Payment Asset
-	pub(super) pay_asset: u8,
+	pub(super) pay_asset: CurrencyId,
 	/// Access Model
 	pub(super) access: AccessModel,
 	/// Max Member Limit
