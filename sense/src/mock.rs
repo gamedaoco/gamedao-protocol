@@ -63,7 +63,6 @@ impl system::Config for Test {
 
 impl pallet_sense::Config for Test {
 	type Event = Event;
-	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type WeightInfo = ();
 }
 

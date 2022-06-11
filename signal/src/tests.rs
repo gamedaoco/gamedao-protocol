@@ -10,19 +10,19 @@ use frame_system::RawOrigin;
 use frame_support::pallet_prelude::Encode;
 use frame_support::{
 	assert_noop, assert_ok,
-	traits::{Hooks, Randomness},
+	traits::Hooks,
 };
 use orml_tokens::Event as TokensEvent;
 use orml_traits::MultiReservableCurrency;
 use sp_core::H256;
-use sp_runtime::traits::BadOrigin;
+use sp_runtime::traits::{BadOrigin, Hash, AccountIdConversion};
 
 use gamedao_traits::ControlTrait;
 use gamedao_control::{AccessModel, FeeModel, OrgType};
 use gamedao_flow::{FlowGovernance, FlowProtocol, FlowState};
 
 fn create_org_treasury() -> (H256, AccountId) {
-	let nonce = Control::nonce().encode();
+	let nonce = Control::nonce();
 	assert_ok!(Control::create_org(
 		Origin::signed(ACC1),
 		ACC1,
@@ -35,10 +35,11 @@ fn create_org_treasury() -> (H256, AccountId) {
 		1,
 		1,
 		100,
-        1 * DOLLARS
+        Some(1 * DOLLARS)
 	));
-    let org_id = <Test as gamedao_control::Config>::Randomness::random(&nonce).0;
-    let treasury_id = Control::org_treasury_account(&org_id);
+    let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account(nonce as i32);
+    let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);
+	assert_eq!(treasury_id, Control::org_treasury_account(&org_id));
     let _ = Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, 25 * DOLLARS, 0);
 
     (org_id, treasury_id)
@@ -50,7 +51,7 @@ fn create_campaign(
 	new_state: Option<FlowState>,
 	expiry: Option<u64>,
 ) -> H256 {
-	let nonce = Flow::nonce().encode();
+	let nonce = Flow::nonce();
 	assert_ok!(Flow::create_campaign(
 		Origin::signed(ACC1),
 		org,
@@ -65,7 +66,7 @@ fn create_campaign(
 		vec![1, 2, 3],
 		vec![1, 2, 3],
 	));
-	let campaign_id = <Test as gamedao_flow::Config>::Randomness::random(&nonce).0;
+	let campaign_id = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
 	for (account_id, contribution) in contributions.iter() {
 		assert_ok!(Flow::contribute(
 			Origin::signed(*account_id),
@@ -86,22 +87,21 @@ fn create_campaign(
 #[test]
 fn signal_general_proposal_success() {
 	ExtBuilder::default().build().execute_with(|| {
-		let nonce = vec![0];
-		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
+		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
 		let (org_id, _) = create_org_treasury();
 
 		System::set_block_number(3);
 		assert_ok!(Signal::general_proposal(
 			Origin::signed(ACC1),
-			org_id,        // context id
+			org_id,
 			vec![1, 2, 3], // title
 			vec![1, 2, 3], // cid
 			3,             // start
 			15             // expiry
 		));
-		let event = System::events().pop().expect("No event generated").event;
+
 		assert_eq!(
-			event,
+			System::events().pop().expect("No event generated").event,
 			Event::Signal(crate::Event::Proposal {
 				sender_id: ACC1,
 				proposal_id: proposal_id
@@ -111,7 +111,8 @@ fn signal_general_proposal_success() {
 			<Proposals<Test>>::get(&proposal_id),
 			Some(Proposal {
 				proposal_id,
-				context_id: org_id,
+				org_id: org_id,
+				campaign_id: None,
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start: 3,
@@ -132,20 +133,19 @@ fn signal_general_proposal_success() {
 		assert_eq!(<ProposalsArray<Test>>::get(0), proposal_id);
 		assert_eq!(<ProposalsCount<Test>>::get(), 1);
 		assert_eq!(<ProposalsIndex<Test>>::get(&proposal_id), 0);
-		assert_eq!(<ProposalsByContextArray<Test>>::get((org_id.clone(), 0)), proposal_id);
-		assert_eq!(<ProposalsByContextCount<Test>>::get(org_id), 1);
-		assert_eq!(<ProposalsByContextIndex<Test>>::get((org_id, proposal_id)), 0);
+		assert_eq!(<ProposalsByOrgArray<Test>>::get((org_id.clone(), 0)), proposal_id);
+		assert_eq!(<ProposalsByOrgCount<Test>>::get(org_id), 1);
+		assert_eq!(<ProposalsByOrgIndex<Test>>::get((org_id, proposal_id)), 0);
 		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 0)), proposal_id);
 		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 1);
 		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, proposal_id)), 0);
-		assert_eq!(<ProposalsByContext<Test>>::get(org_id), vec![proposal_id.clone()]);
+		assert_eq!(<ProposalsByOrg<Test>>::get(org_id), vec![proposal_id.clone()]);
 		assert_eq!(<Nonce<Test>>::get(), 1);
 
-		let nonce = vec![1];
-		let (new_proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
+		let new_proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
 		assert_ok!(Signal::general_proposal(
 			Origin::signed(ACC1),
-			org_id,        // context id
+			org_id,        // org_id
 			vec![2, 3, 4], // title
 			vec![2, 3, 4], // cid
 			3,             // start
@@ -159,19 +159,19 @@ fn signal_general_proposal_success() {
 		assert_eq!(<ProposalsCount<Test>>::get(), 2);
 		assert_eq!(<ProposalsIndex<Test>>::get(&new_proposal_id), 1);
 		assert_eq!(
-			<ProposalsByContextArray<Test>>::get((org_id.clone(), 1)),
+			<ProposalsByOrgArray<Test>>::get((org_id.clone(), 1)),
 			new_proposal_id
 		);
-		assert_eq!(<ProposalsByContextCount<Test>>::get(org_id), 2);
-		assert_eq!(<ProposalsByContextIndex<Test>>::get((org_id, new_proposal_id)), 1);
+		assert_eq!(<ProposalsByOrgCount<Test>>::get(org_id), 2);
+		assert_eq!(<ProposalsByOrgIndex<Test>>::get((org_id, new_proposal_id)), 1);
 		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 1)), new_proposal_id);
 		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 2);
 		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, new_proposal_id)), 1);
 		assert_eq!(
-			<ProposalsByContext<Test>>::get(org_id),
+			<ProposalsByOrg<Test>>::get(org_id),
 			vec![proposal_id.clone(), new_proposal_id.clone()]
 		);
-		assert_eq!(<Nonce<Test>>::get(), 2);
+		assert_eq!( Signal::nonce(), 2);
 	});
 }
 
@@ -179,15 +179,15 @@ fn signal_general_proposal_success() {
 fn signal_general_proposal_error() {
 	ExtBuilder::default().build().execute_with(|| {
 		System::set_block_number(3);
-		let nonce = vec![0];
-		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
 		let (org_id, _) = create_org_treasury();
+		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
 
 		<Proposals<Test>>::insert(
-			org_id,
+			proposal_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: org_id,
+				org_id: org_id,
+				campaign_id: None,
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -197,7 +197,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				org_id,   // context id
+				org_id,
 				vec![1, 2, 3], // title
 				vec![1, 2, 3], // cid
 				3,             // start
@@ -211,7 +211,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				org_id,   // context id
+				org_id,
 				vec![1, 2, 3], // title
 				vec![1, 2, 3], // cid
 				3,             // start
@@ -223,7 +223,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				org_id,   // context id
+				org_id,
 				vec![1, 2, 3], // title
 				vec![1, 2, 3], // cid
 				3,             // start
@@ -234,7 +234,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				org_id,            // context id
+				org_id,
 				vec![1, 2, 3],          // title
 				vec![1, 2, 3],          // cid
 				System::block_number(), // start
@@ -247,7 +247,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
-				org_id,   // context id
+				org_id,
 				vec![1, 2, 3], // title
 				vec![1, 2, 3], // cid
 				3,             // start
@@ -265,7 +265,7 @@ fn signal_general_proposal_error() {
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::none(),
-				org_id,   // context id
+				org_id,
 				vec![1, 2, 3], // title
 				vec![1, 2, 3], // cid
 				3,             // start
@@ -283,25 +283,25 @@ fn signal_withdraw_proposal_success() {
 		let campaign_id = create_campaign(org_id, vec![(ACC2, 15 * DOLLARS)], Some(FlowState::Success), None);
 		System::set_block_number(3);
 
-		let nonce = vec![0];
-		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
+		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
 		<CampaignBalanceUsed<Test>>::insert(campaign_id, 5 * DOLLARS);
 
 		assert_ok!(Signal::withdraw_proposal(
-			Origin::signed(ACC1), // origin
-			campaign_id,          // context id
+			Origin::signed(ACC1),
+			campaign_id,
 			vec![1, 2, 3],        // title
 			vec![1, 2, 3],        // cid
 			10 * DOLLARS,         // amount
 			4,                    // start
 			15                    // expiry
 		));
-		let event = System::events().pop().expect("No event generated").event;
+
 		assert_eq!(
-			event,
+			System::events().pop().expect("No event generated").event,
 			Event::Signal(crate::Event::ProposalCreated {
 				sender_id: ACC1,
-				context_id: campaign_id,
+				org_id,
+				campaign_id: Some(campaign_id),
 				proposal_id,
 				amount: 10 * DOLLARS,
 				expiry: 15
@@ -311,7 +311,8 @@ fn signal_withdraw_proposal_success() {
 			<Proposals<Test>>::get(&proposal_id),
 			Some(Proposal {
 				proposal_id,
-				context_id: campaign_id,
+				org_id,
+				campaign_id: Some(campaign_id),
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start: 4,
@@ -333,22 +334,21 @@ fn signal_withdraw_proposal_success() {
 		assert_eq!(<ProposalsCount<Test>>::get(), 1);
 		assert_eq!(<ProposalsIndex<Test>>::get(&proposal_id), 0);
 		assert_eq!(
-			<ProposalsByContextArray<Test>>::get((campaign_id.clone(), 0)),
+			<ProposalsByOrgArray<Test>>::get((org_id.clone(), 0)),
 			proposal_id
 		);
-		assert_eq!(<ProposalsByContextCount<Test>>::get(campaign_id), 1);
-		assert_eq!(<ProposalsByContextIndex<Test>>::get((campaign_id, proposal_id)), 0);
+		assert_eq!(<ProposalsByOrgCount<Test>>::get(org_id), 1);
+		assert_eq!(<ProposalsByOrgIndex<Test>>::get((org_id, proposal_id)), 0);
 		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 0)), proposal_id);
 		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 1);
 		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, proposal_id)), 0);
-		assert_eq!(<ProposalsByContext<Test>>::get(campaign_id), vec![proposal_id.clone()]);
-		assert_eq!(<Nonce<Test>>::get(), 1);
+		assert_eq!(<ProposalsByOrg<Test>>::get(org_id), vec![proposal_id.clone()]);
+		assert_eq!(Signal::nonce(), 1);
 
-		let nonce = vec![1];
-		let (new_proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
+		let new_proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
 		assert_ok!(Signal::general_proposal(
 			Origin::signed(ACC1),
-			campaign_id,   // context id
+			org_id,
 			vec![2, 3, 4], // title
 			vec![2, 3, 4], // cid
 			4,             // start
@@ -362,19 +362,19 @@ fn signal_withdraw_proposal_success() {
 		assert_eq!(<ProposalsCount<Test>>::get(), 2);
 		assert_eq!(<ProposalsIndex<Test>>::get(&new_proposal_id), 1);
 		assert_eq!(
-			<ProposalsByContextArray<Test>>::get((campaign_id.clone(), 1)),
+			<ProposalsByOrgArray<Test>>::get((org_id.clone(), 1)),
 			new_proposal_id
 		);
-		assert_eq!(<ProposalsByContextCount<Test>>::get(campaign_id), 2);
-		assert_eq!(<ProposalsByContextIndex<Test>>::get((campaign_id, new_proposal_id)), 1);
+		assert_eq!(<ProposalsByOrgCount<Test>>::get(org_id), 2);
+		assert_eq!(<ProposalsByOrgIndex<Test>>::get((org_id, new_proposal_id)), 1);
 		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 1)), new_proposal_id);
 		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 2);
 		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, new_proposal_id)), 1);
 		assert_eq!(
-			<ProposalsByContext<Test>>::get(campaign_id),
+			<ProposalsByOrg<Test>>::get(org_id),
 			vec![proposal_id.clone(), new_proposal_id.clone()]
 		);
-		assert_eq!(<Nonce<Test>>::get(), 2);
+		assert_eq!(Signal::nonce(), 2);
 	});
 }
 
@@ -385,15 +385,15 @@ fn signal_withdraw_proposal_error() {
 		let campaign_id = create_campaign(org_id, vec![(ACC2, 15 * DOLLARS)], Some(FlowState::Success), None);
 		System::set_block_number(3);
 
-		let nonce = vec![0];
-		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
+		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
 		<CampaignBalanceUsed<Test>>::insert(campaign_id, 5 * DOLLARS);
 
 		<Proposals<Test>>::insert(
 			campaign_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				org_id,
+				campaign_id: Some(campaign_id),
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start: 4,
@@ -402,8 +402,8 @@ fn signal_withdraw_proposal_error() {
 		);
 		assert_noop!(
 			Signal::withdraw_proposal(
-				Origin::signed(ACC1), // origin
-				campaign_id,          // context id
+				Origin::signed(ACC1),
+				campaign_id,
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
@@ -417,8 +417,8 @@ fn signal_withdraw_proposal_error() {
 		<ProposalsByBlock<Test>>::insert(15, proposal_ids);
 		assert_noop!(
 			Signal::withdraw_proposal(
-				Origin::signed(ACC1), // origin
-				campaign_id,          // context id
+				Origin::signed(ACC1),
+				campaign_id,
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
@@ -431,8 +431,8 @@ fn signal_withdraw_proposal_error() {
 		<CampaignBalanceUsed<Test>>::insert(campaign_id, 15 * DOLLARS);
 		assert_noop!(
 			Signal::withdraw_proposal(
-				Origin::signed(ACC1), // origin
-				campaign_id,          // context id
+				Origin::signed(ACC1),
+				campaign_id,
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
@@ -445,8 +445,8 @@ fn signal_withdraw_proposal_error() {
 		<CampaignBalanceUsed<Test>>::insert(campaign_id, 11 * DOLLARS);
 		assert_noop!(
 			Signal::withdraw_proposal(
-				Origin::signed(ACC1), // origin
-				campaign_id,          // context id
+				Origin::signed(ACC1),
+				campaign_id,
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
@@ -458,8 +458,8 @@ fn signal_withdraw_proposal_error() {
 
 		assert_noop!(
 			Signal::withdraw_proposal(
-				Origin::signed(ACC1), // origin
-				campaign_id,          // context id
+				Origin::signed(ACC1),
+				campaign_id,
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
@@ -470,8 +470,8 @@ fn signal_withdraw_proposal_error() {
 		);
 		assert_noop!(
 			Signal::withdraw_proposal(
-				Origin::signed(ACC1), // origin
-				campaign_id,          // context id
+				Origin::signed(ACC1),
+				campaign_id,
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
@@ -482,8 +482,8 @@ fn signal_withdraw_proposal_error() {
 		);
 		assert_noop!(
 			Signal::withdraw_proposal(
-				Origin::signed(ACC1), // origin
-				campaign_id,          // context id
+				Origin::signed(ACC1),
+				campaign_id,
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
@@ -495,8 +495,8 @@ fn signal_withdraw_proposal_error() {
 
 		assert_noop!(
 			Signal::withdraw_proposal(
-				Origin::signed(ACC2), // origin
-				campaign_id,          // context id
+				Origin::signed(ACC2),
+				campaign_id,
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
@@ -510,8 +510,8 @@ fn signal_withdraw_proposal_error() {
 		<CampaignBalanceUsed<Test>>::insert(campaign_id, 11);
 		assert_noop!(
 			Signal::withdraw_proposal(
-				Origin::signed(ACC1), // origin
-				campaign_id,          // context id
+				Origin::signed(ACC1),
+				campaign_id,
 				vec![1, 2, 3],        // title
 				vec![1, 2, 3],        // cid
 				10 * DOLLARS,         // amount
@@ -523,8 +523,8 @@ fn signal_withdraw_proposal_error() {
 
 		assert_noop!(
 			Signal::withdraw_proposal(
-				Origin::none(), // origin
-				campaign_id,    // context id
+				Origin::none(),
+				campaign_id,
 				vec![1, 2, 3],  // title
 				vec![1, 2, 3],  // cid
 				10 * DOLLARS,   // amount
@@ -543,13 +543,13 @@ fn signal_simple_vote_success() {
 		let campaign_id = create_campaign(org_id, vec![(ACC2, 5 * DOLLARS)], None, None);
 		System::set_block_number(3);
 
-		let nonce = vec![0];
-		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
+		let proposal_id: H256 = H256::random();
 		<Proposals<Test>>::insert(
 			proposal_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				org_id,
+				campaign_id: Some(campaign_id),
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -598,14 +598,14 @@ fn signal_simple_vote_success() {
 		assert_eq!(<ProposalsByVoter<Test>>::get(ACC1), vec![(proposal_id, false)]);
 		assert_eq!(<ProposalVoters<Test>>::get(proposal_id), vec![ACC1, ACC2]);
 
-		let nonce = vec![1];
-		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
+		let proposal_id: H256 = H256::random();
 		let campaign_id = H256::random();
 		<Proposals<Test>>::insert(
 			proposal_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				org_id,
+				campaign_id: Some(campaign_id),
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -629,13 +629,13 @@ fn signal_simple_vote_success() {
 		assert_eq!(<ProposalDeniers<Test>>::get(&proposal_id), 1);
 
 		let campaign_id = create_campaign(org_id, vec![(ACC2, 10), (ACC3, 10)], Some(FlowState::Active), Some(101));
-		let nonce = vec![2];
-		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
+		let proposal_id: H256 = H256::random();
 		<Proposals<Test>>::insert(
 			proposal_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				org_id,
+				campaign_id: Some(campaign_id),
 				proposal_type: ProposalType::Withdrawal,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -647,18 +647,16 @@ fn signal_simple_vote_success() {
 		assert_ok!(Signal::simple_vote(Origin::signed(ACC2), proposal_id, true));
 		assert_ok!(Signal::simple_vote(Origin::signed(ACC3), proposal_id, true));
 		let mut events = System::events();
-		let event = events.pop().expect("No event generated").event;
 		assert_eq!(
-			event,
+			events.pop().expect("No event generated").event,
 			Event::Signal(crate::Event::ProposalVoted {
 				sender_id: ACC3,
 				proposal_id,
 				vote: true
 			})
 		);
-		let event = events.pop().expect("No event generated").event;
 		assert_eq!(
-			event,
+			events.pop().expect("No event generated").event,
 			Event::Signal(crate::Event::WithdrawalGranted {
 				proposal_id,
 				campaign_id,
@@ -675,14 +673,15 @@ fn signal_simple_vote_error() {
 	ExtBuilder::default().build().execute_with(|| {
 		System::set_block_number(3);
 
-		let nonce = vec![0];
-		let (proposal_id, _): (H256, _) = <Test as Config>::Randomness::random(&nonce);
+		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
 		let campaign_id = H256::random();
+		let org_id = H256::random();
 		<Proposals<Test>>::insert(
 			proposal_id,
 			Proposal {
 				proposal_id: proposal_id,
-				context_id: campaign_id,
+				org_id,
+				campaign_id: Some(campaign_id),
 				proposal_type: ProposalType::General,
 				voting_type: VotingType::Simple,
 				start: 2,
@@ -729,21 +728,22 @@ fn signal_on_finalize_success() {
 		);
 		let (start, expiry) = (4, 15);
 		System::set_block_number(start-1);
-		let (proposal_id1, _): (H256, _) = <Test as Config>::Randomness::random(&vec![0]);
-		let (proposal_id2, _): (H256, _) = <Test as Config>::Randomness::random(&vec![1]);
-		let (proposal_id3, _): (H256, _) = <Test as Config>::Randomness::random(&vec![2]);
+		
+		let proposal_id1: H256 = <Test as frame_system::Config>::Hashing::hash_of(&0);
+		let proposal_id2: H256 = <Test as frame_system::Config>::Hashing::hash_of(&1);
+		let proposal_id3: H256 = <Test as frame_system::Config>::Hashing::hash_of(&2);
 
 		assert_ok!(Signal::general_proposal(
 			Origin::signed(ACC1),
-			campaign_id,   // context id
+			org_id,
 			vec![1, 2, 3], // title
 			vec![1, 2, 3], // cid
 			start,         // start
 			expiry         // expiry
 		));
 		assert_ok!(Signal::withdraw_proposal(
-			Origin::signed(ACC1), // origin
-			campaign_id,          // context id
+			Origin::signed(ACC1),
+			campaign_id,
 			vec![1, 2, 3],        // title
 			vec![1, 2, 3],        // cid
 			10,                   // amount
@@ -785,8 +785,8 @@ fn signal_on_finalize_success() {
 		assert_eq!(<ProposalStates<Test>>::get(proposal_id1), ProposalState::Accepted);
 
 		assert_ok!(Signal::withdraw_proposal(
-			Origin::signed(ACC1), // origin
-			campaign_id,          // context id
+			Origin::signed(ACC1),
+			campaign_id,
 			vec![1, 2, 3],        // title
 			vec![1, 2, 3],        // cid
 			10,                   // amount
