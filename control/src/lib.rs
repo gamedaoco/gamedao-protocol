@@ -100,7 +100,6 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxMembersPerDAO: Get<u32>;
 
-		/// TODO: add docs
 		#[pallet::constant]
 		type MaxCreationsPerBlock: Get<u32>;
 
@@ -117,27 +116,27 @@ pub mod pallet {
 		type MinimumDeposit: Get<Self::Balance>;
 	}
 
-	/// Org by its Hash (id).
+	/// Org by its id.
 	/// 
 	/// Org: map Hash => Org
 	#[pallet::storage]
 	pub(super) type Orgs<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, Org<T::Hash, T::AccountId, T::BlockNumber>, ValueQuery>;
 
-	/// Org Hash (id) by its nonce.
+	/// Org id by its nonce.
 	/// 
 	/// OrgByNonce: map u128 => Hash
 	#[pallet::storage]
 	pub(super) type OrgByNonce<T: Config> = StorageMap<_, Blake2_128Concat, u128, T::Hash>;
 
-	/// Org config by org Hash.
+	/// Org config by its id.
 	/// 
 	/// OrgConfiguration: map Hash => OrgConfig
 	#[pallet::storage]
 	pub(super) type OrgConfiguration<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, OrgConfig<T::Balance, T::CurrencyId>, OptionQuery>;
 
-	/// Org state (Inactive | Active | Locked) by org Hash (id).
+	/// Org state (Inactive | Active | Locked) by org id.
 	/// 
 	/// OrgState: map Hash => ControlState
 	#[pallet::storage]
@@ -150,13 +149,13 @@ pub mod pallet {
 	#[pallet::storage]
 	pub(super) type OrgAccess<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, AccessModel, ValueQuery>;
 
-	/// Org members list by org Hash (id).
+	/// Org members list by org id.
 	/// 
 	/// OrgMembers: map Hash => Vec<AccountId>
 	#[pallet::storage]
 	pub(super) type OrgMembers<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::AccountId>, ValueQuery>;
 
-	/// Org members count by org Hash (id).
+	/// Org members count by org id.
 	/// 
 	/// OrgMemberCount: map Hash => u64
 	#[pallet::storage]
@@ -217,7 +216,7 @@ pub mod pallet {
 	#[pallet::storage]
 	pub(super) type OrgsControlledCount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u64, ValueQuery>;
 
-	/// The goode olde nonce.
+	/// Nonce. Increase per each org creation.
 	/// 
 	/// Nonce: u128
 	#[pallet::storage]
@@ -741,6 +740,12 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	/// Update member's state
+	/// 
+	/// Parameters:
+	/// - `org_id`: Org id.
+	/// - `account_id`: Member account id.
+	/// - `member_state`: Inactive | Active | Pending | Kicked | Banned | Exited.
 	fn set_member_state(org_id: T::Hash, account_id: T::AccountId, member_state: ControlMemberState) -> DispatchResult {
 		// TODO: we would like to update member state based on voting result
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
@@ -815,6 +820,11 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
+	/// Remove member from Org.
+	/// 
+	/// Parameters:
+	/// - `org_id`: Org id.
+	/// - `account_id`: Member account id.
 	fn do_remove_member(org_id: T::Hash, account_id: T::AccountId) -> DispatchResult {
 		// existence
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
