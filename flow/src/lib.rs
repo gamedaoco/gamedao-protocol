@@ -233,7 +233,6 @@ pub mod pallet {
 	/// CampaignsArray: map u64 => Hash
 	#[pallet::storage]
 	pub(super) type CampaignsArray<T: Config> = StorageMap<_, Blake2_128Concat, u64, T::Hash, ValueQuery>;
-	#[pallet::storage]
 
 	/// Total number of campaigns.
 	/// 

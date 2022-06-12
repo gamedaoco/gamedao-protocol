@@ -289,7 +289,7 @@ pub mod pallet {
 		},
 		/// Controller's state has been changed.
 		ControllerUpdated(T::Hash, T::AccountId),
-		/// Account is a member of Org. 
+		/// Account is a member of the Org. 
 		IsAMember {
 			org_id: T::Hash,
 			account_id: T::AccountId,
