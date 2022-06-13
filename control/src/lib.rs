@@ -382,7 +382,7 @@ pub mod pallet {
 		/// - `gov_asset`: control assets to empower actors.
 		/// - `pay_asset`: asset used for payments.
 		/// - `member_limit`: max members, if 0 == no limit.
-		/// - `deposit`: initial deposit for the org treasury.
+		/// - `deposit`: initial deposit for the org treasury (in Protocol tokens).
 		///
 		/// Emits `OrgCreated` event when successful.
 		///
