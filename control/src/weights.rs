@@ -70,18 +70,18 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Control OrgMemberState (r:0 w:1)
 	// Storage: Control OrgCreator (r:0 w:1)
 	fn create_org() -> Weight {
-		(84_592_000 as Weight)
+		(89_160_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(10 as Weight))
 			.saturating_add(T::DbWeight::get().writes(19 as Weight))
 	}
 	// Storage: Control OrgState (r:0 w:1)
 	fn disable_org() -> Weight {
-		(16_721_000 as Weight)
+		(16_737_000 as Weight)
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 	// Storage: Control OrgState (r:0 w:1)
 	fn enable_org() -> Weight {
-		(16_126_000 as Weight)
+		(33_054_000 as Weight)
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 	// Storage: Control Orgs (r:1 w:0)
@@ -92,9 +92,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Control OrgMemberCount (r:0 w:1)
 	// Storage: Control OrgMemberState (r:0 w:1)
 	fn add_member(r: u32, ) -> Weight {
-		(63_771_000 as Weight)
-			// Standard Error: 4_000
-			.saturating_add((208_000 as Weight).saturating_mul(r as Weight))
+		(76_224_000 as Weight)
+			// Standard Error: 7_000
+			.saturating_add((254_000 as Weight).saturating_mul(r as Weight))
 			.saturating_add(T::DbWeight::get().reads(5 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -105,15 +105,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Control OrgMemberCount (r:0 w:1)
 	// Storage: Control OrgMemberState (r:0 w:1)
 	fn remove_member(r: u32, ) -> Weight {
-		(71_829_000 as Weight)
-			// Standard Error: 5_000
-			.saturating_add((196_000 as Weight).saturating_mul(r as Weight))
+		(103_568_000 as Weight)
+			// Standard Error: 12_000
+			.saturating_add((210_000 as Weight).saturating_mul(r as Weight))
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
 	// Storage: Control OrgMembers (r:1 w:0)
 	fn check_membership() -> Weight {
-		(17_996_000 as Weight)
+		(21_669_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 	}
 }
@@ -139,18 +139,18 @@ impl WeightInfo for () {
 	// Storage: Control OrgMemberState (r:0 w:1)
 	// Storage: Control OrgCreator (r:0 w:1)
 	fn create_org() -> Weight {
-		(84_592_000 as Weight)
+		(89_160_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(10 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(19 as Weight))
 	}
 	// Storage: Control OrgState (r:0 w:1)
 	fn disable_org() -> Weight {
-		(16_721_000 as Weight)
+		(16_737_000 as Weight)
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
 	}
 	// Storage: Control OrgState (r:0 w:1)
 	fn enable_org() -> Weight {
-		(16_126_000 as Weight)
+		(33_054_000 as Weight)
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
 	}
 	// Storage: Control Orgs (r:1 w:0)
@@ -161,9 +161,9 @@ impl WeightInfo for () {
 	// Storage: Control OrgMemberCount (r:0 w:1)
 	// Storage: Control OrgMemberState (r:0 w:1)
 	fn add_member(r: u32, ) -> Weight {
-		(63_771_000 as Weight)
-			// Standard Error: 4_000
-			.saturating_add((208_000 as Weight).saturating_mul(r as Weight))
+		(76_224_000 as Weight)
+			// Standard Error: 7_000
+			.saturating_add((254_000 as Weight).saturating_mul(r as Weight))
 			.saturating_add(RocksDbWeight::get().reads(5 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 	}
@@ -174,15 +174,15 @@ impl WeightInfo for () {
 	// Storage: Control OrgMemberCount (r:0 w:1)
 	// Storage: Control OrgMemberState (r:0 w:1)
 	fn remove_member(r: u32, ) -> Weight {
-		(71_829_000 as Weight)
-			// Standard Error: 5_000
-			.saturating_add((196_000 as Weight).saturating_mul(r as Weight))
+		(103_568_000 as Weight)
+			// Standard Error: 12_000
+			.saturating_add((210_000 as Weight).saturating_mul(r as Weight))
 			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 	}
 	// Storage: Control OrgMembers (r:1 w:0)
 	fn check_membership() -> Weight {
-		(17_996_000 as Weight)
+		(21_669_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 	}
 }
