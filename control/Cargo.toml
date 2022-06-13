@@ -48,7 +48,10 @@ orml-currencies = { path = "../../orml/currencies", default-features = false }
 
 [features]
 default = ["std"]
-runtime-benchmarks = ["frame-benchmarking"]
+runtime-benchmarks = [
+	"frame-benchmarking",
+	"gamedao-traits/frame-benchmarking"
+]
 std = [
 	"codec/std",
 	"serde/std",
@@ -69,7 +72,7 @@ std = [
 	# "tangram/std",
 	"orml-traits/std",
 	"orml-tokens/std",
-	# "orml-currencies/std",
+	"orml-currencies/std",
 
 	"gamedao-traits/std",
 

@@ -13,12 +13,27 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use frame_support::dispatch::DispatchError;
+use sp_std::vec::Vec;
+
+
 pub trait ControlTrait<AccountId, Hash> {
 
     fn org_controller_account(org_id: &Hash) -> AccountId;
     fn org_treasury_account(org_id: &Hash) -> AccountId;
     fn is_org_active(org_id: &Hash) -> bool;
     fn is_org_member_active(org_id: &Hash, accont_id: &AccountId) -> bool;
+
+    /// Helper method to create organization.
+    /// ** Should be used for benchmarking only!!! **
+    #[cfg(feature = "runtime-benchmarks")]
+    fn create_org(caller: AccountId) -> Result<Hash, DispatchError>;
+
+    /// Helper method to add accounts to organisation.
+	/// It is assumed those accounts have enough of currency to pay org joining fee.
+	/// ** Should be used for benchmarking only!!! **
+    #[cfg(feature = "runtime-benchmarks")]
+    fn fill_org_with_members(org_id: &Hash, members: &Vec<AccountId>) -> Result<(), DispatchError>;
 }
 
 pub trait FlowTrait<AccountId, Balance, Hash> {

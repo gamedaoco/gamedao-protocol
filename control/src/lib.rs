@@ -31,7 +31,7 @@ use gamedao_traits::ControlTrait;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use scale_info::TypeInfo;
 use sp_runtime::traits::{AccountIdConversion, AtLeast32BitUnsigned, Hash};
-use sp_std::{fmt::Debug, vec::Vec};
+use sp_std::{fmt::Debug, vec, vec::Vec};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -881,6 +881,7 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
+
 impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 	fn org_controller_account(org_id: &T::Hash) -> T::AccountId {
 		OrgController::<T>::get(org_id)
@@ -894,4 +895,42 @@ impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 	fn is_org_member_active(org_id: &T::Hash, account_id: &T::AccountId) -> bool {
 		OrgMemberState::<T>::get((org_id, account_id)) == ControlMemberState::Active
 	}
+
+	/// ** Should be used for benchmarking only!!! **
+	#[cfg(feature = "runtime-benchmarks")]
+	fn create_org(caller: T::AccountId) -> Result<T::Hash, DispatchError> {
+		let org_nonce = Nonce::<T>::get();
+		let name: Vec<u8> = vec![0; 255];
+		let cid: Vec<u8> = vec![0; 255];
+		Pallet::<T>::create_org(
+			frame_system::RawOrigin::Signed(caller.clone()).into(),
+			caller.into(),
+			name,
+			cid,
+			OrgType::Individual,
+			AccessModel::Open,
+			FeeModel::NoFees,
+			T::Balance::default(),
+			T::CurrencyId::default(),
+			T::CurrencyId::default(),
+			100,
+			None
+		)?;
+		let org_id = OrgByNonce::<T>::get(org_nonce).unwrap();
+		Ok(org_id)
+
+	}
+
+	/// ** Should be used for benchmarking only!!! **
+	#[cfg(feature = "runtime-benchmarks")]
+    fn fill_org_with_members(org_id: &T::Hash, accounts: &Vec<T::AccountId>) -> Result<(), DispatchError> {
+    	for acc in accounts {
+			Pallet::<T>::add_member(
+				frame_system::RawOrigin::Signed(acc.clone()).into(),
+				org_id.clone(),
+				acc.clone()
+			).unwrap();
+		}
+		Ok(())
+    }
 }
