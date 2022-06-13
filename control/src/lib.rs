@@ -281,7 +281,7 @@ pub mod pallet {
 		},
 		/// Member's state has been changed.
 		UpdateMember(T::Hash, T::AccountId, T::BlockNumber),
-		/// A member has been removed to the Org. 
+		/// A member has been removed from the Org. 
 		RemoveMember {
 			org_id: T::Hash,
 			account_id: T::AccountId,
