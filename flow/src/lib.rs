@@ -126,7 +126,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type GameDAOTreasury: Get<Self::AccountId>;
 
-		/// The max length of a campaign name.
+		/// The min length of a campaign name.
 		#[pallet::constant]
 		type MinNameLength: Get<u32>;
 		
