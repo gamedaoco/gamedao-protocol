@@ -341,7 +341,7 @@ pub mod pallet {
 		/// Emits `OrgEnabled` event when successful.
 		///
 		/// Weight: `O(1)`
-		#[pallet::weight(1_000_000)]
+		#[pallet::weight(T::WeightInfo::enable_org())]
 		pub fn enable_org(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			ensure_root(origin)?;
 			OrgState::<T>::insert(org_id.clone(), ControlState::Active);
