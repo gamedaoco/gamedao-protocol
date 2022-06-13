@@ -49,6 +49,11 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		type Event: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::Event>
+			+ Into<<Self as frame_system::Config>::Event>;
+
+		/// The units in which we record balances.
 		type Balance: Member
 			+ Parameter
 			+ AtLeast32BitUnsigned
@@ -58,6 +63,7 @@ pub mod pallet {
 			+ MaxEncodedLen
 			+ TypeInfo;
 
+		/// The currency ID type
 		type CurrencyId: Member
 			+ Parameter
 			+ Default
@@ -67,105 +73,152 @@ pub mod pallet {
 			+ MaxEncodedLen
 			+ TypeInfo;
 
+		/// Weight information for extrinsics in this module.
 		type WeightInfo: frame_system::weights::WeightInfo;
-		type Event: From<Event<Self>>
-			+ IsType<<Self as frame_system::Config>::Event>
-			+ Into<<Self as frame_system::Config>::Event>;
+
+		/// Multi-currency support for asset management.
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
 
+		/// The ID for this pallet.
 		#[pallet::constant]
 		type PalletId: Get<PalletId>;
+
+		/// The Game3 Foundation Treasury AccountId.
 		#[pallet::constant]
 		type Game3FoundationTreasury: Get<Self::AccountId>;
+
+		/// The GameDAO Treasury AccountId.
 		#[pallet::constant]
 		type GameDAOTreasury: Get<Self::AccountId>;
 
+		/// The max number of DAOs created per one account.
 		#[pallet::constant]
 		type MaxDAOsPerAccount: Get<u32>;
+
+		/// The max number of members per one DAO.
 		#[pallet::constant]
 		type MaxMembersPerDAO: Get<u32>;
+
 		#[pallet::constant]
 		type MaxCreationsPerBlock: Get<u32>;
 
+		/// The CurrencyId which is used as a protokol token.
 		#[pallet::constant]
 		type ProtocolTokenId: Get<Self::CurrencyId>;
+
+		/// The CurrencyId which is used as a payment token.
 		#[pallet::constant]
 		type PaymentTokenId: Get<Self::CurrencyId>;
 
+		/// The min amount of the deposit which is locked during Org creation (in Protocol tokens).
 		#[pallet::constant]
 		type MinimumDeposit: Get<Self::Balance>;
 	}
 
-	/// Get an Org by its hash
+	/// Org by its id.
+	/// 
+	/// Org: map Hash => Org
 	#[pallet::storage]
 	pub(super) type Orgs<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, Org<T::Hash, T::AccountId, T::BlockNumber>, ValueQuery>;
 
-	/// Get an Org by its nonce
+	/// Org id by its nonce.
+	/// 
+	/// OrgByNonce: map u128 => Hash
 	#[pallet::storage]
 	pub(super) type OrgByNonce<T: Config> = StorageMap<_, Blake2_128Concat, u128, T::Hash>;
 
-	/// Org settings
+	/// Org config by its id.
+	/// 
+	/// OrgConfiguration: map Hash => OrgConfig
 	#[pallet::storage]
 	pub(super) type OrgConfiguration<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, OrgConfig<T::Balance, T::CurrencyId>, OptionQuery>;
 
-	/// Global Org State
+	/// Org state (Inactive | Active | Locked) by org id.
+	/// 
+	/// OrgState: map Hash => ControlState
 	#[pallet::storage]
 	pub(super) type OrgState<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, ControlState, ValueQuery, GetDefault>;
 
-	/// Access model
+	/// Org access model (Open | Voting | Controller) by org Hash (id).
+	/// 
+	/// OrgAccess: map Hash => AccessModel
 	#[pallet::storage]
 	pub(super) type OrgAccess<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, AccessModel, ValueQuery>;
 
-	/// Members of a Org
+	/// Org members list by org id.
+	/// 
+	/// OrgMembers: map Hash => Vec<AccountId>
 	#[pallet::storage]
 	pub(super) type OrgMembers<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::AccountId>, ValueQuery>;
 
-	/// Membercount of a Org
+	/// Org members count by org id.
+	/// 
+	/// OrgMemberCount: map Hash => u64
 	#[pallet::storage]
 	pub(super) type OrgMemberCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
-	/// Member state for a Org
+	/// Member state (Inactive | Active ...) by org Hash and member account.
+	/// 
+	/// OrgMemberState: map (Hash, AccountId) => ControlMemberState
 	#[pallet::storage]
 	pub(super) type OrgMemberState<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::Hash, T::AccountId), ControlMemberState, ValueQuery, GetDefault>;
 
-	/// Memberships by AccountId
+	/// Org list where account is a member.
+	/// 
+	/// Memberships: map AccountId => Vec<Hash>
 	#[pallet::storage]
 	pub(super) type Memberships<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, Vec<T::Hash>, ValueQuery>;
 
-	/// Creator of an Org
+	/// Creator account of an Org.
+	/// 
+	/// OrgCreator: map Hash => AccountId
 	#[pallet::storage]
 	pub(super) type OrgCreator<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, ValueQuery>;
 
-	/// Controller of an Org
+	/// Controller account of an Org.
+	/// 
+	/// OrgController: map Hash => AccountId
 	#[pallet::storage]
 	pub(super) type OrgController<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, ValueQuery>;
 
-	/// Treasury of an Org
+	/// Treasury account of an Org.
+	/// 
+	/// OrgTreasury: map Hash => AccountId
 	#[pallet::storage]
 	pub(super) type OrgTreasury<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, ValueQuery>;
 
-	/// Orgs created by account
+	/// Orgs created by account.
+	/// 
+	/// OrgsCreated: map AccountId => Vec<Hash>
 	#[pallet::storage]
 	pub(super) type OrgsCreated<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, Vec<T::Hash>, ValueQuery>;
 
-	/// Number of Orgs created by account
+	/// Number of Orgs created by account.
+	/// 
+	/// OrgsByCreatedCount: map AccountId => u64
 	#[pallet::storage]
 	pub(super) type OrgsByCreatedCount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u64, ValueQuery>;
 
-	/// Orgs controlled by account
+	/// Orgs controlled by account.
+	/// 
+	/// OrgsControlled: map AccountId => Vec<Hash>
 	#[pallet::storage]
 	pub(super) type OrgsControlled<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, Vec<T::Hash>, ValueQuery>;
 
-	/// Number of Orgs controlled by account
+	/// Number of Orgs controlled by account.
+	/// 
+	/// OrgsControlledCount: map AccountId => u64
 	#[pallet::storage]
 	pub(super) type OrgsControlledCount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u64, ValueQuery>;
 
-	/// the goode olde nonce
+	/// Nonce. Increase per each org creation.
+	/// 
+	/// Nonce: u128
 	#[pallet::storage]
 	#[pallet::getter(fn nonce)]
 	pub(super) type Nonce<T: Config> = StorageValue<_, u128, ValueQuery>;
@@ -206,6 +259,7 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// Org was successfully created.
 		OrgCreated {
 			sender_id: T::AccountId,
 			org_id: T::Hash,
@@ -213,66 +267,78 @@ pub mod pallet {
 			created_at: T::BlockNumber,
 			realm_index: u64,
 		},
+		/// Org was successfully updated.
 		OrgUpdated(T::AccountId, T::Hash, T::BlockNumber),
+		/// Org was enabled and it's state become Active.
 		OrgEnabled(T::Hash),
+		/// Org was disabled and it's state become Inactive.
 		OrgDisabled(T::Hash),
+		/// A member has been added to the Org. 
 		AddMember {
 			org_id: T::Hash,
 			account_id: T::AccountId,
 			added_at: T::BlockNumber,
 		},
+		/// Member's state has been changed.
 		UpdateMember(T::Hash, T::AccountId, T::BlockNumber),
+		/// A member has been removed from the Org. 
 		RemoveMember {
 			org_id: T::Hash,
 			account_id: T::AccountId,
 			removed_at: T::BlockNumber,
 		},
+		/// Controller's state has been changed.
 		ControllerUpdated(T::Hash, T::AccountId),
+		/// Account is a member of the Org. 
 		IsAMember {
 			org_id: T::Hash,
 			account_id: T::AccountId,
 		},
-		Message(Vec<u8>),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
-		/// Org Exists
+		/// Org Exists.
 		OrganizationExists,
-		/// Org Unknown
+		/// Org Unknown.
 		OrganizationUnknown,
-		/// Org Inactive
+		/// Org Inactive.
 		OrganizationInactive,
-		/// Insufficient Balance to create Org
+		/// Insufficient Balance to create Org.
 		BalanceTooLow,
-		/// Member Add Overflow
+		/// Member Add Overflow.
 		MemberAddOverflow,
-		/// Membership Limit Reached
+		/// Membership Limit Reached.
 		MembershipLimitReached,
-		/// Member Exists
+		/// Member Exists.
 		MemberExists,
-		/// Member Unknonw
+		/// Member Unknonw.
 		MemberUnknown,
-		/// Duplicate Address
+		/// Duplicate Address.
 		DuplicateAddress,
-		/// Unknown Error
+		/// Unknown Error.
 		UnknownError,
-		/// Guru Meditation
+		/// Guru Meditation.
 		GuruMeditation,
-		/// Treasury account already exists
+		/// Treasury account already exists.
 		TreasuryExists,
-		/// Minimum deposit to Treasury too low
-		MinimumDepositTooLow,
-		/// Organization already exists
-		OrgExists
+		/// Minimum deposit to Treasury too low.
+		MinimumDepositTooLow
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		// Enable Org
-		// currently root, layer supervisor
-		// enables an org to be used
-		// org_id: an organisations hash
+		/// Enable Org
+		/// 
+		/// Enables an Org to be used and changes it's state to Active.
+		/// Root origin only.
+		/// 
+		/// Parameters:
+		/// `org_id`: Org hash.
+		/// 
+		/// Emits `OrgEnabled` event when successful.
+		/// 
+		/// Weight: `O(1)`
 		#[pallet::weight(1_000_000)]
 		pub fn enable_org(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			ensure_root(origin)?;
@@ -281,10 +347,17 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// Disable Org
-		// currently root, layer supervisor
-		// disables an org to be used
-		// org_id: an organisations hash
+		/// Disable Org
+		/// 
+		/// Disables an Org to be used and changes it's state to Inactive.
+		/// Root origin only.
+		/// 
+		/// Parameters:
+		/// `org_id`: Org hash.
+		/// 
+		/// Emits `OrgDisabled` event when successful.
+		/// 
+		/// Weight: `O(1)`
 		#[pallet::weight(1_000_000)]
 		pub fn disable_org(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			ensure_root(origin)?;
@@ -293,25 +366,27 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Create Org
-		/// create an on chain organisation
-		///
-		/// - `creator`: creator
-		/// - `controller`: current controller
-		/// - `name`: Org name
-		/// - `cid`: IPFS
-		/// - `org_type`: individual | legal Org | dao
-		/// - `access`: anyDAO can join | only member can add | only
-		/// - `fee_model`: only TX by OS | fees are reserved | fees are moved to treasury
-		/// - `fee`: fee
-		/// - `gov_asset`: control assets to empower actors
-		/// - `pay_asset`:
-		/// - `member_limit`: max members, if 0 == no limit
-		/// - `deposit`: initial deposit for the org treasury
+		/// Create an on chain organisation
+		/// 
+		/// Parameters:
+		/// - `origin`: Org creator.
+		/// - `controller_id`: Org controller.
+		/// - `name`: Org name.
+		/// - `cid`: IPFS content identifier.
+		/// - `org_type`: Individual | Company | Dao | Hybrid.
+		/// - `access`: Open (anyone can join) | Voting (membership voting) | 
+		/// 	Controller (controller invites).
+		/// - `fee_model`: NoFees | Reserve (amount reserved in user account) | 
+		/// 	Transfer (amount transfered to Org treasury).
+		/// - `fee`: fees amount to be applied to new members based on fee model (in Protocol tokens).
+		/// - `gov_asset`: control assets to empower actors.
+		/// - `pay_asset`: asset used for payments.
+		/// - `member_limit`: max members, if 0 == no limit.
+		/// - `deposit`: initial deposit for the org treasury (in Protocol tokens).
 		///
 		/// Emits `OrgCreated` event when successful.
 		///
-		/// Weight:
+		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
 		#[transactional]
 		pub fn create_org(
@@ -348,7 +423,7 @@ pub mod pallet {
 			ensure!(!<frame_system::Pallet<T>>::account_exists(&treasury_account_id), Error::<T>::TreasuryExists);
 
 			let org_id = T::Hashing::hash_of(&treasury_account_id);
-			ensure!(!Orgs::<T>::contains_key(&org_id), Error::<T>::OrgExists);
+			ensure!(!Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationExists);
 
 			Self::do_create_org(
 				sender.clone(), org_id.clone(), controller_id.clone(), treasury_account_id.clone(), name, cid,
@@ -370,12 +445,13 @@ pub mod pallet {
 
 		/// Add Member to Org
 		///
+		/// Parameters:
 		/// - `org_id`: Org id
 		/// - `account`: Account to be added
 		///
 		/// Emits `AddMember` event when successful.
 		///
-		/// Weight:
+		/// Weight: `O(1)`
 		#[pallet::weight(1_000_000)]
 		pub fn add_member(origin: OriginFor<T>, org_id: T::Hash, account_id: T::AccountId) -> DispatchResult {
 			ensure_signed(origin)?;
@@ -392,14 +468,15 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Remove Member from Org
+		/// Remove member from Org
 		///
+		/// Parameters:
 		/// - `org_id`: Org id
 		/// - `account`: Account to be removed
 		///
 		/// Emits `RemoveMember` event when successful.
 		///
-		/// Weight:
+		/// Weight: `O(1)`
 		#[pallet::weight(1_000_000)]
 		pub fn remove_member(origin: OriginFor<T>, org_id: T::Hash, account_id: T::AccountId) -> DispatchResult {
 			ensure_signed(origin)?;
@@ -419,13 +496,18 @@ pub mod pallet {
 		// TODO: fn update_state(origin: OriginFor<T>, org_id: T::Hash, state: u8),
 		// Disable an org
 
-		/// Check membership
+		// TODO: No state changes for this extrinsic, do we need it at all?
+
+		/// Checks membership
+		/// 
+		/// Checks if origin is a member of the Org.
 		///
-		/// - `org_id`: Org id
+		/// Parameters:
+		/// - `org_id`: Org hash
 		///
 		/// Emits `IsAMember` event when successful.
 		///
-		/// Weight:
+		/// Weight: `O(1)`
 		#[pallet::weight(1_000_000)]
 		pub fn check_membership(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
@@ -477,7 +559,28 @@ impl<T: Config> Pallet<T> {
 	// 	Ok(())
 
 	// }
-
+	
+	/// Create and store a new Org
+	/// 
+	/// Transfers deposit from creator to the Org treasury.
+	/// 
+	/// Parameters:
+	/// - `creator`: Org creator.
+	/// - `controller_id`: Org controller.
+	/// - `treasury_id`: Org treasury.
+	/// - `name`: Org name.
+	/// - `cid`: IPFS content identifier.
+	/// - `org_type`: Individual | Company | Dao | Hybrid.
+	/// - `access`: Open (anyone can join) | Voting (membership voting) | 
+	/// 	Controller (controller invites).
+	/// - `fee_model`: NoFees | Reserve (amount reserved in user account) | 
+	/// 	Transfer (amount transfered to Org treasury).
+	/// - `fee`: 
+	/// - `gov_asset`: control assets to empower actors.
+	/// - `pay_asset`: asset used for payments.
+	/// - `member_limit`: max members, if 0 == no limit.
+	/// - `deposit`: initial deposit for the org treasury.
+	/// - `nonce`: current Nonce.
 	fn do_create_org(
 		creator: T::AccountId,
 		org_id: T::Hash,
@@ -637,6 +740,12 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	/// Update member's state
+	/// 
+	/// Parameters:
+	/// - `org_id`: Org id.
+	/// - `account_id`: Member account id.
+	/// - `member_state`: Inactive | Active | Pending | Kicked | Banned | Exited.
 	fn set_member_state(org_id: T::Hash, account_id: T::AccountId, member_state: ControlMemberState) -> DispatchResult {
 		// TODO: we would like to update member state based on voting result
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
@@ -711,6 +820,11 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
+	/// Remove member from Org.
+	/// 
+	/// Parameters:
+	/// - `org_id`: Org id.
+	/// - `account_id`: Member account id.
 	fn do_remove_member(org_id: T::Hash, account_id: T::AccountId) -> DispatchResult {
 		// existence
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
