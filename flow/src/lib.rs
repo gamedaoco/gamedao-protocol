@@ -130,7 +130,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type MinNameLength: Get<u32>;
 		
-		/// The min length of a campaign name.
+		/// The max length of a campaign name.
 		#[pallet::constant]
 		type MaxNameLength: Get<u32>;
 
