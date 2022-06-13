@@ -271,7 +271,7 @@ pub mod pallet {
 		OrgUpdated(T::AccountId, T::Hash, T::BlockNumber),
 		/// Org was enabled and it's state become Active.
 		OrgEnabled(T::Hash),
-		/// Org was enabled and it's state become Inactive.
+		/// Org was disabled and it's state become Inactive.
 		OrgDisabled(T::Hash),
 		/// A member has been added to the Org. 
 		AddMember {
