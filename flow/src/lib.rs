@@ -87,6 +87,11 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		type Event: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::Event>
+			+ Into<<Self as frame_system::Config>::Event>;
+
+		/// The units in which we record balances.
 		type Balance: Member
 			+ Parameter
 			+ AtLeast32BitUnsigned
@@ -95,7 +100,8 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
-
+		
+		/// The currency ID type
 		type CurrencyId: Member
 			+ Parameter
 			+ Default
@@ -104,38 +110,51 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
-
-		// type Moment: AtLeast32Bit + Parameter + Default + Copy;
-
+		
+		/// Weight information for extrinsics in this module.
 		type WeightInfo: frame_system::weights::WeightInfo;
-		type Event: From<Event<Self>>
-			+ IsType<<Self as frame_system::Config>::Event>
-			+ Into<<Self as frame_system::Config>::Event>;
 
+		/// Multi-currency support for asset management.
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
+		
 		type UnixTime: UnixTime;
+
 		type Control: ControlTrait<Self::AccountId, Self::Hash>;
 
+		/// The GameDAO Treasury AccountId.
 		#[pallet::constant]
 		type GameDAOTreasury: Get<Self::AccountId>;
 
+		/// The min length of a campaign name.
 		#[pallet::constant]
 		type MinNameLength: Get<u32>;
+		
+		/// The max length of a campaign name.
 		#[pallet::constant]
 		type MaxNameLength: Get<u32>;
 
 		#[pallet::constant]
 		type MaxCampaignsPerAddress: Get<u32>;
+		
+		/// The max number of campaigns per one block.
 		#[pallet::constant]
 		type MaxCampaignsPerBlock: Get<u32>;
+
+		/// The max number of contributions per one block.
 		#[pallet::constant]
 		type MaxContributionsPerBlock: Get<u32>;
+
+		/// The max number of contributors for processing in one block (batch size)
+		/// during Campaign finalization.
 		#[pallet::constant]
 		type MaxContributorsProcessing: Get<u32>;
 
+		/// The min number of blocks for campaign duration.
 		#[pallet::constant]
 		type MinCampaignDuration: Get<Self::BlockNumber>;
+
+		/// The max number of blocks for campaign duration.
 		#[pallet::constant]
 		type MaxCampaignDuration: Get<Self::BlockNumber>;
 		#[pallet::constant]
@@ -143,16 +162,23 @@ pub mod pallet {
 		#[pallet::constant]
 		type MinContribution: Get<Self::Balance>;
 
+		/// The CurrencyId which is used as a protokol token.
 		#[pallet::constant]
 		type ProtocolTokenId: Get<Self::CurrencyId>;
+		
+		/// The CurrencyId which is used as a payment token.
 		#[pallet::constant]
 		type PaymentTokenId: Get<Self::CurrencyId>;
 
+		/// The amount of comission to be paid from the Org treasury to GameDAO treasury 
+		/// after successfull Campaign finalization
 		#[pallet::constant]
 		type CampaignFee: Get<Permill>;
 	}
 
-	/// Campaign
+	/// Campaign by its id.
+	/// 
+	/// Campaigns: map Hash => Campaign
 	#[pallet::storage]
 	pub(super) type Campaigns<T: Config> = StorageMap<
 		_,
@@ -162,90 +188,156 @@ pub mod pallet {
 		ValueQuery,
 	>;
 
-	/// Associated Body
+	/// Org id by campaign id.
+	/// 
+	/// CampaignOrg: map Hash => Hash
 	#[pallet::storage]
 	pub(super) type CampaignOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Hash, ValueQuery>;
 
-	/// Get Campaign Owner (body controller) by campaign id
+	/// Campaign owner (org controller) by campaign id.
+	/// 
+	/// CampaignOwner: map Hash => AccountId
 	#[pallet::storage]
 	pub(super) type CampaignOwner<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
 
-	/// Get Campaign Admin (supervision) by campaign id
+	/// Campaign admin (supervision) by campaign id.
+	/// 
+	/// CampaignAdmin: map Hash => AccountId
 	#[pallet::storage]
 	pub(super) type CampaignAdmin<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
 
-	/// Campaign state
-	/// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5
-	/// authority lock
+	/// Campaign state by campaign id.
+	/// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
+	/// 
+	/// CampaignState: map Hash => FlowState
 	#[pallet::storage]
 	pub(super) type CampaignState<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, FlowState, ValueQuery, GetDefault>;
 
-	/// Get Campaigns for a certain state
+	/// List of campaign by certain campaign state.
+	/// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
+	/// 
+	/// CampaignsByState: map FlowState => Vec<Hash>
 	#[pallet::storage]
 	pub(super) type CampaignsByState<T: Config> = StorageMap<_, Blake2_128Concat, FlowState, Vec<T::Hash>, ValueQuery>;
 
-	/// Campaigns ending in block x
+	/// Campaigns ending in block x.
+	/// 
+	/// CampaignsByBlock: map BlockNumber => Vec<Hash>
 	#[pallet::storage]
 	pub(super) type CampaignsByBlock<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::BlockNumber, Vec<T::Hash>, ValueQuery>;
 
-	/// Total number of campaigns -> all campaigns
+	/// Total number of campaigns -> campaign id.
+	/// 
+	/// CampaignsArray: map u64 => Hash
 	#[pallet::storage]
 	pub(super) type CampaignsArray<T: Config> = StorageMap<_, Blake2_128Concat, u64, T::Hash, ValueQuery>;
+
+	/// Total number of campaigns.
+	/// 
+	/// CampaignsArray: u64
 	#[pallet::storage]
 	pub type CampaignsCount<T: Config> = StorageValue<_, u64, ValueQuery>;
+
+	/// Campaign id -> total number of campaigns.
+	/// 
+	/// CampaignsArray: map Hash => u64
 	#[pallet::storage]
 	pub(super) type CampaignsIndex<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
-	/// Number of contributors processed
+	/// Offset value - number of processed and sucessfully finalized contributions.
+	/// Used during campaign finalization for processing contributors in batches.
+	/// When MaxContributorsProcessing is achieved, set this offset to save the progress.
+	/// 
+	/// ContributorsFinalized: map Hash => u32
 	#[pallet::storage]
 	pub(super) type ContributorsFinalized<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u32, ValueQuery, GetDefault>;
+
+	/// Offset value - number of processed and reverted contributions.
+	/// 
+	/// ContributorsReverted: map Hash => u32
 	#[pallet::storage]
 	pub(super) type ContributorsReverted<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u32, ValueQuery, GetDefault>;
 	
-	// caller owned campaigns -> my campaigns
+	/// Campaign id by org id.
+	/// 
+	/// CampaignsOwnedArray: map Hash => Hash
 	#[pallet::storage]
 	pub(super) type CampaignsOwnedArray<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Hash, ValueQuery>;
+	// TODO: rename?
+
+	/// Total number of campaigns by org id.
+	/// 
+	/// CampaignsOwnedCount: map Hash => u64
 	#[pallet::storage]
 	pub(super) type CampaignsOwnedCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
+
+	/// (org id, campaign id) -> total number of campaigns.
+	/// 
+	/// CampaignsOwnedIndex: map (Hash, Hash) => u64
 	#[pallet::storage]
 	pub(super) type CampaignsOwnedIndex<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::Hash, T::Hash), u64, ValueQuery>;
 
-	/// campaigns contributed by accountid
+	/// The list of campaigns contributed by account id.
+	/// 
+	/// CampaignsContributed: map AccountId => Vec<Hash>
 	#[pallet::storage]
 	pub(super) type CampaignsContributed<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, Vec<T::Hash>, ValueQuery>;
 
-	/// campaigns related to an organisation
+	/// Campaigns related to an organisation.
+	/// 
+	/// CampaignsByOrg: map Hash => Vec<Hash>
 	#[pallet::storage]
 	pub(super) type CampaignsByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::Hash>, ValueQuery>;
 
-	// caller contributed campaigns -> contributed campaigns
+	/// (account id, total number of campaigns contributed by account id) -> campaign id.
+	/// 
+	/// CampaignsContributedArray: map (AccountId, u64) => Hash
 	#[pallet::storage]
 	pub(super) type CampaignsContributedArray<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::AccountId, u64), T::Hash, ValueQuery>;
+
+	/// Total number of campaigns contributed by account id.
+	/// 
+	/// CampaignsContributedCount: map AccountId => u64
 	#[pallet::storage]
 	pub(super) type CampaignsContributedCount<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, u64, ValueQuery>;
+
+	/// (account id, campaign id) -> total number of campaigns contributed by account id.
+	/// 
+	/// CampaignsContributedIndex: map (AccountId, Hash) => u64
 	#[pallet::storage]
 	pub(super) type CampaignsContributedIndex<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::AccountId, T::Hash), u64, ValueQuery>;
 
-	// Total contributions balance per campaign
+	/// Total contributions balance per campaign.
+	/// 
+	/// CampaignBalance: map Hash => Balance
 	#[pallet::storage]
 	pub(super) type CampaignBalance<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Balance, ValueQuery>;
 
-	// Contributions per user
+	/// Total contribution made by account id for particular campaign.
+	/// (campaign id, account id) -> contribution.
+	/// 
+	/// CampaignContribution: map (Hash, AccountId) => Balance
 	#[pallet::storage]
 	pub(super) type CampaignContribution<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::Hash, T::AccountId), T::Balance, ValueQuery>;
 
-	// Contributors
+	/// Campaign contributors by campaign id.
+	/// 
+	/// CampaignContributors: map Hash => Vec<AccountId>
 	#[pallet::storage]
 	pub(super) type CampaignContributors<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::AccountId>, ValueQuery>;
+
+	/// Total number of contributors for particular campaign.
+	/// 
+	/// CampaignContributors: map Hash => u64
 	#[pallet::storage]
 	pub(super) type CampaignContributorsCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
@@ -253,7 +345,9 @@ pub mod pallet {
 	// CampaignMaxCampaignDuration get(fn get_max_duration) config(): T::BlockNumber
 	// = T::BlockNumber::from(T::MaxCampaignDuration::get());
 
-	// Campaign nonce, increases per created campaign
+	/// Nonce. Increase per each campaign creation.
+	/// 
+	/// Nonce: u128
 	#[pallet::storage]
 	#[pallet::getter(fn nonce)]
 	pub(super) type Nonce<T: Config> = StorageValue<_, u128, ValueQuery>;
@@ -261,9 +355,11 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// Campaign was destroyed.
 		CampaignDestroyed {
 			campaign_id: T::Hash,
 		},
+		/// Campaign was successfully created.
 		CampaignCreated {
 			campaign_id: T::Hash,
 			creator: T::AccountId,
@@ -273,34 +369,40 @@ pub mod pallet {
 			expiry: T::BlockNumber,
 			name: Vec<u8>,
 		},
+		/// Campaign was contributed.
 		CampaignContributed {
 			campaign_id: T::Hash,
 			sender: T::AccountId,
 			contribution: T::Balance,
 			block_number: T::BlockNumber,
 		},
+		/// Campaign was finalized.
 		CampaignFinalized {
 			campaign_id: T::Hash,
 			campaign_balance: T::Balance,
 			block_number: T::BlockNumber,
 			success: bool,
 		},
+		/// Campaign failed - successfully reverted.
 		CampaignFailed {
 			campaign_id: T::Hash,
 			campaign_balance: T::Balance,
 			block_number: T::BlockNumber,
 			success: bool,
 		},
+		/// Campaign is in the middle of reverting process.
 		CampaignReverting {
 			campaign_id: T::Hash,
 			campaign_balance: T::Balance,
 			block_number: T::BlockNumber,
 		},
+		/// Campaign is in the middle of finalization process.
 		CampaignFinalising {
 			campaign_id: T::Hash,
 			campaign_balance: T::Balance,
 			block_number: T::BlockNumber,
 		},
+		/// Campaign was updated with a new state.
 		CampaignUpdated {
 			campaign_id: T::Hash,
 			state: FlowState,
@@ -311,74 +413,73 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		//
-		//	general
-		/// Must contribute at least the minimum amount of Campaigns
+
+		// general
+		/// Must contribute at least the minimum amount of campaigns.
 		ContributionTooSmall,
 		/// Balance too low.
 		BalanceTooLow,
-		/// Treasury Balance Too Low
+		/// Treasury balance too low.
 		TreasuryBalanceTooLow,
-		/// The Campaign id specified does not exist
+		/// The campaign id specified does not exist.
 		InvalidId,
-		/// The Campaign's contribution period has ended; no more contributions
-		/// will be accepted
+		/// The campaign's contribution period has ended; no more contributions
+		/// will be accepted.
 		ContributionPeriodOver,
 		/// You may not withdraw or dispense Campaigns while the Campaign is
-		/// still active
+		/// still active.
 		CampaignStillActive,
-		/// You cannot withdraw Campaigns because you have not contributed any
+		/// You cannot withdraw Campaigns because you have not contributed any.
 		NoContribution,
 		/// You cannot dissolve a Campaign that has not yet completed its
-		/// retirement period
+		/// retirement period.
 		CampaignNotRetired,
-		/// Campaign expired
+		/// Campaign expired.
 		CampaignExpired,
-		/// Cannot dispense Campaigns from an unsuccessful Campaign
+		/// Cannot dispense Campaigns from an unsuccessful Campaign.
 		UnsuccessfulCampaign,
 
-		//
 		//	create
-		/// Campaign must end after it starts
+		/// Campaign must end after it starts.
 		EndTooEarly,
-		/// Campaign expiry has be lower than the block number limit
+		/// Campaign expiry has be lower than the block number limit.
 		EndTooLate,
-		/// Max campaigns per block exceeded
+		/// Max campaigns per block exceeded.
 		CampaignsPerBlockExceeded,
-		/// Name too long
+		/// Name too long.
 		NameTooLong,
-		/// Name too short
+		/// Name too short.
 		NameTooShort,
-		/// Deposit exceeds the campaign target
+		/// Deposit exceeds the campaign target.
 		DepositTooHigh,
-		/// Campaign id exists
+		/// Campaign id exists.
 		IdExists,
 
 		//
 		//	mint
-		/// Overflow adding a new campaign to total fundings
+		/// Overflow adding a new campaign to total fundings.
 		AddCampaignOverflow,
-		/// Overflow adding a new owner
+		/// Overflow adding a new owner.
 		AddOwnedOverflow,
-		/// Overflow adding to the total number of contributors of a camapaign
+		/// Overflow adding to the total number of contributors of a camapaign.
 		UpdateContributorOverflow,
-		/// Overflow adding to the total number of contributions of a camapaign
+		/// Overflow adding to the total number of contributions of a camapaign.
 		AddContributionOverflow,
-		/// Campaign owner unknown
+		/// Campaign owner unknown.
 		OwnerUnknown,
-		/// Campaign admin unknown
+		/// Campaign admin unknown.
 		AdminUnknown,
-		/// Cannot contribute to owned campaign
+		/// Cannot contribute to owned campaign.
 		NoContributionToOwnCampaign,
-		/// Guru Meditation
+		/// Guru Meditation.
 		GuruMeditation,
-		/// Zou are not authorized for this call
+		/// Zou are not authorized for this call.
 		AuthorizationError,
-		/// Contributions not allowed
+		/// Contributions not allowed.
 		NoContributionsAllowed,
-		/// Id Unknown
+		/// Id Unknown.
 		IdUnknown,
-		/// Transfer Error
+		/// Transfer Error.
 		TransferError,
 	}
 
@@ -402,8 +503,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Create campaign
 		///
-		/// - `org`:
-		/// - `admin`: Campaign admin. Supervision, should be dao provided!
+		/// - `org_id`:
+		/// - `admin_id`: Campaign admin. Supervision, should be dao provided!
 		/// - `treasury`:
 		/// - `name`: Campaign name
 		/// - `target`:
@@ -411,13 +512,13 @@ pub mod pallet {
 		/// - `expiry`:
 		/// - `protocol`:
 		/// - `governance`:
-		/// - `cid`: IPFS
+		/// - `cid`: IPFS content identifier.
 		/// - `token_symbol`:
 		/// - `token_name`:
 		///
 		/// Emits `CampaignCreated` event when successful.
 		///
-		/// Weight:
+		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
 		#[transactional]
 		pub fn create_campaign(
