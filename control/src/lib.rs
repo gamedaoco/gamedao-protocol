@@ -355,7 +355,7 @@ pub mod pallet {
 		/// Parameters:
 		/// `org_id`: Org hash.
 		/// 
-		/// Emits `OrgEnabled` event when successful.
+		/// Emits `OrgDisabled` event when successful.
 		/// 
 		/// Weight: `O(1)`
 		#[pallet::weight(1_000_000)]
