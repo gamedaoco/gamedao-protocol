@@ -378,7 +378,7 @@ pub mod pallet {
 		/// 	Controller (controller invites).
 		/// - `fee_model`: NoFees | Reserve (amount reserved in user account) | 
 		/// 	Transfer (amount transfered to Org treasury).
-		/// - `fee`: 
+		/// - `fee`: fees amount to be applied to new members based on fee model (in Protocol tokens).
 		/// - `gov_asset`: control assets to empower actors.
 		/// - `pay_asset`: asset used for payments.
 		/// - `member_limit`: max members, if 0 == no limit.
