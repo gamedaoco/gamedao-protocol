@@ -389,7 +389,7 @@ pub mod pallet {
 
 		/// Create a general proposal
 		///
-		/// - `org_id`: Organisation id.
+		/// - `org_id`: Organization id.
 		/// - `title`: Proposal's title.
 		/// - `cid`: IPFS content identifier.
 		/// - `start`: Block when the proposal starts.
@@ -448,7 +448,7 @@ pub mod pallet {
 
 		/// Create a membership proposal
 		///
-		/// - `org_id`: Organisation id.
+		/// - `org_id`: Organization id.
 		/// - `_member`:
 		/// - `_action`:
 		/// - `_start`:

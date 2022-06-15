@@ -366,7 +366,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Create an on chain organisation
+		/// Create an on chain organization
 		/// 
 		/// Parameters:
 		/// - `origin`: Org creator.

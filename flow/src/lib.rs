@@ -287,7 +287,7 @@ pub mod pallet {
 	pub(super) type CampaignsContributed<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, Vec<T::Hash>, ValueQuery>;
 
-	/// Campaigns related to an organisation.
+	/// Campaigns related to an organization.
 	/// 
 	/// CampaignsByOrg: map Hash => Vec<Hash>
 	#[pallet::storage]
