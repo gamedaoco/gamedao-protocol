@@ -9,7 +9,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! SIGNAL
-//! TODO: add description (module, function, Cargo.toml)
+//! SIGNAL is GameDAOs governance module providing simple interfaces to create proposals and vote on them
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -55,6 +55,8 @@ pub mod pallet {
 		type Event: From<Event<Self>>
 			+ IsType<<Self as frame_system::Config>::Event>
 			+ Into<<Self as frame_system::Config>::Event>;
+		
+		/// The units in which we record balances.
 		type Balance: Member
 			+ Parameter
 			+ AtLeast32BitUnsigned
@@ -66,6 +68,8 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
+		
+		/// The currency ID type
 		type CurrencyId: Member
 			+ Parameter
 			+ Default
@@ -74,41 +78,67 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
+		
+		/// Multi-currency support for asset management.
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
+		
+		/// Control pallet's public interface.
 		type Control: ControlTrait<Self::AccountId, Self::Hash>;
+
+		/// Flow pallet's public interface.
 		type Flow: FlowTrait<Self::AccountId, Self::Balance, Self::Hash>;
+
+		/// Weight information for extrinsics in this module.
 		type WeightInfo: WeightInfo;
 
+		/// The max number of proposals per one block.
 		#[pallet::constant]
 		type MaxProposalsPerBlock: Get<u32>; // 3
 
+		/// The maximum time limit for a proposal in blocks.
 		#[pallet::constant]
 		type MaxProposalDuration: Get<u32>; // 864000, 60 * 60 * 24 * 30 / 3
 
+		/// The CurrencyId which is used as a payment token.
 		#[pallet::constant]
 		type PaymentTokenId: Get<Self::CurrencyId>;
+
+		/// The CurrencyId which is used as a protokol token.
 		#[pallet::constant]
 		type ProtocolTokenId: Get<Self::CurrencyId>;
 	}
 
-	/// Global status
+	/// Proposal by its id.
+	///
+	/// Proposals: map Hash => Proposal
 	#[pallet::storage]
 	pub(super) type Proposals<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, Proposal<T::Hash, T::BlockNumber>, OptionQuery>;
 
+	/// Proposal's metadata: title, amount, cid.
+	///
+	/// Metadata: map Hash => ProposalMetadata
 	#[pallet::storage]
 	pub(super) type Metadata<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, ProposalMetadata<T::Balance>, ValueQuery>;
 
+	/// Proposal's owner.
+	///
+	/// Owners: map Hash => AccountId
 	#[pallet::storage]
 	pub(super) type Owners<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
 
+	/// Proposal's state: Init | Active | Accepted | Rejected | Expired | Aborted | Finalized.
+	///
+	/// ProposalStates: map Hash => ProposalState
 	#[pallet::storage]
 	pub(super) type ProposalStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, ProposalState, ValueQuery, GetDefault>;
 
-	/// Maximum time limit for a proposal
+	/// Default time limit for a proposal in blocks.
+	///
+	/// ProposalTimeLimit: BlockNumber
 	#[pallet::type_value]
 	pub(super) fn ProposalTimeLimitDefault<T: Config>() -> T::BlockNumber {
 		T::BlockNumber::from(T::MaxProposalDuration::get())
@@ -117,89 +147,141 @@ pub mod pallet {
 	pub(super) type ProposalTimeLimit<T: Config> =
 		StorageValue<_, T::BlockNumber, ValueQuery, ProposalTimeLimitDefault<T>>;
 
-	/// All proposals
+	/// Total number of proposals -> proposal id.
+	///
+	/// ProposalsArray: map u64 => Hash
 	#[pallet::storage]
 	pub(super) type ProposalsArray<T: Config> = StorageMap<_, Blake2_128Concat, u64, T::Hash, ValueQuery>;
 
+	/// Total number of proposals created.
+	///
+	/// ProposalsCount: u64
 	#[pallet::storage]
 	pub(super) type ProposalsCount<T: Config> = StorageValue<_, u64, ValueQuery>;
 
+	/// Proposal id -> total number of proposals.
+	///
+	/// ProposalsIndex: map Hash => u64
 	#[pallet::storage]
 	pub(super) type ProposalsIndex<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
-	/// Proposals by org
+	/// (Org id, total number of proposals) -> proposal id.
+	///
+	/// ProposalsByOrgArray: map (Hash, u64) => Hash
 	#[pallet::storage]
 	pub(super) type ProposalsByOrgArray<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::Hash, u64), T::Hash, ValueQuery>;
 
+	/// Org id -> total number of proposals by org.
+	///
+	/// ProposalsByOrgCount: map Hash => u64
 	#[pallet::storage]
 	pub(super) type ProposalsByOrgCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
+	/// (Org id, proposal id) -> total number of proposals by org.
+	///
+	/// ProposalsByOrgCount: map (Hash, Hash) => u64
 	#[pallet::storage]
 	pub(super) type ProposalsByOrgIndex<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::Hash, T::Hash), u64, ValueQuery>;
 
+
+	/// All proposals for a given org id.
+	///
+	/// ProposalsByOrg: map Hash => Vec<Hash>
 	#[pallet::storage]
 	pub(super) type ProposalsByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::Hash>, ValueQuery>;
 
-	/// Proposals by owner
+	/// (owner account id, total number of proposals by owner) -> proposal id.
+	///
+	/// ProposalsByOwnerArray: map (AccountId, u64) => Hash
 	#[pallet::storage]
 	pub(super) type ProposalsByOwnerArray<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::AccountId, u64), T::Hash, ValueQuery>;
 
+	/// Total number of proposals by owner.
+	///
+	/// ProposalsByOwnerCount: map AccountId => u64
 	#[pallet::storage]
 	pub(super) type ProposalsByOwnerCount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u64, ValueQuery>;
 
+	/// (owner account id, proposal id) -> total number of proposals by owner.
+	///
+	/// ProposalsByOwnerIndex: map (AccountId, T::Hash) => u64
 	#[pallet::storage]
 	pub(super) type ProposalsByOwnerIndex<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::AccountId, T::Hash), u64, ValueQuery>;
 
-	/// Proposals where voter participated
+	/// Proposals where voter participated.
+	/// voter account id -> list of (proposal id, vote)
+	///
+	/// ProposalsByVoter: map AccountId => Vec<(Hash, bool)>
 	#[pallet::storage]
 	pub(super) type ProposalsByVoter<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, Vec<(T::Hash, bool)>, ValueQuery>;
 
-	/// Proposal voters and votes by proposal
+	/// Proposal voters and votes by proposal.
+	/// voter proposal id -> list of (voter account id, vote)
+	///
+	/// ProposalVotesByVoters: map Hash => Vec<(AccountId, bool)>
 	#[pallet::storage]
 	pub(super) type ProposalVotesByVoters<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, Vec<(T::AccountId, bool)>, ValueQuery>;
 
-	/// Total proposals voted on by voter
+	/// Total proposals voted on by voter.
+	///
+	/// ProposalsByVoterCount: map AccountId => u64
 	#[pallet::storage]
 	pub(super) type ProposalsByVoterCount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u64, ValueQuery>;
 
-	/// Proposals ending in a block
+	/// Proposals ending in a block.
+	///
+	/// ProposalsByBlock: map BlockNumber => Vec<Hash>
 	#[pallet::storage]
 	pub(super) type ProposalsByBlock<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::BlockNumber, Vec<T::Hash>, ValueQuery>;
 
-	/// The amount of currency that a project has used
+	/// The amount of currency that a project has used.
+	///
+	/// CampaignBalanceUsed: map Hash => Balance
 	#[pallet::storage]
 	pub(super) type CampaignBalanceUsed<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Balance, ValueQuery>;
 
-	/// The number of people who approve a proposal
+	/// The number of people who approve a proposal.
+	///
+	/// ProposalApprovers: map Hash => u64
 	#[pallet::storage]
 	pub(super) type ProposalApprovers<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery, GetDefault>;
 
-	/// The number of people who deny a proposal
+	/// The number of people who deny a proposal.
+	///
+	/// ProposalDeniers: map Hash => u64
 	#[pallet::storage]
 	pub(super) type ProposalDeniers<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery, GetDefault>;
 
-	/// Voters per proposal
+	/// Voters per proposal.
+	///
+	/// ProposalVoters: map Hash => Vec<AccountId>
 	#[pallet::storage]
 	pub(super) type ProposalVoters<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::AccountId>, ValueQuery>;
 
-	/// Voter count per proposal
+	/// Voter count per proposal.
+	///
+	/// ProposalVotes: map Hash => u64
 	#[pallet::storage]
 	pub(super) type ProposalVotes<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery, GetDefault>;
 
-	/// Ack vs Nack
+	/// Ack vs Nack.
+	///
+	/// ProposalSimpleVotes: map Hash => (u64, u64)
 	#[pallet::storage]
 	pub(super) type ProposalSimpleVotes<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, (u64, u64), ValueQuery, GetDefault>;
 
-	/// User has voted on a proposal
+	/// User has voted on a proposal.
+	///
+	/// VotedBefore: map (AccountId, Hash) => bool
 	#[pallet::storage]
 	pub(super) type VotedBefore<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::AccountId, T::Hash), bool, ValueQuery, GetDefault>;
@@ -209,7 +291,9 @@ pub mod pallet {
 	// TODO: ProposalDeniersWeight
 	// TODO: ProposalTotalEligibleWeight
 
-	/// The total number of proposals
+	/// Nonce. Increase per each proposal creation.
+	/// 
+	/// Nonce: u128
 	#[pallet::storage]
 	#[pallet::getter(fn nonce)]
 	pub(super) type Nonce<T: Config> = StorageValue<_, u128, ValueQuery>;
@@ -217,10 +301,12 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// Proposal was successfully created (ex. General proposal).
 		Proposal {
 			sender_id: T::AccountId,
 			proposal_id: T::Hash,
 		},
+		/// Proposal was successfully created (ex. Withdrawal proposal).
 		ProposalCreated {
 			sender_id: T::AccountId,
 			org_id: T::Hash,
@@ -229,23 +315,28 @@ pub mod pallet {
 			amount: T::Balance,
 			expiry: T::BlockNumber,
 		},
+		/// Proposal was voted.
 		ProposalVoted {
 			sender_id: T::AccountId,
 			proposal_id: T::Hash,
 			vote: bool,
 		},
 		// ProposalFinalized(T::Hash, u8),
+		/// Proposal was approved after the voting.
 		ProposalApproved {
 			proposal_id: T::Hash,
 		},
+		/// Proposal was rejected after the voting.
 		ProposalRejected {
 			proposal_id: T::Hash,
 		},
+		/// Proposal was expired, not finalized before expiry block number.
 		ProposalExpired {
 			proposal_id: T::Hash,
 		},
 		// ProposalAborted(T::Hash),
 		// ProposalError(T::Hash, Vec<u8>),
+		/// Balance was unlocked for the Withdrawal proposal.
 		WithdrawalGranted {
 			proposal_id: T::Hash,
 			campaign_id: T::Hash,
@@ -255,45 +346,38 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		/// Proposal Ended
+		/// Proposal ended.
 		ProposalEnded,
-		/// Proposal Exists
+		/// Proposal exists.
 		ProposalExists,
-		/// Proposal Expired
+		/// Proposal expired.
 		ProposalExpired,
-		/// Already Voted
+		/// Proposal already voted.
 		AlreadyVoted,
-		/// Proposal Unknown
+		/// Proposal id unknown.
 		ProposalUnknown,
-		/// DAO Inactive
+		/// Org status is Inactive.
 		DAOInactive,
-		/// Authorization Error
+		/// Authorization error.
 		AuthorizationError,
-		/// Tangram Creation Failed
-		TangramCreationError,
-		/// Out Of Bounds Error
+		/// Proposal bounds error: start, end, current, expiry blocks not match.
 		OutOfBounds,
-		/// Unknown Error
-		UnknownError,
-		///MemberExists
+		/// Member already exists.
 		MemberExists,
-		/// Unknown Campaign
+		/// Campaign id unknown.
 		CampaignUnknown,
-		/// Campaign Failed
+		/// Campaign failed.
 		CampaignFailed,
-		/// Balance Too Low
+		/// Balance too low.
 		BalanceInsufficient,
-		/// Hash Collision
-		HashCollision,
-		/// Unknown Account
-		UnknownAccount,
-		/// Too Many Proposals for block
+		/// Too many proposals for block.
 		TooManyProposals,
-		/// Proposal has no owner
+		/// Proposal has no owner.
 		NoProposalOwner,
-		/// Overflow Error
+		/// Overflow error.
 		OverflowError,
-		/// Division Error
+		// TODO: ArithmeticError::Overflow
+		/// Division error.
 		DivisionError,
 	}
 
@@ -305,15 +389,15 @@ pub mod pallet {
 
 		/// Create a general proposal
 		///
-		/// - `org_id`:
-		/// - `title`:
-		/// - `cid`:
-		/// - `start`:
-		/// - `expiry`:
+		/// - `org_id`: Organisation id.
+		/// - `title`: Proposal's title.
+		/// - `cid`: IPFS content identifier.
+		/// - `start`: Block when the proposal starts.
+		/// - `expiry`: Block when the proposal finishes.
 		///
 		/// Emits `Proposal` event when successful.
 		///
-		/// Weight:
+		/// Weight: O(1)
 		#[pallet::weight(5_000_000)]
 		#[transactional]
 		pub fn general_proposal(
@@ -364,7 +448,7 @@ pub mod pallet {
 
 		/// Create a membership proposal
 		///
-		/// - `org_id`:
+		/// - `org_id`: Organisation id.
 		/// - `_member`:
 		/// - `_action`:
 		/// - `_start`:
@@ -377,7 +461,7 @@ pub mod pallet {
 		pub fn membership_proposal(
 			origin: OriginFor<T>,
 			org_id: T::Hash,
-			_member: T::Hash,
+			_member: T::AccountId,
 			_action: u8,
 			_start: T::BlockNumber,
 			_expiry: T::BlockNumber,
@@ -396,19 +480,20 @@ pub mod pallet {
 		}
 
 		/// Create a withdrawal proposal
-		/// origin must be controller of the campaign == controller of the dao
-		/// beneficiary must be the treasury of the dao
+		/// 
+		/// Origin must be controller of the campaign == controller of the dao
+		/// beneficiary must be the treasury of the dao.
 		///
-		/// - `campaign_id`:
-		/// - `title`:
-		/// - `cid`:
-		/// - `amount`:
-		/// - `start`:
-        /// - `expiry`:
+		/// - `campaign_id`: Campaign id.
+		/// - `title`: Proposal's title.
+		/// - `cid`: IPFS content identifier.
+		/// - `amount`: Balance to be withdrawn.
+		/// - `start`: Block when the proposal starts.
+		/// - `expiry`: Block when the proposal finishes.
 		///
-		/// Emits `Proposal` event when successful.
+		/// Emits `ProposalCreated` event when successful.
 		///
-		/// Weight:
+		/// Weight: O(1)
 		#[pallet::weight(5_000_000)]
 		#[transactional]
 		pub fn withdraw_proposal(
@@ -476,8 +561,8 @@ pub mod pallet {
 
 		/// Create a simple voting
 		///
-		/// - `proposal_id`:
-		/// - `vote`:
+		/// - `proposal_id`: Proposal id.
+		/// - `vote`: yes / no.
 		///
 		/// Emits `ProposalVoted` event when successful.
 		///
@@ -643,7 +728,7 @@ pub mod pallet {
 				.ok_or(Error::<T>::BalanceInsufficient)?;
 			ensure!(available_balance >= proposal_balance, Error::<T>::BalanceInsufficient);
 
-			// Get the owner of the campaign
+			// Get the owner of the proposal
 			let _owner = Owners::<T>::get(&proposal.proposal_id).ok_or(Error::<T>::NoProposalOwner)?;
 
 			// get treasury account for related org and unlock balance
