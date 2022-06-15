@@ -11,7 +11,7 @@ authors = ["zero.io","gamedao.co"]
 repository = "https://github.com/gamedaoco/gamedao-protocol"
 edition = "2018"
 license = "GPL-3.0-or-later"
-description = "Signal pallet"
+description = "SIGNAL is GameDAOs governance module providing simple interfaces to create proposals and vote on them"
 
 [package.metadata.substrate]
 categories = [
