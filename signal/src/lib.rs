@@ -9,7 +9,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! SIGNAL
-//! TODO: add description (module, function, Cargo.toml)
+//! SIGNAL is GameDAOs governance module providing simple interfaces to create proposals and vote on them
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -55,6 +55,8 @@ pub mod pallet {
 		type Event: From<Event<Self>>
 			+ IsType<<Self as frame_system::Config>::Event>
 			+ Into<<Self as frame_system::Config>::Event>;
+		
+		/// The units in which we record balances.
 		type Balance: Member
 			+ Parameter
 			+ AtLeast32BitUnsigned
@@ -66,6 +68,8 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
+		
+		/// The currency ID type
 		type CurrencyId: Member
 			+ Parameter
 			+ Default
@@ -74,41 +78,67 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
+		
+		/// Multi-currency support for asset management.
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
+		
+		/// Control pallet's public interface.
 		type Control: ControlTrait<Self::AccountId, Self::Hash>;
+
+		/// Flow pallet's public interface.
 		type Flow: FlowTrait<Self::AccountId, Self::Balance, Self::Hash>;
+
+		/// Weight information for extrinsics in this module.
 		type WeightInfo: WeightInfo;
 
+		/// The max number of proposals per one block.
 		#[pallet::constant]
 		type MaxProposalsPerBlock: Get<u32>; // 3
 
+		/// The maximum time limit for a proposal in blocks.
 		#[pallet::constant]
 		type MaxProposalDuration: Get<u32>; // 864000, 60 * 60 * 24 * 30 / 3
 
+		/// The CurrencyId which is used as a payment token.
 		#[pallet::constant]
 		type PaymentTokenId: Get<Self::CurrencyId>;
+
+		/// The CurrencyId which is used as a protokol token.
 		#[pallet::constant]
 		type ProtocolTokenId: Get<Self::CurrencyId>;
 	}
 
-	/// Global status
+	/// Proposal by its id.
+	///
+	/// Proposals: map Hash => Proposal
 	#[pallet::storage]
 	pub(super) type Proposals<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, Proposal<T::Hash, T::BlockNumber>, OptionQuery>;
 
+	/// Proposal's metadata: title, amount, cid.
+	///
+	/// Metadata: map Hash => ProposalMetadata
 	#[pallet::storage]
 	pub(super) type Metadata<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, ProposalMetadata<T::Balance>, ValueQuery>;
 
+	/// Proposal's owner.
+	///
+	/// Owners: map Hash => AccountId
 	#[pallet::storage]
 	pub(super) type Owners<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
 
+	/// Proposal's state: Init | Active | Accepted | Rejected | Expired | Aborted | Finalized.
+	///
+	/// ProposalStates: map Hash => ProposalState
 	#[pallet::storage]
 	pub(super) type ProposalStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, ProposalState, ValueQuery, GetDefault>;
 
-	/// Maximum time limit for a proposal
+	/// Default time limit for a proposal in blocks.
+	///
+	/// ProposalTimeLimit: BlockNumber
 	#[pallet::type_value]
 	pub(super) fn ProposalTimeLimitDefault<T: Config>() -> T::BlockNumber {
 		T::BlockNumber::from(T::MaxProposalDuration::get())
@@ -117,21 +147,34 @@ pub mod pallet {
 	pub(super) type ProposalTimeLimit<T: Config> =
 		StorageValue<_, T::BlockNumber, ValueQuery, ProposalTimeLimitDefault<T>>;
 
-	/// All proposals
+	/// Total number of proposals -> proposal id.
+	///
+	/// ProposalsArray: map u64 => Hash
 	#[pallet::storage]
 	pub(super) type ProposalsArray<T: Config> = StorageMap<_, Blake2_128Concat, u64, T::Hash, ValueQuery>;
 
+	/// Total number of proposals created.
+	///
+	/// ProposalsCount: u64
 	#[pallet::storage]
 	pub(super) type ProposalsCount<T: Config> = StorageValue<_, u64, ValueQuery>;
 
+	/// Proposal id -> total number of proposals.
+	///
+	/// ProposalsIndex: map Hash => u64
 	#[pallet::storage]
 	pub(super) type ProposalsIndex<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
-	/// Proposals by org
+	/// (Org id, total number of proposals) -> proposal id.
+	///
+	/// ProposalsByOrgArray: map (Hash, u64) => Hash
 	#[pallet::storage]
 	pub(super) type ProposalsByOrgArray<T: Config> =
 		StorageMap<_, Blake2_128Concat, (T::Hash, u64), T::Hash, ValueQuery>;
 
+	/// Org id -> total number of proposals.
+	///
+	/// ProposalsByOrgCount: map Hash => u64
 	#[pallet::storage]
 	pub(super) type ProposalsByOrgCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
 
@@ -643,7 +686,7 @@ pub mod pallet {
 				.ok_or(Error::<T>::BalanceInsufficient)?;
 			ensure!(available_balance >= proposal_balance, Error::<T>::BalanceInsufficient);
 
-			// Get the owner of the campaign
+			// Get the owner of the proposal
 			let _owner = Owners::<T>::get(&proposal.proposal_id).ok_or(Error::<T>::NoProposalOwner)?;
 
 			// get treasury account for related org and unlock balance
