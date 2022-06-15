@@ -53,7 +53,7 @@ The following example shows how to use the Control module in your runtime by exp
 
 * Create an onchain organizations.
 * Add some members to the organization.
-* Use related module (flow) to raise funds via governance.
+* Use related module (flow) to raise funds via croudfunding.
 * Use related module (signal) to manage raised funds via proposals.
 
 
