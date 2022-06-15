@@ -4,7 +4,7 @@ DAO core to create organizations with their segregated treasury and maintain mem
 
 ## Overview
 
-Control is a wrapper for organizationsal bodies in zero.
+Control is a wrapper for organizationsal bodies in the chain.
 
 Organizations consist of members as individual users/accounts.
 
@@ -13,11 +13,11 @@ Every organization has attached treasury, which is managed collectively by its m
 
 ### Terminology
 
-* **Organizations controller:** How users may apply to the organization.
+* **Organizations controller:** Admin of the organization.
 * **Organizations access model:** How users may apply to the organization.
-`Open` - any user may join;
-`Voting` - user may join only if organization members allow it by voting;
-`Controller` - user may be invited by org controller.
+	* `Open` - any user may join;
+	* `Voting` - user may join only if organization members allow it by voting;
+	* `Controller` - user may be invited by org controller.
 * **Organizations treasury:** Account, where all organization funds are stored for further management.
 Interaction with the treasury happens only with collective decisions, approved by organization members.
 * **Organizations fee:** amount of protocol tokens to be locked/transfered from the user, once he joins the organization.
