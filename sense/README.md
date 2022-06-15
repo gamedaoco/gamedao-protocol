@@ -1,26 +1,46 @@
-# zero sensenet
+# Sense Module
 
-## Identity and Reputation
+Achievements and account based metrics
 
-Every entity in ZERO METAVERSE needs to provide initial identity information to create an ecosystem wide decentralised identity (DID). This allows for platform operation in a legal manner, provides transparency and guarantees for the community.
+## Overview
 
-The identity system is bound to ZERO as a network layer, which provides identity and payment flow for all participants.
+Extending user identity with additional features based on onchain activity.
 
-Identity is cryptographically abstracted away to make it inefficient to reveal private data of a user without its consent.
 
-In certain cases, users are required to reveal their identity to proceed in e.g. monetary transactions (KYC/AML) or audits when participating in certain protocol execution.
+### Terminology
 
-Identity comes with additional features for the ecosystems connected to ZERO, namely trust, reputation and experience metrics, which are powered by:
+* **Sense entity:** Extension of user identity with additional parameters, like reputation, trust and experience.
 
-- Provision of social identifiers strengthening the Trust (T) level of an identity
-- Continuous contribution of activity into their experience levels (XP)
-- Social feedback of other ecosystem participants, contributing to the reputation (REP) of an identity
+### Goals
+
+Sense is designed to make the following possible:
+
+* Provision of users social identifiers strengthening the Trust (T) level of an identity.
+* Continuous contribution of activity into users experience levels (XP).
+* Social feedback of other ecosystem participants, contributing to the reputation (REP) of an identity.
 
 These all together, T, XP, REP and the opaque identity provide increased trust and protection of the user base, enabling barrier free interaction, in case of GameDAO for coordination and fundraising.
 
-## Status
+## Interface
 
-[x] create entity
-[x] mutate xp, rep, trust
-[ ] more granular access control
-[ ] event subscription for on chain identity events
+### Dispatchable Functions
+
+* `create_entity` - Create sense entity, attached to the user account.
+* `mod_xp` - Update entity experience value, root only.
+* `mod_rep` - Update entity reputation value, root only.
+* `mod_trust` - Update entity trust value, root only.
+
+## Usage
+
+The following example shows how to use the Sense module in your runtime by exposing public functions to:
+
+* Use related module (control) to create an onchain organization.
+* Use related module (flow) to create an onchain campaign.
+* Set specific criterias for the users to match to be able to join organizations.
+* Set specific criterias for the users to match to be able to contribute to the campaigns.
+
+
+## Related Modules
+
+* [`Control`](../control)
+* [`Flow`](../flow)
