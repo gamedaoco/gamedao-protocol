@@ -346,45 +346,38 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		/// Proposal Ended.
+		/// Proposal ended.
 		ProposalEnded,
-		/// Proposal Exists.
+		/// Proposal exists.
 		ProposalExists,
-		/// Proposal Expired.
+		/// Proposal expired.
 		ProposalExpired,
-		/// Already Voted.
+		/// Proposal already voted.
 		AlreadyVoted,
-		/// Proposal Unknown.
+		/// Proposal id unknown.
 		ProposalUnknown,
-		/// DAO Inactive.
+		/// Org status is Inactive.
 		DAOInactive,
-		/// Authorization Error.
+		/// Authorization error.
 		AuthorizationError,
-		/// Tangram Creation Failed.
-		TangramCreationError,
-		/// Out Of Bounds Error.
+		/// Proposal bounds error: start, end, current, expiry blocks not match.
 		OutOfBounds,
-		/// Unknown Error.
-		UnknownError,
-		///MemberExists.
+		/// Member already exists.
 		MemberExists,
-		/// Unknown Campaign.
+		/// Campaign id unknown.
 		CampaignUnknown,
-		/// Campaign Failed.
+		/// Campaign failed.
 		CampaignFailed,
-		/// Balance Too Low.
+		/// Balance too low.
 		BalanceInsufficient,
-		/// Hash Collision.
-		HashCollision,
-		/// Unknown Account.
-		UnknownAccount,
-		/// Too Many Proposals for block.
+		/// Too many proposals for block.
 		TooManyProposals,
 		/// Proposal has no owner.
 		NoProposalOwner,
-		/// Overflow Error.
+		/// Overflow error.
 		OverflowError,
-		/// Division Error.
+		// TODO: ArithmeticError::Overflow
+		/// Division error.
 		DivisionError,
 	}
 
@@ -468,7 +461,7 @@ pub mod pallet {
 		pub fn membership_proposal(
 			origin: OriginFor<T>,
 			org_id: T::Hash,
-			_member: T::Hash,
+			_member: T::AccountId,
 			_action: u8,
 			_start: T::BlockNumber,
 			_expiry: T::BlockNumber,
@@ -498,7 +491,7 @@ pub mod pallet {
 		/// - `start`: Block when the proposal starts.
 		/// - `expiry`: Block when the proposal finishes.
 		///
-		/// Emits `Proposal` event when successful.
+		/// Emits `ProposalCreated` event when successful.
 		///
 		/// Weight: O(1)
 		#[pallet::weight(5_000_000)]
