@@ -42,9 +42,9 @@ pub use types::*;
 
 mod mock;
 mod tests;
-
-// #[cfg(feature = "runtime-benchmarks")]
-// mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+pub mod weights;
 
 // TODO: weights
 // mod default_weights;
@@ -53,8 +53,7 @@ mod tests;
 // mod errors;
 
 use frame_support::{
-	codec::Encode,
-	dispatch::DispatchResult,
+	dispatch::{DispatchResult, DispatchResultWithPostInfo},
 	traits::{Get, UnixTime, BalanceStatus},
 	transactional,
 	weights::Weight
@@ -67,10 +66,11 @@ use sp_std::vec::Vec;
 use sp_std::convert::TryFrom;
 
 use codec::HasCompact;
-use gamedao_traits::{ControlTrait, FlowTrait};
+use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 
 pub use pallet::*;
+pub use weights::WeightInfo;
 
 // TODO: use associated type instead
 pub type Moment = u64;
@@ -112,7 +112,7 @@ pub mod pallet {
 			+ TypeInfo;
 		
 		/// Weight information for extrinsics in this module.
-		type WeightInfo: frame_system::weights::WeightInfo;
+		type WeightInfo: WeightInfo;
 
 		/// Multi-currency support for asset management.
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
@@ -120,7 +120,8 @@ pub mod pallet {
 		
 		type UnixTime: UnixTime;
 
-		type Control: ControlTrait<Self::AccountId, Self::Hash>;
+		type Control: ControlTrait<Self::AccountId, Self::Hash>
+			+ ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
 
 		/// The GameDAO Treasury AccountId.
 		#[pallet::constant]
@@ -486,13 +487,14 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<T::BlockNumber> for Pallet<T> {
 
-        fn on_initialize(block_number: T::BlockNumber) -> Weight {
-			let mut processed: u32 = 0;
-			Self::process_campaigns(&block_number, FlowState::Finalizing, &mut processed)
-			.saturating_add(
-				Self::process_campaigns(&block_number, FlowState::Reverting, &mut processed)
-			)
-        }
+		fn on_initialize(block_number: T::BlockNumber) -> Weight {
+			let mut contributors: u32 = 0;
+			let mut campaigns: u32 = Self::process_campaigns(&block_number, FlowState::Finalizing, &mut contributors);
+			campaigns = campaigns.saturating_add(
+				Self::process_campaigns(&block_number, FlowState::Reverting, &mut contributors)
+			);
+			T::WeightInfo::on_initialize(contributors, campaigns)
+		}
 
 		fn on_finalize(block_number: T::BlockNumber) {
 			Self::schedule_campaign_settlements(block_number)
@@ -519,7 +521,9 @@ pub mod pallet {
 		/// Emits `CampaignCreated` event when successful.
 		///
 		/// Weight: `O(1)`
-		#[pallet::weight(5_000_000)]
+		#[pallet::weight(T::WeightInfo::create_campaign(
+			T::MaxCampaignsPerBlock::get()
+		))]
 		#[transactional]
 		pub fn create_campaign(
 			origin: OriginFor<T>,
@@ -534,9 +538,9 @@ pub mod pallet {
 			cid: Vec<u8>,
 			token_symbol: Vec<u8>, // up to 5
 			token_name: Vec<u8>,   /* cleartext
-			                        * token_curve_a: u8,	  // preset
-			                        * token_curve_b: Vec<u8>, // custom */
-		) -> DispatchResult {
+									* token_curve_a: u8,	  // preset
+									* token_curve_b: Vec<u8>, // custom */
+		) -> DispatchResultWithPostInfo {
 			let creator = ensure_signed(origin)?;
 			let owner = T::Control::org_controller_account(&org_id);
 			ensure!(creator == owner, Error::<T>::AuthorizationError);
@@ -572,9 +576,9 @@ pub mod pallet {
 			// for collision
 
 			// check contribution limit per block
-			let camapaigns = CampaignsByBlock::<T>::get(expiry);
+			let campaigns = CampaignsByBlock::<T>::get(expiry);
 			ensure!(
-				(camapaigns.len() as u32) < T::MaxCampaignsPerBlock::get(),
+				(campaigns.len() as u32) < T::MaxCampaignsPerBlock::get(),
 				Error::<T>::CampaignsPerBlockExceeded
 			);
 
@@ -612,7 +616,7 @@ pub mod pallet {
 				expiry,
 				name,
 			});
-			Ok(())
+			Ok(Some(T::WeightInfo::create_campaign(campaigns.len() as u32)).into())
 
 			// No fees are paid here if we need to create this account;
 			// that's why we don't just use the stock `transfer`.
@@ -627,8 +631,8 @@ pub mod pallet {
 		///
 		/// Emits `CampaignUpdated` event when successful.
 		///
-		/// Weight:
-		#[pallet::weight(1_000_000)]
+		/// Weight: O(1)
+		#[pallet::weight(T::WeightInfo::update_state())]
 		pub fn update_state(origin: OriginFor<T>, campaign_id: T::Hash, state: FlowState) -> DispatchResult {
 			// access control
 			let sender = ensure_signed(origin)?;
@@ -665,8 +669,8 @@ pub mod pallet {
 		///
 		/// Emits `CampaignContributed` event when successful.
 		///
-		/// Weight:
-		#[pallet::weight(5_000_000)]
+		/// Weight: O(1)
+		#[pallet::weight(T::WeightInfo::contribute())]
 		pub fn contribute(origin: OriginFor<T>, campaign_id: T::Hash, contribution: T::Balance) -> DispatchResult {
 			// check
 
@@ -857,9 +861,9 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	fn process_campaigns(block_number: &T::BlockNumber, state: FlowState, processed: &mut u32) -> Weight {
+	fn process_campaigns(block_number: &T::BlockNumber, state: FlowState, processed: &mut u32) -> u32 {
+		let mut campaigns_processed: u32 = 0;
 		let campaign_ids = CampaignsByState::<T>::get(&state);
-		let total_weight: Weight = 0;
 		for campaign_id in campaign_ids {
 			let campaign = Campaigns::<T>::get(campaign_id);
 			let campaign_balance = CampaignBalance::<T>::get(campaign_id);
@@ -869,19 +873,16 @@ impl<T: Config> Pallet<T> {
 
 			if state == FlowState::Finalizing {
 				if let Some(owner) = CampaignOwner::<T>::get(campaign.id) {
-					total_weight.saturating_add(
-						Self::finalize_campaign(&block_number, processed, &campaign, &campaign_balance, &org, &org_treasury, &contributors, &owner)
-					);
+					Self::finalize_campaign(&block_number, processed, &campaign, &campaign_balance, &org, &org_treasury, &contributors, &owner);
 				} else {
 					// TODO: If no campaign owner: revert the campaign or leave it as is?
 				}
 			} else if state == FlowState::Reverting {
-				total_weight.saturating_add(
-					Self::revert_campaign(&block_number, processed, &campaign, &campaign_balance, &org, &org_treasury, &contributors)
-				);
+				Self::revert_campaign(&block_number, processed, &campaign, &campaign_balance, &org, &org_treasury, &contributors);
 			}
+			campaigns_processed = campaigns_processed.saturating_add(1);
 		}
-		total_weight
+		campaigns_processed
 	}
 
 	fn finalize_campaign(
@@ -889,7 +890,7 @@ impl<T: Config> Pallet<T> {
 		campaign: &Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment>,
 		campaign_balance: &T::Balance, org: &T::Hash, org_treasury: &T::AccountId,
 		contributors: &Vec<T::AccountId>, owner: &T::AccountId
-	) -> Weight {
+	) {
 		let contributors = CampaignContributors::<T>::get(campaign.id);
 		let processed_offset = ContributorsFinalized::<T>::get(campaign.id);
 		let offset: usize = usize::try_from(processed_offset).unwrap();
@@ -919,7 +920,7 @@ impl<T: Config> Pallet<T> {
 			if *processed >= T::MaxContributorsProcessing::get() {
 				ContributorsFinalized::<T>::insert(campaign.id, processed_offset + *processed);
 				// TODO: return T::WeightInfo::finalize_campaign(processed)
-				return 1 as Weight
+				return
 			}
 		}
 		ContributorsFinalized::<T>::insert(campaign.id, processed_offset + *processed);
@@ -927,7 +928,7 @@ impl<T: Config> Pallet<T> {
 		if *campaign_balance < campaign.cap {
 			Self::set_state(campaign.id, FlowState::Reverting);
 			// TODO: return T::WeightInfo::finalize_campaign(processed)
-			return 1 as Weight
+			return
 		}
 		let commission = T::CampaignFee::get().mul_floor(campaign_balance.clone());
 		let _transfer_commission = T::Currency::repatriate_reserved(
@@ -952,7 +953,6 @@ impl<T: Config> Pallet<T> {
 		});
 
 		// TODO: return T::WeightInfo::finalize_campaign(processed)
-		1 as Weight
 	}
 
 	fn revert_campaign(
@@ -960,7 +960,7 @@ impl<T: Config> Pallet<T> {
 		campaign: &Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment>,
 		campaign_balance: &T::Balance, org: &T::Hash, org_treasury: &T::AccountId,
 		contributors: &Vec<T::AccountId>
-	) -> Weight {
+	) {
 		let processed_offset = ContributorsReverted::<T>::get(campaign.id);
 		let offset: usize = usize::try_from(processed_offset).unwrap();
 		for account in &contributors[offset..] {
@@ -970,8 +970,7 @@ impl<T: Config> Pallet<T> {
 			*processed += 1;
 			if *processed >= T::MaxContributorsProcessing::get() {
 				ContributorsReverted::<T>::insert(campaign.id, processed_offset + *processed);
-				// TODO: return T::WeightInfo::revert_campaign(processed)
-				return 1 as Weight
+				return
 			}
 		}
 		ContributorsReverted::<T>::insert(campaign.id, processed_offset + *processed);
@@ -986,8 +985,6 @@ impl<T: Config> Pallet<T> {
 			success: false,
 		});
 		
-		// TODO: return T::WeightInfo::revert_campaign(processed)
-		1 as Weight
 	}
 
 }
