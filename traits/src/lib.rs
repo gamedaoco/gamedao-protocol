@@ -23,6 +23,9 @@ pub trait ControlTrait<AccountId, Hash> {
 	fn org_treasury_account(org_id: &Hash) -> AccountId;
 	fn is_org_active(org_id: &Hash) -> bool;
 	fn is_org_member_active(org_id: &Hash, accont_id: &AccountId) -> bool;
+}
+
+pub trait ControlBenchmarkingTrait<AccountId, Hash> {
 
 	/// Helper method to create organization.
 	/// ** Should be used for benchmarking only!!! **

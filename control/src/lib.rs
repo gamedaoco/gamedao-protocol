@@ -27,7 +27,7 @@ use frame_support::{
 	ensure, PalletId,
 	traits::{Get},
 };
-use gamedao_traits::ControlTrait;
+use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use scale_info::TypeInfo;
 use sp_runtime::traits::{AccountIdConversion, AtLeast32BitUnsigned, Hash};
@@ -453,7 +453,7 @@ pub mod pallet {
 		///
 		/// Emits `AddMember` event when successful.
 		///
-		/// Weight: `O(1)`
+		/// Weight: `O(log n)`
 		#[pallet::weight(T::WeightInfo::add_member(
 			T::MaxMembersPerDAO::get()
 		))]
@@ -480,7 +480,7 @@ pub mod pallet {
 		///
 		/// Emits `RemoveMember` event when successful.
 		///
-		/// Weight: `O(1)`
+		/// Weight: `O(log n)`
 		#[pallet::weight(T::WeightInfo::remove_member(
 			T::MaxMembersPerDAO::get()
 		))]
@@ -514,7 +514,7 @@ pub mod pallet {
 		/// Emits `IsAMember` event when successful.
 		///
 		/// Weight: `O(1)`
-		#[pallet::weight(1_000_000)]
+		#[pallet::weight(T::WeightInfo::check_membership())]
 		pub fn check_membership(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 			let members = OrgMembers::<T>::get(org_id);
@@ -895,7 +895,9 @@ impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 	fn is_org_member_active(org_id: &T::Hash, account_id: &T::AccountId) -> bool {
 		OrgMemberState::<T>::get((org_id, account_id)) == ControlMemberState::Active
 	}
+}
 
+impl<T: Config> ControlBenchmarkingTrait<T::AccountId, T::Hash> for Pallet<T> {
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
 	fn create_org(caller: T::AccountId) -> Result<T::Hash, DispatchError> {
@@ -923,8 +925,8 @@ impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-    fn fill_org_with_members(org_id: &T::Hash, accounts: &Vec<T::AccountId>) -> Result<(), DispatchError> {
-    	for acc in accounts {
+	fn fill_org_with_members(org_id: &T::Hash, accounts: &Vec<T::AccountId>) -> Result<(), DispatchError> {
+		for acc in accounts {
 			Pallet::<T>::add_member(
 				frame_system::RawOrigin::Signed(acc.clone()).into(),
 				org_id.clone(),
@@ -932,5 +934,5 @@ impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 			).unwrap();
 		}
 		Ok(())
-    }
+	}
 }

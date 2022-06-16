@@ -45,7 +45,7 @@ benchmarks! {
 	disable_org {
 		let caller: T::AccountId = whitelisted_caller();
 		fund_accounts::<T>(&vec![caller.clone()])?;
-		let org_id = <Pallet::<T> as ControlTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
+		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
 	}: _(RawOrigin::Root, org_id)
 	verify {
 		assert!(OrgState::<T>::get(org_id) == ControlState::Inactive);
@@ -54,7 +54,7 @@ benchmarks! {
 	enable_org {
 		let caller: T::AccountId = whitelisted_caller();
 		fund_accounts::<T>(&vec![caller.clone()])?;
-		let org_id = <Pallet::<T> as ControlTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
+		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
 	}: _(RawOrigin::Root, org_id)
 	verify {
 		assert!(OrgState::<T>::get(org_id) == ControlState::Active);
@@ -72,7 +72,7 @@ benchmarks! {
 			.collect();
 		fund_accounts::<T>(&vec![creator.clone(), member.clone()])?;
 		fund_accounts::<T>(&accounts)?;
-		let org_id = <Pallet::<T> as ControlTrait<T::AccountId, T::Hash>>::create_org(creator.clone()).unwrap();
+		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(creator.clone()).unwrap();
 		Pallet::<T>::fill_org_with_members(&org_id, &accounts)?;
 	}: _(RawOrigin::Signed(creator), org_id, member.clone())
 	verify {
@@ -83,7 +83,7 @@ benchmarks! {
 		let r in 1 .. T::MaxMembersPerDAO::get();
 		let creator: T::AccountId = whitelisted_caller();
 		fund_accounts::<T>(&vec![creator.clone()])?;
-		let org_id = <Pallet::<T> as ControlTrait<T::AccountId, T::Hash>>::create_org(creator.clone()).unwrap();
+		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(creator.clone()).unwrap();
 		let origin = RawOrigin::Signed(creator.clone());
 		let accounts: Vec<T::AccountId> = (1..r+1)
 			.collect::<Vec<u32>>()
@@ -100,7 +100,7 @@ benchmarks! {
 	check_membership {
 		let caller: T::AccountId = whitelisted_caller();
 		fund_accounts::<T>(&vec![caller.clone()])?;
-		let org_id = <Pallet::<T> as ControlTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
+		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
 	}: _(RawOrigin::Signed(caller), org_id)
 
 
