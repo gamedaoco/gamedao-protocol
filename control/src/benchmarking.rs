@@ -1,10 +1,13 @@
 #![cfg(feature = "runtime-benchmarks")]
 
- use crate::*;
- use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, whitelisted_caller};
- use frame_system::RawOrigin;
- use sp_runtime::{DispatchError, traits::{Saturating}};
- use sp_std::vec;
+use crate::*;
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, whitelisted_caller};
+use frame_system::RawOrigin;
+use sp_runtime::{DispatchError, traits::{Saturating}};
+use sp_std::vec;
+
+
+const SEED: u32 = 0;
 
 /// Fund accounts with tokens, needed for org interactions
 fn fund_accounts<T: Config>(account_ids: &Vec<T::AccountId>) -> Result<(), DispatchError> {
@@ -55,6 +58,7 @@ benchmarks! {
 		let caller: T::AccountId = whitelisted_caller();
 		fund_accounts::<T>(&vec![caller.clone()])?;
 		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
+		Pallet::<T>::disable_org(RawOrigin::Root.into(), org_id);
 	}: _(RawOrigin::Root, org_id)
 	verify {
 		assert!(OrgState::<T>::get(org_id) == ControlState::Active);
@@ -64,11 +68,11 @@ benchmarks! {
 		let r in 1 .. T::MaxMembersPerDAO::get()-1;
 
 		let creator: T::AccountId = whitelisted_caller();
-		let member: T::AccountId = account("member", 0 as u32, 0 as u32);
+		let member: T::AccountId = account("member", 0, SEED);
 		let accounts: Vec<T::AccountId> = (1..r)
 			.collect::<Vec<u32>>()
 			.iter()
-			.map(|i| account("member", *i, *i))
+			.map(|i| account("member", *i, SEED))
 			.collect();
 		fund_accounts::<T>(&vec![creator.clone(), member.clone()])?;
 		fund_accounts::<T>(&accounts)?;
@@ -81,6 +85,7 @@ benchmarks! {
 
 	remove_member {
 		let r in 1 .. T::MaxMembersPerDAO::get();
+
 		let creator: T::AccountId = whitelisted_caller();
 		fund_accounts::<T>(&vec![creator.clone()])?;
 		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(creator.clone()).unwrap();
@@ -88,7 +93,7 @@ benchmarks! {
 		let accounts: Vec<T::AccountId> = (1..r+1)
 			.collect::<Vec<u32>>()
 			.iter()
-			.map(|i| account("member", *i, *i))
+			.map(|i| account("member", *i, SEED))
 			.collect();
 		fund_accounts::<T>(&accounts)?;
 		Pallet::<T>::fill_org_with_members(&org_id, &accounts)?;
