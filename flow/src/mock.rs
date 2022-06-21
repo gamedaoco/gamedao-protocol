@@ -5,7 +5,6 @@ use frame_support::{
 	construct_runtime, parameter_types, PalletId,
 	traits::{Everything, GenesisBuild, Nothing},
 };
-use frame_system::EnsureRoot;
 use sp_core::H256;
 use sp_runtime::{traits::IdentityLookup, Permill};
 
@@ -195,6 +194,7 @@ parameter_types! {
 	pub const MaxNameLength: u32 = 4;
 	pub const MaxCampaignsPerAddress: u32 = 3;
 	pub const MaxCampaignsPerBlock: u32 = 1;
+	pub const MaxCampaignsPerOrg: u32 = 64;
 	pub const MaxContributionsPerBlock: u32 = 3;
 	pub const MaxContributorsProcessing: u32 = 4;
 	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
@@ -223,6 +223,7 @@ impl Config for Test {
 	type MaxNameLength = MaxNameLength;
 	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
+	type MaxCampaignsPerOrg = MaxCampaignsPerOrg;
 	type MaxContributionsPerBlock = MaxContributionsPerBlock;
 	type MinCampaignDuration = MinCampaignDuration;
 	type MaxCampaignDuration = MaxCampaignDuration;

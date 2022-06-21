@@ -1,11 +1,10 @@
 #![cfg(test)]
 
 use super::*;
-use codec::Encode;
+use mock::{Event, *};
 use frame_support::traits::Hooks;
 use frame_support::{assert_noop, assert_ok};
-use frame_system::{EventRecord, Phase, RawOrigin};
-use mock::{Event, Moment, *};
+use frame_system::RawOrigin;
 use sp_core::H256;
 use sp_runtime::traits::{Hash, AccountIdConversion};
 
@@ -125,7 +124,7 @@ fn flow_create_errors() {
 #[test]
 fn flow_create_success() {
 	new_test_ext().execute_with(|| {
-		let (org, treasury, _) = create_org_treasury();
+		let (org, _treasury, _) = create_org_treasury();
 		let current_block = 3;
 		System::set_block_number(current_block);
 
@@ -154,7 +153,7 @@ fn flow_create_success() {
 		assert_eq!(CampaignsOwnedCount::<Test>::get(org), 1);
 		assert_eq!(CampaignsOwnedIndex::<Test>::get((org, id)), 0);
 		assert_eq!(Nonce::<Test>::get(), 1);
-		assert_eq!(CampaignsByState::<Test>::get(FlowState::Active), vec![id]);
+		assert_eq!(CampaignsByState::<Test>::get(FlowState::Active, &org), vec![id]);
 		assert_eq!(CampaignState::<Test>::get(id), FlowState::Active);
 
 		System::assert_has_event(Event::Flow(crate::Event::CampaignCreated {
@@ -230,9 +229,11 @@ fn flow_update_state_success() {
 		Campaigns::<Test>::insert(&campaign_id, &campaign);
 		CampaignOwner::<Test>::insert(campaign_id, BOB);
 		CampaignAdmin::<Test>::insert(campaign_id, BOB);
+		CampaignOrg::<Test>::insert(campaign_id, campaign.org);
+		CampaignsByOrg::<Test>::insert(campaign.org, vec![campaign_id]);
 
 		assert_ok!(Flow::update_state(Origin::signed(BOB), campaign_id, FlowState::Paused));
-		assert_eq!(CampaignsByState::<Test>::get(FlowState::Paused), vec![campaign_id]);
+		assert_eq!(CampaignsByState::<Test>::get(FlowState::Paused, &campaign.org), vec![campaign_id]);
 		assert_eq!(CampaignState::<Test>::get(campaign_id), FlowState::Paused);
 	});
 }
@@ -340,7 +341,7 @@ fn flow_on_finalize_campaign_succeess() {
 		let nonce = Nonce::<Test>::get();
 		let campaign_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
 		assert_ok!(Flow::create_campaign(
-			Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit, expiry,
+			Origin::signed(BOB), org.clone(), BOB, vec![1, 2], target, deposit, expiry,
 			FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]
 		));
 
@@ -369,7 +370,7 @@ fn flow_on_finalize_campaign_succeess() {
 		}));
 
 		// Ensure that campaign was scheduled to be finalized
-		assert_eq!(CampaignsByState::<Test>::get(&FlowState::Finalizing), vec![campaign_id]);
+		assert_eq!(CampaignsByState::<Test>::get(&FlowState::Finalizing, &org), vec![campaign_id]);
 		// Ensure that campaign will be finalize in 3 blocks: 4 + 4 + 2
 		let batch_size: u128 = 4;
 		assert_eq!(MaxContributorsProcessing::get(), batch_size as u32);
@@ -427,7 +428,7 @@ fn flow_on_finalize_campaign_succeess() {
 			tbalance - deposit
 		);
 		// Ensure that campaign succeeded
-		assert_eq!(CampaignsByState::<Test>::get(&FlowState::Success), vec![campaign_id]);
+		assert_eq!(CampaignsByState::<Test>::get(&FlowState::Success, &org), vec![campaign_id]);
 		System::assert_has_event(Event::Flow(crate::Event::CampaignFinalized {
 			campaign_id,
 			campaign_balance: CampaignBalance::<Test>::get(campaign_id),
@@ -455,7 +456,7 @@ fn flow_on_finalize_campaign_failed() {
 		let nonce = Nonce::<Test>::get();
 		let campaign_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
 		assert_ok!(Flow::create_campaign(
-			Origin::signed(BOB), org, BOB, vec![1, 2], target, deposit, expiry,
+			Origin::signed(BOB), org.clone(), BOB, vec![1, 2], target, deposit, expiry,
 			FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]
 		));
 
@@ -484,7 +485,7 @@ fn flow_on_finalize_campaign_failed() {
 		}));
 
 		// Ensure that campaign was scheduled to be reverted
-		assert_eq!(CampaignsByState::<Test>::get(&FlowState::Reverting), vec![campaign_id]);
+		assert_eq!(CampaignsByState::<Test>::get(&FlowState::Reverting, &org), vec![campaign_id]);
 		// Ensure that campaign will be reverted in 3 blocks: 4 + 4 + 2
 		let batch_size: u128 = 4;
 		assert_eq!(MaxContributorsProcessing::get(), batch_size as u32);
@@ -543,7 +544,7 @@ fn flow_on_finalize_campaign_failed() {
 			tbalance
 		);
 		// Ensure that campaign failed
-		assert_eq!(CampaignsByState::<Test>::get(&FlowState::Failed), vec![campaign_id]);
+		assert_eq!(CampaignsByState::<Test>::get(&FlowState::Failed, &org), vec![campaign_id]);
 
 		System::assert_has_event(Event::Flow(crate::Event::CampaignFailed {
 			campaign_id,
