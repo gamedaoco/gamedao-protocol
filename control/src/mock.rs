@@ -15,7 +15,6 @@ pub type Moment = u64;
 pub type Balance = u128;
 pub type Amount = i128;
 pub type CurrencyId = u32;
-// pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -31,11 +30,13 @@ pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
 pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
 // Accounts:
-pub const ALICE: AccountId = 1;
-pub const BOB: AccountId = 2;
-pub const TREASURY: AccountId = 3;
-pub const GAME3_TREASURY: AccountId = 4;
-pub const GAMEDAO_TREASURY: AccountId = 5;
+pub const TREASURY: AccountId = 1;
+pub const GAME3_TREASURY: AccountId = 2;
+pub const GAMEDAO_TREASURY: AccountId = 3;
+pub const ALICE: AccountId = 4;
+pub const BOB: AccountId = 5;
+pub const CHARLIE: AccountId = 6;
+pub const DAVE: AccountId = 7;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -132,7 +133,7 @@ frame_support::parameter_types! {
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
-	pub const MinimumDeposit: Balance = 1 * DOLLARS;
+	pub const MinimumDeposit: Balance = 5 * DOLLARS;
 	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
 	pub const Game3FoundationTreasuryAccountId: AccountId = GAME3_TREASURY;
 	pub const GameDAOTreasuryAccountId: AccountId = GAMEDAO_TREASURY;
@@ -160,8 +161,10 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		balances: vec![
 			(ALICE, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
 			(ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(BOB, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-			(BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(BOB, PROTOCOL_TOKEN_ID, 2 * DOLLARS),
+			(BOB, PAYMENT_TOKEN_ID, 2 * DOLLARS),
+			(CHARLIE, PROTOCOL_TOKEN_ID, 2 * DOLLARS),
+			(CHARLIE, PAYMENT_TOKEN_ID, 2 * DOLLARS),
 			(TREASURY, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
 			(TREASURY, PAYMENT_TOKEN_ID, 100 * DOLLARS),
 			(GAMEDAO_TREASURY, PROTOCOL_TOKEN_ID, 0),

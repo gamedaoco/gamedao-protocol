@@ -106,7 +106,7 @@ benchmarks! {
 		let caller: T::AccountId = whitelisted_caller();
 		fund_accounts::<T>(&vec![caller.clone()])?;
 		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
-	}: _(RawOrigin::Signed(caller), org_id)
+	}: _(RawOrigin::Signed(caller.clone()), org_id, caller.clone())
 
 
 }
