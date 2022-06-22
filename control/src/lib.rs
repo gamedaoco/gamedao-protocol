@@ -533,7 +533,7 @@ pub mod pallet {
 		///
 		/// Parameters:
 		/// - `org_id`: Org hash
-		/// - `account`: Account id
+		/// - `account_id`: Account id
 		///
 		/// Emits `IsAMember` event when successful.
 		///
