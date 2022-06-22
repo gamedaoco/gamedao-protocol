@@ -794,7 +794,8 @@ impl<T: Config> Pallet<T> {
 			FeeModel::NoFees => {},
 			// reserve
 			FeeModel::Reserve => {
-				T::Currency::reserve(currency_id, &account_id, fee)?;
+				let res = T::Currency::reserve(currency_id, &account_id, fee);
+				debug_assert!(res.is_ok());
 			},
 			// transfer to treasury
 			FeeModel::Transfer => {
