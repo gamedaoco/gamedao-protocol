@@ -47,3 +47,23 @@ pub trait FlowTrait<AccountId, Balance, Hash> {
 	fn campaign_org(campaign_id: &Hash) -> Hash;
 	fn campaign_owner(campaign_id: &Hash) -> Option<AccountId>;
 }
+
+/// ** Should be used for benchmarking only!!! **
+pub trait FlowBenchmarkingTrait<AccountId, BlockNumber, Hash> {
+
+	/// Helper method to create campaign
+	/// ** Should be used for benchmarking only!!! **
+	#[cfg(feature = "runtime-benchmarks")]
+	fn create_campaign(caller: &AccountId, org_id: &Hash) -> Result<Hash, &'static str>;
+
+	/// Helper method to fill campaign with contributions
+	/// It is assumed those accounts have enought currency to contribute
+	/// ** Should be used for benchmarking only!!! **
+	#[cfg(feature = "runtime-benchmarks")]
+	fn create_contributions(campaign_id: &Hash, contributors: &Vec<AccountId>) -> Result<(), DispatchError>;
+
+	/// Trigger campaigns finalization by setting block number to specified value and calling appropriate hooks
+	/// ** Should be used for benchmarking only!!! **
+	#[cfg(feature = "runtime-benchmarks")]
+	fn finalize_campaigns_by_block(block_number: BlockNumber);
+}

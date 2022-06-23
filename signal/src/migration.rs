@@ -10,10 +10,8 @@
 
 use crate::{Config, Pallet, Weight};
 use frame_support::{
-	storage::migration,
 	traits::{Get, PalletInfoAccess},
 };
-use sp_std::prelude::*;
 
 pub fn migrate<T: Config>() -> Weight {
 	use frame_support::traits::StorageVersion;

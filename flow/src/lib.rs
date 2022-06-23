@@ -51,20 +51,20 @@ pub mod weights;
 // mod errors;
 
 use frame_support::{
-	dispatch::{DispatchResult, DispatchResultWithPostInfo},
-	traits::{Get, BalanceStatus, StorageVersion, UnixTime},
+	dispatch::{DispatchError, DispatchResult, DispatchResultWithPostInfo},
+	traits::{Get, BalanceStatus, Hooks, StorageVersion, UnixTime},
 	transactional,
 	weights::Weight
 };
 
 use scale_info::TypeInfo;
-use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash}, Permill};
-use sp_std::vec::Vec;
+use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash, Saturating}, Permill};
+use sp_std::{vec, vec::Vec};
 
 use sp_std::convert::TryFrom;
 
 use codec::HasCompact;
-use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait};
+use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 
 pub use pallet::*;
@@ -1019,5 +1019,60 @@ impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
 	}
 	fn is_campaign_succeeded(campaign_id: &T::Hash) -> bool {
 		CampaignState::<T>::get(campaign_id) == FlowState::Success
+	}
+}
+
+impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for Pallet<T> {
+	/// ** Should be used for benchmarking only!!! **
+	#[cfg(feature = "runtime-benchmarks")]
+	fn create_campaign(caller: &T::AccountId, org_id: &T::Hash) -> Result<T::Hash, &'static str> {
+		let name: Vec<u8> = vec![0; T::MaxNameLength::get() as usize];
+		let cid: Vec<u8> = vec![0; T::MaxNameLength::get() as usize];
+		let token_symbol: Vec<u8> = vec![0; 5];
+		let token_name: Vec<u8> = vec![0; 32];
+		let target: T::Balance = T::MinContribution::get();
+		let deposit: T::Balance = T::MinContribution::get();
+		let expiry: T::BlockNumber = frame_system::Pallet::<T>::block_number() + 200_u32.into();
+		let protocol: FlowProtocol = FlowProtocol::default();
+		let governance: FlowGovernance = FlowGovernance::default();
+		let nonce = Nonce::<T>::get();
+		Pallet::<T>::create_campaign(
+			frame_system::RawOrigin::Signed(caller.clone()).into(),
+			*org_id,
+			caller.clone(),
+			name,
+			target,
+			deposit,
+			expiry,
+			protocol,
+			governance,
+			cid,
+			token_name,
+			token_symbol
+		)?;
+		Ok(T::Hashing::hash_of(&nonce))
+	}
+
+	/// ** Should be used for benchmarking only!!! **
+	#[cfg(feature = "runtime-benchmarks")]
+	fn create_contributions(campaign_id: &T::Hash, contributors: &Vec<T::AccountId>) -> Result<(), DispatchError> {
+		for account_id in contributors {
+			Pallet::<T>::contribute(
+				frame_system::RawOrigin::Signed(account_id.clone()).into(),
+				campaign_id.clone(),
+				T::MinContribution::get()
+			)?;
+		}
+		Ok(())
+	}
+
+	/// ** Should be used for benchmarking only!!! **
+	#[cfg(feature = "runtime-benchmarks")]
+	fn finalize_campaigns_by_block(block_number: T::BlockNumber) {
+		frame_system::Pallet::<T>::set_block_number(block_number);
+		Pallet::<T>::on_finalize(block_number);
+		let next_block = block_number.saturating_add(1_u32.into());
+		frame_system::Pallet::<T>::set_block_number(next_block);
+		Pallet::<T>::on_initialize(next_block);
 	}
 }
