@@ -700,6 +700,12 @@ fn signal_simple_vote_error() {
 			Error::<Test>::AlreadyVoted
 		);
 
+		<ProposalVotes<Test>>::insert(proposal_id, <Test as Config>::MaxVotesPerProposal::get() as u64);
+		assert_noop!(
+			Signal::simple_vote(Origin::signed(ACC1), proposal_id, true),
+			Error::<Test>::TooManyVotes
+		);
+
 		<ProposalStates<Test>>::insert(proposal_id, ProposalState::Expired);
 		assert_noop!(
 			Signal::simple_vote(Origin::signed(ACC1), proposal_id, true),

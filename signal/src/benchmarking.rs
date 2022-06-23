@@ -1,49 +1,223 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use frame_benchmarking::{account, benchmarks, whitelisted_caller};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, whitelisted_caller};
 use frame_system::RawOrigin;
+use frame_support::{dispatch::DispatchError, traits::Get};
+use sp_runtime::traits::{SaturatedConversion};
+// use sp_std::vec;
 
-use crate::{ Pallet as Signal, Event, Config };
-use pallet_control::{ Pallet as Control, Config as ControlConfig, Event as ControlEvent, OrgType, AccessModel, FeeModel };
-use pallet_flow::Pallet as Flow;
-use frame_support::{ assert_ok };
-use zero_primitives::{ AccountId };
+use crate::*;
+
+
+const SEED: u32 = 0;
+const DEPOSIT_AMOUNT: u128 = 10_000_000_000_000_000_000;
+
+
+/// Fund account with tokens, needed for org and campaign interactions
+fn fund_account<T: Config>(account_id: &T::AccountId) -> Result<(), DispatchError> {
+	let balance_amount: T::Balance = DEPOSIT_AMOUNT.saturated_into();
+	T::Currency::deposit(T::ProtocolTokenId::get(), account_id, balance_amount)?;
+	T::Currency::deposit(T::PaymentTokenId::get(), account_id, balance_amount)?;
+	Ok(())
+}
+
+fn fund_accounts<T: Config>(account_ids: &Vec<T::AccountId>) -> Result<(), DispatchError> {
+	for account_id in account_ids {
+		fund_account::<T>(&account_id)?;
+	}
+	Ok(())
+}
+
+
+fn create_and_finalize_campaign<T: Config>(caller: T::AccountId, contributors_count: u32) -> Result<T::Hash, DispatchError> {
+	let org_id = T::Control::create_org(caller.clone())?;
+	let treasury_account_id = T::Control::org_treasury_account(&org_id);
+	fund_account::<T>(&treasury_account_id)?;
+	let campaign_id = T::Flow::create_campaign(&caller, &org_id)?;
+	let contributors: Vec<T::AccountId> = (0..contributors_count).collect::<Vec<u32>>().iter()
+		.map(|i| account("contributor", *i, SEED)).collect();
+	fund_accounts::<T>(&contributors)?;
+	T::Flow::create_contributions(&campaign_id, &contributors)?;
+	let current_block = frame_system::Pallet::<T>::block_number();
+	let mut expiry = current_block + 200_u32.into();
+	for _ in 0 .. 10 {
+		T::Flow::finalize_campaigns_by_block(expiry);
+		if T::Flow::is_campaign_succeeded(&campaign_id) {
+			break;
+		}
+		expiry = expiry + 1_u32.into();
+	}
+	Ok(campaign_id)
+}
+
 
 benchmarks! {
 
 	general_proposal {
-		let caller = whitelisted_caller();
-		let origin = RawOrigin::Signed(caller);
-		let controller: T::AccountId = account("controller", 1, 0);
-		let treasury: T::AccountId = account("treasury", 1, 0);
-		Control::create(
-			origin,
-			controller,
-			treasury,
-			vec![1,2,3],
-			vec![1,2,3],
-			OrgType::Individual,
-			AccessModel::Open,
-			FeeModel::NoFees,
-			0, 1, 2, 100
+		let caller: T::AccountId = whitelisted_caller();
+		fund_account::<T>(&caller)?;
+		let org_id = T::Control::create_org(caller.clone())?;
+		let start = frame_system::Pallet::<T>::block_number() + 1_u32.into();
+		let expiry = start + 100_u32.into();
+		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
+	}: _(
+		RawOrigin::Signed(caller.clone()),
+		org_id.clone(),
+		(0..255).collect(),
+		(0..255).collect(),
+		start,
+		expiry
+	)
+	verify {
+		assert!(Proposals::<T>::contains_key(&proposal_id));
+	}
+
+	membership_proposal {
+		let caller: T::AccountId = whitelisted_caller();
+		fund_account::<T>(&caller)?;
+		let org_id = T::Control::create_org(caller.clone())?;
+		let start = frame_system::Pallet::<T>::block_number() + 1_u32.into();
+		let expiry = start + 100_u32.into();
+		let member: T::AccountId = account("member", 0, SEED);
+		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
+	}: _(RawOrigin::Signed(caller), org_id, member, 0, start, expiry)
+
+	withdraw_proposal {
+		let caller: T::AccountId = whitelisted_caller();
+		fund_account::<T>(&caller)?;
+		let campaign_id = create_and_finalize_campaign::<T>(caller.clone(), 10)?;
+		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
+	}: _(
+		RawOrigin::Signed(caller),
+		campaign_id.clone(),
+		(0..255).collect(),
+		(0..255).collect(),
+		T::Flow::campaign_balance(&campaign_id),
+		frame_system::Pallet::<T>::block_number() + 1_u32.into(),
+		frame_system::Pallet::<T>::block_number() + 200_u32.into()
+	)
+	verify {
+		assert!(Proposals::<T>::contains_key(&proposal_id));
+	}
+
+	simple_vote_general {
+		let b in 0 .. T::MaxVotesPerProposal::get()-1;  // limit number of votes
+
+		let caller: T::AccountId = whitelisted_caller();
+		fund_account::<T>(&caller)?;
+		let org_id = T::Control::create_org(caller.clone())?;
+		let start = frame_system::Pallet::<T>::block_number() + 1_u32.into();
+		let expiry = start + 500_u32.into();
+		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
+		Pallet::<T>::general_proposal(
+			RawOrigin::Signed(caller.clone()).into(),
+			org_id.clone(),
+			(0..255).collect(),
+			(0..255).collect(),
+			start,
+			expiry
 		)?;
-		let bn = frame_system::Pallet::block_number();
-		let org_event: ControlEvent = <frame_system::Pallet<T>>::events().pop()
-			.expect("No event generated").event.into();
-		// let Event::Control(ControlEvent::OrgCreated {sender_id, org_id, ..}) = org_event;
-		if let Event::Control(ControlEvent::OrgCreated {org_id, ..}) = org_event {
-			println!("Okay!");
-		} else {
-			println!("Fail");
+		let voters: Vec<T::AccountId> = (0..b).collect::<Vec<u32>>().iter()
+			.map(|i| account("voter", *i, SEED)).collect();
+		fund_accounts::<T>(&voters)?;
+		for voter in voters.iter().step_by(2) {
+			Pallet::<T>::simple_vote(RawOrigin::Signed(voter.clone()).into(), proposal_id, true)?;
 		}
-		// }
+		for voter in voters.iter().skip(1).step_by(2) {
+			Pallet::<T>::simple_vote(RawOrigin::Signed(voter.clone()).into(), proposal_id, false)?;
+		}
+		let votes_count_before = ProposalVotes::<T>::get(&proposal_id);
+	}: {
+		Pallet::<T>::simple_vote(
+			RawOrigin::Signed(caller.clone()).into(),
+			proposal_id.clone(),
+			true
+		)?;
+	}
+	verify {
+		assert!(ProposalVotes::<T>::get(&proposal_id) == votes_count_before + 1);
+	}
 
-	}: _(caller, org_id.unwrap(), vec![1,2,3], vec![1,2,3], bn, bn + 10)
-	// verify {
-	// 	let proposal_event = System::events().pop()
-	// 		.expect("No event generated").event;
-	// 	// assert!(proposal_event as SignalEvent).proposal_id.len();
-	// }
+	simple_vote_withdraw {
+		let b in 0 .. T::MaxVotesPerProposal::get()-1;
 
-	impl_benchmark_test_suite!(Signal, crate::tests::new_test_ext(), crate::tests::Test)
+		let caller: T::AccountId = whitelisted_caller();
+		fund_account::<T>(&caller)?;
+
+		// Create campaign and withdraw proposal
+		let campaign_id = create_and_finalize_campaign::<T>(caller.clone(), 10)?;
+		let withdraw_amount = T::Flow::campaign_balance(&campaign_id);
+		let start = frame_system::Pallet::<T>::block_number() + 1_u32.into();
+		let expiry = start + 200_u32.into();
+		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
+		Pallet::<T>::withdraw_proposal(
+			RawOrigin::Signed(caller.clone()).into(),
+			campaign_id,
+			(0..255).collect(),
+			(0..255).collect(),
+			withdraw_amount,
+			start,
+			expiry
+		)?;
+
+		let voters: Vec<T::AccountId> = (0 .. b).collect::<Vec<u32>>().iter()
+			.map(|i| account("voter", *i, SEED)).collect();
+		fund_accounts::<T>(&voters)?;
+		for voter in voters {
+			Pallet::<T>::simple_vote(RawOrigin::Signed(voter.clone()).into(), proposal_id.clone(), false)?;
+		}
+		let votes_count_before = ProposalVotes::<T>::get(&proposal_id);
+
+	}: {
+		Pallet::<T>::simple_vote(
+			RawOrigin::Signed(caller.clone()).into(),
+			proposal_id.clone(),
+			true
+		)?;
+	}
+	verify {
+		assert!(ProposalVotes::<T>::get(&proposal_id) == votes_count_before + 1);
+	}
+
+	unlock_balance {
+		let b in 2 .. 100;
+
+		let caller: T::AccountId = whitelisted_caller();
+		fund_account::<T>(&caller)?;
+
+		// Create campaign and withdraw proposal
+		let campaign_id = create_and_finalize_campaign::<T>(caller.clone(), b*2)?;
+		let withdraw_amount = T::Flow::campaign_balance(&campaign_id);
+		let start = frame_system::Pallet::<T>::block_number() + 1_u32.into();
+		let expiry = start + 200_u32.into();
+		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
+		Pallet::<T>::withdraw_proposal(
+			RawOrigin::Signed(caller.clone()).into(),
+			campaign_id,
+			(0..255).collect(),
+			(0..255).collect(),
+			withdraw_amount,
+			start,
+			expiry
+		)?;
+
+		let voters: Vec<T::AccountId> = (0 .. b).collect::<Vec<u32>>().iter()
+			.map(|i| account("voter", *i, SEED)).collect();
+		fund_accounts::<T>(&voters)?;
+		for voter in voters {
+			Pallet::<T>::simple_vote(RawOrigin::Signed(voter.clone()).into(), proposal_id.clone(), true)?;
+		}
+		ProposalSimpleVotes::<T>::insert(proposal_id, (b as u64 + 1, 0));
+		let proposal = Proposals::<T>::get(&proposal_id).unwrap();
+	}: {
+		Pallet::<T>::unlock_balance(
+			&proposal,
+			0
+		);
+	}
+	verify {
+		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Finalized);
+	}
 }
+
+impl_benchmark_test_suite!(Signal, crate::tests::new_test_ext(), crate::tests::Test);
