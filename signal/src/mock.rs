@@ -173,6 +173,7 @@ parameter_types! {
 	pub const MaxNameLength: u32 = 4;
 	pub const MaxCampaignsPerAddress: u32 = 3;
 	pub const MaxCampaignsPerBlock: u32 = 1;
+	pub const MaxCampaignsPerOrg: u32 = 64;
 	pub const MaxContributionsPerBlock: u32 = 3;
 	pub const MaxContributorsProcessing: u32 = 5;
 	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
@@ -198,6 +199,7 @@ impl gamedao_flow::Config for Test {
 	type MaxContributorsProcessing = MaxContributorsProcessing;
 	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
+	type MaxCampaignsPerOrg = MaxCampaignsPerOrg;
 	type MaxContributionsPerBlock = MaxContributionsPerBlock;
 	type MinCampaignDuration = MinCampaignDuration;
 	type MaxCampaignDuration = MaxCampaignDuration;
@@ -209,12 +211,14 @@ impl gamedao_flow::Config for Test {
 parameter_types! {
 	pub const MaxProposalsPerBlock: u32 = 2;
 	pub const MaxProposalDuration: u32 = 20;
+	pub const MaxVotesPerProposal: u32 = 1000;
 }
 impl gamedao_signal::Config for Test {
 	type Event = Event;
 	type WeightInfo = ();
 	type Control = Control;
 	type Flow = Flow;
+	type MaxVotesPerProposal = MaxVotesPerProposal;
 	type MaxProposalsPerBlock = MaxProposalsPerBlock;
 	type MaxProposalDuration = MaxProposalDuration;
 	type ProtocolTokenId = ProtocolTokenId;

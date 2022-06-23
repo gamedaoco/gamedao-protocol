@@ -10,7 +10,7 @@ use sp_std::vec;
 
 
 const SEED: u32 = 0;
-const DEPOSIT_AMOUNT: u128 = 10000000000000000000;
+const DEPOSIT_AMOUNT: u128 = 10_000_000_000_000_000_000;
 
 
 /// Fund account with tokens, needed for org and campaign interactions
@@ -31,36 +31,7 @@ fn fund_accounts<T: Config>(account_ids: &Vec<T::AccountId>) -> Result<(), Dispa
 /// Switch to next block number
 fn next_block<T: Config>() {
 	let current_block = frame_system::Pallet::<T>::block_number();
-	frame_system::Pallet::<T>::set_block_number(current_block.saturating_add(1_u32.into()));
-}
-
-/// Execute `create_campaign` extrinsic and return id of created campaign object
-fn create_campaign_call<T: Config>(caller: T::AccountId, org_id: T::Hash) -> Result<T::Hash, &'static str> {
-	let name: Vec<u8> = vec![0; T::MaxNameLength::get() as usize];
-	let cid: Vec<u8> = vec![0; T::MaxNameLength::get() as usize];
-	let token_symbol: Vec<u8> = vec![0; 5];
-	let token_name: Vec<u8> = vec![0; 32];
-	let target: T::Balance = T::MinContribution::get();
-	let deposit: T::Balance = T::MinContribution::get();
-	let expiry: T::BlockNumber = frame_system::Pallet::<T>::block_number() + 200_u32.into();
-	let protocol: FlowProtocol = FlowProtocol::default();
-	let governance: FlowGovernance = FlowGovernance::default();
-	let nonce = Nonce::<T>::get();
-	Flow::<T>::create_campaign(
-		RawOrigin::Signed(caller.clone()).into(),
-		org_id,
-		caller.clone(),
-		name,
-		target,
-		deposit,
-		expiry,
-		protocol,
-		governance,
-		cid,
-		token_name,
-		token_symbol
-	)?;
-	Ok(T::Hashing::hash_of(&nonce))
+	frame_system::Pallet::<T>::set_block_number(current_block + 1_u32.into());
 }
 
 
@@ -80,7 +51,7 @@ benchmarks! {
 
 		// Create some campaigns, respecting per block limitation
 		for i in 0 .. b {
-			create_campaign_call::<T>(caller.clone(), org_id)?;
+			<Flow::<T> as FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash>>::create_campaign(&caller, &org_id)?;
 			if i % per_block_cnt == 0 {
 				next_block::<T>();
 			}
@@ -120,7 +91,7 @@ benchmarks! {
 
 		// Create some campaigns, respecting per block limitation
 		for i in 0 .. b {
-			create_campaign_call::<T>(caller.clone(), org_id)?;
+			<Flow::<T> as FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash>>::create_campaign(&caller, &org_id)?;
 			if i % per_block_cnt == 0 {
 				next_block::<T>();
 			}
@@ -151,7 +122,7 @@ benchmarks! {
 		fund_account::<T>(&treasury_id)?;
 
 		// Create campaign to use for contributions
-		let campaign_id = create_campaign_call::<T>(owner, org_id)?;
+		let campaign_id = <Flow::<T> as FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash>>::create_campaign(&owner, &org_id)?;
 	}: _(
 		RawOrigin::Signed(contributor.clone()),
 		campaign_id.clone(),
@@ -173,21 +144,21 @@ benchmarks! {
 		fund_account::<T>(&treasury_id)?;
 
 		// Create campaign and add some contributions
-		let campaign_id = create_campaign_call::<T>(owner.clone(), org_id.clone())?;
+		let campaign_id = <Flow::<T> as FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash>>::create_campaign(&owner, &org_id)?;
 		for i in 0 .. c {
 			let account: T::AccountId = account("contributor", i, SEED);
 			fund_account::<T>(&account)?;
-			Pallet::<T>::contribute(RawOrigin::Signed(account).into(), campaign_id.clone(), T::MinContribution::get())?;
+			Flow::<T>::contribute(RawOrigin::Signed(account).into(), campaign_id.clone(), T::MinContribution::get())?;
 		}
 
 		// Trigger on_finalize to prepare object to be used in initialize hook
 		let mut block_number = Campaigns::<T>::get(&campaign_id).expiry;
 		frame_system::Pallet::<T>::set_block_number(block_number.clone());
-		Pallet::<T>::on_finalize(block_number.clone());
+		Flow::<T>::on_finalize(block_number.clone());
 		block_number = block_number.saturating_add(1_u32.into());
 		frame_system::Pallet::<T>::set_block_number(block_number);
 	}: {
-		Pallet::<T>::on_initialize(block_number);
+		Flow::<T>::on_initialize(block_number);
 	}
 
 }

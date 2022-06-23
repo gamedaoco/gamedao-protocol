@@ -20,25 +20,28 @@ pub mod migration;
 pub mod mock;
 #[cfg(test)]
 mod tests;
-// #[cfg(feature = "runtime-benchmarks")]
-// mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+pub mod weights;
 
-use frame_support::{{traits::StorageVersion}, transactional, dispatch::DispatchResult, weights::{GetDispatchInfo, Weight}};
-use frame_system::{ensure_signed, WeightInfo};
+use frame_support::{traits::StorageVersion, transactional, dispatch::DispatchResult, weights::Weight};
+use frame_system::{ensure_signed};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Zero, Hash};
 use sp_std::vec::Vec;
 use codec::HasCompact;
 
-use gamedao_traits::{ControlTrait, FlowTrait};
+use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
 
 use types::{Proposal, ProposalMetadata, ProposalState, ProposalType, VotingType};
 
 pub use pallet::*;
+pub use weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
+	use core::convert::TryInto;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
@@ -55,7 +58,7 @@ pub mod pallet {
 		type Event: From<Event<Self>>
 			+ IsType<<Self as frame_system::Config>::Event>
 			+ Into<<Self as frame_system::Config>::Event>;
-		
+
 		/// The units in which we record balances.
 		type Balance: Member
 			+ Parameter
@@ -68,7 +71,7 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
-		
+
 		/// The currency ID type
 		type CurrencyId: Member
 			+ Parameter
@@ -78,19 +81,25 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
-		
+
 		/// Multi-currency support for asset management.
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
-		
+
 		/// Control pallet's public interface.
-		type Control: ControlTrait<Self::AccountId, Self::Hash>;
+		type Control: ControlTrait<Self::AccountId, Self::Hash>
+			+ ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
 
 		/// Flow pallet's public interface.
-		type Flow: FlowTrait<Self::AccountId, Self::Balance, Self::Hash>;
+		type Flow: FlowTrait<Self::AccountId, Self::Balance, Self::Hash>
+			+ FlowBenchmarkingTrait<Self::AccountId, Self::BlockNumber, Self::Hash>;
 
 		/// Weight information for extrinsics in this module.
 		type WeightInfo: WeightInfo;
+
+		/// Max number of votes per proposal
+		#[pallet::constant]
+		type MaxVotesPerProposal: Get<u32>;
 
 		/// The max number of proposals per one block.
 		#[pallet::constant]
@@ -292,7 +301,7 @@ pub mod pallet {
 	// TODO: ProposalTotalEligibleWeight
 
 	/// Nonce. Increase per each proposal creation.
-	/// 
+	///
 	/// Nonce: u128
 	#[pallet::storage]
 	#[pallet::getter(fn nonce)]
@@ -372,6 +381,8 @@ pub mod pallet {
 		BalanceInsufficient,
 		/// Too many proposals for block.
 		TooManyProposals,
+		/// Too many votes for proposal
+		TooManyVotes,
 		/// Proposal has no owner.
 		NoProposalOwner,
 		/// Overflow error.
@@ -398,7 +409,7 @@ pub mod pallet {
 		/// Emits `Proposal` event when successful.
 		///
 		/// Weight: O(1)
-		#[pallet::weight(5_000_000)]
+		#[pallet::weight(T::WeightInfo::general_proposal())]
 		#[transactional]
 		pub fn general_proposal(
 			origin: OriginFor<T>,
@@ -457,7 +468,7 @@ pub mod pallet {
 		/// Emits `Proposal` event when successful.
 		///
 		/// Weight:
-		#[pallet::weight(5_000_000)]
+		#[pallet::weight(T::WeightInfo::membership_proposal())]
 		pub fn membership_proposal(
 			origin: OriginFor<T>,
 			org_id: T::Hash,
@@ -480,7 +491,7 @@ pub mod pallet {
 		}
 
 		/// Create a withdrawal proposal
-		/// 
+		///
 		/// Origin must be controller of the campaign == controller of the dao
 		/// beneficiary must be the treasury of the dao.
 		///
@@ -494,7 +505,7 @@ pub mod pallet {
 		/// Emits `ProposalCreated` event when successful.
 		///
 		/// Weight: O(1)
-		#[pallet::weight(5_000_000)]
+		#[pallet::weight(T::WeightInfo::withdraw_proposal())]
 		#[transactional]
 		pub fn withdraw_proposal(
 			origin: OriginFor<T>,
@@ -513,8 +524,8 @@ pub mod pallet {
 			ensure!(sender == owner, Error::<T>::AuthorizationError);
 
 			let current_block = <frame_system::Pallet<T>>::block_number();
-			ensure!(start > current_block, Error::<T>::OutOfBounds );
-			ensure!(expiry > start, Error::<T>::OutOfBounds );
+			ensure!(start > current_block, Error::<T>::OutOfBounds);
+			ensure!(expiry > start, Error::<T>::OutOfBounds);
 			ensure!(
 				expiry <= current_block + ProposalTimeLimit::<T>::get(),
 				Error::<T>::OutOfBounds
@@ -532,7 +543,7 @@ pub mod pallet {
 				(proposals.len() as u32) < T::MaxProposalsPerBlock::get(),
 				Error::<T>::TooManyProposals
 			);
-			
+
 			let nonce = Self::get_and_increment_nonce();
 			let proposal_id = T::Hashing::hash_of(&nonce);
 			ensure!(!Proposals::<T>::contains_key(&proposal_id), Error::<T>::ProposalExists);
@@ -541,7 +552,7 @@ pub mod pallet {
 			Self::create_proposal(
 				&sender, proposal_id, org_id, Some(campaign_id), title, cid, amount,
 				ProposalType::Withdrawal, VotingType::Simple, start, expiry
-			);
+			)?;
 
 			Self::deposit_event(Event::<T>::ProposalCreated {
 				sender_id: sender,
@@ -567,15 +578,36 @@ pub mod pallet {
 		/// Emits `ProposalVoted` event when successful.
 		///
 		/// Weight:
-		#[pallet::weight(5_000_000)]
-		pub fn simple_vote(origin: OriginFor<T>, proposal_id: T::Hash, vote: bool) -> DispatchResult {
+		#[pallet::weight(
+			T::WeightInfo::simple_vote_general(
+				T::MaxVotesPerProposal::get()
+			).max(
+				T::WeightInfo::simple_vote_withdraw(
+					T::MaxVotesPerProposal::get()
+				).saturating_add(
+					T::WeightInfo::unlock_balance(
+						T::MaxVotesPerProposal::get()/2
+					)
+				)
+			)
+		)]
+		pub fn simple_vote(origin: OriginFor<T>, proposal_id: T::Hash, vote: bool) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 
 			let proposal = Proposals::<T>::get(&proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
 
 			// Ensure the proposal has not ended
 			let proposal_state = ProposalStates::<T>::get(&proposal_id);
-			ensure!(proposal_state == ProposalState::Active, Error::<T>::ProposalEnded);
+			ensure!(
+				proposal_state == ProposalState::Active,
+				Error::<T>::ProposalEnded
+			);
+
+			// Ensure proposal votes limit is not reached
+			ensure!(
+				ProposalVotes::<T>::get(proposal_id) < T::MaxVotesPerProposal::get().into(),
+				Error::<T>::TooManyVotes
+			);
 
 			// Ensure the contributor did not vote before
 			ensure!(
@@ -597,7 +629,7 @@ pub mod pallet {
 			// sender.clone()); ensure!( sender_balance > T::Balance::from(0), "You are not
 			// a contributor of this Campaign");
 
-			Self::perform_vote(&sender, &proposal, vote)?;
+			let weight = Self::perform_vote(&sender, &proposal, vote)?;
 
 			// dispatch vote event
 			Self::deposit_event(Event::<T>::ProposalVoted {
@@ -605,7 +637,7 @@ pub mod pallet {
 				proposal_id: proposal_id.clone(),
 				vote,
 			});
-			Ok(())
+			Ok(Some(weight).into())
 		}
 	}
 
@@ -715,7 +747,7 @@ pub mod pallet {
 		// when the number of approvals is higher
 		// than the number of rejections
 		// accepted / denied >= 1
-		fn unlock_balance(proposal: &Proposal<T::Hash, T::BlockNumber>, _supported_count: u64) -> Result<(), Error<T>> {
+		pub(super) fn unlock_balance(proposal: &Proposal<T::Hash, T::BlockNumber>, _supported_count: u64) -> Result<(), Error<T>> {
 			let metadata = Metadata::<T>::get(&proposal.proposal_id);
 
 			// Ensure sufficient balance
@@ -826,8 +858,9 @@ pub mod pallet {
 			sender: &T::AccountId,
 			proposal: &Proposal<T::Hash, T::BlockNumber>,
 			vote: bool,
-		) -> Result<(), Error<T>> {
+		) -> Result<Weight, Error<T>> {
 			let proposal_id = &proposal.proposal_id;
+			let mut weight: Weight = 0;
 
 			match &proposal.proposal_type {
 				// DAO Democratic Proposal
@@ -854,6 +887,7 @@ pub mod pallet {
 					}
 
 					ProposalSimpleVotes::<T>::insert(proposal_id.clone(), (yes, no));
+					weight = weight.saturating_add(yes).saturating_add(no).saturating_add(1);
 				}
 				// 50% majority over total number of campaign contributors
 				ProposalType::Withdrawal => {
@@ -876,6 +910,7 @@ pub mod pallet {
 								// todo: if proposal finished ahead of expiry, probably remove it from expiry
 								// proposals mapping?
 								Self::unlock_balance(&proposal, updated_approvers)?;
+								weight = weight.saturating_add(T::WeightInfo::unlock_balance(yes.try_into().unwrap()));
 							}
 						}
 						false => {
@@ -889,6 +924,7 @@ pub mod pallet {
 					}
 
 					ProposalSimpleVotes::<T>::insert(proposal_id.clone(), (yes, no));
+					weight = weight.saturating_add(yes).saturating_add(no);
 				}
 
 				// Campaign Token Weighted Proposal
@@ -914,6 +950,7 @@ pub mod pallet {
 			ProposalsByVoterCount::<T>::mutate(&sender, |v| *v += 1);
 			ProposalVotesByVoters::<T>::mutate(&proposal_id, |votings| votings.push((sender.clone(), vote.clone())));
 			ProposalsByVoter::<T>::mutate(&sender, |votings| votings.push((proposal_id.clone(), vote)));
+			ProposalVotes::<T>::insert(&proposal_id, ProposalVotes::<T>::get(&proposal_id).saturating_add(1_u64));
 
 			let mut voters = ProposalVoters::<T>::get(&proposal_id);
 			match voters.binary_search(&sender) {
@@ -923,7 +960,7 @@ pub mod pallet {
 					ProposalVoters::<T>::insert(&proposal_id, voters);
 				}
 			}
-			Ok(())
+			Ok(weight)
 		}
 
 		fn get_and_increment_nonce() -> u128 {
