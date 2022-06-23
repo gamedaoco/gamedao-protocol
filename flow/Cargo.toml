@@ -23,7 +23,11 @@ frame-system = { git = "https://github.com/paritytech/substrate", branch = "polk
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false, optional = true }
 
 orml-traits = { path = "../../orml/traits", default-features = false }
+orml-tokens = { path = "../../orml/tokens", optional = true }
+orml-currencies = { path = "../../orml/currencies", optional = true }
+
 gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
+gamedao-control = { package = "gamedao-control", path = "../control", optional = true }
 
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
@@ -33,14 +37,14 @@ sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0
 pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 
-orml-tokens = { path = "../../orml/tokens", default-features = false }
-orml-currencies = { path = "../../orml/currencies", default-features = false }
-
 gamedao-control = { package = "gamedao-control", path = "../control", default-features = true }
 
 [features]
 default = ["std"]
-runtime-benchmarks = ["frame-benchmarking"]
+runtime-benchmarks = [
+	"frame-benchmarking",
+	"gamedao-traits/frame-benchmarking",
+]
 std = [
 	"codec/std",
 	"serde/std",
@@ -53,10 +57,12 @@ std = [
 	"sp-core/std",
 	"sp-std/std",
 	"sp-runtime/std",
+
 	"orml-traits/std",
 	"orml-tokens/std",
 	"orml-currencies/std",
+
 	"gamedao-traits/std",
-    "gamedao-control/std",
+	"gamedao-control/std",
 ]
 try-runtime = ["frame-support/try-runtime"]
