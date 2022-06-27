@@ -51,15 +51,15 @@ pub mod weights;
 // mod errors;
 
 use frame_support::{
-	dispatch::{DispatchResult, DispatchResultWithPostInfo},
+	dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo},
 	traits::{Get, BalanceStatus, Hooks, StorageVersion, UnixTime},
 	transactional,
 	weights::Weight
 };
 
 use scale_info::TypeInfo;
-use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash}, Permill};
-use sp_std::vec::Vec;
+use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash, Saturating}, Permill};
+use sp_std::{vec, vec::Vec};
 
 use sp_std::convert::TryFrom;
 
