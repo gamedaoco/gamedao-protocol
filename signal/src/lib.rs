@@ -29,7 +29,6 @@ use frame_system::{ensure_signed};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Zero, Hash};
 use sp_std::vec::Vec;
-use codec::HasCompact;
 
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
 
@@ -75,9 +74,7 @@ pub mod pallet {
 		/// The currency ID type
 		type CurrencyId: Member
 			+ Parameter
-			+ Default
 			+ Copy
-			+ HasCompact
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
@@ -471,13 +468,13 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::membership_proposal())]
 		pub fn membership_proposal(
 			origin: OriginFor<T>,
-			org_id: T::Hash,
+			_org_id: T::Hash,
 			_member: T::AccountId,
 			_action: u8,
 			_start: T::BlockNumber,
 			_expiry: T::BlockNumber,
 		) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
+			let _sender = ensure_signed(origin)?;
 			// ensure active
 			// ensure member
 			// match action
@@ -697,7 +694,8 @@ pub mod pallet {
 								if yes > t {
 									proposal_state = ProposalState::Accepted;
 									// TODO: handle an error
-									Self::unlock_balance(&proposal, yes);
+									let res = Self::unlock_balance(&proposal, yes);
+									debug_assert!(res.is_ok());
 								} else {
 									proposal_state = ProposalState::Rejected;
 								}

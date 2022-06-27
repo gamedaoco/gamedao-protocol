@@ -21,7 +21,7 @@ mod tests;
 mod benchmarking;
 pub mod weights;
 
-use codec::{HasCompact, Codec};
+use codec::Codec;
 use frame_support::{
 	dispatch::{DispatchResult, DispatchError},
 	ensure, PalletId,
@@ -68,9 +68,7 @@ pub mod pallet {
 		/// The currency ID type
 		type CurrencyId: Member
 			+ Parameter
-			+ Default
 			+ Copy
-			+ HasCompact
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
@@ -763,7 +761,7 @@ impl<T: Config> Pallet<T> {
 	/// - `org_id`: Org id.
 	/// - `account_id`: Member account id.
 	/// - `member_state`: Inactive | Active | Pending | Kicked | Banned | Exited.
-	fn set_member_state(org_id: T::Hash, account_id: T::AccountId, member_state: ControlMemberState) -> DispatchResult {
+	fn _set_member_state(org_id: T::Hash, account_id: T::AccountId, member_state: ControlMemberState) -> DispatchResult {
 		// TODO: we would like to update member state based on voting result
 		ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
 		let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
@@ -874,7 +872,7 @@ impl<T: Config> Pallet<T> {
 					Err(_) => {}
 				}
 
-				let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
+				let _config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
 				if fee_model == FeeModel::Reserve {
 					T::Currency::unreserve(currency_id, &account_id, fee);
 				}
