@@ -178,7 +178,6 @@ parameter_types! {
 	pub const MaxContributorsProcessing: u32 = 5;
 	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
 	pub const MaxCampaignDuration: BlockNumber = 100 * DAYS;
-	pub const MinCreatorDeposit: Balance = 1 * DOLLARS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
 	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
 }
@@ -203,7 +202,6 @@ impl gamedao_flow::Config for Test {
 	type MaxContributionsPerBlock = MaxContributionsPerBlock;
 	type MinCampaignDuration = MinCampaignDuration;
 	type MaxCampaignDuration = MaxCampaignDuration;
-	type MinCreatorDeposit = MinCreatorDeposit;
 	type MinContribution = MinContribution;
 	type CampaignFee = CampaignFee;
 }

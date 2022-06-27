@@ -42,8 +42,8 @@ benchmarks! {
 		AccessModel::Open,
 		FeeModel::NoFees,
 		T::Balance::default(),
-		T::CurrencyId::default(),
-		T::CurrencyId::default(),
+		T::ProtocolTokenId::get(),
+		T::PaymentTokenId::get(),
 		100,
 		None
 	)

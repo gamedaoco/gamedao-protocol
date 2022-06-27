@@ -51,7 +51,7 @@ pub mod weights;
 // mod errors;
 
 use frame_support::{
-	dispatch::{DispatchError, DispatchResult, DispatchResultWithPostInfo},
+	dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo},
 	traits::{Get, BalanceStatus, Hooks, StorageVersion, UnixTime},
 	transactional,
 	weights::Weight
@@ -63,7 +63,6 @@ use sp_std::{vec, vec::Vec};
 
 use sp_std::convert::TryFrom;
 
-use codec::HasCompact;
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 
@@ -106,9 +105,7 @@ pub mod pallet {
 		/// The currency ID type
 		type CurrencyId: Member
 			+ Parameter
-			+ Default
 			+ Copy
-			+ HasCompact
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
@@ -163,8 +160,8 @@ pub mod pallet {
 		/// The max number of blocks for campaign duration.
 		#[pallet::constant]
 		type MaxCampaignDuration: Get<Self::BlockNumber>;
-		#[pallet::constant]
-		type MinCreatorDeposit: Get<Self::Balance>;
+
+		/// The min contribution amount in payment tokens
 		#[pallet::constant]
 		type MinContribution: Get<Self::Balance>;
 
