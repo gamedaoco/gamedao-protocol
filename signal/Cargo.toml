@@ -6,7 +6,7 @@
 
 [package]
 name = "gamedao-signal"
-version = "1.0.2"
+version = "1.1.0"
 authors = ["zero.io","gamedao.co"]
 repository = "https://github.com/gamedaoco/gamedao-protocol"
 edition = "2018"
