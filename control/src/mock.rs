@@ -129,7 +129,7 @@ impl orml_currencies::Config for Test {
 
 frame_support::parameter_types! {
 	pub const MaxDAOsPerAccount: u32 = 2;
-	pub const MaxMembersPerDAO: u32 = 2;
+	pub const MaxMembersPerOrg: u32 = 2;
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
@@ -145,7 +145,7 @@ impl pallet_control::Config for Test {
 	type Event = Event;
 	type Currency = Currencies;
 	type MaxDAOsPerAccount = MaxDAOsPerAccount;
-	type MaxMembersPerDAO = MaxMembersPerDAO;
+	type MaxMembersPerOrg = MaxMembersPerOrg;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;

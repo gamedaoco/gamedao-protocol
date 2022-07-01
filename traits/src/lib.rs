@@ -13,7 +13,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::dispatch::DispatchError;
+use frame_support::{dispatch::DispatchError, storage::bounded_vec::BoundedVec};
 use sp_std::vec::Vec;
 
 
@@ -36,7 +36,7 @@ pub trait ControlBenchmarkingTrait<AccountId, Hash> {
 	/// It is assumed those accounts have enough of currency to pay org joining fee.
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-	fn fill_org_with_members(org_id: &Hash, members: &Vec<AccountId>) -> Result<(), DispatchError>;
+	fn fill_org_with_members(org_id: &Hash, members: &BoundedVec<AccountId, Limit>) -> Result<(), DispatchError>;
 }
 
 pub trait FlowTrait<AccountId, Balance, Hash> {
@@ -60,7 +60,7 @@ pub trait FlowBenchmarkingTrait<AccountId, BlockNumber, Hash> {
 	/// It is assumed those accounts have enought currency to contribute
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-	fn create_contributions(campaign_id: &Hash, contributors: &Vec<AccountId>) -> Result<(), DispatchError>;
+	fn create_contributions(campaign_id: &Hash, contributors: &BoundedVec<AccountId, Limit>) -> Result<(), DispatchError>;
 
 	/// Trigger campaigns finalization by setting block number to specified value and calling appropriate hooks
 	/// ** Should be used for benchmarking only!!! **

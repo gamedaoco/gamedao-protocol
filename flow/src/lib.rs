@@ -51,6 +51,8 @@ pub mod weights;
 // mod errors;
 
 use frame_support::{
+	storage::bounded_vec::BoundedVec,
+	parameter_types,
 	dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo},
 	traits::{Get, BalanceStatus, Hooks, StorageVersion, UnixTime},
 	transactional,
@@ -148,6 +150,10 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxContributionsPerBlock: Get<u32>;
 
+		/// The max number of contributions per one Campaign.
+		#[pallet::constant]
+		type MaxCampaignContributions: Get<u32>;
+
 		/// The max number of contributors for processing in one block (batch size)
 		/// during Campaign finalization.
 		#[pallet::constant]
@@ -177,6 +183,10 @@ pub mod pallet {
 		/// after successfull Campaign finalization
 		#[pallet::constant]
 		type CampaignFee: Get<Permill>;
+
+		/// The maximum length of a name or symbol stored on-chain.
+		#[pallet::constant]
+		type StringLimit: Get<u32>;
 	}
 
 	/// Campaign by its id.
@@ -220,16 +230,16 @@ pub mod pallet {
 	/// List of campaign by certain campaign state and org.
 	/// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5 authority lock
 	/// 
-	/// CampaignsByState: double_map FlowState, Hash => Vec<Hash>
+	/// CampaignsByState: double_map FlowState, Hash => BoundedVec<Hash>
 	#[pallet::storage]
-	pub(super) type CampaignsByState<T: Config> = StorageDoubleMap<_, Blake2_128Concat, FlowState, Blake2_128Concat, T::Hash, Vec<T::Hash>, ValueQuery>;
+	pub(super) type CampaignsByState<T: Config> = StorageDoubleMap<_, Blake2_128Concat, FlowState, Blake2_128Concat, T::Hash, BoundedVec<T::Hash, ???>, ValueQuery>;
 
 	/// Campaigns ending in block x.
 	/// 
-	/// CampaignsByBlock: map BlockNumber => Vec<Hash>
+	/// CampaignsByBlock: map BlockNumber => BoundedVec<Hash>
 	#[pallet::storage]
 	pub(super) type CampaignsByBlock<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::BlockNumber, Vec<T::Hash>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::BlockNumber, BoundedVec<T::Hash, T::MaxCampaignsPerBlock>, ValueQuery>;
 
 	/// Total number of campaigns -> campaign id.
 	/// 
@@ -285,16 +295,16 @@ pub mod pallet {
 
 	/// The list of campaigns contributed by account id.
 	/// 
-	/// CampaignsContributed: map AccountId => Vec<Hash>
+	/// CampaignsContributed: map AccountId => BoundedVec<Hash>
 	#[pallet::storage]
 	pub(super) type CampaignsContributed<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AccountId, Vec<T::Hash>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::AccountId, BoundedVec<T::Hash, ???>, ValueQuery>;
 
 	/// Campaigns related to an organization.
 	/// 
-	/// CampaignsByOrg: map Hash => Vec<Hash>
+	/// CampaignsByOrg: map Hash => BoundedVec<Hash>
 	#[pallet::storage]
-	pub(super) type CampaignsByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::Hash>, ValueQuery>;
+	pub(super) type CampaignsByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, BoundedVec<T::Hash, T::MaxCampaignsPerOrg>, ValueQuery>;
 
 	/// (account id, total number of campaigns contributed by account id) -> campaign id.
 	/// 
@@ -333,10 +343,11 @@ pub mod pallet {
 
 	/// Campaign contributors by campaign id.
 	/// 
-	/// CampaignContributors: map Hash => Vec<AccountId>
+	/// CampaignContributors: map Hash => BoundedVec<AccountId>
 	#[pallet::storage]
 	pub(super) type CampaignContributors<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::AccountId>, ValueQuery>;
+		// TODO: Contributor vs Contribution?
+		StorageMap<_, Blake2_128Concat, T::Hash, BoundedVec<T::AccountId, T::MaxCampaignContributions>, ValueQuery>;
 
 	/// Total number of contributors for particular campaign.
 	/// 
@@ -370,7 +381,7 @@ pub mod pallet {
 			target: T::Balance,
 			deposit: T::Balance,
 			expiry: T::BlockNumber,
-			name: Vec<u8>,
+			name: BoundedVec<u8, T::StringLimit>,
 		},
 		/// Campaign was contributed.
 		CampaignContributed {
@@ -411,7 +422,7 @@ pub mod pallet {
 			state: FlowState,
 			block_number: T::BlockNumber,
 		},
-		Message(Vec<u8>),
+		Message(BoundedVec<u8, T::StringLimit>),
 	}
 
 	#[pallet::error]
@@ -535,17 +546,17 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			org_id: T::Hash,
 			admin_id: T::AccountId,
-			name: Vec<u8>,
+			name: BoundedVec<u8, T::StringLimit>,
 			target: T::Balance,
 			deposit: T::Balance,
 			expiry: T::BlockNumber,
 			protocol: FlowProtocol,
 			governance: FlowGovernance,
-			cid: Vec<u8>,
-			token_symbol: Vec<u8>, // up to 5
-			token_name: Vec<u8>,   /* cleartext
+			cid: BoundedVec<u8, T::StringLimit>,
+			token_symbol: BoundedVec<u8, T::StringLimit>, // up to 5
+			token_name: BoundedVec<u8, T::StringLimit>,   /* cleartext
 									* token_curve_a: u8,	  // preset
-									* token_curve_b: Vec<u8>, // custom */
+									* token_curve_b: BoundedVec<u8, T::StringLimit>, // custom */
 		) -> DispatchResultWithPostInfo {
 			let creator = ensure_signed(origin)?;
 			let owner = T::Control::org_controller_account(&org_id);
@@ -1020,13 +1031,18 @@ impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
 }
 
 impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for Pallet<T> {
+
+	parameter_types! {
+		pub const MaxContributors: u32 = 1000;
+	}
+
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
 	fn create_campaign(caller: &T::AccountId, org_id: &T::Hash) -> Result<T::Hash, &'static str> {
-		let name: Vec<u8> = vec![0; T::MaxNameLength::get() as usize];
-		let cid: Vec<u8> = vec![0; T::MaxNameLength::get() as usize];
-		let token_symbol: Vec<u8> = vec![0; 5];
-		let token_name: Vec<u8> = vec![0; 32];
+		let name: BoundedVec<u8, T::MaxNameLength> = vec![0; T::MaxNameLength::get() as usize];
+		let cid: BoundedVec<u8, T::StringLimit> = vec![0; T::MaxNameLength::get() as usize];
+		let token_symbol: BoundedVec<u8, T::StringLimit> = vec![0; T::StringLimit::get() as usize];
+		let token_name: BoundedVec<u8, T::StringLimit> = vec![0; T::StringLimit::get() as usize];
 		let target: T::Balance = T::MinContribution::get();
 		let deposit: T::Balance = T::MinContribution::get();
 		let expiry: T::BlockNumber = frame_system::Pallet::<T>::block_number() + 200_u32.into();
@@ -1052,7 +1068,7 @@ impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for
 
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-	fn create_contributions(campaign_id: &T::Hash, contributors: &Vec<T::AccountId>) -> Result<(), DispatchError> {
+	fn create_contributions(campaign_id: &T::Hash, contributors: &BoundedVec<T::AccountId, MaxContributors>) -> Result<(), DispatchError> {
 		for account_id in contributors {
 			Pallet::<T>::contribute(
 				frame_system::RawOrigin::Signed(account_id.clone()).into(),

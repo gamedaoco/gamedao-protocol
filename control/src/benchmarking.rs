@@ -77,7 +77,7 @@ benchmarks! {
 	}
 
 	add_member {
-		let r in 1 .. T::MaxMembersPerDAO::get()-1;  // Limit members per org
+		let r in 1 .. T::MaxMembersPerOrg::get()-1;  // Limit members per org
 
 		// Prepare org creator and members
 		let creator: T::AccountId = whitelisted_caller();
@@ -103,7 +103,7 @@ benchmarks! {
 	}
 
 	remove_member {
-		let r in 1 .. T::MaxMembersPerDAO::get();  // Limit members per org
+		let r in 1 .. T::MaxMembersPerOrg::get();  // Limit members per org
 
 		// Prepare org creator and members
 		let creator: T::AccountId = whitelisted_caller();

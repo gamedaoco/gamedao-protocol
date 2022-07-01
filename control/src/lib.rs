@@ -98,7 +98,7 @@ pub mod pallet {
 
 		/// The max number of members per one DAO.
 		#[pallet::constant]
-		type MaxMembersPerDAO: Get<u32>;
+		type MaxMembersPerOrg: Get<u32>;
 
 		#[pallet::constant]
 		type MaxCreationsPerBlock: Get<u32>;
@@ -456,7 +456,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(log n)`
 		#[pallet::weight(T::WeightInfo::add_member(
-			T::MaxMembersPerDAO::get()
+			T::MaxMembersPerOrg::get()
 		))]
 		pub fn add_member(
 			origin: OriginFor<T>,
@@ -467,7 +467,7 @@ pub mod pallet {
 			ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
 			ensure!(!OrgMembers::<T>::get(org_id).contains(&account_id), Error::<T>::MemberExists);
 			ensure!(
-				OrgMemberCount::<T>::get(&org_id) < T::MaxMembersPerDAO::get().into(),
+				OrgMemberCount::<T>::get(&org_id) < T::MaxMembersPerOrg::get().into(),
 				Error::<T>::MembershipLimitReached
 			);
 			let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
@@ -500,7 +500,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(log n)`
 		#[pallet::weight(T::WeightInfo::remove_member(
-			T::MaxMembersPerDAO::get()
+			T::MaxMembersPerOrg::get()
 		))]
 		pub fn remove_member(origin: OriginFor<T>, org_id: T::Hash, account_id: T::AccountId) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
@@ -941,7 +941,7 @@ impl<T: Config> ControlBenchmarkingTrait<T::AccountId, T::Hash> for Pallet<T> {
 
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-	fn fill_org_with_members(org_id: &T::Hash, accounts: &Vec<T::AccountId>) -> Result<(), DispatchError> {
+	fn fill_org_with_members(org_id: &T::Hash, accounts: &BoundedVec<T::AccountId, T::MaxMembersPerOrg>) -> Result<(), DispatchError> {
 		for acc in accounts {
 			Pallet::<T>::add_member(
 				frame_system::RawOrigin::Signed(acc.clone()).into(),
