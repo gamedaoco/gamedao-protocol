@@ -13,14 +13,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "runtime-benchmarks")]
 use frame_support::{dispatch::DispatchError, storage::bounded_vec::BoundedVec};
-use sp_std::vec::Vec;
 
 
 pub trait ControlTrait<AccountId, Hash> {
 
-	fn org_controller_account(org_id: &Hash) -> AccountId;
-	fn org_treasury_account(org_id: &Hash) -> AccountId;
+	fn org_controller_account(org_id: &Hash) -> Option<AccountId>;
+	fn org_treasury_account(org_id: &Hash) -> Option<AccountId>;
 	fn is_org_active(org_id: &Hash) -> bool;
 	fn is_org_member_active(org_id: &Hash, accont_id: &AccountId) -> bool;
 }
