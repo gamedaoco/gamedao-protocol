@@ -1,10 +1,7 @@
-use frame_support::pallet_prelude::{Decode, Encode};
+use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_std::vec::Vec;
 
-// #[derive(Encode, Decode, Clone, PartialEq, Default, Eq, PartialOrd, Ord,
-// TypeInfo)]
-#[derive(Encode, Decode, PartialEq, Clone, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum ProposalState {
 	Init = 0,      // waiting for start block
@@ -21,7 +18,7 @@ impl Default for ProposalState {
 	}
 }
 
-#[derive(Encode, Decode, PartialEq, Clone, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum ProposalType {
 	General = 0,
@@ -36,7 +33,7 @@ impl Default for ProposalType {
 	}
 }
 
-#[derive(Encode, Decode, PartialEq, Clone, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum VotingType {
 	Simple = 0,   // votes across participating votes
@@ -52,7 +49,7 @@ impl Default for VotingType {
 	}
 }
 
-#[derive(Encode, Decode, Default, Clone, PartialEq, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Proposal<Hash, BlockNumber> {
 	pub proposal_id: Hash,
@@ -64,10 +61,10 @@ pub struct Proposal<Hash, BlockNumber> {
 	pub expiry: BlockNumber,
 }
 
-#[derive(Encode, Decode, Default, Clone, PartialEq, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct ProposalMetadata<Balance> {
-	pub title: Vec<u8>,
-	pub cid: Vec<u8>,
+pub struct ProposalMetadata<Balance, BoundedString> {
+	pub title: BoundedString,
+	pub cid: BoundedString,
 	pub amount: Balance,
 }

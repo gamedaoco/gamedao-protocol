@@ -633,7 +633,7 @@ pub mod pallet {
 
 			// 0 init, 1 active, 2 paused, 3 complete success, 4 complete failed, 5
 			// authority lock
-			Self::set_state(id.clone(), FlowState::Active, &org_id);
+			Self::set_state(id.clone(), FlowState::Active, &org_id)?;
 
 			// deposit the event
 			Self::deposit_event(Event::CampaignCreated {
@@ -683,7 +683,7 @@ pub mod pallet {
 			let current_state = CampaignState::<T>::get(&campaign_id);
 			ensure!(current_state < FlowState::Success, Error::<T>::CampaignExpired);
 
-			Self::set_state(campaign_id.clone(), state.clone(), &org_id);
+			Self::set_state(campaign_id.clone(), state.clone(), &org_id)?;
 
 			// dispatch status update event
 			Self::deposit_event(Event::CampaignUpdated {
@@ -743,7 +743,7 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	fn set_state(campaign_id: T::Hash, state: FlowState, org_id: &T::Hash) {
+	fn set_state(campaign_id: T::Hash, state: FlowState, org_id: &T::Hash) -> DispatchResult {
 		let current_state = CampaignState::<T>::get(&campaign_id);
 
 		// remove
@@ -759,14 +759,14 @@ impl<T: Config> Pallet<T> {
 
 		// add
 		CampaignsByState::<T>::try_mutate(
-			&state,
-			org_id,
-			|campaigns| -> Result<(), DispatchError> {
+			&state, org_id,
+			|ref mut campaigns| -> Result<(), DispatchError> {
 				campaigns.try_push(campaign_id.clone()).map_err(|_| Error::<T>::CampaignsPerStateExceeded)?;
 				Ok(())
 			}
-		);
+		)?;
 		CampaignState::<T>::insert(campaign_id, state);
+		Ok(())
 	}
 
 	fn mint_campaign(campaign: Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment, BoundedVec<u8, T::StringLimit>>) -> DispatchResult {
@@ -785,7 +785,7 @@ impl<T: Config> Pallet<T> {
 				campaigns.try_push(campaign.id).map_err(|_| Error::<T>::TooManyCampaigns)?;
 				Ok(())
 			}
-		);
+		)?;
 
 		// expiration
 		CampaignsByBlock::<T>::mutate(
@@ -794,7 +794,7 @@ impl<T: Config> Pallet<T> {
 				campaigns.try_push(campaign.id.clone()).map_err(|_| Error::<T>::TooManyCampaigns)?;
 				Ok(())
 			}
-		);
+		)?;
 
 		// global campaigns count
 
@@ -858,7 +858,7 @@ impl<T: Config> Pallet<T> {
 					accounts.try_push(sender.clone()).map_err(|_| Error::<T>::TooManyContributors)?;
 					Ok(())
 				}
-			);
+			)?;
 		}
 
 		// check if campaign is in contributions map of contributor and add
@@ -895,10 +895,10 @@ impl<T: Config> Pallet<T> {
 		for campaign_id in &CampaignsByBlock::<T>::get(block_number) {
 			let campaign = Campaigns::<T>::get(campaign_id).unwrap();
 			let campaign_balance = CampaignBalance::<T>::get(campaign_id);
-			
+
 			// Campaign cap reached: Finalizing
 			if campaign_balance >= campaign.cap {
-				Self::set_state(campaign.id, FlowState::Finalizing, &campaign.org);
+				let _ = Self::set_state(campaign.id, FlowState::Finalizing, &campaign.org);
 
 				Self::deposit_event(Event::CampaignFinalising {
 					campaign_id: *campaign_id,
@@ -908,7 +908,7 @@ impl<T: Config> Pallet<T> {
 
 			// Campaign cap not reached: Reverting
 			} else {
-				Self::set_state(campaign.id, FlowState::Reverting, &campaign.org);
+				let _ = Self::set_state(campaign.id, FlowState::Reverting, &campaign.org);
 
 				Self::deposit_event(Event::CampaignReverting {
 					campaign_id: *campaign_id,
@@ -983,7 +983,7 @@ impl<T: Config> Pallet<T> {
 		ContributorsFinalized::<T>::insert(campaign.id, processed_offset + *processed);
 		// TODO: This doesn't make sense without "transfer_amount" error handling
 		if *campaign_balance < campaign.cap {
-			Self::set_state(campaign.id, FlowState::Reverting, &campaign.org);
+			let _ = Self::set_state(campaign.id, FlowState::Reverting, &campaign.org);
 			return
 		}
 		let commission = T::CampaignFee::get().mul_floor(campaign_balance.clone());
@@ -999,7 +999,7 @@ impl<T: Config> Pallet<T> {
 		let updated_balance = *campaign_balance - commission;
 		CampaignBalance::<T>::insert(campaign.id, updated_balance);
 
-		Self::set_state(campaign.id, FlowState::Success, &campaign.org);
+		let _ = Self::set_state(campaign.id, FlowState::Success, &campaign.org);
 
 		Self::deposit_event(Event::CampaignFinalized {
 			campaign_id: campaign.id,
@@ -1031,7 +1031,7 @@ impl<T: Config> Pallet<T> {
 		// Unreserve Initial deposit
 		T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, campaign.deposit);
 
-		Self::set_state(campaign.id, FlowState::Failed, &campaign.org);
+		let _ = Self::set_state(campaign.id, FlowState::Failed, &campaign.org);
 		Self::deposit_event(Event::CampaignFailed {
 			campaign_id: campaign.id,
 			campaign_balance: *campaign_balance,
