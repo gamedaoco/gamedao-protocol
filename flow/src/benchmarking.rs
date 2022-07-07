@@ -46,7 +46,7 @@ benchmarks! {
 		// Prepare organization and treasury
 		let per_block_cnt = T::MaxCampaignsPerBlock::get();
 		let org_id = T::Control::create_org(caller.clone().into())?;
-		let treasury_id = T::Control::org_treasury_account(&org_id);
+		let treasury_id = T::Control::org_treasury_account(&org_id).unwrap();
 		fund_account::<T>(&treasury_id)?;
 
 		// Create some campaigns, respecting per block limitation
@@ -63,15 +63,15 @@ benchmarks! {
 		RawOrigin::Signed(caller.clone()),
 		org_id,
 		caller.clone(),
-		vec![0; T::MaxNameLength::get() as usize],
+		BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]),
 		T::MinContribution::get(),
 		T::MinContribution::get(),
 		frame_system::Pallet::<T>::block_number() + 200_u32.into(),
 		Default::default(),
 		Default::default(),
-		vec![0; T::MaxNameLength::get() as usize],
-		vec![0; 5],
-		vec![0; 32]
+		BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]),
+		BoundedVec::truncate_from(vec![0; 5]),
+		BoundedVec::truncate_from(vec![0; 32])
 	)
 	verify {
 		assert!(CampaignsCount::<T>::get() == count_before + 1);
@@ -86,7 +86,7 @@ benchmarks! {
 		// Prepare organization and treasury
 		let per_block_cnt = T::MaxCampaignsPerBlock::get();
 		let org_id = T::Control::create_org(caller.clone().into())?;
-		let treasury_id = T::Control::org_treasury_account(&org_id);
+		let treasury_id = T::Control::org_treasury_account(&org_id).unwrap();
 		fund_account::<T>(&treasury_id)?;
 
 		// Create some campaigns, respecting per block limitation
@@ -118,7 +118,7 @@ benchmarks! {
 
 		// Prepare organization and treasury
 		let org_id = T::Control::create_org(owner.clone().into())?;
-		let treasury_id = T::Control::org_treasury_account(&org_id);
+		let treasury_id = T::Control::org_treasury_account(&org_id).unwrap();
 		fund_account::<T>(&treasury_id)?;
 
 		// Create campaign to use for contributions
@@ -140,7 +140,7 @@ benchmarks! {
 
 		// Prepare organization and treasury
 		let org_id = T::Control::create_org(owner.clone().into())?;
-		let treasury_id = T::Control::org_treasury_account(&org_id);
+		let treasury_id = T::Control::org_treasury_account(&org_id).unwrap();
 		fund_account::<T>(&treasury_id)?;
 
 		// Create campaign and add some contributions
@@ -152,7 +152,7 @@ benchmarks! {
 		}
 
 		// Trigger on_finalize to prepare object to be used in initialize hook
-		let mut block_number = Campaigns::<T>::get(&campaign_id).expiry;
+		let mut block_number = Campaigns::<T>::get(&campaign_id).unwrap().expiry;
 		frame_system::Pallet::<T>::set_block_number(block_number.clone());
 		Flow::<T>::on_finalize(block_number.clone());
 		block_number = block_number.saturating_add(1_u32.into());

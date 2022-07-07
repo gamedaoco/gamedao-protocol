@@ -36,8 +36,8 @@ benchmarks! {
 	}: 	_(
 		RawOrigin::Signed(caller.clone()),
 		caller.clone().into(),
-		(0..255).collect(),
-		(0..255).collect(),
+		BoundedVec::truncate_from((0..255).collect()),
+		BoundedVec::truncate_from((0..255).collect()),
 		OrgType::Individual,
 		AccessModel::Open,
 		FeeModel::NoFees,
@@ -92,7 +92,7 @@ benchmarks! {
 
 		// Create org and fill with members
 		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(creator.clone()).unwrap();
-		Pallet::<T>::fill_org_with_members(&org_id, &accounts)?;
+		Pallet::<T>::fill_org_with_members(&org_id, accounts)?;
 	}: _(
 		RawOrigin::Signed(creator),
 		org_id,
@@ -117,7 +117,7 @@ benchmarks! {
 		fund_accounts::<T>(&accounts)?;
 
 		// Add members to org
-		Pallet::<T>::fill_org_with_members(&org_id, &accounts)?;
+		Pallet::<T>::fill_org_with_members(&org_id, accounts.clone())?;
 	}: _(
 		RawOrigin::Signed(creator),
 		org_id,

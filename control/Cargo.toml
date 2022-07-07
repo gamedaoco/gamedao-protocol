@@ -29,7 +29,6 @@ frame-support = { default-features = false, git = "https://github.com/paritytech
 frame-system = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25", default-features = false, optional = true }
 
-# pallet-assets = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 pallet-balances = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 
 orml-traits = { path = "../../orml/traits", default-features = false }
@@ -58,7 +57,6 @@ std = [
 	"scale-info/std",
 	"num_enum/std",
 
-	# "pallet-assets/std",
 	# "pallet-balances/std",
 	"frame-support/std",
 	"frame-system/std",

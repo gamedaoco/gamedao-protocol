@@ -35,8 +35,7 @@
 // 1. create campaigns with custom funding goal and runtime
 // 2. invest into open campaigns
 #![cfg_attr(not(feature = "std"), no_std)]
-// #[warn(unused_imports)]
-// pub use weights::WeightInfo;
+#![allow(deprecated)] // TODO: clean transactional
 pub mod types;
 pub use types::*;
 
@@ -54,6 +53,7 @@ use frame_support::{
 	dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo},
 	traits::{Get, BalanceStatus, Hooks, StorageVersion, UnixTime},
 	weights::Weight,
+	transactional,
 	BoundedVec
 };
 
@@ -470,8 +470,6 @@ pub mod pallet {
 		CampaignsPerOrgExceeded,
 		/// Max campaigns per state exceeded.
 		CampaignsPerStateExceeded,
-		/// Name too long.
-		NameTooLong,
 		/// Name too short.
 		NameTooShort,
 		/// Deposit exceeds the campaign target.
@@ -549,6 +547,7 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::create_campaign(
 			T::MaxCampaignsPerOrg::get()
 		))]
+		#[transactional]
 		pub fn create_campaign(
 			origin: OriginFor<T>,
 			org_id: T::Hash,
@@ -1066,10 +1065,10 @@ impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
 	fn create_campaign(caller: &T::AccountId, org_id: &T::Hash) -> Result<T::Hash, &'static str> {
-		let name: BoundedVec<u8, T::StringLimit> = vec![0; T::StringLimit::get() as usize];
-		let cid: BoundedVec<u8, T::StringLimit> = vec![0; T::StringLimit::get() as usize];
-		let token_symbol: BoundedVec<u8, T::StringLimit> = vec![0; T::StringLimit::get() as usize];
-		let token_name: BoundedVec<u8, T::StringLimit> = vec![0; T::StringLimit::get() as usize];
+		let name: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
+		let cid: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
+		let token_symbol: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
+		let token_name: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
 		let target: T::Balance = T::MinContribution::get();
 		let deposit: T::Balance = T::MinContribution::get();
 		let expiry: T::BlockNumber = frame_system::Pallet::<T>::block_number() + 200_u32.into();
@@ -1095,8 +1094,8 @@ impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for
 
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-	fn create_contributions(campaign_id: &T::Hash, contributors: &BoundedVec<T::AccountId, T::MaxCampaignContributions>) -> Result<(), DispatchError> {
-		for account_id in contributors {
+	fn create_contributions(campaign_id: &T::Hash, contributors: Vec<T::AccountId>) -> Result<(), DispatchError> {
+		for account_id in BoundedVec::<T::AccountId, T::MaxCampaignContributions>::truncate_from(contributors) {
 			Pallet::<T>::contribute(
 				frame_system::RawOrigin::Signed(account_id.clone()).into(),
 				campaign_id.clone(),

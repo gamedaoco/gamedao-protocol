@@ -952,8 +952,8 @@ impl<T: Config> ControlBenchmarkingTrait<T::AccountId, T::Hash> for Pallet<T> {
 	#[cfg(feature = "runtime-benchmarks")]
 	fn create_org(caller: T::AccountId) -> Result<T::Hash, DispatchError> {
 		let org_nonce = Nonce::<T>::get();
-		let name: BoundedVec<u8, T::StringLimit> = vec![0; T::StringLimit::get()];
-		let cid: BoundedVec<u8, T::StringLimit> = vec![0; T::StringLimit::get()];
+		let name: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
+		let cid: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
 		Pallet::<T>::create_org(
 			frame_system::RawOrigin::Signed(caller.clone()).into(),
 			caller.into(),
@@ -975,8 +975,8 @@ impl<T: Config> ControlBenchmarkingTrait<T::AccountId, T::Hash> for Pallet<T> {
 
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-	fn fill_org_with_members(org_id: &T::Hash, accounts: &BoundedVec<T::AccountId, T::MaxMembersPerOrg>) -> Result<(), DispatchError> {
-		for acc in accounts {
+	fn fill_org_with_members(org_id: &T::Hash, accounts: Vec<T::AccountId>) -> Result<(), DispatchError> {
+		for acc in BoundedVec::<T::AccountId, T::MaxMembersPerOrg>::truncate_from(accounts) {
 			Pallet::<T>::add_member(
 				frame_system::RawOrigin::Signed(acc.clone()).into(),
 				org_id.clone(),

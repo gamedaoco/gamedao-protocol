@@ -13,13 +13,14 @@ use gamedao_control::{AccessModel, FeeModel, OrgType};
 fn create_org_treasury() -> (H256, AccountId, Balance) {
 	let nonce = Control::nonce();
 	assert_ok!(Control::create_org(
-		Origin::signed(BOB), BOB, vec![1, 2], vec![1, 2],
+		Origin::signed(BOB), BOB,
+		BoundedVec::truncate_from(vec![1, 2]), BoundedVec::truncate_from(vec![1, 2]),
 		OrgType::default(), AccessModel::default(), FeeModel::default(),
 		0, 0, 0, 0, Some(1 * DOLLARS)
 	));
-	let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account(nonce as i32);
+	let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account_truncating(nonce as i32);
     let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);
-	assert_eq!(treasury_id, Control::org_treasury_account(&org_id));
+	assert_eq!(treasury_id, Control::org_treasury_account(&org_id).unwrap());
 	let tbalance = 30 * DOLLARS;
     let _ = Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, tbalance, 0);
 
@@ -31,6 +32,8 @@ fn flow_create_errors() {
 	new_test_ext().execute_with(|| {
 		let (org, _, _) = create_org_treasury();
 		let current_block = 3;
+		let empty_vec = BoundedVec::truncate_from(vec![]);
+		let name = BoundedVec::truncate_from(vec![1, 2]);
 		System::set_block_number(current_block);
 
 		// Check if creator is the controller of organization
@@ -38,8 +41,12 @@ fn flow_create_errors() {
 		let not_creator = ALICE;
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(not_creator), org, not_creator, vec![1, 2], 0, 0, 0,
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]
+				Origin::signed(not_creator), org, not_creator,
+				name.clone(), 0, 0, 0,
+				FlowProtocol::Raise, FlowGovernance::No,
+				empty_vec.clone(),
+				empty_vec.clone(),
+				empty_vec.clone(),
 			),
 			Error::<Test>::AuthorizationError
 		);
@@ -48,9 +55,12 @@ fn flow_create_errors() {
 		let deposit_more_than_treasury = 1000 * DOLLARS;
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2], 0,
-				deposit_more_than_treasury, 0,
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]
+				Origin::signed(BOB), org, BOB,
+				name.clone(), 0, deposit_more_than_treasury, 0,
+				FlowProtocol::Raise, FlowGovernance::No,
+				empty_vec.clone(),
+				empty_vec.clone(),
+				empty_vec.clone(),
 			),
 			Error::<Test>::TreasuryBalanceTooLow
 		);
@@ -60,39 +70,38 @@ fn flow_create_errors() {
 		let deposit_more_than_target = 20 * DOLLARS;
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2],
-				target, deposit_more_than_target, 0,
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]
+				Origin::signed(BOB), org, BOB,
+				name.clone(), target, deposit_more_than_target, 0,
+				FlowProtocol::Raise, FlowGovernance::No,
+				empty_vec.clone(),
+				empty_vec.clone(),
+				empty_vec.clone(),
 			),
 			Error::<Test>::DepositTooHigh
 		);
 		// Check Campaign name length
 		// Error: NameTooShort
-		let short_name = vec![1];
+		let short_name = BoundedVec::truncate_from(vec![1]);
 		assert_noop!(
 			Flow::create_campaign(
 				Origin::signed(BOB), org, BOB, short_name, 20 * DOLLARS, 10 * DOLLARS, 0,
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]
+				FlowProtocol::Raise, FlowGovernance::No,
+				empty_vec.clone(),
+				empty_vec.clone(),
+				empty_vec.clone(),
 			),
 			Error::<Test>::NameTooShort
-		);
-		// Error: NameTooLong
-		let long_name = vec![1, 2, 3, 4, 5];
-		assert_noop!(
-			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, long_name, 20 * DOLLARS, 10 * DOLLARS, 0,
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]
-			),
-			Error::<Test>::NameTooLong
 		);
 		// Ensure campaign expires after the current block
 		// Error: EndTooEarly
 		let expiration_block = current_block - 1;
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2], 20 * DOLLARS, 10 * DOLLARS,
+				Origin::signed(BOB), org, BOB, name.clone(), 20 * DOLLARS, 10 * DOLLARS,
 				expiration_block, FlowProtocol::Raise, FlowGovernance::No,
-				vec![], vec![],vec![]
+				empty_vec.clone(),
+				empty_vec.clone(),
+				empty_vec.clone(),
 			),
 			Error::<Test>::EndTooEarly
 		);
@@ -101,20 +110,33 @@ fn flow_create_errors() {
 		let expiration_block = MaxCampaignDuration::get() + current_block + 1;
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2],
+				Origin::signed(BOB), org, BOB, name.clone(),
 				20 * DOLLARS, 10 * DOLLARS, expiration_block,
-				FlowProtocol::Raise, FlowGovernance::No, vec![], vec![], vec![]
+				FlowProtocol::Raise, FlowGovernance::No,
+				empty_vec.clone(),
+				empty_vec.clone(),
+				empty_vec.clone(),
 			),
 			Error::<Test>::EndTooLate
 		);
 		// Check campaigns limit per block
 		// Error: CampaignsPerBlockExceeded
-		CampaignsByBlock::<Test>::mutate(current_block + 1, |campaigns| campaigns.push(H256::random()));
+		assert_ok!(CampaignsByBlock::<Test>::try_mutate(
+			current_block + 1,
+			|campaigns| -> Result<(), Error::<Test>> {
+				campaigns.try_push(H256::random()).map_err(|_| Error::<Test>::TooManyCampaigns)?;
+				Ok(())
+			}
+		));
+		let block_campaigns_cnt = CampaignsByBlock::<Test>::get(current_block+1).len() as u32;
+		println!("Current limit is {:?} and max is {:?}", block_campaigns_cnt, <Test as Config>::MaxCampaignsPerBlock::get());
 		assert_noop!(
 			Flow::create_campaign(
-				Origin::signed(BOB), org, BOB, vec![1, 2], 20 * DOLLARS, 10 * DOLLARS,
+				Origin::signed(BOB), org, BOB, name.clone(), 20 * DOLLARS, 10 * DOLLARS,
 				current_block + 1, FlowProtocol::Raise, FlowGovernance::No,
-				vec![1, 2], vec![], vec![]
+				empty_vec.clone(),
+				empty_vec.clone(),
+				empty_vec.clone(),
 			),
 			Error::<Test>::CampaignsPerBlockExceeded
 		);
@@ -133,14 +155,17 @@ fn flow_create_success() {
 		let expiry = current_block + 1;
 		let deposit = 10 * DOLLARS;
 		let target = 20 * DOLLARS;
-		let name = vec![1, 2];
+		let name = BoundedVec::truncate_from(vec![1, 2]);
 
 		assert_ok!(Flow::create_campaign(
 			Origin::signed(BOB), org, BOB, name.clone(), target, deposit, expiry,
-			FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]
+			FlowProtocol::Raise, FlowGovernance::No,
+			BoundedVec::truncate_from(vec![1, 2]),
+			BoundedVec::truncate_from(vec![]),
+			BoundedVec::truncate_from(vec![]),
 		));
 
-		assert_eq!(Campaigns::<Test>::get(id).id, id);
+		assert_eq!(Campaigns::<Test>::get(id).unwrap().id, id);
 		assert_eq!(CampaignOrg::<Test>::get(id), org);
 		assert_eq!(CampaignOwner::<Test>::get(id), Some(BOB));
 		assert_eq!(CampaignAdmin::<Test>::get(id), Some(BOB));
@@ -230,7 +255,7 @@ fn flow_update_state_success() {
 		CampaignOwner::<Test>::insert(campaign_id, BOB);
 		CampaignAdmin::<Test>::insert(campaign_id, BOB);
 		CampaignOrg::<Test>::insert(campaign_id, campaign.org);
-		CampaignsByOrg::<Test>::insert(campaign.org, vec![campaign_id]);
+		CampaignsByOrg::<Test>::insert(campaign.org, BoundedVec::truncate_from(vec![campaign_id]));
 
 		assert_ok!(Flow::update_state(Origin::signed(BOB), campaign_id, FlowState::Paused));
 		assert_eq!(CampaignsByState::<Test>::get(FlowState::Paused, &campaign.org), vec![campaign_id]);
@@ -341,8 +366,13 @@ fn flow_on_finalize_campaign_succeess() {
 		let nonce = Nonce::<Test>::get();
 		let campaign_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
 		assert_ok!(Flow::create_campaign(
-			Origin::signed(BOB), org.clone(), BOB, vec![1, 2], target, deposit, expiry,
-			FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]
+			Origin::signed(BOB), org.clone(), BOB,
+			BoundedVec::truncate_from(vec![1, 2]),
+			target, deposit, expiry,
+			FlowProtocol::Raise, FlowGovernance::No,
+			BoundedVec::truncate_from(vec![1, 2]),
+			BoundedVec::truncate_from(vec![]),
+			BoundedVec::truncate_from(vec![]),
 		));
 
 		let total_contributors: u128 = 10;
@@ -456,8 +486,13 @@ fn flow_on_finalize_campaign_failed() {
 		let nonce = Nonce::<Test>::get();
 		let campaign_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
 		assert_ok!(Flow::create_campaign(
-			Origin::signed(BOB), org.clone(), BOB, vec![1, 2], target, deposit, expiry,
-			FlowProtocol::Raise, FlowGovernance::No, vec![1, 2], vec![], vec![]
+			Origin::signed(BOB), org.clone(), BOB,
+			BoundedVec::truncate_from(vec![1, 2]),
+			target, deposit, expiry,
+			FlowProtocol::Raise, FlowGovernance::No,
+			BoundedVec::truncate_from(vec![1, 2]),
+			BoundedVec::truncate_from(vec![]),
+			BoundedVec::truncate_from(vec![]),
 		));
 
 		let total_contributors: u128 = 10;

@@ -26,6 +26,8 @@ mod mock;
 mod tests;
 pub mod weights;
 
+pub use pallet::*;
+
 
 #[derive(Encode, Decode, Default, Eq, Copy, PartialEq, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Entity<AccountId, BlockNumber, BoundedString> {

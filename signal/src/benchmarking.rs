@@ -2,7 +2,7 @@
 
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, whitelisted_caller};
 use frame_system::RawOrigin;
-use frame_support::{dispatch::DispatchError, traits::Get};
+use frame_support::{dispatch::DispatchError, traits::Get, BoundedVec};
 use sp_runtime::traits::{SaturatedConversion};
 // use sp_std::vec;
 
@@ -31,13 +31,13 @@ fn fund_accounts<T: Config>(account_ids: &Vec<T::AccountId>) -> Result<(), Dispa
 
 fn create_and_finalize_campaign<T: Config>(caller: T::AccountId, contributors_count: u32) -> Result<T::Hash, DispatchError> {
 	let org_id = T::Control::create_org(caller.clone())?;
-	let treasury_account_id = T::Control::org_treasury_account(&org_id);
+	let treasury_account_id = T::Control::org_treasury_account(&org_id).unwrap();
 	fund_account::<T>(&treasury_account_id)?;
 	let campaign_id = T::Flow::create_campaign(&caller, &org_id)?;
 	let contributors: Vec<T::AccountId> = (0..contributors_count).collect::<Vec<u32>>().iter()
 		.map(|i| account("contributor", *i, SEED)).collect();
 	fund_accounts::<T>(&contributors)?;
-	T::Flow::create_contributions(&campaign_id, &contributors)?;
+	T::Flow::create_contributions(&campaign_id, contributors)?;
 	let current_block = frame_system::Pallet::<T>::block_number();
 	let mut expiry = current_block + 200_u32.into();
 	for _ in 0 .. 10 {
@@ -63,8 +63,8 @@ benchmarks! {
 	}: _(
 		RawOrigin::Signed(caller.clone()),
 		org_id.clone(),
-		(0..255).collect(),
-		(0..255).collect(),
+		BoundedVec::truncate_from((0..255).collect()),
+		BoundedVec::truncate_from((0..255).collect()),
 		start,
 		expiry
 	)
@@ -90,8 +90,8 @@ benchmarks! {
 	}: _(
 		RawOrigin::Signed(caller),
 		campaign_id.clone(),
-		(0..255).collect(),
-		(0..255).collect(),
+		BoundedVec::truncate_from((0..255).collect()),
+		BoundedVec::truncate_from((0..255).collect()),
 		T::Flow::campaign_balance(&campaign_id),
 		frame_system::Pallet::<T>::block_number() + 1_u32.into(),
 		frame_system::Pallet::<T>::block_number() + 200_u32.into()
@@ -112,8 +112,8 @@ benchmarks! {
 		Pallet::<T>::general_proposal(
 			RawOrigin::Signed(caller.clone()).into(),
 			org_id.clone(),
-			(0..255).collect(),
-			(0..255).collect(),
+			BoundedVec::truncate_from((0..255).collect()),
+			BoundedVec::truncate_from((0..255).collect()),
 			start,
 			expiry
 		)?;
@@ -153,8 +153,8 @@ benchmarks! {
 		Pallet::<T>::withdraw_proposal(
 			RawOrigin::Signed(caller.clone()).into(),
 			campaign_id,
-			(0..255).collect(),
-			(0..255).collect(),
+			BoundedVec::truncate_from((0..255).collect()),
+			BoundedVec::truncate_from((0..255).collect()),
 			withdraw_amount,
 			start,
 			expiry
@@ -194,8 +194,8 @@ benchmarks! {
 		Pallet::<T>::withdraw_proposal(
 			RawOrigin::Signed(caller.clone()).into(),
 			campaign_id,
-			(0..255).collect(),
-			(0..255).collect(),
+			BoundedVec::truncate_from((0..255).collect()),
+			BoundedVec::truncate_from((0..255).collect()),
 			withdraw_amount,
 			start,
 			expiry
@@ -213,7 +213,7 @@ benchmarks! {
 		Pallet::<T>::unlock_balance(
 			&proposal,
 			0
-		);
+		).map_err(|e| "Unlock balance error")?;
 	}
 	verify {
 		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Finalized);

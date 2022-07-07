@@ -12,7 +12,7 @@
 //! SIGNAL is GameDAOs governance module providing simple interfaces to create proposals and vote on them
 
 #![cfg_attr(not(feature = "std"), no_std)]
-
+#![allow(deprecated)] // TODO: clean transactional
 pub mod types;
 pub mod migration;
 
@@ -24,7 +24,12 @@ mod tests;
 mod benchmarking;
 pub mod weights;
 
-use frame_support::{traits::StorageVersion, dispatch::DispatchResult, weights::Weight};
+use frame_support::{
+	traits::StorageVersion,
+	dispatch::DispatchResult,
+	weights::Weight,
+	transactional
+};
 use frame_system::{ensure_signed};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Zero, Hash};
@@ -418,6 +423,7 @@ pub mod pallet {
 		///
 		/// Weight: O(1)
 		#[pallet::weight(T::WeightInfo::general_proposal())]
+		#[transactional]
 		pub fn general_proposal(
 			origin: OriginFor<T>,
 			org_id: T::Hash,
@@ -513,6 +519,7 @@ pub mod pallet {
 		///
 		/// Weight: O(1)
 		#[pallet::weight(T::WeightInfo::withdraw_proposal())]
+		#[transactional]
 		pub fn withdraw_proposal(
 			origin: OriginFor<T>,
 			campaign_id: T::Hash,

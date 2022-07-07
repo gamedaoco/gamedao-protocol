@@ -1,16 +1,16 @@
 #![cfg(test)]
 use super::{
-    mock::*, Entity, EntityProperty, Error, Event as SenseEvent, SenseEntity, SenseREP, SenseTrust,
-    SenseXP,
+    mock::*,
 };
-use frame_support::{assert_noop, assert_ok};
-use frame_system::{EventRecord, Phase, RawOrigin};
+use crate::{Event as SenseEvent, Entity, EntityProperty, Error, Config, SenseEntity, SenseREP, SenseTrust, SenseXP};
+use frame_support::{assert_noop, assert_ok, BoundedVec};
+use frame_system::RawOrigin;
 use sp_runtime::traits::BadOrigin;
 
 #[test]
 fn sense_create_entity() {
 	new_test_ext().execute_with(|| {
-		let cid = vec![1, 2, 3];
+		let cid: BoundedVec<u8, <Test as Config>::StringLimit> = BoundedVec::truncate_from(vec![1,2,3]);
 
 		let account = 1;
 		let index = 0;
@@ -19,36 +19,26 @@ fn sense_create_entity() {
 		System::set_block_number(block_number);
 
 		assert_noop!(
-			Sense::create_entity(RawOrigin::Root.into(), 1, vec![]),
+			Sense::create_entity(RawOrigin::Root.into(), 1, BoundedVec::default()),
 			Error::<Test>::InvalidParam
-		);
-		assert_noop!(
-			Sense::create_entity(RawOrigin::Root.into(), 1, vec![1u8; 257]),
-			Error::<Test>::ParamLimitExceed
 		);
 
 		assert_ok!(Sense::create_entity(RawOrigin::Root.into(), account, cid.clone()));
 
 		assert_eq!(
 			Entity::new(account, block_number, index, cid.clone()),
-			Sense::entity(account)
+			Sense::entity(account).unwrap()
 		);
-		assert_eq!(EntityProperty::new(0, block_number), Sense::xp(account));
-		assert_eq!(EntityProperty::new(0, block_number), Sense::rep(account));
-		assert_eq!(EntityProperty::new(0, block_number), Sense::trust(account));
+		assert_eq!(EntityProperty::new(0, block_number), Sense::xp(account).unwrap());
+		assert_eq!(EntityProperty::new(0, block_number), Sense::rep(account).unwrap());
+		assert_eq!(EntityProperty::new(0, block_number), Sense::trust(account).unwrap());
 
-		assert_eq!(
-			System::events(),
-			vec![EventRecord {
-				phase: Phase::Initialization,
-				event: Event::Sense(SenseEvent::EntityInit(account, block_number)),
-				topics: vec![],
-			}]
+		System::assert_has_event(
+			Event::Sense(SenseEvent::EntityInit(account, block_number))
 		);
 
 		// TODO: Check Nonce value increased in storage as a result of successful extrinsic call.
-
-		assert_noop!(Sense::create_entity(Origin::signed(1), 1, vec![1u8]), BadOrigin);
+		assert_noop!(Sense::create_entity(Origin::signed(1), 1, cid.clone()), BadOrigin);
 
 		assert_noop!(
 			Sense::create_entity(RawOrigin::Root.into(), account, cid.clone()),
@@ -68,6 +58,7 @@ macro_rules! sense_mod_tests {
 			new_test_ext().execute_with(|| {
 				let account = 1;
 				let block_number = 3;
+				let cid: BoundedVec<u8, <Test as Config>::StringLimit> = BoundedVec::truncate_from(vec![1,2,3]);
 				System::set_block_number(block_number);
 
 				assert_noop!($extrinsic(Origin::signed(1), 1, 1), BadOrigin);
@@ -77,7 +68,7 @@ macro_rules! sense_mod_tests {
 				);
 
 				SenseEntity::<Test>::insert(
-					account, Entity::new(account, block_number, 0, vec![1,2,3])
+					account, Entity::new(account, block_number, 0, cid)
 				);
 				$storage::<Test>::insert(
 					account, EntityProperty::new(account, block_number)
