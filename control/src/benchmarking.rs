@@ -137,6 +137,5 @@ benchmarks! {
 		caller.clone()
 	)
 
+	impl_benchmark_test_suite!(Control, crate::mock::new_test_ext(), crate::mock::Test);
 }
-
-impl_benchmark_test_suite!(Control, crate::mock::new_test_ext(), crate::mock::Test);

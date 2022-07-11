@@ -4,7 +4,7 @@ use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, whiteli
 use frame_system::RawOrigin;
 use frame_support::{dispatch::DispatchError, traits::Get, BoundedVec};
 use sp_runtime::traits::{SaturatedConversion};
-// use sp_std::vec;
+use sp_std::vec::Vec;
 
 use crate::*;
 

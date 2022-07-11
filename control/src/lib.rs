@@ -17,7 +17,6 @@ pub use types::*;
 
 mod mock;
 mod tests;
-#[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod weights;
 
@@ -32,7 +31,7 @@ use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use scale_info::TypeInfo;
 use sp_runtime::traits::{AccountIdConversion, AtLeast32BitUnsigned, Hash};
-use sp_std::{fmt::Debug, convert::TryInto};
+use sp_std::{fmt::Debug, convert::TryInto, vec, vec::{Vec}};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 

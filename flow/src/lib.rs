@@ -60,7 +60,7 @@ use frame_support::{
 use scale_info::TypeInfo;
 use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash, Saturating}, Permill};
 
-use sp_std::{vec::Vec, convert::{TryFrom, TryInto}};
+use sp_std::{vec, vec::Vec, convert::{TryFrom, TryInto}};
 
 
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};

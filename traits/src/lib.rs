@@ -15,6 +15,8 @@
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_support::dispatch::DispatchError;
+#[cfg(feature = "runtime-benchmarks")]
+use sp_std::vec::Vec;
 
 
 pub trait ControlTrait<AccountId, Hash> {
