@@ -565,7 +565,7 @@ pub mod pallet {
 									* token_curve_b: BoundedVec<u8, T::StringLimit>, // custom */
 		) -> DispatchResultWithPostInfo {
 			let creator = ensure_signed(origin)?;
-			let owner = T::Control::org_controller_account(&org_id).ok_or(Error::<T>::InvalidId)?;
+			let owner = T::Control::org_controller_account(&org_id).ok_or(Error::<T>::OwnerUnknown)?;
 			ensure!(creator == owner, Error::<T>::AuthorizationError);
 
 			// Get Treasury account for deposits and fees
