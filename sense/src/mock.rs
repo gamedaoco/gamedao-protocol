@@ -1,8 +1,12 @@
 #![cfg(test)]
 
-use frame_support::parameter_types;
+use super::*;
+use crate as pallet_sense;
+
+use frame_support::{construct_runtime, parameter_types};
 use frame_system as system;
 use sp_core::H256;
+use sp_std::convert::TryFrom;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
@@ -12,7 +16,7 @@ type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pallet.
-frame_support::construct_runtime!(
+construct_runtime!(
 	pub enum Test where
 		Block = Block,
 		NodeBlock = Block,
@@ -22,10 +26,6 @@ frame_support::construct_runtime!(
 		Sense: pallet_sense::{Pallet, Call, Storage, Event<T>},
 	}
 );
-
-mod pallet_sense {
-	pub use super::super::*;
-}
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
@@ -59,11 +59,17 @@ impl system::Config for Test {
 	type SystemWeightInfo = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
+	type MaxConsumers = ConstU32<16>;
+}
+
+parameter_types! {
+	pub const StringLimit: u32 = 256;
 }
 
 impl pallet_sense::Config for Test {
 	type Event = Event;
 	type WeightInfo = ();
+	type StringLimit = StringLimit;
 }
 
 // Build genesis storage according to the mock runtime.

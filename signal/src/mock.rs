@@ -1,7 +1,11 @@
 #[cfg(test)]
 use crate as gamedao_signal;
-use frame_support::{parameter_types, PalletId};
-use frame_support::traits::{GenesisBuild, Nothing};
+use frame_support::{
+	parameter_types,
+	pallet_prelude::*,
+	traits::{GenesisBuild, Nothing},
+	PalletId
+};
 use frame_system;
 use orml_traits::parameter_type_with_key;
 use sp_core::H256;
@@ -10,6 +14,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	Permill,
 };
+use sp_std::convert::{TryFrom, TryInto};
 
 pub type AccountId = u64;
 pub type Amount = i128;
@@ -39,6 +44,18 @@ pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord, MaxEncodedLen, TypeInfo)]
+#[repr(u8)]
+pub enum ReserveIdentifier {
+	CollatorSelection,
+	Nft,
+	TransactionPayment,
+	TransactionPaymentDeposit,
+
+	// always the last, indicate number of variants
+	Count,
+}
+
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -47,7 +64,7 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Currencies: orml_currencies::{Pallet, Call, Event<T>},
+		Currencies: orml_currencies::{Pallet, Call},
 		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
 		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		PalletTimestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
@@ -57,12 +74,14 @@ frame_support::construct_runtime!(
 	}
 );
 
+frame_support::parameter_types! {
+	pub const MaxReserves: u32 = ReserveIdentifier::Count as u32;
+}
 parameter_type_with_key! {
 	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
 		Default::default()
 	};
 }
-
 impl orml_tokens::Config for Test {
 	type Event = Event;
 	type Balance = Balance;
@@ -71,8 +90,12 @@ impl orml_tokens::Config for Test {
 	type WeightInfo = ();
 	type ExistentialDeposits = ExistentialDeposits;
 	type OnDust = ();
+	type OnNewTokenAccount = ();
+	type OnKilledTokenAccount = ();
 	type MaxLocks = ();
 	type DustRemovalWhitelist = Nothing;
+	type ReserveIdentifier = ReserveIdentifier;
+	type MaxReserves = MaxReserves;
 }
 
 impl pallet_balances::Config for Test {
@@ -83,13 +106,12 @@ impl pallet_balances::Config for Test {
 	type AccountStore = frame_system::Pallet<Test>;
 	type MaxLocks = ();
 	type MaxReserves = ();
-	type ReserveIdentifier = [u8; 8];
+	type ReserveIdentifier = ReserveIdentifier;
 	type WeightInfo = ();
 }
 pub type AdaptedBasicCurrency = orml_currencies::BasicCurrencyAdapter<Test, PalletBalances, Amount, BlockNumber>;
 
 impl orml_currencies::Config for Test {
-	type Event = Event;
 	type MultiCurrency = Tokens;
 	type NativeCurrency = AdaptedBasicCurrency;
 	type GetNativeCurrencyId = ();
@@ -127,6 +149,7 @@ impl frame_system::Config for Test {
 	type SystemWeightInfo = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
+	type MaxConsumers = ConstU32<128>;
 }
 
 parameter_types! {
@@ -140,9 +163,11 @@ impl pallet_timestamp::Config for Test {
 }
 
 parameter_types! {
-	pub const MaxDAOsPerAccount: u32 = 2;
-	pub const MaxMembersPerDAO: u32 = 2;
+	pub const MaxOrgsPerAccount: u32 = 2;
+	pub const MaxMembersPerOrg: u32 = 2;
 	pub const MaxCreationsPerBlock: u32 = 2;
+	pub const MaxCreationsPerAccount: u32 = 100;
+	pub const MaxOrgsPerController: u32 = 100;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: u32 = PAYMENT_TOKEN_ID;
 	pub const MinimumDeposit: Balance = 1 * DOLLARS;
@@ -157,23 +182,28 @@ impl gamedao_control::Config for Test {
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
-	type MaxDAOsPerAccount = MaxDAOsPerAccount;
-	type MaxMembersPerDAO = MaxMembersPerDAO;
+	type MaxOrgsPerAccount = MaxOrgsPerAccount;
+	type MaxMembersPerOrg = MaxMembersPerOrg;
 	type MaxCreationsPerBlock = MaxCreationsPerBlock;
+	type MaxCreationsPerAccount = MaxCreationsPerAccount;
+	type MaxOrgsPerController = MaxOrgsPerController;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
 	type MinimumDeposit = MinimumDeposit;
 	type PalletId = ControlPalletId;
 	type Game3FoundationTreasury = Game3FoundationTreasuryAccountId;
 	type GameDAOTreasury = GameDAOTreasuryAccountId;
+	type StringLimit = StringLimit;
 }
 
 parameter_types! {
 	pub const MinNameLength: u32 = 2;
-	pub const MaxNameLength: u32 = 4;
+	pub const StringLimit: u32 = 4;
 	pub const MaxCampaignsPerAddress: u32 = 3;
 	pub const MaxCampaignsPerBlock: u32 = 1;
 	pub const MaxCampaignsPerOrg: u32 = 64;
+	pub const MaxCampaignContributions: u32 = 100;
+	pub const MaxCampaignsPerStatus: u32 = 1000;
 	pub const MaxContributionsPerBlock: u32 = 3;
 	pub const MaxContributorsProcessing: u32 = 5;
 	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
@@ -183,7 +213,6 @@ parameter_types! {
 }
 impl gamedao_flow::Config for Test {
 	type Balance = Balance;
-	// type Moment = Moment;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Event = Event;
@@ -194,11 +223,13 @@ impl gamedao_flow::Config for Test {
 	type Control = Control;
 	type GameDAOTreasury = GameDAOTreasury;
 	type MinNameLength = MinNameLength;
-	type MaxNameLength = MaxNameLength;
+	type StringLimit = StringLimit;
 	type MaxContributorsProcessing = MaxContributorsProcessing;
 	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
 	type MaxCampaignsPerOrg = MaxCampaignsPerOrg;
+	type MaxCampaignContributions = MaxCampaignContributions;
+	type MaxCampaignsPerStatus = MaxCampaignsPerStatus;
 	type MaxContributionsPerBlock = MaxContributionsPerBlock;
 	type MinCampaignDuration = MinCampaignDuration;
 	type MaxCampaignDuration = MaxCampaignDuration;
@@ -208,6 +239,8 @@ impl gamedao_flow::Config for Test {
 
 parameter_types! {
 	pub const MaxProposalsPerBlock: u32 = 2;
+	pub const MaxProposalsPerOrg: u32 = 1000;
+	pub const MaxProposalsPerAccount: u32 = 1000;
 	pub const MaxProposalDuration: u32 = 20;
 	pub const MaxVotesPerProposal: u32 = 1000;
 }
@@ -218,12 +251,15 @@ impl gamedao_signal::Config for Test {
 	type Flow = Flow;
 	type MaxVotesPerProposal = MaxVotesPerProposal;
 	type MaxProposalsPerBlock = MaxProposalsPerBlock;
+	type MaxProposalsPerOrg = MaxProposalsPerOrg;
+	type MaxProposalsPerAccount = MaxProposalsPerAccount;
 	type MaxProposalDuration = MaxProposalDuration;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
 	type Currency = Currencies;
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
+	type StringLimit = StringLimit;
 }
 
 #[derive(Default)]

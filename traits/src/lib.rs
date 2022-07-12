@@ -13,14 +13,16 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "runtime-benchmarks")]
 use frame_support::dispatch::DispatchError;
+#[cfg(feature = "runtime-benchmarks")]
 use sp_std::vec::Vec;
 
 
 pub trait ControlTrait<AccountId, Hash> {
 
-	fn org_controller_account(org_id: &Hash) -> AccountId;
-	fn org_treasury_account(org_id: &Hash) -> AccountId;
+	fn org_controller_account(org_id: &Hash) -> Option<AccountId>;
+	fn org_treasury_account(org_id: &Hash) -> Option<AccountId>;
 	fn is_org_active(org_id: &Hash) -> bool;
 	fn is_org_member_active(org_id: &Hash, accont_id: &AccountId) -> bool;
 }
@@ -36,7 +38,7 @@ pub trait ControlBenchmarkingTrait<AccountId, Hash> {
 	/// It is assumed those accounts have enough of currency to pay org joining fee.
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-	fn fill_org_with_members(org_id: &Hash, members: &Vec<AccountId>) -> Result<(), DispatchError>;
+	fn fill_org_with_members(org_id: &Hash, members: Vec<AccountId>) -> Result<(), DispatchError>;
 }
 
 pub trait FlowTrait<AccountId, Balance, Hash> {
@@ -60,7 +62,7 @@ pub trait FlowBenchmarkingTrait<AccountId, BlockNumber, Hash> {
 	/// It is assumed those accounts have enought currency to contribute
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-	fn create_contributions(campaign_id: &Hash, contributors: &Vec<AccountId>) -> Result<(), DispatchError>;
+	fn create_contributions(campaign_id: &Hash, contributors: Vec<AccountId>) -> Result<(), DispatchError>;
 
 	/// Trigger campaigns finalization by setting block number to specified value and calling appropriate hooks
 	/// ** Should be used for benchmarking only!!! **
