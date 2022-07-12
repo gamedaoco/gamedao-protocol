@@ -13,11 +13,11 @@
 //! Sense Properties: Experience, Reputation and Trust.
 #![cfg_attr(not(feature = "std"), no_std)]
 #[warn(unused_imports)]
-use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
+use frame_support::{pallet_prelude::*, storage::bounded_vec::BoundedVec};
 use frame_system::pallet_prelude::*;
 use scale_info::TypeInfo;
-use sp_std::vec::Vec;
-
+use sp_std::convert::TryInto;
+use codec::MaxEncodedLen;
 pub use weights::WeightInfo;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -28,32 +28,29 @@ pub mod weights;
 
 pub use pallet::*;
 
-pub const MAX_STRING_FIELD_LENGTH: usize = 256;
 
-#[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub struct Entity<AccountId, BlockNumber> {
+#[derive(Encode, Decode, Default, Eq, Copy, PartialEq, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct Entity<AccountId, BlockNumber, BoundedString> {
 	account: AccountId,
 	index: u128,
-	cid: Vec<u8>,
+	cid: BoundedString,
 	created: BlockNumber,
 	mutated: BlockNumber,
 }
 
-#[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Default, Eq, Copy, PartialEq, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct EntityProperty<BlockNumber> {
 	value: u64,
 	mutated: BlockNumber,
 }
 
-impl<AccountId, BlockNumber> Entity<AccountId, BlockNumber> {
+impl<AccountId, BlockNumber, BoundedString> Entity<AccountId, BlockNumber, BoundedString> {
 	pub fn new(
 		account: AccountId,
 		block_number: BlockNumber,
 		index: u128,
-		cid: Vec<u8>,
-	) -> Entity<AccountId, BlockNumber>
+		cid: BoundedString,
+	) -> Entity<AccountId, BlockNumber, BoundedString>
 	where
 		BlockNumber: Clone,
 	{
@@ -77,6 +74,10 @@ pub mod pallet {
 			+ IsType<<Self as frame_system::Config>::Event>
 			+ Into<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
+
+		/// The maximum length of a name or symbol stored on-chain.
+		#[pallet::constant]
+		type StringLimit: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -89,7 +90,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn entity)]
 	pub(super) type SenseEntity<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId,
-		Entity<T::AccountId, T::BlockNumber>, ValueQuery>;
+		Entity<T::AccountId, T::BlockNumber, BoundedVec<u8, T::StringLimit>>, OptionQuery>;
 
 	/// Experience property of the account.
 	/// 
@@ -97,7 +98,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn xp)]
 	pub(super) type SenseXP<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AccountId, EntityProperty<T::BlockNumber>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::AccountId, EntityProperty<T::BlockNumber>, OptionQuery>;
 
 	/// Reputation property of the account.
 	/// 
@@ -105,7 +106,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn rep)]
 	pub(super) type SenseREP<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AccountId, EntityProperty<T::BlockNumber>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::AccountId, EntityProperty<T::BlockNumber>, OptionQuery>;
 
 	/// Trust property of the account.
 	/// 
@@ -113,7 +114,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn trust)]
 	pub(super) type SenseTrust<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AccountId, EntityProperty<T::BlockNumber>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::AccountId, EntityProperty<T::BlockNumber>, OptionQuery>;
 
 	/// Nonce. Increase per each entity creation.
 	/// 
@@ -143,8 +144,6 @@ pub mod pallet {
 		EntityUnknown,
 		/// Guru Meditation.
 		GuruMeditation,
-		/// Param limit exceed.
-		ParamLimitExceed,
 		/// Invalid param.
 		InvalidParam,
 		/// Overflow adding a value to the entity property
@@ -167,11 +166,10 @@ pub mod pallet {
 		pub fn create_entity(
 			origin: OriginFor<T>,
 			account_id: T::AccountId,
-			cid: Vec<u8>,
+			cid: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
 			ensure_root(origin)?;
 			ensure!(cid.len() > 0, Error::<T>::InvalidParam);
-			ensure!(cid.len() <= MAX_STRING_FIELD_LENGTH, Error::<T>::ParamLimitExceed);
 			ensure!(!<SenseEntity<T>>::contains_key(&account_id), Error::<T>::EntityExists);
 
 			let current_block = <frame_system::Pallet<T>>::block_number();
@@ -218,7 +216,7 @@ pub mod pallet {
 
 			let now = <frame_system::Pallet<T>>::block_number();
 			let v = u64::from(value);
-			let current = Self::xp(&account_id);
+			let current = Self::xp(&account_id).unwrap();
 
 			let updated = EntityProperty {
 				value: current.value.checked_add(v).ok_or(Error::<T>::EntityPropertyOverflow)?,
@@ -247,7 +245,7 @@ pub mod pallet {
 
 			let now = <frame_system::Pallet<T>>::block_number();
 			let v = u64::from(value);
-			let current = Self::rep(&account_id);
+			let current = Self::rep(&account_id).unwrap();
 
 			let updated = EntityProperty {
 				value: current.value.checked_add(v).ok_or(Error::<T>::EntityPropertyOverflow)?,
@@ -276,7 +274,7 @@ pub mod pallet {
 
 			let now = <frame_system::Pallet<T>>::block_number();
 			let v = u64::from(value);
-			let current = Self::trust(&account_id);
+			let current = Self::trust(&account_id).unwrap();
 
 			let updated = EntityProperty {
 				value: current.value.checked_add(v).ok_or(Error::<T>::EntityPropertyOverflow)?,

@@ -9,8 +9,9 @@ use mock::*;
 
 fn create_org() -> H256 {
 	let nonce: u128 = Nonce::<Test>::get();
+	let bounded_str = BoundedVec::truncate_from(vec![1,2]);
 	assert_ok!(
-		Control::create_org(Origin::signed(ALICE), BOB, vec![1, 2], vec![2, 3],
+		Control::create_org(Origin::signed(ALICE), BOB, bounded_str.clone(), bounded_str,
 		Default::default(), Default::default(), Default::default(),
 		1 * DOLLARS, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, 10, None
 	));
@@ -23,13 +24,14 @@ fn control_create_org() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;
 		System::set_block_number(current_block);
+		let bounded_str = BoundedVec::truncate_from(vec![1,2]);
 		let org_id = create_org();
 		System::assert_has_event(
 			mock::Event::Control(
 				crate::Event::OrgCreated {
 					sender_id: ALICE,
 					org_id,
-					treasury_id: OrgTreasury::<Test>::get(org_id),
+					treasury_id: OrgTreasury::<Test>::get(org_id).unwrap(),
 					created_at: current_block,
 					realm_index: 0
 				}
@@ -39,7 +41,7 @@ fn control_create_org() {
 		// to make a deposit into org's treasury
 		// Error: BalanceTooLow
 		assert_noop!(
-			Control::create_org(Origin::signed(BOB), BOB, vec![1, 2], vec![2, 3],
+			Control::create_org(Origin::signed(BOB), BOB, bounded_str.clone(), bounded_str.clone(),
 			Default::default(), Default::default(), Default::default(),
 			1 * DOLLARS, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, 10, None),
 			
@@ -50,7 +52,7 @@ fn control_create_org() {
 		// Error: BalanceTooLow
 		let deposit = 101 * DOLLARS;
 		assert_noop!(
-			Control::create_org(Origin::signed(BOB), BOB, vec![1, 2], vec![2, 3],
+			Control::create_org(Origin::signed(BOB), BOB, bounded_str.clone(), bounded_str,
 			Default::default(), Default::default(), Default::default(),
 			1 * DOLLARS, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, 10, Some(deposit)),
 			

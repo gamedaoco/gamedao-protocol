@@ -1,7 +1,6 @@
-use super::*;
 use frame_support::pallet_prelude::*;
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 #[repr(u8)]
 pub enum FlowProtocol {
@@ -19,7 +18,7 @@ impl Default for FlowProtocol {
 	}
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 #[repr(u8)]
 pub enum FlowState {
@@ -39,7 +38,7 @@ impl Default for FlowState {
 	}
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 #[repr(u8)]
 pub enum FlowGovernance {
@@ -54,15 +53,15 @@ impl Default for FlowGovernance {
 }
 
 // TODO: this can be decomposed to improve weight
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
+pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Moment, BoundedString> {
 	// unique hash to identify campaign (generated)
 	pub(super) id: Hash,
 	// hash of the overarching body from module-control
 	pub(super) org: Hash,
 	// name
-	pub(super) name: Vec<u8>,
+	pub(super) name: BoundedString,
 
 	// controller account -> must match body controller
 	// during campaing runtime controller change is not allowed
@@ -91,7 +90,7 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
 	pub(super) governance: FlowGovernance,
 
 	/// content storage
-	pub(super) cid: Vec<u8>,
+	pub(super) cid: BoundedString,
 
 	// TODO: prepare for launchpad functionality
 	// token cap
@@ -99,9 +98,9 @@ pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Moment> {
 	// token_price
 	// token_price: u64,
 	// /// token symbol
-	pub(super) token_symbol: Vec<u8>,
+	pub(super) token_symbol: BoundedString,
 	// /// token name
-	pub(super) token_name: Vec<u8>,
+	pub(super) token_name: BoundedString,
 
 	/// creation timestamp
 	pub(super) created: Moment,
