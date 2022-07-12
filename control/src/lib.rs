@@ -17,7 +17,6 @@ pub use types::*;
 
 mod mock;
 mod tests;
-#[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod weights;
 
@@ -26,12 +25,13 @@ use frame_support::{
 	dispatch::{DispatchResult, DispatchError},
 	ensure, PalletId,
 	traits::{Get},
+	BoundedVec
 };
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use scale_info::TypeInfo;
 use sp_runtime::traits::{AccountIdConversion, AtLeast32BitUnsigned, Hash};
-use sp_std::{fmt::Debug, vec, vec::Vec};
+use sp_std::{fmt::Debug, convert::TryInto, vec, vec::{Vec}};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -41,7 +41,7 @@ pub use weights::WeightInfo;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{pallet_prelude::*, transactional};
+	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
 	#[pallet::pallet]
@@ -92,13 +92,21 @@ pub mod pallet {
 		#[pallet::constant]
 		type GameDAOTreasury: Get<Self::AccountId>;
 
-		/// The max number of DAOs created per one account.
+		/// The max number of orgs per one account.
 		#[pallet::constant]
-		type MaxDAOsPerAccount: Get<u32>;
+		type MaxOrgsPerAccount: Get<u32>;
 
-		/// The max number of members per one DAO.
+		/// The max number of orgs account can create.
 		#[pallet::constant]
-		type MaxMembersPerDAO: Get<u32>;
+		type MaxCreationsPerAccount: Get<u32>;
+
+		/// The max number of members per one org.
+		#[pallet::constant]
+		type MaxMembersPerOrg: Get<u32>;
+
+		/// The max orgs which controller may own.
+		#[pallet::constant]
+		type MaxOrgsPerController: Get<u32>;
 
 		#[pallet::constant]
 		type MaxCreationsPerBlock: Get<u32>;
@@ -114,6 +122,10 @@ pub mod pallet {
 		/// The min amount of the deposit which is locked during Org creation (in Protocol tokens).
 		#[pallet::constant]
 		type MinimumDeposit: Get<Self::Balance>;
+
+		/// The maximum length of a name or cid stored on-chain.
+		#[pallet::constant]
+		type StringLimit: Get<u32>;
 	}
 
 	/// Org by its id.
@@ -121,7 +133,8 @@ pub mod pallet {
 	/// Org: map Hash => Org
 	#[pallet::storage]
 	pub(super) type Orgs<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, Org<T::Hash, T::AccountId, T::BlockNumber>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::Hash,
+		Org<T::Hash, T::AccountId, T::BlockNumber, BoundedVec<u8, T::StringLimit>>, OptionQuery>;
 
 	/// Org id by its nonce.
 	///
@@ -153,7 +166,8 @@ pub mod pallet {
 	///
 	/// OrgMembers: map Hash => Vec<AccountId>
 	#[pallet::storage]
-	pub(super) type OrgMembers<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::AccountId>, ValueQuery>;
+	pub(super) type OrgMembers<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash,
+		BoundedVec<T::AccountId, T::MaxMembersPerOrg>, ValueQuery>;
 
 	/// Org members count by org id.
 	///
@@ -172,31 +186,33 @@ pub mod pallet {
 	///
 	/// Memberships: map AccountId => Vec<Hash>
 	#[pallet::storage]
-	pub(super) type Memberships<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, Vec<T::Hash>, ValueQuery>;
+	pub(super) type Memberships<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId,
+		BoundedVec<T::Hash, T::MaxOrgsPerAccount>, ValueQuery>;
 
 	/// Creator account of an Org.
 	///
 	/// OrgCreator: map Hash => AccountId
 	#[pallet::storage]
-	pub(super) type OrgCreator<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, ValueQuery>;
+	pub(super) type OrgCreator<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
 
 	/// Controller account of an Org.
 	///
 	/// OrgController: map Hash => AccountId
 	#[pallet::storage]
-	pub(super) type OrgController<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, ValueQuery>;
+	pub(super) type OrgController<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
 
 	/// Treasury account of an Org.
 	///
 	/// OrgTreasury: map Hash => AccountId
 	#[pallet::storage]
-	pub(super) type OrgTreasury<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, ValueQuery>;
+	pub(super) type OrgTreasury<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
 
 	/// Orgs created by account.
 	///
 	/// OrgsCreated: map AccountId => Vec<Hash>
 	#[pallet::storage]
-	pub(super) type OrgsCreated<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, Vec<T::Hash>, ValueQuery>;
+	pub(super) type OrgsCreated<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId,
+		BoundedVec<T::Hash, T::MaxCreationsPerAccount>, ValueQuery>;
 
 	/// Number of Orgs created by account.
 	///
@@ -208,7 +224,8 @@ pub mod pallet {
 	///
 	/// OrgsControlled: map AccountId => Vec<Hash>
 	#[pallet::storage]
-	pub(super) type OrgsControlled<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, Vec<T::Hash>, ValueQuery>;
+	pub(super) type OrgsControlled<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId,
+		BoundedVec<T::Hash, T::MaxOrgsPerController>, ValueQuery>;
 
 	/// Number of Orgs controlled by account.
 	///
@@ -225,8 +242,8 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub orgs: Vec<(T::AccountId, T::AccountId, T::AccountId, Vec<u8>, Vec<u8>, OrgType,
-			AccessModel, FeeModel, T::Balance, T::CurrencyId, T::CurrencyId, u64, T::Balance)>,
+		pub orgs: Vec<(T::AccountId, T::AccountId, T::AccountId, BoundedVec<u8, T::StringLimit>, BoundedVec<u8, T::StringLimit>,
+			OrgType, AccessModel, FeeModel, T::Balance, T::CurrencyId, T::CurrencyId, u64, T::Balance)>,
 	}
 
 	#[cfg(feature = "std")]
@@ -249,7 +266,7 @@ pub mod pallet {
 							creator_id.clone(), org_id.clone(), controller_id.clone(), treasury_id.clone(), name.clone(),
 							cid.clone(), org_type.clone(), access.clone(), fee_model.clone(), fee.clone(), gov_asset.clone(),
 							pay_asset.clone(), member_limit.clone(), deposit.clone(), nonce
-						);
+						).unwrap();
 						Pallet::<T>::do_add_member(
 							org_id, controller_id.clone(), fee.clone(), fee_model.clone(), ControlMemberState::Active
 						).unwrap();
@@ -324,8 +341,12 @@ pub mod pallet {
 		GuruMeditation,
 		/// Treasury account already exists.
 		TreasuryExists,
+		/// Treasury account does not exists.
+		TreasuryNotExists,
 		/// Minimum deposit to Treasury too low.
-		MinimumDepositTooLow
+		MinimumDepositTooLow,
+		/// Too many orgs, created or controlled by the account
+		TooManyOrgs
 	}
 
 	#[pallet::call]
@@ -353,12 +374,11 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(T::WeightInfo::create_org())]
-		#[transactional]
 		pub fn create_org(
 			origin: OriginFor<T>,
 			controller_id: T::AccountId,
-			name: Vec<u8>,
-			cid: Vec<u8>,
+			name: BoundedVec<u8, T::StringLimit>,
+			cid: BoundedVec<u8, T::StringLimit>,
 			org_type: OrgType,
 			access: AccessModel,
 			fee_model: FeeModel,
@@ -384,7 +404,7 @@ pub mod pallet {
 
 			// TODO validation: name, cid ?
 			let nonce = Self::get_and_increment_nonce();
-			let treasury_account_id = T::PalletId::get().into_sub_account(nonce as i32);
+			let treasury_account_id = T::PalletId::get().into_sub_account_truncating(nonce as i32);
 			ensure!(!<frame_system::Pallet<T>>::account_exists(&treasury_account_id), Error::<T>::TreasuryExists);
 
 			let org_id = T::Hashing::hash_of(&treasury_account_id);
@@ -393,7 +413,7 @@ pub mod pallet {
 			Self::do_create_org(
 				sender.clone(), org_id.clone(), controller_id.clone(), treasury_account_id.clone(), name, cid,
 				org_type, access, fee_model.clone(), fee.clone(), gov_asset, pay_asset, member_limit, org_deposit, nonce
-			);
+			)?;
 			Self::do_add_member(org_id.clone(), controller_id, fee, fee_model, ControlMemberState::Active)?;
 			Self::mint_nft()?;
 
@@ -456,7 +476,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(log n)`
 		#[pallet::weight(T::WeightInfo::add_member(
-			T::MaxMembersPerDAO::get()
+			T::MaxMembersPerOrg::get()
 		))]
 		pub fn add_member(
 			origin: OriginFor<T>,
@@ -467,7 +487,7 @@ pub mod pallet {
 			ensure!(Orgs::<T>::contains_key(&org_id), Error::<T>::OrganizationUnknown);
 			ensure!(!OrgMembers::<T>::get(org_id).contains(&account_id), Error::<T>::MemberExists);
 			ensure!(
-				OrgMemberCount::<T>::get(&org_id) < T::MaxMembersPerDAO::get().into(),
+				OrgMemberCount::<T>::get(&org_id) < T::MaxMembersPerOrg::get().into(),
 				Error::<T>::MembershipLimitReached
 			);
 			let config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
@@ -500,7 +520,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(log n)`
 		#[pallet::weight(T::WeightInfo::remove_member(
-			T::MaxMembersPerDAO::get()
+			T::MaxMembersPerOrg::get()
 		))]
 		pub fn remove_member(origin: OriginFor<T>, org_id: T::Hash, account_id: T::AccountId) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
@@ -601,8 +621,8 @@ impl<T: Config> Pallet<T> {
 		org_id: T::Hash,
 		controller_id: T::AccountId,
 		treasury_id: T::AccountId,
-		name: Vec<u8>,
-		cid: Vec<u8>,
+		name: BoundedVec<u8, T::StringLimit>,
+		cid: BoundedVec<u8, T::StringLimit>,
 		org_type: OrgType,
 		access: AccessModel,
 		fee_model: FeeModel,
@@ -612,7 +632,7 @@ impl<T: Config> Pallet<T> {
 		member_limit: u64,
 		deposit: T::Balance,
 		nonce: u128
-	) {
+	) -> Result<(), DispatchError> {
 		let now = <frame_system::Pallet<T>>::block_number();
 
 		let org = Org {
@@ -651,10 +671,22 @@ impl<T: Config> Pallet<T> {
 		OrgController::<T>::insert(org_id.clone(), controller_id.clone());
 		OrgTreasury::<T>::insert(org_id.clone(), treasury_id.clone());
 		OrgState::<T>::insert(org_id.clone(), ControlState::Active);
-		OrgsControlled::<T>::mutate(&controller_id, |controlled| controlled.push(org_id.clone()));
+		OrgsControlled::<T>::try_mutate(
+			&controller_id,
+			|ref mut controlled| -> Result<(), DispatchError> {
+				controlled.try_push(org_id.clone()).map_err(|_| Error::<T>::TooManyOrgs)?;
+				Ok(())
+			}
+		)?;
 
 		OrgsControlledCount::<T>::mutate(&controller_id, |controlled_count| *controlled_count += 1);
-		OrgsCreated::<T>::mutate(&creator, |created| created.push(org_id.clone()));
+		OrgsCreated::<T>::try_mutate(
+			&creator,
+			|ref mut created| -> Result<(), DispatchError> {
+				created.try_push(org_id.clone()).map_err(|_| Error::<T>::TooManyOrgs)?;
+				Ok(())
+			}
+		)?;
 
 		// initiate member registry -> consumes fees
 		// creator and controller can be equal
@@ -671,6 +703,7 @@ impl<T: Config> Pallet<T> {
 			deposit,
 		);
 		debug_assert!(res.is_ok());
+		Ok(())
 	}
 
 	fn mint_nft() -> DispatchResult {
@@ -797,7 +830,7 @@ impl<T: Config> Pallet<T> {
 			},
 			// transfer to treasury
 			FeeModel::Transfer => {
-				let treasury = OrgTreasury::<T>::get(org_id);
+				let treasury = OrgTreasury::<T>::get(org_id).ok_or(Error::<T>::TreasuryNotExists)?;
 				let res = T::Currency::transfer(currency_id, &account_id, &treasury, fee);
 				debug_assert!(res.is_ok());
 			}
@@ -823,7 +856,7 @@ impl<T: Config> Pallet<T> {
 
 			// not a member, insert at index
 			Err(index) => {
-				members.insert(index, account_id.clone());
+				members.try_insert(index, account_id.clone()).map_err(|_| Error::<T>::MemberAddOverflow)?;
 				// OrgMembers::<T>::mutate( &org_id, |members| members.push(account_id.clone()) );
 				OrgMembers::<T>::insert(&org_id, members.clone());
 
@@ -831,7 +864,7 @@ impl<T: Config> Pallet<T> {
 				OrgMemberCount::<T>::insert(&org_id, count as u64);
 
 				let mut memberships = Memberships::<T>::get(&account_id);
-				memberships.push(org_id.clone());
+				memberships.try_push(org_id.clone()).map_err(|_| Error::<T>::MembershipLimitReached)?;
 				Memberships::<T>::insert(&account_id, memberships);
 
 				// Member state
@@ -899,10 +932,10 @@ impl<T: Config> Pallet<T> {
 
 
 impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
-	fn org_controller_account(org_id: &T::Hash) -> T::AccountId {
+	fn org_controller_account(org_id: &T::Hash) -> Option<T::AccountId> {
 		OrgController::<T>::get(org_id)
 	}
-	fn org_treasury_account(org_id: &T::Hash) -> T::AccountId {
+	fn org_treasury_account(org_id: &T::Hash) -> Option<T::AccountId> {
 		OrgTreasury::<T>::get(org_id)
 	}
 	fn is_org_active(org_id: &T::Hash) -> bool {
@@ -918,8 +951,8 @@ impl<T: Config> ControlBenchmarkingTrait<T::AccountId, T::Hash> for Pallet<T> {
 	#[cfg(feature = "runtime-benchmarks")]
 	fn create_org(caller: T::AccountId) -> Result<T::Hash, DispatchError> {
 		let org_nonce = Nonce::<T>::get();
-		let name: Vec<u8> = vec![0; 255];
-		let cid: Vec<u8> = vec![0; 255];
+		let name: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
+		let cid: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
 		Pallet::<T>::create_org(
 			frame_system::RawOrigin::Signed(caller.clone()).into(),
 			caller.into(),
@@ -941,8 +974,8 @@ impl<T: Config> ControlBenchmarkingTrait<T::AccountId, T::Hash> for Pallet<T> {
 
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-	fn fill_org_with_members(org_id: &T::Hash, accounts: &Vec<T::AccountId>) -> Result<(), DispatchError> {
-		for acc in accounts {
+	fn fill_org_with_members(org_id: &T::Hash, accounts: Vec<T::AccountId>) -> Result<(), DispatchError> {
+		for acc in BoundedVec::<T::AccountId, T::MaxMembersPerOrg>::truncate_from(accounts) {
 			Pallet::<T>::add_member(
 				frame_system::RawOrigin::Signed(acc.clone()).into(),
 				org_id.clone(),

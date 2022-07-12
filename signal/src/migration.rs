@@ -34,8 +34,8 @@ mod v1 {
 
 	pub fn migrate<T: Config>() -> Weight {
 
-		frame_support::storage::unhashed::kill_prefix(
-			&twox_128(<Pallet<T>>::name().as_bytes()), None
+		let _ = frame_support::storage::unhashed::clear_prefix(
+			&twox_128(<Pallet<T>>::name().as_bytes()), None, None
 		);
 
 		T::DbWeight::get().writes(1)

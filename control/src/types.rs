@@ -1,7 +1,8 @@
 use super::*;
 use frame_support::pallet_prelude::*;
+use codec::MaxEncodedLen;
 
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 pub enum OrgType {
 	Individual = 0,
@@ -15,7 +16,7 @@ impl Default for OrgType {
 	}
 }
 
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[repr(u8)]
 pub enum ControlMemberState {
@@ -33,7 +34,7 @@ impl Default for ControlMemberState {
 	}
 }
 
-#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[repr(u8)]
 pub enum ControlState {
@@ -48,7 +49,7 @@ impl Default for ControlState {
 	}
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 pub enum FeeModel {
 	NoFees = 0,   // feeless
@@ -61,7 +62,7 @@ impl Default for FeeModel {
 	}
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 pub enum AccessModel {
 	Open = 0,       // anyDAO can join
@@ -75,9 +76,9 @@ impl Default for AccessModel {
 }
 
 /// Organization
-#[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo)]
+#[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-pub struct Org<Hash, AccountId, BlockNumber> {
+pub struct Org<Hash, AccountId, BlockNumber, BoundedString> {
 	/// Org Hash
 	pub(super) id: Hash,
 	/// Org global index
@@ -85,9 +86,9 @@ pub struct Org<Hash, AccountId, BlockNumber> {
 	/// Org Creator
 	pub(super) creator: AccountId,
 	/// Org Name
-	pub(super) name: Vec<u8>,
+	pub(super) name: BoundedString,
 	/// IPFS Hash
-	pub(super) cid: Vec<u8>,
+	pub(super) cid: BoundedString,
 	/// Organization Type
 	pub(super) org_type: OrgType,
 	/// Creation Block
@@ -98,7 +99,7 @@ pub struct Org<Hash, AccountId, BlockNumber> {
 
 /// Organization Config
 // TODO: refactor to bit flags
-#[derive(Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 pub struct OrgConfig<Balance, CurrencyId> {
 	/// Fee Model: TX only | Reserve | Transfer

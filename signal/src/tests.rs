@@ -7,10 +7,11 @@ use super::{
 	*,
 };
 use frame_system::RawOrigin;
-use frame_support::pallet_prelude::Encode;
+// use frame_support::pallet_prelude::Encode;
 use frame_support::{
 	assert_noop, assert_ok,
 	traits::Hooks,
+	BoundedVec
 };
 use orml_tokens::Event as TokensEvent;
 use orml_traits::MultiReservableCurrency;
@@ -23,11 +24,12 @@ use gamedao_flow::{FlowGovernance, FlowProtocol, FlowState};
 
 fn create_org_treasury() -> (H256, AccountId) {
 	let nonce = Control::nonce();
+	let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
 	assert_ok!(Control::create_org(
 		Origin::signed(ACC1),
 		ACC1,
-		vec![1, 2, 3],
-		vec![1, 2, 3],
+		bounded_str.clone(),
+		bounded_str.clone(),
 		OrgType::Individual,
 		AccessModel::Open,
 		FeeModel::NoFees,
@@ -37,9 +39,9 @@ fn create_org_treasury() -> (H256, AccountId) {
 		100,
         Some(1 * DOLLARS)
 	));
-    let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account(nonce as i32);
+    let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account_truncating(nonce as i32);
     let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);
-	assert_eq!(treasury_id, Control::org_treasury_account(&org_id));
+	assert_eq!(treasury_id, Control::org_treasury_account(&org_id).unwrap());
     let _ = Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, 25 * DOLLARS, 0);
 
     (org_id, treasury_id)
@@ -52,19 +54,20 @@ fn create_campaign(
 	expiry: Option<u64>,
 ) -> H256 {
 	let nonce = Flow::nonce();
+	let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
 	assert_ok!(Flow::create_campaign(
 		Origin::signed(ACC1),
 		org,
 		ACC1,
-		vec![1, 2, 3],
+		bounded_str.clone(),
 		10 * DOLLARS,
 		10 * DOLLARS,
 		expiry.unwrap_or(100),
 		FlowProtocol::default(),
 		FlowGovernance::default(),
-		vec![1, 2, 3],
-		vec![1, 2, 3],
-		vec![1, 2, 3],
+		bounded_str.clone(),
+		bounded_str.clone(),
+		bounded_str.clone(),
 	));
 	let campaign_id = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
 	for (account_id, contribution) in contributions.iter() {
@@ -89,15 +92,16 @@ fn signal_general_proposal_success() {
 	ExtBuilder::default().build().execute_with(|| {
 		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
 		let (org_id, _) = create_org_treasury();
+		let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
 
 		System::set_block_number(3);
 		assert_ok!(Signal::general_proposal(
 			Origin::signed(ACC1),
 			org_id,
-			vec![1, 2, 3], // title
-			vec![1, 2, 3], // cid
-			3,             // start
-			15             // expiry
+			bounded_str.clone(), // title
+			bounded_str.clone(), // cid
+			3,                   // start
+			15                   // expiry
 		));
 
 		assert_eq!(
@@ -122,8 +126,8 @@ fn signal_general_proposal_success() {
 		assert_eq!(
 			<Metadata<Test>>::get(&proposal_id),
 			ProposalMetadata {
-				title: vec![1, 2, 3],
-				cid: vec![1, 2, 3],
+				title: bounded_str.clone(),
+				cid: bounded_str.clone(),
 				amount: 0
 			}
 		);
@@ -146,8 +150,8 @@ fn signal_general_proposal_success() {
 		assert_ok!(Signal::general_proposal(
 			Origin::signed(ACC1),
 			org_id,        // org_id
-			vec![2, 3, 4], // title
-			vec![2, 3, 4], // cid
+			BoundedVec::truncate_from(vec![2, 3, 4]), // title
+			BoundedVec::truncate_from(vec![2, 3, 4]), // cid
 			3,             // start
 			15             // expiry
 		));
@@ -181,6 +185,7 @@ fn signal_general_proposal_error() {
 		System::set_block_number(3);
 		let (org_id, _) = create_org_treasury();
 		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
+		let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
 
 		<Proposals<Test>>::insert(
 			proposal_id,
@@ -198,22 +203,22 @@ fn signal_general_proposal_error() {
 			Signal::general_proposal(
 				Origin::signed(ACC1),
 				org_id,
-				vec![1, 2, 3], // title
-				vec![1, 2, 3], // cid
-				3,             // start
-				15             // expiry
+				bounded_str.clone(), // title
+				bounded_str.clone(), // cid
+				3,                   // start
+				15                   // expiry
 			),
 			Error::<Test>::ProposalExists
 		);
 
-		let proposal_ids = vec![H256::random(), H256::random()];
+		let proposal_ids = BoundedVec::truncate_from(vec![H256::random(), H256::random()]);
 		<ProposalsByBlock<Test>>::insert(15, proposal_ids);
 		assert_noop!(
 			Signal::general_proposal(
 				Origin::signed(ACC1),
 				org_id,
-				vec![1, 2, 3], // title
-				vec![1, 2, 3], // cid
+				bounded_str.clone(), // title
+				bounded_str.clone(), // cid
 				3,             // start
 				15             // expiry
 			),
@@ -224,8 +229,8 @@ fn signal_general_proposal_error() {
 			Signal::general_proposal(
 				Origin::signed(ACC1),
 				org_id,
-				vec![1, 2, 3], // title
-				vec![1, 2, 3], // cid
+				bounded_str.clone(), // title
+				bounded_str.clone(), // cid
 				3,             // start
 				System::block_number() + <ProposalTimeLimit::<Test>>::get() + 1
 			),
@@ -235,8 +240,8 @@ fn signal_general_proposal_error() {
 			Signal::general_proposal(
 				Origin::signed(ACC1),
 				org_id,
-				vec![1, 2, 3],          // title
-				vec![1, 2, 3],          // cid
+				bounded_str.clone(),          // title
+				bounded_str.clone(),          // cid
 				System::block_number(), // start
 				System::block_number()  // expiry
 			),
@@ -248,8 +253,8 @@ fn signal_general_proposal_error() {
 			Signal::general_proposal(
 				Origin::signed(ACC1),
 				org_id,
-				vec![1, 2, 3], // title
-				vec![1, 2, 3], // cid
+				bounded_str.clone(), // title
+				bounded_str.clone(), // cid
 				3,             // start
 				15             // expiry
 			),
@@ -258,7 +263,10 @@ fn signal_general_proposal_error() {
 
 		assert_ok!(Control::disable_org(Origin::root(), org_id));
 		assert_noop!(
-			Signal::general_proposal(Origin::signed(ACC1), org_id, vec![1, 2, 3], vec![1, 2, 3], 3, 15),
+			Signal::general_proposal(
+				Origin::signed(ACC1), org_id,
+				bounded_str.clone(), bounded_str.clone(), 3, 15
+			),
 			Error::<Test>::DAOInactive
 		);
 
@@ -266,8 +274,8 @@ fn signal_general_proposal_error() {
 			Signal::general_proposal(
 				Origin::none(),
 				org_id,
-				vec![1, 2, 3], // title
-				vec![1, 2, 3], // cid
+				bounded_str.clone(), // title
+				bounded_str.clone(), // cid
 				3,             // start
 				15             // expiry
 			),
@@ -281,6 +289,7 @@ fn signal_withdraw_proposal_success() {
 	ExtBuilder::default().build().execute_with(|| {
 		let (org_id, _) = create_org_treasury();
 		let campaign_id = create_campaign(org_id, vec![(ACC2, 15 * DOLLARS)], Some(FlowState::Success), None);
+		let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
 		System::set_block_number(3);
 
 		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
@@ -289,8 +298,8 @@ fn signal_withdraw_proposal_success() {
 		assert_ok!(Signal::withdraw_proposal(
 			Origin::signed(ACC1),
 			campaign_id,
-			vec![1, 2, 3],        // title
-			vec![1, 2, 3],        // cid
+			bounded_str.clone(),        // title
+			bounded_str.clone(),        // cid
 			10 * DOLLARS,         // amount
 			4,                    // start
 			15                    // expiry
@@ -322,8 +331,8 @@ fn signal_withdraw_proposal_success() {
 		assert_eq!(
 			<Metadata<Test>>::get(&proposal_id),
 			ProposalMetadata {
-				title: vec![1, 2, 3],
-				cid: vec![1, 2, 3],
+				title: bounded_str.clone(),
+				cid: bounded_str.clone(),
 				amount: 10 * DOLLARS
 			}
 		);
@@ -349,8 +358,8 @@ fn signal_withdraw_proposal_success() {
 		assert_ok!(Signal::general_proposal(
 			Origin::signed(ACC1),
 			org_id,
-			vec![2, 3, 4], // title
-			vec![2, 3, 4], // cid
+			bounded_str.clone(), // title
+			bounded_str.clone(), // cid
 			4,             // start
 			15             // expiry
 		));
@@ -383,6 +392,7 @@ fn signal_withdraw_proposal_error() {
 	ExtBuilder::default().build().execute_with(|| {
 		let (org_id, _) = create_org_treasury();
 		let campaign_id = create_campaign(org_id, vec![(ACC2, 15 * DOLLARS)], Some(FlowState::Success), None);
+		let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
 		System::set_block_number(3);
 
 		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
@@ -404,8 +414,8 @@ fn signal_withdraw_proposal_error() {
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),
 				campaign_id,
-				vec![1, 2, 3],        // title
-				vec![1, 2, 3],        // cid
+				bounded_str.clone(),        // title
+				bounded_str.clone(),        // cid
 				10 * DOLLARS,         // amount
 				4,                    // start
 				15                    // expiry
@@ -413,14 +423,14 @@ fn signal_withdraw_proposal_error() {
 			Error::<Test>::ProposalExists
 		);
 
-		let proposal_ids = vec![H256::random(), H256::random()];
+		let proposal_ids = BoundedVec::truncate_from(vec![H256::random(), H256::random()]);
 		<ProposalsByBlock<Test>>::insert(15, proposal_ids);
 		assert_noop!(
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),
 				campaign_id,
-				vec![1, 2, 3],        // title
-				vec![1, 2, 3],        // cid
+				bounded_str.clone(),        // title
+				bounded_str.clone(),        // cid
 				10 * DOLLARS,         // amount
 				4,                    // start
 				15                    // expiry
@@ -433,8 +443,8 @@ fn signal_withdraw_proposal_error() {
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),
 				campaign_id,
-				vec![1, 2, 3],        // title
-				vec![1, 2, 3],        // cid
+				bounded_str.clone(),        // title
+				bounded_str.clone(),        // cid
 				10 * DOLLARS,         // amount
 				4,                    // start
 				15                    // expiry
@@ -447,8 +457,8 @@ fn signal_withdraw_proposal_error() {
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),
 				campaign_id,
-				vec![1, 2, 3],        // title
-				vec![1, 2, 3],        // cid
+				bounded_str.clone(),        // title
+				bounded_str.clone(),        // cid
 				10 * DOLLARS,         // amount
 				4,                    // start
 				15                    // expiry
@@ -460,8 +470,8 @@ fn signal_withdraw_proposal_error() {
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),
 				campaign_id,
-				vec![1, 2, 3],        // title
-				vec![1, 2, 3],        // cid
+				bounded_str.clone(),        // title
+				bounded_str.clone(),        // cid
 				10 * DOLLARS,         // amount
 				3,                    // start
 				15                    // expiry
@@ -472,8 +482,8 @@ fn signal_withdraw_proposal_error() {
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),
 				campaign_id,
-				vec![1, 2, 3],        // title
-				vec![1, 2, 3],        // cid
+				bounded_str.clone(),        // title
+				bounded_str.clone(),        // cid
 				10 * DOLLARS,         // amount
 				4,                    // start
 				4                    // expiry
@@ -484,8 +494,8 @@ fn signal_withdraw_proposal_error() {
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),
 				campaign_id,
-				vec![1, 2, 3],        // title
-				vec![1, 2, 3],        // cid
+				bounded_str.clone(),        // title
+				bounded_str.clone(),        // cid
 				10 * DOLLARS,         // amount
 				4,                    // start
 				4 + ProposalTimeLimit::<Test>::get() + 1
@@ -497,8 +507,8 @@ fn signal_withdraw_proposal_error() {
 			Signal::withdraw_proposal(
 				Origin::signed(ACC2),
 				campaign_id,
-				vec![1, 2, 3],        // title
-				vec![1, 2, 3],        // cid
+				bounded_str.clone(),        // title
+				bounded_str.clone(),        // cid
 				10 * DOLLARS,         // amount
 				4,                    // start
 				15
@@ -512,8 +522,8 @@ fn signal_withdraw_proposal_error() {
 			Signal::withdraw_proposal(
 				Origin::signed(ACC1),
 				campaign_id,
-				vec![1, 2, 3],        // title
-				vec![1, 2, 3],        // cid
+				bounded_str.clone(),        // title
+				bounded_str.clone(),        // cid
 				10 * DOLLARS,         // amount
 				4,                    // start
 				16                    // expiry
@@ -525,8 +535,8 @@ fn signal_withdraw_proposal_error() {
 			Signal::withdraw_proposal(
 				Origin::none(),
 				campaign_id,
-				vec![1, 2, 3],  // title
-				vec![1, 2, 3],  // cid
+				bounded_str.clone(),  // title
+				bounded_str.clone(),  // cid
 				10 * DOLLARS,   // amount
 				4,              // start
 				16              // expiry
@@ -738,20 +748,21 @@ fn signal_on_finalize_success() {
 		let proposal_id1: H256 = <Test as frame_system::Config>::Hashing::hash_of(&0);
 		let proposal_id2: H256 = <Test as frame_system::Config>::Hashing::hash_of(&1);
 		let proposal_id3: H256 = <Test as frame_system::Config>::Hashing::hash_of(&2);
+		let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
 
 		assert_ok!(Signal::general_proposal(
 			Origin::signed(ACC1),
 			org_id,
-			vec![1, 2, 3], // title
-			vec![1, 2, 3], // cid
-			start,         // start
-			expiry         // expiry
+			bounded_str.clone(), // title
+			bounded_str.clone(), // cid
+			start,               // start
+			expiry               // expiry
 		));
 		assert_ok!(Signal::withdraw_proposal(
 			Origin::signed(ACC1),
 			campaign_id,
-			vec![1, 2, 3],        // title
-			vec![1, 2, 3],        // cid
+			bounded_str.clone(),  // title
+			bounded_str.clone(),  // cid
 			10,                   // amount
 			start,                // start
 			expiry                // expiry
@@ -763,7 +774,7 @@ fn signal_on_finalize_success() {
 			assert_ok!(Signal::simple_vote(Origin::signed(i), proposal_id2, i == 5));
 		}
 
-		let mut events_before = System::events().len();
+		let events_before = System::events().len();
 		Signal::on_finalize(start);
 		assert_eq!(System::events().len(), events_before);
 
@@ -793,8 +804,8 @@ fn signal_on_finalize_success() {
 		assert_ok!(Signal::withdraw_proposal(
 			Origin::signed(ACC1),
 			campaign_id,
-			vec![1, 2, 3],        // title
-			vec![1, 2, 3],        // cid
+			bounded_str.clone(),  // title
+			bounded_str.clone(),  // cid
 			10,                   // amount
 			16,                   // start
 			17                    // expiry
@@ -830,19 +841,19 @@ fn signal_on_finalize_success() {
 		);
         assert_eq!(
 			events.pop().unwrap().event,
-			Event::Tokens(TokensEvent::Endowed(
-				<Test as Config>::PaymentTokenId::get(),
-				treasury_id,
-				0
-			))
+			Event::Tokens(TokensEvent::Endowed {
+				currency_id: <Test as Config>::PaymentTokenId::get(),
+				who: treasury_id,
+				amount: 0
+			})
 		);
 		assert_eq!(
 			events.pop().unwrap().event,
-			Event::Tokens(TokensEvent::Unreserved(
-				<Test as Config>::PaymentTokenId::get(),
-				treasury_id,
-				10
-			))
+			Event::Tokens(TokensEvent::Unreserved {
+				currency_id: <Test as Config>::PaymentTokenId::get(),
+				who: treasury_id,
+				amount: 10
+			})
 		);
 		assert_eq!(<CampaignBalanceUsed<Test>>::get(campaign_id), 10);
 		assert_eq!(<ProposalStates<Test>>::get(proposal_id3), ProposalState::Finalized);
