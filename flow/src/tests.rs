@@ -128,6 +128,14 @@ fn flow_create_errors() {
 				Ok(())
 			}
 		));
+		
+		assert_ok!(Flow::create_campaign(
+			Origin::signed(BOB), org, BOB, name.clone(), 20 * DOLLARS, 10 * DOLLARS,
+			current_block + 1, FlowProtocol::Raise, FlowGovernance::No,
+			empty_vec.clone(),
+			empty_vec.clone(),
+			empty_vec.clone(),
+		));
 		let block_campaigns_cnt = CampaignsByBlock::<Test>::get(current_block+1).len() as u32;
 		println!("Current limit is {:?} and max is {:?}", block_campaigns_cnt, <Test as Config>::MaxCampaignsPerBlock::get());
 		assert_noop!(
@@ -361,6 +369,7 @@ fn flow_on_finalize_campaign_succeess() {
 		let deposit = 10 * DOLLARS;
 		let contribution = 60 * DOLLARS;
 		let target = 500 * DOLLARS;
+		let init_acc_balance = 100 * DOLLARS;
 
 		// Create Campaign
 		let nonce = Nonce::<Test>::get();
@@ -389,6 +398,21 @@ fn flow_on_finalize_campaign_succeess() {
 		// Contribute (600/500)
 		assert_ok!(Flow::contribute(Origin::signed(ACC_10), campaign_id, contribution));
 
+		// Create second Campaign
+		let nonce = Nonce::<Test>::get();
+		let campaign_id_rev: H256 = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
+		assert_ok!(Flow::create_campaign(
+			Origin::signed(BOB), org.clone(), BOB,
+			BoundedVec::truncate_from(vec![1, 2]),
+			target, deposit, expiry,
+			FlowProtocol::Raise, FlowGovernance::No,
+			BoundedVec::truncate_from(vec![1, 2]),
+			BoundedVec::truncate_from(vec![]),
+			BoundedVec::truncate_from(vec![]),
+		));
+		// Contribute (10/500)
+		assert_ok!(Flow::contribute(Origin::signed(ACC_1), campaign_id_rev, 10 * DOLLARS));
+
 		// --------- Block 0 (expiry): Schedule settlements ---------
 		System::set_block_number(expiry);
 		Flow::on_finalize(expiry);
@@ -396,6 +420,12 @@ fn flow_on_finalize_campaign_succeess() {
 		System::assert_has_event(Event::Flow(crate::Event::CampaignFinalising {
 			campaign_id,
 			campaign_balance: CampaignBalance::<Test>::get(campaign_id),
+			block_number: expiry,
+		}));
+
+		System::assert_has_event(Event::Flow(crate::Event::CampaignReverting {
+			campaign_id: campaign_id_rev,
+			campaign_balance: CampaignBalance::<Test>::get(campaign_id_rev),
 			block_number: expiry,
 		}));
 
@@ -410,6 +440,7 @@ fn flow_on_finalize_campaign_succeess() {
 		Flow::on_initialize(expiry + 1);
 
 		assert_eq!(ContributorsFinalized::<Test>::get(campaign_id), batch_size as u32);
+		assert_eq!(ContributorsReverted::<Test>::get(campaign_id_rev), 0 as u32);
 		assert_eq!(
 			<Test as Config>::Currency::total_balance(PAYMENT_TOKEN_ID, &treasury),
 			batch_size * contribution
@@ -424,6 +455,7 @@ fn flow_on_finalize_campaign_succeess() {
 		Flow::on_initialize(expiry + 2);
 
 		assert_eq!(ContributorsFinalized::<Test>::get(campaign_id), batch_size as u32 * 2);
+		assert_eq!(ContributorsReverted::<Test>::get(campaign_id), 0 as u32);
 		assert_eq!(
 			<Test as Config>::Currency::total_balance(PAYMENT_TOKEN_ID, &treasury),
 			2 * batch_size * contribution
@@ -433,11 +465,14 @@ fn flow_on_finalize_campaign_succeess() {
 			0
 		);
 
-		// --------- Block 3: process last 2 contributors and finalize Campaign ---------
+		// --------- Block 3: process last 2 contributors and finalize Campaign1, process 1 contributor and revert Campaign2 ---------
 		System::set_block_number(expiry + 3);
 		Flow::on_initialize(expiry + 3);
 
 		assert_eq!(ContributorsFinalized::<Test>::get(campaign_id), total_contributors as u32);
+		assert_eq!(ContributorsReverted::<Test>::get(campaign_id_rev), 1 as u32);
+
+		// Campaign finalized:
 		let commission = <Test as Config>::CampaignFee::get().mul_floor(contribution * 10);
 		// The balance was transfered and locked in the org treasury
 		assert_eq!(

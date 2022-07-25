@@ -511,7 +511,9 @@ pub mod pallet {
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			let mut contributors: u32 = 0;
 			Self::process_campaigns(&block_number, FlowState::Finalizing, &mut contributors);
-			Self::process_campaigns(&block_number, FlowState::Reverting, &mut contributors);
+			if contributors < T::MaxContributorsProcessing::get() {
+				Self::process_campaigns(&block_number, FlowState::Reverting, &mut contributors);
+			}
 			T::WeightInfo::on_initialize(contributors)
 		}
 
@@ -944,13 +946,13 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn finalize_campaign(
-		block_number: &T::BlockNumber, processed: &mut u32,
+		block_number: &T::BlockNumber, total_processed: &mut u32,
 		campaign: &Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment, BoundedVec<u8, T::StringLimit>>,
 		campaign_balance: &T::Balance, org_treasury: &T::AccountId,
 		contributors: &Vec<T::AccountId>, owner: &T::AccountId
 	) {
-		let processed_offset = ContributorsFinalized::<T>::get(campaign.id);
-		let offset: usize = usize::try_from(processed_offset).unwrap();
+		let mut processed = ContributorsFinalized::<T>::get(campaign.id);
+		let offset: usize = usize::try_from(processed).unwrap();
 		for contributor in &contributors[offset..] {
 			if contributor == owner {
 				continue;
@@ -973,13 +975,14 @@ impl<T: Config> Pallet<T> {
 				},
 				Ok(_) => { }
 			}
-			*processed += 1;
-			if *processed >= T::MaxContributorsProcessing::get() {
-				ContributorsFinalized::<T>::insert(campaign.id, processed_offset + *processed);
+			*total_processed += 1;
+			processed += 1;
+			if *total_processed >= T::MaxContributorsProcessing::get() {
+				ContributorsFinalized::<T>::insert(campaign.id, processed);
 				return
 			}
 		}
-		ContributorsFinalized::<T>::insert(campaign.id, processed_offset + *processed);
+		ContributorsFinalized::<T>::insert(campaign.id, processed);
 		// TODO: This doesn't make sense without "transfer_amount" error handling
 		if *campaign_balance < campaign.cap {
 			let _ = Self::set_state(campaign.id, FlowState::Reverting, &campaign.org);
@@ -1009,24 +1012,25 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn revert_campaign(
-		block_number: &T::BlockNumber, processed: &mut u32,
+		block_number: &T::BlockNumber, total_processed: &mut u32,
 		campaign: &Campaign<T::Hash, T::AccountId, T::Balance, T::BlockNumber, Moment, BoundedVec<u8, T::StringLimit>>,
 		campaign_balance: &T::Balance, org_treasury: &T::AccountId,
 		contributors: &Vec<T::AccountId>
 	) {
-		let processed_offset = ContributorsReverted::<T>::get(campaign.id);
-		let offset: usize = usize::try_from(processed_offset).unwrap();
+		let mut processed = ContributorsReverted::<T>::get(campaign.id);
+		let offset: usize = usize::try_from(processed).unwrap();
 		for account in &contributors[offset..] {
 			let contribution = CampaignContribution::<T>::get((campaign.id, account.clone()));
 			T::Currency::unreserve(T::PaymentTokenId::get(), &account, contribution);
 
-			*processed += 1;
-			if *processed >= T::MaxContributorsProcessing::get() {
-				ContributorsReverted::<T>::insert(campaign.id, processed_offset + *processed);
+			*total_processed += 1;
+			processed += 1;
+			if *total_processed >= T::MaxContributorsProcessing::get() {
+				ContributorsReverted::<T>::insert(campaign.id, processed);
 				return
 			}
 		}
-		ContributorsReverted::<T>::insert(campaign.id, processed_offset + *processed);
+		ContributorsReverted::<T>::insert(campaign.id, processed);
 		// Unreserve Initial deposit
 		T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, campaign.deposit);
 
