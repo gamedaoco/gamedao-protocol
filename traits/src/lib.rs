@@ -25,6 +25,7 @@ pub trait ControlTrait<AccountId, Hash> {
 	fn org_treasury_account(org_id: &Hash) -> Option<AccountId>;
 	fn is_org_active(org_id: &Hash) -> bool;
 	fn is_org_member_active(org_id: &Hash, accont_id: &AccountId) -> bool;
+	fn org_member_count(org_id: &Hash) -> u64;
 }
 
 pub trait ControlBenchmarkingTrait<AccountId, Hash> {
