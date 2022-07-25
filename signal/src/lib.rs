@@ -12,7 +12,7 @@
 //! SIGNAL is GameDAOs governance module providing simple interfaces to create proposals and vote on them
 
 #![cfg_attr(not(feature = "std"), no_std)]
-
+#![allow(deprecated)] // TODO: clean transactional
 pub mod types;
 pub mod migration;
 
@@ -24,11 +24,15 @@ mod tests;
 mod benchmarking;
 pub mod weights;
 
-use frame_support::{traits::StorageVersion, transactional, dispatch::DispatchResult, weights::Weight};
+use frame_support::{
+	traits::StorageVersion,
+	dispatch::DispatchResult,
+	weights::Weight,
+	transactional
+};
 use frame_system::{ensure_signed};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Zero, Hash};
-use sp_std::vec::Vec;
 
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
 
@@ -45,7 +49,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -100,11 +104,19 @@ pub mod pallet {
 
 		/// The max number of proposals per one block.
 		#[pallet::constant]
-		type MaxProposalsPerBlock: Get<u32>; // 3
+		type MaxProposalsPerBlock: Get<u32>;
+
+		/// The max number of proposals per single org.
+		#[pallet::constant]
+		type MaxProposalsPerOrg: Get<u32>;
+
+		/// The max number of proposals account can vote on.
+		#[pallet::constant]
+		type MaxProposalsPerAccount: Get<u32>;
 
 		/// The maximum time limit for a proposal in blocks.
 		#[pallet::constant]
-		type MaxProposalDuration: Get<u32>; // 864000, 60 * 60 * 24 * 30 / 3
+		type MaxProposalDuration: Get<u32>;
 
 		/// The CurrencyId which is used as a payment token.
 		#[pallet::constant]
@@ -113,6 +125,10 @@ pub mod pallet {
 		/// The CurrencyId which is used as a protokol token.
 		#[pallet::constant]
 		type ProtocolTokenId: Get<Self::CurrencyId>;
+
+		/// The maximum length of a string, stored on chain.
+		#[pallet::constant]
+		type StringLimit: Get<u32>;
 	}
 
 	/// Proposal by its id.
@@ -127,7 +143,7 @@ pub mod pallet {
 	/// Metadata: map Hash => ProposalMetadata
 	#[pallet::storage]
 	pub(super) type Metadata<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, ProposalMetadata<T::Balance>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::Hash, ProposalMetadata<T::Balance, BoundedVec<u8, T::StringLimit>>, ValueQuery>;
 
 	/// Proposal's owner.
 	///
@@ -196,7 +212,7 @@ pub mod pallet {
 	///
 	/// ProposalsByOrg: map Hash => Vec<Hash>
 	#[pallet::storage]
-	pub(super) type ProposalsByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::Hash>, ValueQuery>;
+	pub(super) type ProposalsByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, BoundedVec<T::Hash, T::MaxProposalsPerOrg>, ValueQuery>;
 
 	/// (owner account id, total number of proposals by owner) -> proposal id.
 	///
@@ -224,7 +240,7 @@ pub mod pallet {
 	/// ProposalsByVoter: map AccountId => Vec<(Hash, bool)>
 	#[pallet::storage]
 	pub(super) type ProposalsByVoter<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AccountId, Vec<(T::Hash, bool)>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::AccountId, BoundedVec<(T::Hash, bool), T::MaxProposalsPerAccount>, ValueQuery>;
 
 	/// Proposal voters and votes by proposal.
 	/// voter proposal id -> list of (voter account id, vote)
@@ -232,7 +248,7 @@ pub mod pallet {
 	/// ProposalVotesByVoters: map Hash => Vec<(AccountId, bool)>
 	#[pallet::storage]
 	pub(super) type ProposalVotesByVoters<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::Hash, Vec<(T::AccountId, bool)>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::Hash, BoundedVec<(T::AccountId, bool), T::MaxProposalsPerAccount>, ValueQuery>;
 
 	/// Total proposals voted on by voter.
 	///
@@ -245,7 +261,7 @@ pub mod pallet {
 	/// ProposalsByBlock: map BlockNumber => Vec<Hash>
 	#[pallet::storage]
 	pub(super) type ProposalsByBlock<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::BlockNumber, Vec<T::Hash>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::BlockNumber, BoundedVec<T::Hash, T::MaxProposalsPerBlock>, ValueQuery>;
 
 	/// The amount of currency that a project has used.
 	///
@@ -270,7 +286,7 @@ pub mod pallet {
 	///
 	/// ProposalVoters: map Hash => Vec<AccountId>
 	#[pallet::storage]
-	pub(super) type ProposalVoters<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Vec<T::AccountId>, ValueQuery>;
+	pub(super) type ProposalVoters<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, BoundedVec<T::AccountId, T::MaxVotesPerProposal>, ValueQuery>;
 
 	/// Voter count per proposal.
 	///
@@ -411,8 +427,8 @@ pub mod pallet {
 		pub fn general_proposal(
 			origin: OriginFor<T>,
 			org_id: T::Hash,
-			title: Vec<u8>,
-			cid: Vec<u8>,
+			title: BoundedVec<u8, T::StringLimit>,
+			cid: BoundedVec<u8, T::StringLimit>,
 			start: T::BlockNumber,
 			expiry: T::BlockNumber,
 		) -> DispatchResult {
@@ -507,8 +523,8 @@ pub mod pallet {
 		pub fn withdraw_proposal(
 			origin: OriginFor<T>,
 			campaign_id: T::Hash,
-			title: Vec<u8>,
-			cid: Vec<u8>,
+			title: BoundedVec<u8, T::StringLimit>,
+			cid: BoundedVec<u8, T::StringLimit>,
 			amount: T::Balance,
 			start: T::BlockNumber,
 			expiry: T::BlockNumber,
@@ -763,7 +779,7 @@ pub mod pallet {
 
 			// get treasury account for related org and unlock balance
 			let org_id = T::Flow::campaign_org(&campaign_id);
-			let treasury_account = T::Control::org_treasury_account(&org_id);
+			let treasury_account = T::Control::org_treasury_account(&org_id).unwrap();
 			T::Currency::unreserve(T::PaymentTokenId::get(), &treasury_account, proposal_balance);
 
 			// Change the used amount
@@ -788,14 +804,14 @@ pub mod pallet {
 			proposal_id: T::Hash,
 			org_id: T::Hash,
 			campaign_id: Option<T::Hash>,
-			title: Vec<u8>,
-			cid: Vec<u8>,
+			title: BoundedVec<u8, T::StringLimit>,
+			cid: BoundedVec<u8, T::StringLimit>,
 			amount: T::Balance,
 			proposal_type: ProposalType,
 			voting_type: VotingType,
 			start: T::BlockNumber,
 			expiry: T::BlockNumber,
-		) -> Result<T::Hash, Error<T>> {
+		) -> Result<T::Hash, DispatchError> {
 			let proposal = Proposal {
 				proposal_id: proposal_id.clone(),
 				org_id: org_id.clone(),
@@ -828,7 +844,13 @@ pub mod pallet {
 			Owners::<T>::insert(proposal_id.clone(), sender.clone());
 			ProposalStates::<T>::insert(proposal_id.clone(), ProposalState::Active);
 			// update max per block
-			ProposalsByBlock::<T>::mutate(expiry, |proposals| proposals.push(proposal_id.clone()));
+			ProposalsByBlock::<T>::try_mutate(
+				expiry,
+				|proposals| -> Result<(), DispatchError> {
+					proposals.try_push(proposal_id.clone()).map_err(|_| Error::<T>::TooManyProposals)?;
+					Ok(())
+				}
+			)?;
 			// update proposal map
 			ProposalsArray::<T>::insert(&proposals_count, proposal_id.clone());
 			ProposalsCount::<T>::put(updated_proposals_count);
@@ -843,7 +865,13 @@ pub mod pallet {
 				(org_id.clone(), proposal_id.clone()),
 				proposals_by_org_count,
 			);
-			ProposalsByOrg::<T>::mutate(org_id.clone(), |proposals| proposals.push(proposal_id.clone()));
+			ProposalsByOrg::<T>::try_mutate(
+				org_id.clone(),
+				|proposals| -> Result <(), DispatchError> {
+					proposals.try_push(proposal_id.clone()).map_err(|_| Error::<T>::TooManyProposals)?;
+					Ok(())
+				}
+			)?;
 			// update owner map
 			ProposalsByOwnerArray::<T>::insert((sender.clone(), proposals_by_owner_count.clone()), proposal_id.clone());
 			ProposalsByOwnerCount::<T>::insert(sender.clone(), updated_proposals_by_owner_count);
@@ -856,7 +884,7 @@ pub mod pallet {
 			sender: &T::AccountId,
 			proposal: &Proposal<T::Hash, T::BlockNumber>,
 			vote: bool,
-		) -> Result<Weight, Error<T>> {
+		) -> Result<Weight, DispatchError> {
 			let proposal_id = &proposal.proposal_id;
 			let mut weight: Weight = 0;
 
@@ -946,15 +974,27 @@ pub mod pallet {
 
 			VotedBefore::<T>::insert((&sender, proposal_id.clone()), true);
 			ProposalsByVoterCount::<T>::mutate(&sender, |v| *v += 1);
-			ProposalVotesByVoters::<T>::mutate(&proposal_id, |votings| votings.push((sender.clone(), vote.clone())));
-			ProposalsByVoter::<T>::mutate(&sender, |votings| votings.push((proposal_id.clone(), vote)));
+			ProposalVotesByVoters::<T>::try_mutate(
+				&proposal_id,
+				|ref mut votings| -> Result<(), DispatchError> {
+					votings.try_push((sender.clone(), vote.clone())).map_err(|_| Error::<T>::TooManyVotes)?;
+					Ok(())
+				}
+			)?;
+			ProposalsByVoter::<T>::try_mutate(
+				&sender,
+				|ref mut votings| -> Result<(), DispatchError> {
+					votings.try_push((proposal_id.clone(), vote)).map_err(|_| Error::<T>::TooManyVotes)?;
+					Ok(())
+				}
+			)?;
 			ProposalVotes::<T>::insert(&proposal_id, ProposalVotes::<T>::get(&proposal_id).saturating_add(1_u64));
 
 			let mut voters = ProposalVoters::<T>::get(&proposal_id);
 			match voters.binary_search(&sender) {
 				Ok(_) => {} // should never happen
 				Err(index) => {
-					voters.insert(index, sender.clone());
+					voters.try_insert(index, sender.clone()).map_err(|_| Error::<T>::TooManyVotes)?;
 					ProposalVoters::<T>::insert(&proposal_id, voters);
 				}
 			}

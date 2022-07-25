@@ -36,8 +36,8 @@ benchmarks! {
 	}: 	_(
 		RawOrigin::Signed(caller.clone()),
 		caller.clone().into(),
-		(0..255).collect(),
-		(0..255).collect(),
+		BoundedVec::truncate_from((0..255).collect()),
+		BoundedVec::truncate_from((0..255).collect()),
 		OrgType::Individual,
 		AccessModel::Open,
 		FeeModel::NoFees,
@@ -77,7 +77,7 @@ benchmarks! {
 	}
 
 	add_member {
-		let r in 1 .. T::MaxMembersPerDAO::get()-1;  // Limit members per org
+		let r in 1 .. T::MaxMembersPerOrg::get()-1;  // Limit members per org
 
 		// Prepare org creator and members
 		let creator: T::AccountId = whitelisted_caller();
@@ -92,7 +92,7 @@ benchmarks! {
 
 		// Create org and fill with members
 		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(creator.clone()).unwrap();
-		Pallet::<T>::fill_org_with_members(&org_id, &accounts)?;
+		Pallet::<T>::fill_org_with_members(&org_id, accounts)?;
 	}: _(
 		RawOrigin::Signed(creator),
 		org_id,
@@ -103,7 +103,7 @@ benchmarks! {
 	}
 
 	remove_member {
-		let r in 1 .. T::MaxMembersPerDAO::get();  // Limit members per org
+		let r in 1 .. T::MaxMembersPerOrg::get();  // Limit members per org
 
 		// Prepare org creator and members
 		let creator: T::AccountId = whitelisted_caller();
@@ -117,7 +117,7 @@ benchmarks! {
 		fund_accounts::<T>(&accounts)?;
 
 		// Add members to org
-		Pallet::<T>::fill_org_with_members(&org_id, &accounts)?;
+		Pallet::<T>::fill_org_with_members(&org_id, accounts.clone())?;
 	}: _(
 		RawOrigin::Signed(creator),
 		org_id,
@@ -137,6 +137,5 @@ benchmarks! {
 		caller.clone()
 	)
 
+	impl_benchmark_test_suite!(Control, crate::mock::new_test_ext(), crate::mock::Test);
 }
-
-impl_benchmark_test_suite!(Control, crate::mock::new_test_ext(), crate::mock::Test);
