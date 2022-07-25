@@ -216,8 +216,8 @@ impl gamedao_control::Config for Test {
 
 parameter_types! {
 	pub const MinNameLength: u32 = 2;
-	pub const MaxCampaignsPerAddress: u32 = 3;
-	pub const MaxCampaignsPerBlock: u32 = 1;
+	pub const MaxCampaignsPerAddress: u32 = 2;
+	pub const MaxCampaignsPerBlock: u32 = 2;
 	pub const MaxCampaignsPerOrg: u32 = 64;
 	pub const MaxContributionsPerBlock: u32 = 3;
 	pub const MaxContributorsProcessing: u32 = 4;
