@@ -23,6 +23,10 @@ pub fn migrate<T: Config>() -> Weight {
 		weight = weight.saturating_add(v1::migrate::<T>());
 		StorageVersion::new(1).put::<Pallet<T>>();
 	}
+	if version < 2 {
+		weight = weight.saturating_add(v1::migrate::<T>());
+		StorageVersion::new(2).put::<Pallet<T>>();
+	}
 
 	weight
 }

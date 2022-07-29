@@ -58,7 +58,7 @@ use frame_support::{
 };
 
 use scale_info::TypeInfo;
-use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash, Saturating}, Permill};
+use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash}, Permill};
 
 use sp_std::{vec, vec::Vec, convert::{TryFrom, TryInto}};
 
@@ -1061,6 +1061,9 @@ impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
 	}
 	fn is_campaign_succeeded(campaign_id: &T::Hash) -> bool {
 		CampaignState::<T>::get(campaign_id) == FlowState::Success
+	}
+	fn is_campaign_contributor(campaign_id: &T::Hash, who: &T::AccountId) -> bool {
+		CampaignContribution::<T>::contains_key((campaign_id, who))
 	}
 }
 

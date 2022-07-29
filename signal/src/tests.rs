@@ -1,861 +1,1082 @@
 #[cfg(test)]
 use super::{
 	mock::{
-		AccountId, Balance, Control, Event, ExtBuilder, Flow, Tokens, Origin, Signal, System, Test, ACC1, ACC2, ACC3, DOLLARS, PROTOCOL_TOKEN_ID
+		CurrencyId, BlockNumber, Hash, AccountId, Balance, Control, Event, ExtBuilder,
+		Flow, Tokens, Origin, Signal, System, Test, ALICE, BOB, CHARLIE, DOLLARS,
+		PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, create_proposal, create_finalize_campaign, create_org, set_balance
 	},
-	types::{Proposal, ProposalMetadata, ProposalState, ProposalType, VotingType},
+	types::{Proposal, Voting, ProposalIndex, ProposalType, ProposalState,
+		SlashingRule, Majority, Unit, Scale, VotingPower, BlockType},
 	*,
 };
 use frame_system::RawOrigin;
-// use frame_support::pallet_prelude::Encode;
 use frame_support::{
 	assert_noop, assert_ok,
 	traits::Hooks,
-	BoundedVec
+	BoundedVec, inherent::BlockT
 };
 use orml_tokens::Event as TokensEvent;
 use orml_traits::MultiReservableCurrency;
 use sp_core::H256;
-use sp_runtime::traits::{BadOrigin, Hash, AccountIdConversion};
+use sp_runtime::traits::{BadOrigin, Hash as HashTrait, AccountIdConversion};
 
-use gamedao_traits::ControlTrait;
-use gamedao_control::{AccessModel, FeeModel, OrgType};
-use gamedao_flow::{FlowGovernance, FlowProtocol, FlowState};
+use gamedao_flow::FlowState;
 
-fn create_org_treasury() -> (H256, AccountId) {
-	let nonce = Control::nonce();
-	let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
-	assert_ok!(Control::create_org(
-		Origin::signed(ACC1),
-		ACC1,
-		bounded_str.clone(),
-		bounded_str.clone(),
-		OrgType::Individual,
-		AccessModel::Open,
-		FeeModel::NoFees,
-		0,
-		1,
-		1,
-		100,
-        Some(1 * DOLLARS)
-	));
-    let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account_truncating(nonce as i32);
-    let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);
-	assert_eq!(treasury_id, Control::org_treasury_account(&org_id).unwrap());
-    let _ = Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, 25 * DOLLARS, 0);
+// TODO: vote AuthorizationError -> not a contributor, not a member
 
-    (org_id, treasury_id)
-}
-
-fn create_campaign(
-	org: H256,
-	contributions: Vec<(AccountId, Balance)>,
-	new_state: Option<FlowState>,
-	expiry: Option<u64>,
-) -> H256 {
-	let nonce = Flow::nonce();
-	let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
-	assert_ok!(Flow::create_campaign(
-		Origin::signed(ACC1),
-		org,
-		ACC1,
-		bounded_str.clone(),
-		10 * DOLLARS,
-		10 * DOLLARS,
-		expiry.unwrap_or(100),
-		FlowProtocol::default(),
-		FlowGovernance::default(),
-		bounded_str.clone(),
-		bounded_str.clone(),
-		bounded_str.clone(),
-	));
-	let campaign_id = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
-	for (account_id, contribution) in contributions.iter() {
-		assert_ok!(Flow::contribute(
-			Origin::signed(*account_id),
-			campaign_id,
-			*contribution
-		));
-	}
-	if new_state.is_some() {
-		assert_ok!(Flow::update_state(
-			Origin::signed(ACC1),
-			campaign_id,
-			new_state.unwrap()
-		));
-	}
-	campaign_id
-}
-
+/// Test 0.0
+/// - Proposal validation Errors
 #[test]
-fn signal_general_proposal_success() {
+fn signal_0_0() {
 	ExtBuilder::default().build().execute_with(|| {
-		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
-		let (org_id, _) = create_org_treasury();
-		let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
+		let members: Vec<AccountId> = (0..50).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now + 3;
+		let expiry: BlockNumber = now + 10;
+		let deposit = 20 * DOLLARS;
+		System::set_block_number(now);
+		let (_, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None);
 
-		System::set_block_number(3);
-		assert_ok!(Signal::general_proposal(
-			Origin::signed(ACC1),
-			org_id,
-			bounded_str.clone(), // title
-			bounded_str.clone(), // cid
-			3,                   // start
-			15                   // expiry
-		));
-
-		assert_eq!(
-			System::events().pop().expect("No event generated").event,
-			Event::Signal(crate::Event::Proposal {
-				sender_id: ACC1,
-				proposal_id: proposal_id
-			})
-		);
-		assert_eq!(
-			<Proposals<Test>>::get(&proposal_id),
-			Some(Proposal {
-				proposal_id,
-				org_id: org_id,
-				campaign_id: None,
-				proposal_type: ProposalType::General,
-				voting_type: VotingType::Simple,
-				start: 3,
-				expiry: 15
-			})
-		);
-		assert_eq!(
-			<Metadata<Test>>::get(&proposal_id),
-			ProposalMetadata {
-				title: bounded_str.clone(),
-				cid: bounded_str.clone(),
-				amount: 0
-			}
-		);
-		assert_eq!(<Owners<Test>>::get(&proposal_id), Some(ACC1));
-		assert_eq!(<ProposalStates<Test>>::get(&proposal_id), ProposalState::Active);
-		assert_eq!(<ProposalsByBlock<Test>>::get(15), vec![proposal_id.clone()]);
-		assert_eq!(<ProposalsArray<Test>>::get(0), proposal_id);
-		assert_eq!(<ProposalsCount<Test>>::get(), 1);
-		assert_eq!(<ProposalsIndex<Test>>::get(&proposal_id), 0);
-		assert_eq!(<ProposalsByOrgArray<Test>>::get((org_id.clone(), 0)), proposal_id);
-		assert_eq!(<ProposalsByOrgCount<Test>>::get(org_id), 1);
-		assert_eq!(<ProposalsByOrgIndex<Test>>::get((org_id, proposal_id)), 0);
-		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 0)), proposal_id);
-		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 1);
-		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, proposal_id)), 0);
-		assert_eq!(<ProposalsByOrg<Test>>::get(org_id), vec![proposal_id.clone()]);
-		assert_eq!(<Nonce<Test>>::get(), 1);
-
-		let new_proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
-		assert_ok!(Signal::general_proposal(
-			Origin::signed(ACC1),
-			org_id,        // org_id
-			BoundedVec::truncate_from(vec![2, 3, 4]), // title
-			BoundedVec::truncate_from(vec![2, 3, 4]), // cid
-			3,             // start
-			15             // expiry
-		));
-		assert_eq!(
-			<ProposalsByBlock<Test>>::get(15),
-			vec![proposal_id.clone(), new_proposal_id.clone()]
-		);
-		assert_eq!(<ProposalsArray<Test>>::get(1), new_proposal_id);
-		assert_eq!(<ProposalsCount<Test>>::get(), 2);
-		assert_eq!(<ProposalsIndex<Test>>::get(&new_proposal_id), 1);
-		assert_eq!(
-			<ProposalsByOrgArray<Test>>::get((org_id.clone(), 1)),
-			new_proposal_id
-		);
-		assert_eq!(<ProposalsByOrgCount<Test>>::get(org_id), 2);
-		assert_eq!(<ProposalsByOrgIndex<Test>>::get((org_id, new_proposal_id)), 1);
-		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 1)), new_proposal_id);
-		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 2);
-		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, new_proposal_id)), 1);
-		assert_eq!(
-			<ProposalsByOrg<Test>>::get(org_id),
-			vec![proposal_id.clone(), new_proposal_id.clone()]
-		);
-		assert_eq!( Signal::nonce(), 2);
-	});
-}
-
-#[test]
-fn signal_general_proposal_error() {
-	ExtBuilder::default().build().execute_with(|| {
-		System::set_block_number(3);
-		let (org_id, _) = create_org_treasury();
-		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
-		let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
-
-		<Proposals<Test>>::insert(
-			proposal_id,
-			Proposal {
-				proposal_id: proposal_id,
-				org_id: org_id,
-				campaign_id: None,
-				proposal_type: ProposalType::General,
-				voting_type: VotingType::Simple,
-				start: 2,
-				expiry: 13,
-			},
-		);
+		// OrgInactive
+		Control::disable_org(RawOrigin::Root.into(), org_id);
 		assert_noop!(
-			Signal::general_proposal(
-				Origin::signed(ACC1),
-				org_id,
-				bounded_str.clone(), // title
-				bounded_str.clone(), // cid
-				3,                   // start
-				15                   // expiry
-			),
-			Error::<Test>::ProposalExists
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative,
+				None, // start
+				None, // quorum
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+			Error::<Test>::OrgInactive
 		);
+		Control::enable_org(RawOrigin::Root.into(), org_id);
 
-		let proposal_ids = BoundedVec::truncate_from(vec![H256::random(), H256::random()]);
-		<ProposalsByBlock<Test>>::insert(15, proposal_ids);
+		// AuthorizationError: Org memeber not active or not a member
+		let not_a_member = CHARLIE;
 		assert_noop!(
-			Signal::general_proposal(
-				Origin::signed(ACC1),
-				org_id,
-				bounded_str.clone(), // title
-				bounded_str.clone(), // cid
-				3,             // start
-				15             // expiry
-			),
-			Error::<Test>::TooManyProposals
-		);
-
-		assert_noop!(
-			Signal::general_proposal(
-				Origin::signed(ACC1),
-				org_id,
-				bounded_str.clone(), // title
-				bounded_str.clone(), // cid
-				3,             // start
-				System::block_number() + <ProposalTimeLimit::<Test>>::get() + 1
-			),
-			Error::<Test>::OutOfBounds
-		);
-		assert_noop!(
-			Signal::general_proposal(
-				Origin::signed(ACC1),
-				org_id,
-				bounded_str.clone(),          // title
-				bounded_str.clone(),          // cid
-				System::block_number(), // start
-				System::block_number()  // expiry
-			),
-			Error::<Test>::OutOfBounds
-		);
-
-		assert_ok!(Control::remove_member(Origin::signed(ACC1), org_id, ACC1));
-		assert_noop!(
-			Signal::general_proposal(
-				Origin::signed(ACC1),
-				org_id,
-				bounded_str.clone(), // title
-				bounded_str.clone(), // cid
-				3,             // start
-				15             // expiry
-			),
+			Signal::proposal(
+				Origin::signed(not_a_member), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative,
+				None, // start
+				None, // quorum
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
 			Error::<Test>::AuthorizationError
 		);
 
-		assert_ok!(Control::disable_org(Origin::root(), org_id));
+		// OutOfBounds: start < current block
+		let start = 0;
 		assert_noop!(
-			Signal::general_proposal(
-				Origin::signed(ACC1), org_id,
-				bounded_str.clone(), bounded_str.clone(), 3, 15
-			),
-			Error::<Test>::DAOInactive
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative,
+				Some(start),
+				None, // quorum
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+			Error::<Test>::OutOfBounds
 		);
 
+		// OutOfBounds: expiry < current block
+		let expiry = 0;
 		assert_noop!(
-			Signal::general_proposal(
-				Origin::none(),
-				org_id,
-				bounded_str.clone(), // title
-				bounded_str.clone(), // cid
-				3,             // start
-				15             // expiry
-			),
-			BadOrigin
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, expiry,
+				Majority::Relative, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+			Error::<Test>::OutOfBounds
 		);
-	});
-}
 
-#[test]
-fn signal_withdraw_proposal_success() {
-	ExtBuilder::default().build().execute_with(|| {
-		let (org_id, _) = create_org_treasury();
-		let campaign_id = create_campaign(org_id, vec![(ACC2, 15 * DOLLARS)], Some(FlowState::Success), None);
-		let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
-		System::set_block_number(3);
-
-		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
-		<CampaignBalanceUsed<Test>>::insert(campaign_id, 5 * DOLLARS);
-
-		assert_ok!(Signal::withdraw_proposal(
-			Origin::signed(ACC1),
-			campaign_id,
-			bounded_str.clone(),        // title
-			bounded_str.clone(),        // cid
-			10 * DOLLARS,         // amount
-			4,                    // start
-			15                    // expiry
-		));
-
-		assert_eq!(
-			System::events().pop().expect("No event generated").event,
-			Event::Signal(crate::Event::ProposalCreated {
-				sender_id: ACC1,
-				org_id,
-				campaign_id: Some(campaign_id),
-				proposal_id,
-				amount: 10 * DOLLARS,
-				expiry: 15
-			})
+		// DepositInsufficient: deposit < MinProposalDeposit
+		assert_noop!(
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), 1 * DOLLARS, proposal.expiry,
+				Majority::Relative, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+			Error::<Test>::DepositInsufficient
 		);
-		assert_eq!(
-			<Proposals<Test>>::get(&proposal_id),
-			Some(Proposal {
-				proposal_id,
-				org_id,
-				campaign_id: Some(campaign_id),
-				proposal_type: ProposalType::Withdrawal,
-				voting_type: VotingType::Simple,
-				start: 4,
-				expiry: 15
-			})
-		);
-		assert_eq!(
-			<Metadata<Test>>::get(&proposal_id),
-			ProposalMetadata {
-				title: bounded_str.clone(),
-				cid: bounded_str.clone(),
-				amount: 10 * DOLLARS
-			}
-		);
-		assert_eq!(<Owners<Test>>::get(&proposal_id), Some(ACC1));
-		assert_eq!(<ProposalStates<Test>>::get(&proposal_id), ProposalState::Active);
-		assert_eq!(<ProposalsByBlock<Test>>::get(15), vec![proposal_id.clone()]);
-		assert_eq!(<ProposalsArray<Test>>::get(0), proposal_id);
-		assert_eq!(<ProposalsCount<Test>>::get(), 1);
-		assert_eq!(<ProposalsIndex<Test>>::get(&proposal_id), 0);
-		assert_eq!(
-			<ProposalsByOrgArray<Test>>::get((org_id.clone(), 0)),
-			proposal_id
-		);
-		assert_eq!(<ProposalsByOrgCount<Test>>::get(org_id), 1);
-		assert_eq!(<ProposalsByOrgIndex<Test>>::get((org_id, proposal_id)), 0);
-		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 0)), proposal_id);
-		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 1);
-		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, proposal_id)), 0);
-		assert_eq!(<ProposalsByOrg<Test>>::get(org_id), vec![proposal_id.clone()]);
-		assert_eq!(Signal::nonce(), 1);
 
-		let new_proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
-		assert_ok!(Signal::general_proposal(
-			Origin::signed(ACC1),
-			org_id,
-			bounded_str.clone(), // title
-			bounded_str.clone(), // cid
-			4,             // start
-			15             // expiry
-		));
-		assert_eq!(
-			<ProposalsByBlock<Test>>::get(15),
-			vec![proposal_id.clone(), new_proposal_id.clone()]
+		// TooManyProposals
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+			proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+			Majority::Relative, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
 		);
-		assert_eq!(<ProposalsArray<Test>>::get(1), new_proposal_id);
-		assert_eq!(<ProposalsCount<Test>>::get(), 2);
-		assert_eq!(<ProposalsIndex<Test>>::get(&new_proposal_id), 1);
-		assert_eq!(
-			<ProposalsByOrgArray<Test>>::get((org_id.clone(), 1)),
-			new_proposal_id
-		);
-		assert_eq!(<ProposalsByOrgCount<Test>>::get(org_id), 2);
-		assert_eq!(<ProposalsByOrgIndex<Test>>::get((org_id, new_proposal_id)), 1);
-		assert_eq!(<ProposalsByOwnerArray<Test>>::get((ACC1, 1)), new_proposal_id);
-		assert_eq!(<ProposalsByOwnerCount<Test>>::get(ACC1), 2);
-		assert_eq!(<ProposalsByOwnerIndex<Test>>::get((ACC1, new_proposal_id)), 1);
-		assert_eq!(
-			<ProposalsByOrg<Test>>::get(org_id),
-			vec![proposal_id.clone(), new_proposal_id.clone()]
-		);
-		assert_eq!(Signal::nonce(), 2);
-	});
-}
-
-#[test]
-fn signal_withdraw_proposal_error() {
-	ExtBuilder::default().build().execute_with(|| {
-		let (org_id, _) = create_org_treasury();
-		let campaign_id = create_campaign(org_id, vec![(ACC2, 15 * DOLLARS)], Some(FlowState::Success), None);
-		let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
-		System::set_block_number(3);
-
-		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
-		<CampaignBalanceUsed<Test>>::insert(campaign_id, 5 * DOLLARS);
-
-		<Proposals<Test>>::insert(
-			campaign_id,
-			Proposal {
-				proposal_id: proposal_id,
-				org_id,
-				campaign_id: Some(campaign_id),
-				proposal_type: ProposalType::Withdrawal,
-				voting_type: VotingType::Simple,
-				start: 4,
-				expiry: 13,
-			},
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+			proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+			Majority::Relative, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
 		);
 		assert_noop!(
-			Signal::withdraw_proposal(
-				Origin::signed(ACC1),
-				campaign_id,
-				bounded_str.clone(),        // title
-				bounded_str.clone(),        // cid
-				10 * DOLLARS,         // amount
-				4,                    // start
-				15                    // expiry
-			),
-			Error::<Test>::ProposalExists
-		);
-
-		let proposal_ids = BoundedVec::truncate_from(vec![H256::random(), H256::random()]);
-		<ProposalsByBlock<Test>>::insert(15, proposal_ids);
-		assert_noop!(
-			Signal::withdraw_proposal(
-				Origin::signed(ACC1),
-				campaign_id,
-				bounded_str.clone(),        // title
-				bounded_str.clone(),        // cid
-				10 * DOLLARS,         // amount
-				4,                    // start
-				15                    // expiry
-			),
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
 			Error::<Test>::TooManyProposals
 		);
+	});
+}
 
-		<CampaignBalanceUsed<Test>>::insert(campaign_id, 15 * DOLLARS);
-		assert_noop!(
-			Signal::withdraw_proposal(
-				Origin::signed(ACC1),
-				campaign_id,
-				bounded_str.clone(),        // title
-				bounded_str.clone(),        // cid
-				10 * DOLLARS,         // amount
-				4,                    // start
-				15                    // expiry
-			),
-			Error::<Test>::BalanceInsufficient
-		);
+/// Test 0.1
+/// - Withdrawal and Spending proposal validation Errors
+#[test]
+fn signal_0_1() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let contributors: Vec<AccountId> = (51..100).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&contributors, 100 * DOLLARS);
+		let contribution = 50 * DOLLARS;
+		let now: BlockNumber = 3;
 
-		<CampaignBalanceUsed<Test>>::insert(campaign_id, 11 * DOLLARS);
-		assert_noop!(
-			Signal::withdraw_proposal(
-				Origin::signed(ACC1),
-				campaign_id,
-				bounded_str.clone(),        // title
-				bounded_str.clone(),        // cid
-				10 * DOLLARS,         // amount
-				4,                    // start
-				15                    // expiry
-			),
-			Error::<Test>::BalanceInsufficient
+		System::set_block_number(now);
+		let campaign_expiry = now + 1;
+		let campaign_id = create_finalize_campaign(org_id, &contributors, contribution, campaign_expiry, true);
+
+		let start: BlockNumber = campaign_expiry + 1;
+		let expiry: BlockNumber = start + 10;
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::Withdrawal, org_id, start, expiry, 20 * DOLLARS,
+			Some(campaign_id), Some(PAYMENT_TOKEN_ID), None, Some(10 * DOLLARS)
 		);
 
+		// Spending proposal:
+		// ParameterError: beneficiary is None
 		assert_noop!(
-			Signal::withdraw_proposal(
-				Origin::signed(ACC1),
-				campaign_id,
-				bounded_str.clone(),        // title
-				bounded_str.clone(),        // cid
-				10 * DOLLARS,         // amount
-				3,                    // start
-				15                    // expiry
-			),
-			Error::<Test>::OutOfBounds
-		);
-		assert_noop!(
-			Signal::withdraw_proposal(
-				Origin::signed(ACC1),
-				campaign_id,
-				bounded_str.clone(),        // title
-				bounded_str.clone(),        // cid
-				10 * DOLLARS,         // amount
-				4,                    // start
-				4                    // expiry
-			),
-			Error::<Test>::OutOfBounds
-		);
-		assert_noop!(
-			Signal::withdraw_proposal(
-				Origin::signed(ACC1),
-				campaign_id,
-				bounded_str.clone(),        // title
-				bounded_str.clone(),        // cid
-				10 * DOLLARS,         // amount
-				4,                    // start
-				4 + ProposalTimeLimit::<Test>::get() + 1
-			),
-			Error::<Test>::OutOfBounds
+			Signal::proposal(
+				Origin::signed(ALICE), ProposalType::Spending, proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative, None, None,
+				proposal.campaign_id, proposal.amount, None, proposal.currency),
+			Error::<Test>::ParameterError
 		);
 
+		// Withdrawal and Spending proposal:
+		// ParameterError: currency is None
 		assert_noop!(
-			Signal::withdraw_proposal(
-				Origin::signed(ACC2),
-				campaign_id,
-				bounded_str.clone(),        // title
-				bounded_str.clone(),        // cid
-				10 * DOLLARS,         // amount
-				4,                    // start
-				15
-			),
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, None),
+			Error::<Test>::ParameterError
+		);
+
+		// ParameterError: amount is None
+		assert_noop!(
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative, None, None,
+				proposal.campaign_id, None, proposal.beneficiary, proposal.currency),
+			Error::<Test>::ParameterError
+		);
+
+		// ParameterError: campaign_id is None
+		assert_noop!(
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative, None, None,
+				None, proposal.amount, proposal.beneficiary, proposal.currency),
+			Error::<Test>::ParameterError
+		);
+
+		// AuthorizationError: proposer is not a campaign owner
+		assert_noop!(
+			Signal::proposal(
+				Origin::signed(BOB), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
 			Error::<Test>::AuthorizationError
 		);
 
-		let campaign_id = create_campaign(org_id, vec![], Some(FlowState::Failed), Some(101));
-		<CampaignBalanceUsed<Test>>::insert(campaign_id, 11);
+		// BalanceInsufficient: amount > campaign balance
+		let insufficient_amount = 100000000000000 * DOLLARS;
 		assert_noop!(
-			Signal::withdraw_proposal(
-				Origin::signed(ACC1),
-				campaign_id,
-				bounded_str.clone(),        // title
-				bounded_str.clone(),        // cid
-				10 * DOLLARS,         // amount
-				4,                    // start
-				16                    // expiry
-			),
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative, None, None,
+				proposal.campaign_id, Some(insufficient_amount), proposal.beneficiary, proposal.currency),
+			Error::<Test>::BalanceInsufficient
+		);
+
+		// CampaignFailed
+		let campaign_id = create_finalize_campaign(org_id, &(51..52).collect(), 50 * DOLLARS, expiry, false);
+		assert_ok!(Flow::update_state(Origin::signed(ALICE), campaign_id, FlowState::Failed));
+		assert_noop!(
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative, None, None,
+				Some(campaign_id), proposal.amount, proposal.beneficiary, proposal.currency),
 			Error::<Test>::CampaignFailed
 		);
-
-		assert_noop!(
-			Signal::withdraw_proposal(
-				Origin::none(),
-				campaign_id,
-				bounded_str.clone(),  // title
-				bounded_str.clone(),  // cid
-				10 * DOLLARS,   // amount
-				4,              // start
-				16              // expiry
-			),
-			BadOrigin
-		);
 	});
 }
 
+/// Test 0.2
+/// - Voting validation errors:
+/// 	- ProposalNotActivated
+/// 	- AuthorizationError: not a member (General proposal)
+/// 	- AuthorizationError: not a contributor (Withdrawal proposal)
 #[test]
-fn signal_simple_vote_success() {
+fn signal_0_2() {
 	ExtBuilder::default().build().execute_with(|| {
-		let (org_id, _) = create_org_treasury();
-		let campaign_id = create_campaign(org_id, vec![(ACC2, 5 * DOLLARS)], None, None);
-		System::set_block_number(3);
-
-		let proposal_id: H256 = H256::random();
-		<Proposals<Test>>::insert(
-			proposal_id,
-			Proposal {
-				proposal_id: proposal_id,
-				org_id,
-				campaign_id: Some(campaign_id),
-				proposal_type: ProposalType::General,
-				voting_type: VotingType::Simple,
-				start: 2,
-				expiry: 13,
-			},
-		);
-		<ProposalStates<Test>>::insert(proposal_id, ProposalState::Active);
-
-		assert_ok!(Signal::simple_vote(Origin::signed(ACC2), proposal_id, true));
-		let event = System::events().pop().expect("No event generated").event;
-		assert_eq!(
-			event,
-			Event::Signal(crate::Event::ProposalVoted {
-				sender_id: ACC2,
-				proposal_id,
-				vote: true
-			})
-		);
-		assert_eq!(<ProposalSimpleVotes<Test>>::get(&proposal_id), (1, 0));
-		assert_eq!(<ProposalApprovers<Test>>::get(&proposal_id), 1);
-		assert_eq!(<VotedBefore<Test>>::get((ACC2, proposal_id)), true);
-		assert_eq!(<ProposalsByVoterCount<Test>>::get(ACC2), 1);
-		assert_eq!(<ProposalVotesByVoters<Test>>::get(proposal_id), vec![(ACC2, true)]);
-		assert_eq!(<ProposalsByVoter<Test>>::get(ACC2), vec![(proposal_id, true)]);
-		assert_eq!(<ProposalVoters<Test>>::get(proposal_id), vec![ACC2]);
-
-		assert_ok!(Signal::simple_vote(Origin::signed(ACC1), proposal_id, false));
-		let event = System::events().pop().expect("No event generated").event;
-		assert_eq!(
-			event,
-			Event::Signal(crate::Event::ProposalVoted {
-				sender_id: ACC1,
-				proposal_id,
-				vote: false
-			})
-		);
-		assert_eq!(<ProposalSimpleVotes<Test>>::get(&proposal_id), (1, 1));
-		assert_eq!(<ProposalApprovers<Test>>::get(&proposal_id), 1);
-		assert_eq!(<ProposalDeniers<Test>>::get(&proposal_id), 1);
-		assert_eq!(<VotedBefore<Test>>::get((ACC1, proposal_id)), true);
-		assert_eq!(<ProposalsByVoterCount<Test>>::get(ACC1), 1);
-		assert_eq!(
-			<ProposalVotesByVoters<Test>>::get(proposal_id),
-			vec![(ACC2, true), (ACC1, false)]
-		);
-		assert_eq!(<ProposalsByVoter<Test>>::get(ACC1), vec![(proposal_id, false)]);
-		assert_eq!(<ProposalVoters<Test>>::get(proposal_id), vec![ACC1, ACC2]);
-
-		let proposal_id: H256 = H256::random();
-		let campaign_id = H256::random();
-		<Proposals<Test>>::insert(
-			proposal_id,
-			Proposal {
-				proposal_id: proposal_id,
-				org_id,
-				campaign_id: Some(campaign_id),
-				proposal_type: ProposalType::Withdrawal,
-				voting_type: VotingType::Simple,
-				start: 2,
-				expiry: 13,
-			},
-		);
-		<ProposalStates<Test>>::insert(proposal_id, ProposalState::Active);
-
-		assert_ok!(Signal::simple_vote(Origin::signed(ACC1), proposal_id, false));
-		let event = System::events().pop().expect("No event generated").event;
-		assert_eq!(
-			event,
-			Event::Signal(crate::Event::ProposalVoted {
-				sender_id: ACC1,
-				proposal_id,
-				vote: false
-			})
-		);
-		assert_eq!(<ProposalSimpleVotes<Test>>::get(&proposal_id), (0, 1));
-		assert_eq!(<ProposalApprovers<Test>>::get(&proposal_id), 0);
-		assert_eq!(<ProposalDeniers<Test>>::get(&proposal_id), 1);
-
-		let campaign_id = create_campaign(org_id, vec![(ACC2, 10), (ACC3, 10)], Some(FlowState::Active), Some(101));
-		let proposal_id: H256 = H256::random();
-		<Proposals<Test>>::insert(
-			proposal_id,
-			Proposal {
-				proposal_id: proposal_id,
-				org_id,
-				campaign_id: Some(campaign_id),
-				proposal_type: ProposalType::Withdrawal,
-				voting_type: VotingType::Simple,
-				start: 2,
-				expiry: 14,
-			},
-		);
-		ProposalStates::<Test>::insert(proposal_id.clone(), ProposalState::Active);
-		Owners::<Test>::insert(proposal_id.clone(), ACC1.clone());
-		assert_ok!(Signal::simple_vote(Origin::signed(ACC2), proposal_id, true));
-		assert_ok!(Signal::simple_vote(Origin::signed(ACC3), proposal_id, true));
-		let mut events = System::events();
-		assert_eq!(
-			events.pop().expect("No event generated").event,
-			Event::Signal(crate::Event::ProposalVoted {
-				sender_id: ACC3,
-				proposal_id,
-				vote: true
-			})
-		);
-		assert_eq!(
-			events.pop().expect("No event generated").event,
-			Event::Signal(crate::Event::WithdrawalGranted {
-				proposal_id,
-				campaign_id,
-				org_id
-			})
-		);
-		assert_eq!(<ProposalSimpleVotes<Test>>::get(&proposal_id), (2, 0));
-		assert_eq!(<ProposalApprovers<Test>>::get(&proposal_id), 2);
-	});
-}
-
-#[test]
-fn signal_simple_vote_error() {
-	ExtBuilder::default().build().execute_with(|| {
-		System::set_block_number(3);
-
-		let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&Signal::nonce());
-		let campaign_id = H256::random();
-		let org_id = H256::random();
-		<Proposals<Test>>::insert(
-			proposal_id,
-			Proposal {
-				proposal_id: proposal_id,
-				org_id,
-				campaign_id: Some(campaign_id),
-				proposal_type: ProposalType::General,
-				voting_type: VotingType::Simple,
-				start: 2,
-				expiry: System::block_number(),
-			},
-		);
-		<ProposalStates<Test>>::insert(proposal_id, ProposalState::Active);
-		assert_noop!(
-			Signal::simple_vote(Origin::signed(ACC1), proposal_id, true),
-			Error::<Test>::ProposalExpired
-		);
-
-		<VotedBefore<Test>>::insert((ACC1, proposal_id), true);
-		assert_noop!(
-			Signal::simple_vote(Origin::signed(ACC1), proposal_id, true),
-			Error::<Test>::AlreadyVoted
-		);
-
-		<ProposalVotes<Test>>::insert(proposal_id, <Test as Config>::MaxVotesPerProposal::get() as u64);
-		assert_noop!(
-			Signal::simple_vote(Origin::signed(ACC1), proposal_id, true),
-			Error::<Test>::TooManyVotes
-		);
-
-		<ProposalStates<Test>>::insert(proposal_id, ProposalState::Expired);
-		assert_noop!(
-			Signal::simple_vote(Origin::signed(ACC1), proposal_id, true),
-			Error::<Test>::ProposalEnded
-		);
-
-		assert_noop!(
-			Signal::simple_vote(Origin::signed(ACC1), H256::random(), true),
-			Error::<Test>::ProposalUnknown
-		);
-
-		assert_noop!(Signal::simple_vote(Origin::none(), proposal_id, true), BadOrigin);
-	});
-}
-
-// TODO:
-// #[test]
-fn signal_on_finalize_success() {
-	ExtBuilder::default().build().execute_with(|| {
-		let (org_id, treasury_id) = create_org_treasury();
-		let campaign_id = create_campaign(
-			org_id,
-			vec![(ACC2, 15 * DOLLARS), (ACC3, 5 * DOLLARS)],
-			Some(FlowState::Success),
-			None,
-		);
-		let (start, expiry) = (4, 15);
-		System::set_block_number(start-1);
+		// General proposal
+		let members: Vec<AccountId> = (0..50).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now + 3;
+		let expiry: BlockNumber = now + 10;
+		System::set_block_number(now);
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, 20 * DOLLARS, None, None, None, None);
 		
-		let proposal_id1: H256 = <Test as frame_system::Config>::Hashing::hash_of(&0);
-		let proposal_id2: H256 = <Test as frame_system::Config>::Hashing::hash_of(&1);
-		let proposal_id3: H256 = <Test as frame_system::Config>::Hashing::hash_of(&2);
-		let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
-
-		assert_ok!(Signal::general_proposal(
-			Origin::signed(ACC1),
-			org_id,
-			bounded_str.clone(), // title
-			bounded_str.clone(), // cid
-			start,               // start
-			expiry               // expiry
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+			proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+			Majority::Relative, Some(proposal.start), None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
 		));
-		assert_ok!(Signal::withdraw_proposal(
-			Origin::signed(ACC1),
-			campaign_id,
-			bounded_str.clone(),  // title
-			bounded_str.clone(),  // cid
-			10,                   // amount
-			start,                // start
-			expiry                // expiry
+		// ProposalNotActivated
+		assert_noop!(
+			Signal::vote(Origin::signed(ALICE), proposal_id, true, None),
+			Error::<Test>::ProposalNotActivated
+		);
+		// Activate proposal
+		System::set_block_number(start);
+		Signal::on_initialize(start);
+
+		// AuthorizationError - not an org member
+		assert_noop!(
+			Signal::vote(Origin::signed(BOB), proposal_id, true, None),
+			Error::<Test>::AuthorizationError
+		);
+
+		// Withdrawal proposal
+		let contributors: Vec<AccountId> = (51..100).collect();
+		set_balance(&contributors, 100 * DOLLARS);
+		let withdrawal_amount = 10 * DOLLARS;
+		let campaign_expiry = start + 1;
+		let campaign_id = create_finalize_campaign(org_id, &contributors, 50 * DOLLARS, campaign_expiry, true);
+		let start: BlockNumber = campaign_expiry + 1;
+		let expiry: BlockNumber = start + 10;
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::Withdrawal, org_id, start, expiry, 20 * DOLLARS,
+			Some(campaign_id), Some(PAYMENT_TOKEN_ID), None, Some(withdrawal_amount)
+		);
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+			proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+			Majority::Relative, Some(proposal.start), None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
 		));
-		for i in 1..5 {
-			assert_ok!(Signal::simple_vote(Origin::signed(i), proposal_id1, i < 4));
-		}
-		for i in 1..5 {
-			assert_ok!(Signal::simple_vote(Origin::signed(i), proposal_id2, i == 5));
-		}
 
-		let events_before = System::events().len();
-		Signal::on_finalize(start);
-		assert_eq!(System::events().len(), events_before);
+		// AuthorizationError - an org member, but not a contributor
+		let not_a_contributor = ALICE;
+		assert_noop!(
+			Signal::vote(Origin::signed(not_a_contributor), proposal_id, true, None),
+			Error::<Test>::AuthorizationError
+		);
 
+	});
+}
+
+/// Test 1.0
+/// - General proposal
+/// - Proposal deposit reserved
+/// - Events
+/// - Quorum reached
+/// - Activation (on_initialize)
+/// - Relative majority
+/// - Result -> Accepted
+/// - Deposit unreserved
+#[test]
+fn signal_1_0() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now + 3;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		System::set_block_number(now);
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None
+		);
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Relative,
+			Some(proposal.start),
+			Some(Permill::from_rational(1u32, 3u32)), // quorum 1/3
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+		// Check if deposit was reserved
+		assert_eq!(<Test as Config>::Currency::total_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance - deposit);
+		
+		System::assert_has_event(Event::Signal(crate::Event::Created {
+			account: ALICE,
+			proposal_id: proposal_id.clone(),
+			org_id: org_id.clone(),
+			campaign_id: None,
+			amount: None,
+			start,
+			expiry,
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Created);
+
+		// Hop to the proposal's start block and check if the proposal activated
+		System::set_block_number(start);
+		Signal::on_initialize(start);
+		System::assert_has_event(Event::Signal(crate::Event::Activated {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Activated);
+
+		// Every org member votes "YES"
+		for x in &members {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+		}
+		// Proposal creator votes "NO"
+		assert_ok!(Signal::vote(Origin::signed(ALICE), proposal_id, false, None));
+		System::assert_has_event(Event::Signal(crate::Event::Voted {
+			account: ALICE,
+			proposal_id: proposal_id.clone(),
+			voted: false,
+			vote_power: 1,
+			yes: members.len().saturated_into(),
+			no: 1,
+		}));
+		
+		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
 		Signal::on_finalize(expiry);
-		let mut events = System::events();
-		assert_eq!(events.len(), events_before + 2);
 
-		let withdrawal_event = events.pop().unwrap().event;
-		let general_event = events.pop().unwrap().event;
-		assert_eq!(
-			withdrawal_event,
-			Event::Signal(crate::Event::ProposalRejected {
-				proposal_id: proposal_id2
-			})
+		System::assert_has_event(Event::Signal(crate::Event::Accepted {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Accepted);
+		// Check if deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+	});
+}
+
+/// Test 1.1
+/// - General proposal
+/// - Start default now
+/// - Relative majority
+/// - Result -> Rejected
+/// - Deposit was slashed (Automated) -> Org treasury balance, GameDAO balance
+#[test]
+fn signal_1_1() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		System::set_block_number(now);
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None
 		);
-		assert_eq!(<ProposalStates<Test>>::get(proposal_id2), ProposalState::Rejected);
 
-		assert_eq!(
-			general_event,
-			Event::Signal(crate::Event::ProposalApproved {
-				proposal_id: proposal_id1
-			})
-		);
-		assert_eq!(<ProposalStates<Test>>::get(proposal_id1), ProposalState::Accepted);
-
-		assert_ok!(Signal::withdraw_proposal(
-			Origin::signed(ACC1),
-			campaign_id,
-			bounded_str.clone(),  // title
-			bounded_str.clone(),  // cid
-			10,                   // amount
-			16,                   // start
-			17                    // expiry
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Relative,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
 		));
 
-		<<Test as Config>::Currency as MultiReservableCurrency<AccountId>>::reserve(
-			<Test as Config>::PaymentTokenId::get(),
-			&treasury_id,
-			25,
-		)
-		.expect("Failed to reserve treasury balance");
+		// Every org member votes "NO"
+		for x in &members {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, false, None));
+		}
+		// Proposal creator votes "NO"
+		assert_ok!(Signal::vote(Origin::signed(ALICE), proposal_id, false, None));
 
-		assert_ok!(Signal::simple_vote(Origin::signed(ACC1), proposal_id3, true));
-		assert_ok!(Signal::simple_vote(Origin::signed(ACC2), proposal_id3, true));
-		System::set_block_number(16);
-		Signal::on_finalize(16);
-		let mut events = System::events();
-		assert_eq!(
-			events.pop().unwrap().event,
-			Event::Signal(crate::Event::ProposalVoted {
-				sender_id: ACC2,
-				proposal_id: proposal_id3,
-				vote: true
-			})
+		System::assert_has_event(Event::Signal(crate::Event::Voted {
+			account: ALICE,
+			proposal_id: proposal_id.clone(),
+			voted: false,
+			vote_power: 1,
+			yes: 0,
+			no: (members.len() + 1).saturated_into(),
+		}));
+		
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Rejected {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Rejected);
+
+		// Check if deposit was slashed
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance - deposit);
+		
+		// TODO: check balances of GameDAO and Org treasury
+
+	});
+}
+
+/// Test 1.2
+/// - General proposal
+/// - Relative majority
+/// - Result -> Expired
+/// - Deposit unreserved
+#[test]
+fn signal_1_2() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		System::set_block_number(now);
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None);
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Relative,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+		// No voting
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Expired {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Expired);
+
+		// Check if deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+	});
+}
+
+/// Test 1.3
+/// - General proposal
+/// - Relative majority
+/// - Quorum not reached
+/// - Result -> Rejected
+/// - Deposit unreserved
+#[test]
+fn signal_1_3() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		System::set_block_number(now);
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None);
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Relative,
+			None, // start
+			Some(Permill::from_rational(1u32, 3u32)), // quorum 1/3
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// Voting: less than 1/3 voted YES, nobody voted NO
+		for x in &members[..members.len() / 3 - 1] {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+		}
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Rejected {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Rejected);
+
+		// Check if deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+	});
+}
+
+/// Test 1.4
+/// - General proposal
+/// - Absolute majority
+/// - Early finalization
+/// - Result -> Accepted
+#[test]
+fn signal_1_4() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		System::set_block_number(now);
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None);
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Absolute,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// Voting: more than 50% voted "YES"
+		for x in &members[..members.len() / 2] {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+		}
+		// Hop to the next block and check if proposal finalized earlier
+		System::set_block_number(now + 1);
+		Signal::on_finalize(now + 1);
+
+		System::assert_has_event(Event::Signal(crate::Event::Accepted {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Accepted);
+
+		// Check if deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+	});
+}
+
+/// Test 1.5
+/// - General proposal
+/// - Absolute majority
+/// - No early finalization
+/// - Result -> Rejected
+#[test]
+fn signal_1_5() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		System::set_block_number(now);
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None);
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Absolute,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// Voting: less than 50% voted "YES"
+		for x in &members[..members.len() / 2 - 1] {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+		}
+		// Hop to the next block and check that proposal haven't finalized earlier
+		System::set_block_number(now + 1);
+		Signal::on_finalize(now + 1);
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Activated);
+
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Rejected {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Rejected);
+
+		// Check if deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+	});
+}
+
+/// Test 1.6
+/// - General proposal
+/// - Simple majority
+/// - Result -> Accepted
+#[test]
+fn signal_1_6() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		System::set_block_number(now);
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None);
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Simple,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// ~10% org member votes "YES"
+		for x in &members[..members.len() / 10] {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+		}
+		// Proposal creator votes "NO"
+		assert_ok!(Signal::vote(Origin::signed(ALICE), proposal_id, false, None));
+		
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Accepted {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Accepted);
+
+		// Check if deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+	});
+}
+
+/// Test 1.7
+/// - General proposal
+/// - Simple majority
+/// - Result -> Rejected
+#[test]
+fn signal_1_7() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		System::set_block_number(now);
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None);
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Simple,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// ~10% org member votes "NO"
+		for x in &members[..members.len() / 10] {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, false, None));
+		}
+		// Proposal creator votes "YES"
+		assert_ok!(Signal::vote(Origin::signed(ALICE), proposal_id, true, None));
+		
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Rejected {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Rejected);
+
+		// Check if deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+	});
+}
+
+/// Test 1.8
+/// - General proposal
+/// - Relative majority
+/// - 2 org members, equal votes
+/// - Result -> Rejected
+/// - Deposit slashed
+#[test]
+fn signal_1_8() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..1).collect();
+		let (org_id, _) = create_org(&members);
+		set_balance(&members, 100 * DOLLARS);
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		System::set_block_number(now);
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None);
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Relative,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// One org member votes "NO"
+		assert_ok!(Signal::vote(Origin::signed(0), proposal_id, false, None));
+		// Proposal creator votes "YES"
+		assert_ok!(Signal::vote(Origin::signed(ALICE), proposal_id, true, None));
+		
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Rejected {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Rejected);
+
+		let voting = ProposalVoting::<Test>::get(&proposal_id).unwrap();
+		assert_eq!(voting.eligible, 2);
+
+		// Check if deposit was slashed
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance - deposit);
+	});
+}
+
+/// Test 2.0
+/// - Withdrawal proposal
+/// - Early finalization if everyone voted (checks eligible contributors)
+/// - Result -> Finalized
+/// - Action -> Unreserve org's treasury funds
+/// - Spending proposal
+/// - Result -> Finalized
+/// - Action -> funds sent to beneficiary account
+#[test]
+fn signal_2_0() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let contributors: Vec<AccountId> = (51..100).collect();
+		let (org_id, treasury_id) = create_org(&members);
+		set_balance(&contributors, 100 * DOLLARS);
+
+		let contribution = 50 * DOLLARS;
+		let total_contribution = contribution * contributors.len() as Balance;
+		let commission = <Test as gamedao_flow::Config>::CampaignFee::get().mul_floor(total_contribution);
+		let currency = PAYMENT_TOKEN_ID;
+		let now: BlockNumber = 3;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		let withdrawal_amount = 10 * DOLLARS;
+		
+		System::set_block_number(now);
+		let campaign_expiry = now + 1;
+		let campaign_id = create_finalize_campaign(org_id, &contributors, contribution, campaign_expiry, true);
+		
+		// Check if campaign was finalized and all treasury balance is reserved
+		assert_eq!(<Test as Config>::Currency::total_balance(currency, &treasury_id), total_contribution - commission);
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
+
+		let start: BlockNumber = campaign_expiry + 1;
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::Withdrawal, org_id, start, expiry, deposit,
+			Some(campaign_id), Some(currency), None, Some(withdrawal_amount)
 		);
-		assert_eq!(
-			events.pop().unwrap().event,
-			Event::Signal(crate::Event::WithdrawalGranted {
-				proposal_id: proposal_id3,
-				campaign_id,
-				org_id
-			})
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Relative,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// Every contributor votes "YES" and triggers an earlier finalization
+		for x in &contributors {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+		}
+		
+		// Check if proposal finalized earlier
+		System::assert_has_event(Event::Signal(crate::Event::Finalized {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Finalized);
+
+		// Check if withdrawal amount was unreserved from the org treasury
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), withdrawal_amount);
+
+		// Check if proposal deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+
+		// -------------------- Spending proposal --------------------
+
+		let expiry: BlockNumber = expiry + 10;
+		let beneficiary = CHARLIE;
+		let spend_amount = withdrawal_amount;
+
+		// Ensure beneficiary init balance is 0
+		assert_eq!(<Test as Config>::Currency::total_balance(currency, &beneficiary), 0);
+
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::Spending, org_id, start, expiry, deposit,
+			Some(campaign_id), Some(currency), Some(beneficiary), Some(spend_amount)
 		);
-        assert_eq!(
-			events.pop().unwrap().event,
-			Event::Tokens(TokensEvent::Endowed {
-				currency_id: <Test as Config>::PaymentTokenId::get(),
-				who: treasury_id,
-				amount: 0
-			})
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Relative,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// Every org member votes "YES"
+		for x in &members {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+		}
+		
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Finalized {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Finalized);
+
+		// Check if spend amount was transfered out from the org treasury
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
+		// Ensure beneficiary received the amount to be spend
+		assert_eq!(<Test as Config>::Currency::total_balance(currency, &beneficiary), spend_amount);
+		// Check if proposal deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+
+
+	});
+}
+
+/// Test 2.1
+/// - Withdrawal proposal
+/// - Result -> Finalized
+/// - Action -> Unreserve org's treasury funds
+/// - Spending proposal
+/// - Result -> Failed
+/// - Action -> No action
+#[test]
+fn signal_2_1() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let contributors: Vec<AccountId> = (51..100).collect();
+		let (org_id, treasury_id) = create_org(&members);
+		set_balance(&contributors, 100 * DOLLARS);
+		let contribution = 50 * DOLLARS;
+		let total_contribution = contribution * contributors.len() as Balance;
+		let commission = <Test as gamedao_flow::Config>::CampaignFee::get().mul_floor(total_contribution);
+		let treasury_balance = 100 * DOLLARS;
+		let currency = PAYMENT_TOKEN_ID;
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		let withdrawal_amount = 10 * DOLLARS;
+		
+		System::set_block_number(now);
+		let campaign_expiry = now + 1;
+		let campaign_id = create_finalize_campaign(org_id, &contributors, contribution, campaign_expiry, true);
+		
+		// Check if campaign was finalized and all treasury balance is reserved
+		assert_eq!(<Test as Config>::Currency::total_balance(currency, &treasury_id), total_contribution - commission);
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
+
+		let start: BlockNumber = campaign_expiry + 1;
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::Withdrawal, org_id, start, expiry, deposit,
+			Some(campaign_id), Some(currency), None, Some(withdrawal_amount)
 		);
-		assert_eq!(
-			events.pop().unwrap().event,
-			Event::Tokens(TokensEvent::Unreserved {
-				currency_id: <Test as Config>::PaymentTokenId::get(),
-				who: treasury_id,
-				amount: 10
-			})
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Relative,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// Every contributor votes "YES"
+		for x in &contributors {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+		}
+		
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Finalized {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Finalized);
+
+		// Check if withdrawal amount was unreserved from the org treasury
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), withdrawal_amount);
+
+		// Check if proposal deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+
+		// -------------------- Spending proposal --------------------
+
+		let start: BlockNumber = expiry;
+		let expiry: BlockNumber = expiry + 10;
+		let beneficiary = CHARLIE;
+		// We are going to spend more, than was unreserved during withdrawal proposal
+		let spend_amount = withdrawal_amount + 10 * DOLLARS;
+
+		// Ensure beneficiary init balance is 0
+		assert_eq!(<Test as Config>::Currency::total_balance(currency, &beneficiary), 0);
+
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::Spending, org_id, start, expiry, deposit,
+			Some(campaign_id), Some(currency), Some(beneficiary), Some(spend_amount)
 		);
-		assert_eq!(<CampaignBalanceUsed<Test>>::get(campaign_id), 10);
-		assert_eq!(<ProposalStates<Test>>::get(proposal_id3), ProposalState::Finalized);
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Relative,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// Every org member votes "YES"
+		for x in &members {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+		}
+		
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Failed {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Failed);
+
+		// Check if spend amount was not transfered out from the org treasury
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), withdrawal_amount);
+		// Ensure beneficiary still has no funds
+		assert_eq!(<Test as Config>::Currency::total_balance(currency, &beneficiary), 0);
+		// Check if proposal deposit was unreserved
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
+	});
+}
+
+/// Test 2.2
+/// - Withdrawal proposal
+/// - Result -> Rejected
+/// - Action -> Not unreserved
+#[test]
+fn signal_2_2() {
+	ExtBuilder::default().build().execute_with(|| {
+		let members: Vec<AccountId> = (0..50).collect();
+		let contributors: Vec<AccountId> = (51..100).collect();
+		let (org_id, treasury_id) = create_org(&members);
+		set_balance(&contributors, 100 * DOLLARS);
+		let contribution = 50 * DOLLARS;
+		let total_contribution = contribution * contributors.len() as Balance;
+		let commission = <Test as gamedao_flow::Config>::CampaignFee::get().mul_floor(total_contribution);
+		let treasury_balance = 100 * DOLLARS;
+		let currency = PAYMENT_TOKEN_ID;
+		let now: BlockNumber = 3;
+		let start: BlockNumber = now;
+		let expiry: BlockNumber = now + 10;
+		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
+		let deposit = 20 * DOLLARS;
+		let withdrawal_amount = 10 * DOLLARS;
+		
+		System::set_block_number(now);
+		let campaign_expiry = now + 1;
+		let campaign_id = create_finalize_campaign(org_id, &contributors, contribution, campaign_expiry, true);
+		
+		// Check if campaign was finalized and all treasury balance is reserved
+		assert_eq!(<Test as Config>::Currency::total_balance(currency, &treasury_id), total_contribution - commission);
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
+
+		let start: BlockNumber = campaign_expiry + 1;
+		let (proposal_id, proposal) = create_proposal(
+			ProposalType::Withdrawal, org_id, start, expiry, deposit,
+			Some(campaign_id), Some(currency), None, Some(withdrawal_amount)
+		);
+
+		assert_ok!(Signal::proposal(
+			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
+			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
+			Majority::Simple,
+			None, // start
+			None, // quorum
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+		));
+
+		// Every contributor votes "NO"
+		for x in &contributors {
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, false, None));
+		}
+		
+		// Hop to the proposal's expiry block and check proposal finalized
+		System::set_block_number(expiry);
+		Signal::on_finalize(expiry);
+
+		System::assert_has_event(Event::Signal(crate::Event::Rejected {
+			proposal_id: proposal_id.clone(),
+		}));
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Rejected);
+
+		// Check if withdrawal amount was not unreserved from the org treasury
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
+
+		// Check if proposal deposit was slashed
+		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance - deposit);
 	});
 }

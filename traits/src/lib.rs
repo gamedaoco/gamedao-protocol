@@ -46,6 +46,7 @@ pub trait FlowTrait<AccountId, Balance, Hash> {
 
 	fn campaign_balance(campaign_id: &Hash) -> Balance;
 	fn is_campaign_succeeded(campaign_id: &Hash) -> bool;
+	fn is_campaign_contributor(campaign_id: &Hash, who: &AccountId) -> bool;
 	fn campaign_contributors_count(campaign_id: &Hash) -> u64;
 	fn campaign_org(campaign_id: &Hash) -> Hash;
 	fn campaign_owner(campaign_id: &Hash) -> Option<AccountId>;
