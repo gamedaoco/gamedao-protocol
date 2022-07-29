@@ -266,12 +266,12 @@ impl gamedao_signal::Config for Test {
 }
 
 use sp_runtime::traits::{Hash as HashTrait, AccountIdConversion};
-use gamedao_traits::{ControlTrait, FlowTrait};
+use gamedao_traits::ControlTrait;
 use crate::ProposalCount;
 use gamedao_control::{AccessModel, FeeModel, OrgType};
-use gamedao_flow::{FlowGovernance, FlowProtocol, FlowState};
+use gamedao_flow::{FlowGovernance, FlowProtocol};
 use super::types::{Proposal, ProposalType, SlashingRule};
-use frame_support::{assert_noop, assert_ok};
+use frame_support::assert_ok;
 use frame_system::RawOrigin;
 
 pub fn create_org(members: &Vec<AccountId>) -> (H256, AccountId) {

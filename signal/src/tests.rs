@@ -1,24 +1,18 @@
 #[cfg(test)]
 use super::{
 	mock::{
-		CurrencyId, BlockNumber, Hash, AccountId, Balance, Control, Event, ExtBuilder,
-		Flow, Tokens, Origin, Signal, System, Test, ALICE, BOB, CHARLIE, DOLLARS,
+		BlockNumber, AccountId, Balance, Control, Event, ExtBuilder,
+		Flow, Origin, Signal, System, Test, ALICE, BOB, CHARLIE, DOLLARS,
 		PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, create_proposal, create_finalize_campaign, create_org, set_balance
 	},
-	types::{Proposal, Voting, ProposalIndex, ProposalType, ProposalState,
-		SlashingRule, Majority, Unit, Scale, VotingPower, BlockType},
+	types::{ProposalType, ProposalState, Majority},
 	*,
 };
 use frame_system::RawOrigin;
 use frame_support::{
 	assert_noop, assert_ok,
-	traits::Hooks,
-	BoundedVec, inherent::BlockT
+	traits::Hooks
 };
-use orml_tokens::Event as TokensEvent;
-use orml_traits::MultiReservableCurrency;
-use sp_core::H256;
-use sp_runtime::traits::{BadOrigin, Hash as HashTrait, AccountIdConversion};
 
 use gamedao_flow::FlowState;
 
@@ -41,7 +35,7 @@ fn signal_0_0() {
 			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None);
 
 		// OrgInactive
-		Control::disable_org(RawOrigin::Root.into(), org_id);
+		let _ = Control::disable_org(RawOrigin::Root.into(), org_id);
 		assert_noop!(
 			Signal::proposal(
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
@@ -52,7 +46,7 @@ fn signal_0_0() {
 				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
 			Error::<Test>::OrgInactive
 		);
-		Control::enable_org(RawOrigin::Root.into(), org_id);
+		let _ = Control::enable_org(RawOrigin::Root.into(), org_id);
 
 		// AuthorizationError: Org memeber not active or not a member
 		let not_a_member = CHARLIE;
@@ -143,7 +137,7 @@ fn signal_0_1() {
 
 		let start: BlockNumber = campaign_expiry + 1;
 		let expiry: BlockNumber = start + 10;
-		let (proposal_id, proposal) = create_proposal(
+		let (_, proposal) = create_proposal(
 			ProposalType::Withdrawal, org_id, start, expiry, 20 * DOLLARS,
 			Some(campaign_id), Some(PAYMENT_TOKEN_ID), None, Some(10 * DOLLARS)
 		);
@@ -913,10 +907,8 @@ fn signal_2_1() {
 		let contribution = 50 * DOLLARS;
 		let total_contribution = contribution * contributors.len() as Balance;
 		let commission = <Test as gamedao_flow::Config>::CampaignFee::get().mul_floor(total_contribution);
-		let treasury_balance = 100 * DOLLARS;
 		let currency = PAYMENT_TOKEN_ID;
 		let now: BlockNumber = 3;
-		let start: BlockNumber = now;
 		let expiry: BlockNumber = now + 10;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
@@ -1027,10 +1019,8 @@ fn signal_2_2() {
 		let contribution = 50 * DOLLARS;
 		let total_contribution = contribution * contributors.len() as Balance;
 		let commission = <Test as gamedao_flow::Config>::CampaignFee::get().mul_floor(total_contribution);
-		let treasury_balance = 100 * DOLLARS;
 		let currency = PAYMENT_TOKEN_ID;
 		let now: BlockNumber = 3;
-		let start: BlockNumber = now;
 		let expiry: BlockNumber = now + 10;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
