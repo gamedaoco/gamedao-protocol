@@ -13,10 +13,7 @@ use frame_support::{
 	assert_noop, assert_ok,
 	traits::Hooks
 };
-
 use gamedao_flow::FlowState;
-
-// TODO: vote AuthorizationError -> not a contributor, not a member
 
 /// Test 0.0
 /// - Proposal validation Errors
@@ -253,7 +250,7 @@ fn signal_0_2() {
 		System::set_block_number(start);
 		Signal::on_initialize(start);
 
-		// AuthorizationError - not an org member
+		// AuthorizationError: not an org member
 		assert_noop!(
 			Signal::vote(Origin::signed(BOB), proposal_id, true, None),
 			Error::<Test>::AuthorizationError
@@ -278,7 +275,7 @@ fn signal_0_2() {
 			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
 		));
 
-		// AuthorizationError - an org member, but not a contributor
+		// AuthorizationError: an org member, but not a contributor
 		let not_a_contributor = ALICE;
 		assert_noop!(
 			Signal::vote(Origin::signed(not_a_contributor), proposal_id, true, None),
