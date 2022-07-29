@@ -292,16 +292,16 @@ pub fn create_org(members: &Vec<AccountId>) -> (H256, AccountId) {
 		1,					// gov_asset
 		1,					// pay_asset
 		100,				// member_limit
-        Some(1 * DOLLARS)	// deposit
+		Some(1 * DOLLARS)	// deposit
 	));
-    let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account_truncating(nonce as i32);
-    let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);
+	let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account_truncating(nonce as i32);
+	let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);
 	assert_eq!(treasury_id, Control::org_treasury_account(&org_id).unwrap());
-    assert_ok!(Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, init_balance, 0));
+	assert_ok!(Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, init_balance, 0));
 	for x in members {
 		assert_ok!(Control::add_member(Origin::signed(org_creator), org_id, *x));
 	}
-    (org_id, treasury_id)
+	(org_id, treasury_id)
 }
 
 pub fn set_balance(accounts: &Vec<AccountId>, amount: Balance) {
