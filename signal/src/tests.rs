@@ -15,21 +15,31 @@ use frame_support::{
 };
 use gamedao_flow::FlowState;
 
+// TODO: more tests for token weighted voting
+
 /// Test 0.0
 /// - Proposal validation Errors
 #[test]
 fn signal_0_0() {
 	ExtBuilder::default().build().execute_with(|| {
 		let members: Vec<AccountId> = (0..50).collect();
+		let contributors: Vec<AccountId> = (51..100).collect();
 		let (org_id, _) = create_org(&members);
+		set_balance(&contributors, 100 * DOLLARS);
 		set_balance(&members, 100 * DOLLARS);
+		let contribution = 50 * DOLLARS;
+
 		let now: BlockNumber = 3;
-		let start: BlockNumber = now + 3;
-		let expiry: BlockNumber = now + 10;
-		let deposit = 20 * DOLLARS;
 		System::set_block_number(now);
+		let campaign_expiry = now + 1;
+		let campaign_id = create_finalize_campaign(org_id, &contributors, contribution, campaign_expiry, true);
+
+		let start: BlockNumber = campaign_expiry + 1;
+		let expiry: BlockNumber = start + 10;
 		let (_, proposal) = create_proposal(
-			ProposalType::General, org_id, start, expiry, deposit, None, None, None, None);
+			ProposalType::Withdrawal, org_id, start, expiry, 20 * DOLLARS,
+			Some(campaign_id), Some(PAYMENT_TOKEN_ID), None, Some(10 * DOLLARS)
+		);
 
 		// OrgInactive
 		let _ = Control::disable_org(RawOrigin::Root.into(), org_id);
@@ -38,9 +48,11 @@ fn signal_0_0() {
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
 				Majority::Relative,
+				Unit::Person,
+				Scale::Linear,
 				None, // start
 				None, // quorum
-				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
 			Error::<Test>::OrgInactive
 		);
 		let _ = Control::enable_org(RawOrigin::Root.into(), org_id);
@@ -51,10 +63,8 @@ fn signal_0_0() {
 			Signal::proposal(
 				Origin::signed(not_a_member), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-				Majority::Relative,
-				None, // start
-				None, // quorum
-				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
 			Error::<Test>::AuthorizationError
 		);
 
@@ -64,10 +74,8 @@ fn signal_0_0() {
 			Signal::proposal(
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-				Majority::Relative,
-				Some(start),
-				None, // quorum
-				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+				Majority::Relative, Unit::Person, Scale::Linear, Some(start), None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
 			Error::<Test>::OutOfBounds
 		);
 
@@ -77,8 +85,8 @@ fn signal_0_0() {
 			Signal::proposal(
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, expiry,
-				Majority::Relative, None, None,
-				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
 			Error::<Test>::OutOfBounds
 		);
 
@@ -87,30 +95,70 @@ fn signal_0_0() {
 			Signal::proposal(
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), 1 * DOLLARS, proposal.expiry,
-				Majority::Relative, None, None,
-				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
 			Error::<Test>::DepositInsufficient
+		);
+
+		// WrongParameter: unit person and quadratic scale
+		assert_noop!(
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative, Unit::Person, Scale::Quadratic, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
+			Error::<Test>::WrongParameter
+		);
+
+		// WrongParameter: unit token and absolute majority
+		assert_noop!(
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Absolute, Unit::Token, Scale::Quadratic, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
+			Error::<Test>::WrongParameter
+		);
+
+		// BalanceLow: not enough balance for the deposit
+		assert_noop!(
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), 1000 * DOLLARS, proposal.expiry,
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
+			Error::<Test>::BalanceLow
+		);
+
+		// TreasuryBalanceLow: not enough balance for the reserve before starting spending proposal
+		assert_noop!(
+			Signal::proposal(
+				Origin::signed(ALICE), ProposalType::Spending, proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				proposal.campaign_id, Some(1000 * DOLLARS), Some(1), proposal.currency_id),
+			Error::<Test>::TreasuryBalanceLow
 		);
 
 		// TooManyProposals
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 			proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-			Majority::Relative, None, None,
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+			Majority::Relative, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
 		);
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 			proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-			Majority::Relative, None, None,
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+			Majority::Relative, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
 		);
 		assert_noop!(
 			Signal::proposal(
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-				Majority::Relative, None, None,
-				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
 			Error::<Test>::TooManyProposals
 		);
 	});
@@ -140,45 +188,45 @@ fn signal_0_1() {
 		);
 
 		// Spending proposal:
-		// ParameterError: beneficiary is None
+		// MissingParameter: beneficiary is None
 		assert_noop!(
 			Signal::proposal(
 				Origin::signed(ALICE), ProposalType::Spending, proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-				Majority::Relative, None, None,
-				proposal.campaign_id, proposal.amount, None, proposal.currency),
-			Error::<Test>::ParameterError
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				proposal.campaign_id, proposal.amount, None, proposal.currency_id),
+			Error::<Test>::MissingParameter
 		);
 
 		// Withdrawal and Spending proposal:
-		// ParameterError: currency is None
+		// MissingParameter: currency is None
 		assert_noop!(
 			Signal::proposal(
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-				Majority::Relative, None, None,
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
 				proposal.campaign_id, proposal.amount, proposal.beneficiary, None),
-			Error::<Test>::ParameterError
+			Error::<Test>::MissingParameter
 		);
 
-		// ParameterError: amount is None
+		// MissingParameter: amount is None
 		assert_noop!(
 			Signal::proposal(
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-				Majority::Relative, None, None,
-				proposal.campaign_id, None, proposal.beneficiary, proposal.currency),
-			Error::<Test>::ParameterError
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				proposal.campaign_id, None, proposal.beneficiary, proposal.currency_id),
+			Error::<Test>::MissingParameter
 		);
 
-		// ParameterError: campaign_id is None
+		// MissingParameter: campaign_id is None
 		assert_noop!(
 			Signal::proposal(
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-				Majority::Relative, None, None,
-				None, proposal.amount, proposal.beneficiary, proposal.currency),
-			Error::<Test>::ParameterError
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				None, proposal.amount, proposal.beneficiary, proposal.currency_id),
+			Error::<Test>::MissingParameter
 		);
 
 		// AuthorizationError: proposer is not a campaign owner
@@ -186,20 +234,20 @@ fn signal_0_1() {
 			Signal::proposal(
 				Origin::signed(BOB), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-				Majority::Relative, None, None,
-				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency),
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
 			Error::<Test>::AuthorizationError
 		);
 
-		// BalanceInsufficient: amount > campaign balance
+		// BalanceLow: amount > campaign balance
 		let insufficient_amount = 100000000000000 * DOLLARS;
 		assert_noop!(
 			Signal::proposal(
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-				Majority::Relative, None, None,
-				proposal.campaign_id, Some(insufficient_amount), proposal.beneficiary, proposal.currency),
-			Error::<Test>::BalanceInsufficient
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				proposal.campaign_id, Some(insufficient_amount), proposal.beneficiary, proposal.currency_id),
+			Error::<Test>::BalanceLow
 		);
 
 		// CampaignFailed
@@ -209,8 +257,8 @@ fn signal_0_1() {
 			Signal::proposal(
 				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 				proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-				Majority::Relative, None, None,
-				Some(campaign_id), proposal.amount, proposal.beneficiary, proposal.currency),
+				Majority::Relative, Unit::Person, Scale::Linear, None, None,
+				Some(campaign_id), proposal.amount, proposal.beneficiary, proposal.currency_id),
 			Error::<Test>::CampaignFailed
 		);
 	});
@@ -221,6 +269,7 @@ fn signal_0_1() {
 /// 	- ProposalNotActivated
 /// 	- AuthorizationError: not a member (General proposal)
 /// 	- AuthorizationError: not a contributor (Withdrawal proposal)
+///     - BalanceLow: not enough balance for token weighted voting
 #[test]
 fn signal_0_2() {
 	ExtBuilder::default().build().execute_with(|| {
@@ -238,8 +287,8 @@ fn signal_0_2() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 			proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-			Majority::Relative, Some(proposal.start), None,
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Relative, Unit::Person, Scale::Linear, Some(proposal.start), None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 		// ProposalNotActivated
 		assert_noop!(
@@ -271,15 +320,21 @@ fn signal_0_2() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 			proposal.title.clone(), proposal.cid.clone(), proposal.deposit, proposal.expiry,
-			Majority::Relative, Some(proposal.start), None,
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Relative, Unit::Token, Scale::Linear, Some(proposal.start), None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
 		// AuthorizationError: an org member, but not a contributor
 		let not_a_contributor = ALICE;
 		assert_noop!(
-			Signal::vote(Origin::signed(not_a_contributor), proposal_id, true, None),
+			Signal::vote(Origin::signed(not_a_contributor), proposal_id, true, Some(10 * DOLLARS)),
 			Error::<Test>::AuthorizationError
+		);
+		
+		// BalanceLow: not enough ProtocolCurrency balance to perform a vote
+		assert_noop!(
+			Signal::vote(Origin::signed(51), proposal_id, true, Some(1000 * DOLLARS)),
+			Error::<Test>::BalanceLow
 		);
 
 	});
@@ -313,10 +368,10 @@ fn signal_1_0() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Relative,
+			Majority::Relative, Unit::Person, Scale::Linear,
 			Some(proposal.start),
 			Some(Permill::from_rational(1u32, 3u32)), // quorum 1/3
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 		// Check if deposit was reserved
 		assert_eq!(<Test as Config>::Currency::total_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
@@ -394,10 +449,8 @@ fn signal_1_1() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Relative,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Relative, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
 		// Every org member votes "NO"
@@ -456,10 +509,8 @@ fn signal_1_2() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Relative,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Relative, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 		// No voting
 		// Hop to the proposal's expiry block and check proposal finalized
@@ -500,10 +551,9 @@ fn signal_1_3() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Relative,
-			None, // start
+			Majority::Relative, Unit::Person, Scale::Linear, None,
 			Some(Permill::from_rational(1u32, 3u32)), // quorum 1/3
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
 		// Voting: less than 1/3 voted YES, nobody voted NO
@@ -547,15 +597,13 @@ fn signal_1_4() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Absolute,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Absolute, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
 		// Voting: more than 50% voted "YES"
 		for x in &members[..members.len() / 2] {
-			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, Some(10 * DOLLARS)));
 		}
 		// Hop to the next block and check if proposal finalized earlier
 		System::set_block_number(now + 1);
@@ -594,10 +642,8 @@ fn signal_1_5() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Absolute,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Absolute, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
 		// Voting: less than 50% voted "YES"
@@ -625,6 +671,7 @@ fn signal_1_5() {
 
 /// Test 1.6
 /// - General proposal
+/// - Unit token, scale quadratic
 /// - Simple majority
 /// - Result -> Accepted
 #[test]
@@ -645,18 +692,18 @@ fn signal_1_6() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Simple,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Simple, Unit::Token, Scale::Quadratic, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
+
+		let voting_deposit = 10 * DOLLARS;
 
 		// ~10% org member votes "YES"
 		for x in &members[..members.len() / 10] {
-			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, Some(voting_deposit)));
 		}
 		// Proposal creator votes "NO"
-		assert_ok!(Signal::vote(Origin::signed(ALICE), proposal_id, false, None));
+		assert_ok!(Signal::vote(Origin::signed(ALICE), proposal_id, false, Some(voting_deposit)));
 		
 		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
@@ -694,10 +741,8 @@ fn signal_1_7() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Simple,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Simple, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
 		// ~10% org member votes "NO"
@@ -745,10 +790,8 @@ fn signal_1_8() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Relative,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Relative, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
 		// One org member votes "NO"
@@ -816,10 +859,8 @@ fn signal_2_0() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Relative,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Relative, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
 		// Every contributor votes "YES" and triggers an earlier finalization
@@ -856,11 +897,12 @@ fn signal_2_0() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Relative,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Relative, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
+
+		// Ensure org treasury balance was reserved during proposal creation
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
 
 		// Every org member votes "YES"
 		for x in &members {
@@ -887,13 +929,15 @@ fn signal_2_0() {
 	});
 }
 
+
 /// Test 2.1
 /// - Withdrawal proposal
+/// - Early finalization if everyone voted (checks eligible contributors)
 /// - Result -> Finalized
 /// - Action -> Unreserve org's treasury funds
 /// - Spending proposal
-/// - Result -> Failed
-/// - Action -> No action
+/// - Result -> Rejected
+/// - Action -> no action, org treasury funds unreserved
 #[test]
 fn signal_2_1() {
 	ExtBuilder::default().build().execute_with(|| {
@@ -901,6 +945,7 @@ fn signal_2_1() {
 		let contributors: Vec<AccountId> = (51..100).collect();
 		let (org_id, treasury_id) = create_org(&members);
 		set_balance(&contributors, 100 * DOLLARS);
+
 		let contribution = 50 * DOLLARS;
 		let total_contribution = contribution * contributors.len() as Balance;
 		let commission = <Test as gamedao_flow::Config>::CampaignFee::get().mul_floor(total_contribution);
@@ -928,21 +973,16 @@ fn signal_2_1() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Relative,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Relative, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
-		// Every contributor votes "YES"
+		// Every contributor votes "YES" and triggers an earlier finalization
 		for x in &contributors {
 			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
 		}
 		
-		// Hop to the proposal's expiry block and check proposal finalized
-		System::set_block_number(expiry);
-		Signal::on_finalize(expiry);
-
+		// Check if proposal finalized earlier
 		System::assert_has_event(Event::Signal(crate::Event::Finalized {
 			proposal_id: proposal_id.clone(),
 		}));
@@ -956,11 +996,9 @@ fn signal_2_1() {
 
 		// -------------------- Spending proposal --------------------
 
-		let start: BlockNumber = expiry;
 		let expiry: BlockNumber = expiry + 10;
 		let beneficiary = CHARLIE;
-		// We are going to spend more, than was unreserved during withdrawal proposal
-		let spend_amount = withdrawal_amount + 10 * DOLLARS;
+		let spend_amount = withdrawal_amount;
 
 		// Ensure beneficiary init balance is 0
 		assert_eq!(<Test as Config>::Currency::total_balance(currency, &beneficiary), 0);
@@ -973,34 +1011,35 @@ fn signal_2_1() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Relative,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Relative, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
-		// Every org member votes "YES"
+		// Ensure org treasury balance was reserved during proposal creation
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
+
+		// Every org member votes "NO"
 		for x in &members {
-			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
+			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, false, None));
 		}
 		
 		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
 		Signal::on_finalize(expiry);
 
-		System::assert_has_event(Event::Signal(crate::Event::Failed {
+		System::assert_has_event(Event::Signal(crate::Event::Rejected {
 			proposal_id: proposal_id.clone(),
 		}));
-		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Failed);
+		assert_eq!(ProposalStates::<Test>::get(&proposal_id), ProposalState::Rejected);
 
-		// Check if spend amount was not transfered out from the org treasury
-		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), withdrawal_amount);
-		// Ensure beneficiary still has no funds
+		// Check if spend amount was unreserved from the org treasury
+		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), spend_amount);
+		// Ensure beneficiary received the amount to be spend
 		assert_eq!(<Test as Config>::Currency::total_balance(currency, &beneficiary), 0);
-		// Check if proposal deposit was unreserved
-		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
 	});
 }
+
+
 
 /// Test 2.2
 /// - Withdrawal proposal
@@ -1040,10 +1079,8 @@ fn signal_2_2() {
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type, proposal.org_id,
 			proposal.title, proposal.cid, proposal.deposit, proposal.expiry,
-			Majority::Simple,
-			None, // start
-			None, // quorum
-			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency,
+			Majority::Simple, Unit::Person, Scale::Linear, None, None,
+			proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id,
 		));
 
 		// Every contributor votes "NO"

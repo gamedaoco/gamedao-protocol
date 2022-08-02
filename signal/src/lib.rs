@@ -25,14 +25,17 @@ mod benchmarking;
 pub mod weights;
 
 use frame_support::{
-	traits::StorageVersion,
+	traits::{StorageVersion, BalanceStatus},
 	dispatch::DispatchResult,
 	weights::Weight,
 	transactional
 };
 use frame_system::ensure_signed;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
-use sp_runtime::{traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Zero, Hash, SaturatedConversion}, Permill};
+use sp_runtime::{
+	traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, Zero, Hash, SaturatedConversion, IntegerSquareRoot},
+	Permill
+};
 use sp_std::vec;
 
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
@@ -164,7 +167,7 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, T::Hash,
 		Proposal<T>, OptionQuery>;
 
-	/// Proposal's state: Created | Activated | Accepted | Rejected | Expired | Aborted | Finalized | Failed
+	/// Proposal's state: Created | Activated | Accepted | Rejected | Expired | Aborted | Finalized
 	///
 	/// ProposalStates: map Hash => ProposalState
 	#[pallet::storage]
@@ -216,25 +219,26 @@ pub mod pallet {
 		Rejected { proposal_id: T::Hash },
 		Expired { proposal_id: T::Hash },
 		Aborted { proposal_id: T::Hash },
-		Finalized { proposal_id: T::Hash },
-		Failed { proposal_id: T::Hash }
+		Finalized { proposal_id: T::Hash }
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
 		AuthorizationError,
-		BalanceInsufficient,
+		BalanceLow,
 		CampaignFailed,
 		DepositInsufficient,
 		DuplicateVote,
+		MissingParameter,
 		OrgInactive,
 		OutOfBounds,
-		ParameterError,
 		ProposalExists,
 		ProposalNotActivated,
 		ProposalUnknown,
 		TooManyProposals,
+		TreasuryBalanceLow,
 		VoteLimitReached,
+		WrongParameter,
 	}
 
 	#[pallet::call]
@@ -251,6 +255,8 @@ pub mod pallet {
 			deposit: T::Balance,
 			expiry: T::BlockNumber,
 			majority: Majority,
+			unit: Unit,
+			scale: Scale,
 			// Optional params:
 			start: Option<T::BlockNumber>,
 			quorum: Option<Permill>,
@@ -258,7 +264,7 @@ pub mod pallet {
 			campaign_id: Option<T::Hash>,
 			amount: Option<T::Balance>,
 			beneficiary: Option<T::AccountId>,
-			currency: Option<T::CurrencyId>,
+			currency_id: Option<T::CurrencyId>,
 		) -> DispatchResult {
 			let proposer = ensure_signed(origin)?;
 			// Org/member validation:
@@ -273,17 +279,24 @@ pub mod pallet {
 			ensure!(expiry <= starts + T::MaxProposalDuration::get(), Error::<T>::OutOfBounds);
 			// Deposit validation:
 			ensure!(deposit >= T::MinProposalDeposit::get(), Error::<T>::DepositInsufficient);
+			// Check if all parameters are combinable:
+			if unit == Unit::Person && scale == Scale::Quadratic {
+				return Err(Error::<T>::WrongParameter)?;
+			};
+			if unit == Unit::Token && majority == Majority::Absolute {
+				return Err(Error::<T>::WrongParameter)?;
+			};
 			// Proposal type specific validation:
 			match proposal_type {
 				ProposalType::Withdrawal | ProposalType::Spending => {
 					if proposal_type == ProposalType::Spending && beneficiary.is_none() {
-						return Err(Error::<T>::ParameterError)?;
+						return Err(Error::<T>::MissingParameter)?;
 					}
-					if currency.is_none() {
-						return Err(Error::<T>::ParameterError)?;
+					if currency_id.is_none() {
+						return Err(Error::<T>::MissingParameter)?;
 					}
-					let bond = amount.ok_or(Error::<T>::ParameterError)?;
-					let c_id = campaign_id.ok_or(Error::<T>::ParameterError)?;
+					let bond = amount.ok_or(Error::<T>::MissingParameter)?;
+					let c_id = campaign_id.ok_or(Error::<T>::MissingParameter)?;
 
 					let campaign_owner = T::Flow::campaign_owner(&c_id).ok_or(Error::<T>::AuthorizationError)?;
 					ensure!(proposer == campaign_owner, Error::<T>::AuthorizationError);
@@ -293,8 +306,8 @@ pub mod pallet {
 					let total_balance = T::Flow::campaign_balance(&c_id);
 					let remaining_balance = total_balance
 						.checked_sub(&used_balance)
-						.ok_or(Error::<T>::BalanceInsufficient)?;
-					ensure!(remaining_balance >= bond, Error::<T>::BalanceInsufficient);
+						.ok_or(Error::<T>::BalanceLow)?;
+					ensure!(remaining_balance >= bond, Error::<T>::BalanceLow);
 				},
 				_ => {}
 			}
@@ -302,7 +315,7 @@ pub mod pallet {
 			// Create Proposal
 			let index = ProposalCount::<T>::get();
 			let proposal = types::Proposal {
-				index: index.clone(), title, cid, org_id, campaign_id, amount, deposit, currency,
+				index: index.clone(), title, cid, org_id, campaign_id, amount, deposit, currency_id,
 				beneficiary, proposal_type: proposal_type.clone(), start: starts, expiry,
 				owner: proposer.clone(), slashing_rule: SlashingRule::Automated
 			};
@@ -310,7 +323,7 @@ pub mod pallet {
 			ensure!(!ProposalOf::<T>::contains_key(&proposal_hash), Error::<T>::ProposalExists);
 
 			Self::create_proposal(&proposal_hash, proposal)?;
-			Self::create_voting(&proposal_hash, &proposal_type, &index, &org_id, &campaign_id, quorum, majority);
+			Self::create_voting(&proposal_hash, &proposal_type, &index, &org_id, &campaign_id, quorum, majority, unit, scale);
 
 			Self::deposit_event(Event::<T>::Created {
 				proposal_id: proposal_hash,
@@ -337,7 +350,7 @@ pub mod pallet {
 
 			// Deposit is required for token weighted voting
 			if voting.unit == Unit::Token && deposit.is_none() {
-				return Err(Error::<T>::ParameterError)?;
+				return Err(Error::<T>::MissingParameter)?;
 			}
 
 			let proposal = ProposalOf::<T>::get(&proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
@@ -422,19 +435,19 @@ pub mod pallet {
 							power = 1;
 						}
 						Scale::Quadratic => { 
-							// In case of vote delegation Quadratic scale also possible?
+							// So far not possible, maybe in case of delegation
 						}
 					}
 				}
 				Unit::Token => {
+					let linear_power: VotingPower = deposit.unwrap().saturated_into();
 					match voting.scale {
 						Scale::Linear => { 
-							power = deposit.unwrap().saturated_into();
+							power = linear_power;
 						}
 						Scale::Quadratic => { 
-							// TODO: Quadratic voting
-							// use sp_runtime::traits::IntegerSquareRoot
-							// power = balance.integer_sqrt()
+							let linear_power: VotingPower = deposit.unwrap().saturated_into();
+							power = linear_power.integer_sqrt();
 						}
 					}
 				}
@@ -446,13 +459,14 @@ pub mod pallet {
 			who: &T::AccountId,
 			old_deposit: &Option<T::Balance>,
 			deposit: &Option<T::Balance>
-		) {
+		) -> Result<(), DispatchError> {
 			if let Some(amount) = old_deposit {
 				let _ = T::Currency::unreserve(T::ProtocolTokenId::get(), &who, *amount);
 			}
 			if let Some(amount) = deposit {
-				let _ = T::Currency::reserve(T::ProtocolTokenId::get(), &who, *amount);
+				T::Currency::reserve(T::ProtocolTokenId::get(), &who, *amount).map_err(|_| Error::<T>::BalanceLow)?;
 			}
+			return Ok(());
 		}
 
 		pub fn try_finalize_proposal(voting: &Voting<T>) -> Option<ProposalState> {
@@ -513,7 +527,7 @@ pub mod pallet {
 			voting.no = voting.nays.iter().map(|a| a.1).sum();
 			voting.participating = voting.yes + voting.no;
 
-			Self::process_voting_deposits(&who, &old_deposit, &deposit);
+			Self::process_voting_deposits(&who, &old_deposit, &deposit)?;
 
 			Self::deposit_event(Event::Voted {
 				account: who,
@@ -544,7 +558,16 @@ pub mod pallet {
 			} else {
 				proposal_state = ProposalState::Activated;
 			}
-			let _ = T::Currency::reserve(T::ProtocolTokenId::get(), &proposal.owner, proposal.deposit);
+			T::Currency::reserve(
+				T::ProtocolTokenId::get(), &proposal.owner, proposal.deposit
+			).map_err(|_| Error::<T>::BalanceLow)?;
+
+			if proposal.proposal_type == ProposalType::Spending {
+				let org_trsry = T::Control::org_treasury_account(&proposal.org_id).unwrap();
+				T::Currency::reserve(
+					proposal.currency_id.unwrap(), &org_trsry, proposal.amount.unwrap()
+				).map_err(|_| Error::<T>::TreasuryBalanceLow)?;
+			}
 
 			ProposalsByBlock::<T>::try_mutate(
 				BlockType::Start, proposal.start, |proposals| -> Result<(), DispatchError> {
@@ -573,48 +596,26 @@ pub mod pallet {
 			campaign_id: &Option<T::Hash>,
 			quorum: Option<Permill>,
 			majority: Majority,
+			unit: Unit,
+			scale: Scale,
 		) {
-			let unit = Unit::Person;
-			let scale = Scale::Linear;
+			// Eligible is needed only for the Absolute majority voting type
 			let mut eligible: VotingPower = 0;
-			
-			// Set eligible voting power
-			match proposal_type {
-				ProposalType::Withdrawal => {
-					match unit {
-						Unit::Person => {
+
+			match unit {
+				Unit::Person => {
+					match proposal_type {
+						ProposalType::Withdrawal => {
 							eligible = T::Flow::campaign_contributors_count(&campaign_id.unwrap()).into();
-						},
-						Unit::Token => {
-							match scale {
-								Scale::Linear => {
-									// TODO: this is the only line missing for Token weighted voting feature
-									// eligible = Σ (contributor tokens)
-								}
-								Scale::Quadratic => {
-									// TODO: eligible = Σ (contributor tokens) - if it make sense (investigation needed)
-								}
-							}
-						},
-					}
-				},
-				_ => {
-					match unit {
-						Unit::Person => {
+						}
+						_ => {
 							eligible = T::Control::org_member_count(&org_id).into();
-						},
-						Unit::Token => {
-							match scale {
-								Scale::Linear => {
-									// TODO: this is the only line missing for Token weighted voting feature
-									// eligible = Σ (member tokens)
-								}
-								Scale::Quadratic => {
-									// TODO: eligible = Σ (√member tokens) - if it make sense (investigation needed)
-								}
-							}
-						},
+						}
 					}
+				}
+				Unit::Token => {
+					// Absolute majority voting can't be applied to the Token weighted voting,
+					// 	since it's not possible to calculate eligible
 				}
 			}
 
@@ -663,25 +664,21 @@ pub mod pallet {
 		fn apply_proposal_actions(proposal: &Proposal<T>, proposal_state: ProposalState) -> ProposalState {
 			match proposal.proposal_type {
 				ProposalType::Withdrawal => {
-					let currency_id = proposal.currency.unwrap();
-					let org_trsry = T::Control::org_treasury_account(&proposal.org_id).unwrap();
-					let amount = proposal.amount.unwrap();
-					T::Currency::unreserve(currency_id, &org_trsry, amount);
+					T::Currency::unreserve(
+						proposal.currency_id.unwrap(),
+						&T::Control::org_treasury_account(&proposal.org_id).unwrap(),
+						proposal.amount.unwrap());
 					return ProposalState::Finalized;
 				}
 				ProposalType::Spending => {
-					let currency_id = proposal.currency.unwrap();
-					let org_trsry = T::Control::org_treasury_account(&proposal.org_id).unwrap();
-					let amount = proposal.amount.unwrap();
-					let beneficiary = proposal.beneficiary.as_ref().unwrap();
-
-					// This could fail if not enough balance
-					if let Ok(_) = T::Currency::transfer(currency_id, &org_trsry, &beneficiary, amount) {
-						return ProposalState::Finalized;
-					} else {
-						return ProposalState::Failed;
-					}
-
+					let res = T::Currency::repatriate_reserved(
+						proposal.currency_id.unwrap(),
+						&T::Control::org_treasury_account(&proposal.org_id).unwrap(),
+						&proposal.beneficiary.as_ref().unwrap(),
+						proposal.amount.unwrap(),
+						BalanceStatus::Free);
+					debug_assert!(res.is_ok());
+					return ProposalState::Finalized;
 				}
 				_ => { return proposal_state }
 			}
@@ -689,12 +686,12 @@ pub mod pallet {
 		}
 
 		fn process_proposal_deposit(proposal: &Proposal<T>, voting: &Voting<T>, proposal_state: &ProposalState) {
-			let currency = T::ProtocolTokenId::get();
+			let currency_id = T::ProtocolTokenId::get();
 			match proposal_state {
 				ProposalState::Rejected => {
 					match proposal.slashing_rule {
 						SlashingRule::Automated => {
-							T::Currency::unreserve(currency, &proposal.owner, proposal.deposit);
+							T::Currency::unreserve(currency_id, &proposal.owner, proposal.deposit);
 							let slashing_majority = T::SlashingMajority::get().mul_floor(voting.eligible);
 							// majority of rejection >= 2/3 of eligible voters --> slash deposit
 							if voting.no >= slashing_majority {
@@ -703,18 +700,18 @@ pub mod pallet {
 								let gamedo_trsry = T::GameDAOTreasury::get();
 								let org_trsry = T::Control::org_treasury_account(&proposal.org_id).unwrap();
 								
-								let res = T::Currency::transfer(currency, &proposal.owner, &gamedo_trsry, gamedao_share);
+								let res = T::Currency::transfer(currency_id, &proposal.owner, &gamedo_trsry, gamedao_share);
 								debug_assert!(res.is_ok());
-								let res = T::Currency::transfer(currency, &proposal.owner, &org_trsry, org_share);
+								let res = T::Currency::transfer(currency_id, &proposal.owner, &org_trsry, org_share);
 								debug_assert!(res.is_ok());
 							}
 						}
 						SlashingRule::Tribunal => {
-							// TODO: rejection criteria met --> create slashing vote
+							// TODO: rejection criteria met --> create slashing voting
 						}
 					}
 				}
-				_ => { T::Currency::unreserve(currency, &proposal.owner, proposal.deposit); }
+				_ => { T::Currency::unreserve(currency_id, &proposal.owner, proposal.deposit); }
 			}
 
 		}
@@ -733,9 +730,6 @@ pub mod pallet {
 				ProposalState::Finalized => {
 					Self::deposit_event(Event::<T>::Finalized { proposal_id: proposal_id.clone() });
 				}
-				ProposalState::Failed => {
-					Self::deposit_event(Event::<T>::Failed { proposal_id: proposal_id.clone() });
-				}
 				_ => { }
 			}
 		}
@@ -747,7 +741,25 @@ pub mod pallet {
 				ProposalState::Accepted => {
 					proposal_state = Self::apply_proposal_actions(&proposal, proposal_state);
 				}
-				_ => {}
+				_ => {
+					if proposal.proposal_type == ProposalType::Spending {
+						T::Currency::unreserve(
+							proposal.currency_id.unwrap(),
+							& T::Control::org_treasury_account(&proposal.org_id).unwrap(),
+							proposal.amount.unwrap());
+					};
+				}
+			}
+			// Unreserve all voting deposits
+			if voting.unit == Unit::Token {
+				let currency_id = T::ProtocolTokenId::get();
+				// TODO: chain -  &voting.ayes.iter().chain(&voting.nays.iter())
+				for (who, _, deposit) in &voting.ayes {
+					let _ = T::Currency::unreserve(currency_id, &who, deposit.unwrap());
+				};
+				for (who, _, deposit) in &voting.nays {
+					let _ = T::Currency::unreserve(currency_id, &who, deposit.unwrap());
+				};
 			}
 			// Refund or slash proposal's deposit based on proposal state and majority of rejection
 			Self::process_proposal_deposit(&proposal, &voting, &proposal_state);

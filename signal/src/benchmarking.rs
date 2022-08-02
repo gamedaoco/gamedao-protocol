@@ -71,14 +71,15 @@ benchmarks! {
 			owner: caller.clone(), title: bounded_str.clone(), cid: bounded_str.clone(),
 			slashing_rule: SlashingRule::Automated, start, expiry, deposit, org_id,
 			campaign_id: Some(campaign_id), amount: Some(amount),
-			beneficiary: Some(beneficiary), currency: Some(currency)
+			beneficiary: Some(beneficiary), currency_id: Some(currency)
 		};
 		let proposal_id = T::Hashing::hash_of(&prop);
+		// TODO: change to token weighted voting
 	}: _(
 		RawOrigin::Signed(caller), prop.proposal_type, prop.org_id,
 		prop.title, prop.cid, prop.deposit, prop.expiry,
-		Majority::Relative, Some(prop.start), Some(quorum),
-		prop.campaign_id, prop.amount, prop.beneficiary, prop.currency
+		Majority::Relative, Unit::Person, Scale::Linear, Some(prop.start), Some(quorum),
+		prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id
 	)
 	verify {
 		assert!(ProposalOf::<T>::contains_key(&proposal_id));
@@ -104,7 +105,7 @@ benchmarks! {
 		let expiry = frame_system::Pallet::<T>::block_number() + 200_u32.into();
 		let deposit = T::MinProposalDeposit::get();
 		let amount: T::Balance = 10_000u32.saturated_into();
-		let currency = T::PaymentTokenId::get();
+		let currency_id = T::PaymentTokenId::get();
 		let quorum = Permill::from_rational(1u32, 3u32);
 		let beneficiary = account::<T::AccountId>("beneficiary", 0, SEED);
 		let prop = types::Proposal {
@@ -112,15 +113,15 @@ benchmarks! {
 			owner: proposer.clone(), title: bounded_str.clone(), cid: bounded_str.clone(),
 			slashing_rule: SlashingRule::Automated, start, expiry, deposit, org_id,
 			campaign_id: Some(campaign_id), amount: Some(amount),
-			beneficiary: Some(beneficiary), currency: Some(currency)
+			beneficiary: Some(beneficiary), currency_id: Some(currency_id)
 		};
 		let proposal_id = T::Hashing::hash_of(&prop);
 
 		Pallet::<T>::proposal(
 			RawOrigin::Signed(proposer.clone()).into(), prop.proposal_type.clone(), prop.org_id,
 			prop.title.clone(), prop.cid.clone(), prop.deposit, prop.expiry,
-			Majority::Simple, None, Some(quorum),
-			prop.campaign_id, prop.amount, prop.beneficiary, prop.currency,
+			Majority::Simple, Unit::Person, Scale::Linear, None, Some(quorum),
+			prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id,
 		)?;
 
 		// Ensure that proposal exists and Activated
@@ -151,9 +152,7 @@ benchmarks! {
 	}: _(RawOrigin::Signed(voter), proposal_id.clone(), approve, None)
 
 	verify {
-		// Assuming proposal will be in the Failed state, since no funds from
-		// the org treasury were unreserved before
-		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Failed);
+		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Finalized);
 	}
 
 	on_initialize {
@@ -167,7 +166,7 @@ benchmarks! {
 		let expiry = frame_system::Pallet::<T>::block_number() + 200_u32.into();
 		let deposit = T::MinProposalDeposit::get();
 		let amount: T::Balance = 10_000u32.saturated_into();
-		let currency = T::PaymentTokenId::get();
+		let currency_id = T::PaymentTokenId::get();
 		let quorum = Permill::from_rational(1u32, 3u32);
 
 		for i in 0 .. p {
@@ -176,14 +175,14 @@ benchmarks! {
 				owner: caller.clone(), title: bounded_str.clone(), cid: bounded_str.clone(),
 				slashing_rule: SlashingRule::Automated, start, expiry, deposit, org_id,
 				campaign_id: Some(campaign_id), amount: Some(amount),
-				beneficiary: None, currency: Some(currency)
+				beneficiary: None, currency_id: Some(currency_id)
 			};
 			let proposal_id = T::Hashing::hash_of(&prop);
 			Pallet::<T>::proposal(
 				RawOrigin::Signed(caller.clone()).into(), prop.proposal_type.clone(), prop.org_id,
 				prop.title.clone(), prop.cid.clone(), prop.deposit, prop.expiry,
-				Majority::Simple, Some(prop.start), Some(quorum),
-				prop.campaign_id, prop.amount, prop.beneficiary, prop.currency,
+				Majority::Simple, Unit::Person, Scale::Linear, Some(prop.start), Some(quorum),
+				prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id,
 			)?;
 			// Ensure that proposal exists and Activated
 			assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Created);
@@ -199,7 +198,7 @@ benchmarks! {
 				owner: caller.clone(), title: bounded_str.clone(), cid: bounded_str.clone(),
 				slashing_rule: SlashingRule::Automated, start, expiry, deposit, org_id,
 				campaign_id: Some(campaign_id), amount: Some(amount),
-				beneficiary: None, currency: Some(currency)
+				beneficiary: None, currency_id: Some(currency_id)
 			};
 			let proposal_id = T::Hashing::hash_of(&prop);
 			assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Activated);

@@ -351,14 +351,14 @@ pub fn create_finalize_campaign(
 
 pub fn create_proposal(
 	proposal_type: ProposalType, org_id: H256, start: BlockNumber, expiry: BlockNumber, deposit: Balance, campaign_id: Option<H256>,
-	currency: Option<CurrencyId>, beneficiary: Option<AccountId>, amount: Option<Balance>
+	currency_id: Option<CurrencyId>, beneficiary: Option<AccountId>, amount: Option<Balance>
 ) -> (H256, Proposal<Hash, BlockNumber, AccountId, Balance, CurrencyId, BoundedVec<u8, <Test as gamedao_signal::Config>::StringLimit>>) {
 	let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
 	let proposal = Proposal {
 		index: <ProposalCount<Test>>::get(), owner: ALICE, title: bounded_str.clone(),
 		cid: bounded_str, slashing_rule: SlashingRule::Automated,
 		start, expiry, org_id, deposit, campaign_id,
-		amount, beneficiary, proposal_type, currency,
+		amount, beneficiary, proposal_type, currency_id,
 	};
 	let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
 	(proposal_id, proposal)

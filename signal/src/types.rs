@@ -47,9 +47,7 @@ pub enum ProposalState {
 	Expired = 4,   // ended without votes
 	// TODO: Aborted
 	Aborted = 5,   // sudo abort
-	Finalized = 6, // proposal action applied successfully
-	// Proposal action didn't applied due to the error, ex.: not enough tokens to spend
-	Failed = 7, 
+	Finalized = 6, // proposal's action applied
 }
 impl Default for ProposalState {
 	fn default() -> Self {
@@ -71,7 +69,7 @@ pub struct Proposal<Hash, BlockNumber, AccountId, Balance, CurrencyId, BoundedSt
 	pub start: BlockNumber,
 	pub expiry: BlockNumber,
 	pub amount: Option<Balance>,
-	pub currency: Option<CurrencyId>,
+	pub currency_id: Option<CurrencyId>,
 	pub beneficiary: Option<AccountId>,
 	pub slashing_rule: SlashingRule,
 }
