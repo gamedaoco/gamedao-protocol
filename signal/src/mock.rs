@@ -241,9 +241,9 @@ impl gamedao_flow::Config for Test {
 parameter_types! {
 	pub const MaxProposalsPerBlock: u32 = 2;
 	pub const MinProposalDeposit: Balance = 10 * DOLLARS;
-	pub const MaxProposalDuration: BlockNumber = 100;
 	pub SlashingMajority: Permill = Permill::from_rational(2u32, 3u32);
 	pub GameDAOGetsFromSlashing: Permill = Permill::from_rational(1u32, 10u32);
+	pub const ProposalDurationLimits: (BlockNumber, BlockNumber) = (10, 100);
 }
 impl gamedao_signal::Config for Test {
 	type Event = Event;
@@ -256,7 +256,7 @@ impl gamedao_signal::Config for Test {
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
 	type MinProposalDeposit = MinProposalDeposit;
-	type MaxProposalDuration = MaxProposalDuration;
+	type ProposalDurationLimits = ProposalDurationLimits;
 	type GameDAOTreasury = GameDAOTreasury;
 	type SlashingMajority = SlashingMajority;
 	type GameDAOGetsFromSlashing = GameDAOGetsFromSlashing;

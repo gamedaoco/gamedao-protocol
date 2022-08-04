@@ -25,6 +25,7 @@ mod benchmarking;
 pub mod weights;
 
 use frame_support::{
+	BoundedVec,
 	traits::{StorageVersion, BalanceStatus},
 	dispatch::DispatchResult,
 	weights::Weight,
@@ -48,7 +49,6 @@ use types::{
 pub use pallet::*;
 pub use weights::WeightInfo;
 
-use frame_support::BoundedVec;
 type Proposal<T> = types::Proposal<
 	<T as frame_system::Config>::Hash, <T as frame_system::Config>::BlockNumber, 
 	<T as frame_system::Config>::AccountId, <T as pallet::Config>::Balance, 
@@ -131,7 +131,7 @@ pub mod pallet {
 
 		/// Default time limit for a proposal in blocks.
 		#[pallet::constant]
-		type MaxProposalDuration: Get<Self::BlockNumber>;
+		type ProposalDurationLimits: Get<(Self::BlockNumber, Self::BlockNumber)>;
 
 		/// The GameDAO Treasury AccountId.
 		#[pallet::constant]
@@ -252,7 +252,6 @@ pub mod pallet {
 			org_id: T::Hash,
 			title: BoundedVec<u8, T::StringLimit>,
 			cid: BoundedVec<u8, T::StringLimit>,
-			deposit: T::Balance,
 			expiry: T::BlockNumber,
 			majority: Majority,
 			unit: Unit,
@@ -260,6 +259,7 @@ pub mod pallet {
 			// Optional params:
 			start: Option<T::BlockNumber>,
 			quorum: Option<Permill>,
+			deposit: Option<T::Balance>,
 			// Optional proposal specific params:
 			campaign_id: Option<T::Hash>,
 			amount: Option<T::Balance>,
@@ -276,9 +276,15 @@ pub mod pallet {
 			let starts = start.unwrap_or(current_block);
 			ensure!(starts >= current_block, Error::<T>::OutOfBounds);
 			ensure!(expiry > current_block, Error::<T>::OutOfBounds);
-			ensure!(expiry <= starts + T::MaxProposalDuration::get(), Error::<T>::OutOfBounds);
+			let (min_duration, max_duration) = T::ProposalDurationLimits::get();
+			ensure!(expiry <= starts + max_duration, Error::<T>::OutOfBounds);
+			ensure!(expiry >= starts + min_duration, Error::<T>::OutOfBounds);
 			// Deposit validation:
-			ensure!(deposit >= T::MinProposalDeposit::get(), Error::<T>::DepositInsufficient);
+			let mut proposal_deposit: T::Balance = T::MinProposalDeposit::get();
+			if let Some(deposit) = deposit {
+				proposal_deposit = deposit;
+				ensure!(proposal_deposit >= T::MinProposalDeposit::get(), Error::<T>::DepositInsufficient);
+			}
 			// Check if all parameters are combinable:
 			if unit == Unit::Person && scale == Scale::Quadratic {
 				return Err(Error::<T>::WrongParameter)?;
@@ -286,6 +292,7 @@ pub mod pallet {
 			if unit == Unit::Token && majority == Majority::Absolute {
 				return Err(Error::<T>::WrongParameter)?;
 			};
+			// TODO: quorum validation. Should work only for the Unit:Person
 			// Proposal type specific validation:
 			match proposal_type {
 				ProposalType::Withdrawal | ProposalType::Spending => {
@@ -315,8 +322,8 @@ pub mod pallet {
 			// Create Proposal
 			let index = ProposalCount::<T>::get();
 			let proposal = types::Proposal {
-				index: index.clone(), title, cid, org_id, campaign_id, amount, deposit, currency_id,
-				beneficiary, proposal_type: proposal_type.clone(), start: starts, expiry,
+				index: index.clone(), title, cid, org_id, campaign_id, amount, deposit: proposal_deposit,
+				currency_id, beneficiary, proposal_type: proposal_type.clone(), start: starts, expiry,
 				owner: proposer.clone(), slashing_rule: SlashingRule::Automated
 			};
 			let proposal_hash = T::Hashing::hash_of(&proposal);
@@ -348,9 +355,11 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 			let voting = ProposalVoting::<T>::get(&proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
 
-			// Deposit is required for token weighted voting
+			// Deposit is required for token weighted voting only
 			if voting.unit == Unit::Token && deposit.is_none() {
 				return Err(Error::<T>::MissingParameter)?;
+			} else if voting.unit == Unit::Person && deposit.is_some() {
+				return Err(Error::<T>::WrongParameter)?;
 			}
 
 			let proposal = ProposalOf::<T>::get(&proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
@@ -460,6 +469,9 @@ pub mod pallet {
 			old_deposit: &Option<T::Balance>,
 			deposit: &Option<T::Balance>
 		) -> Result<(), DispatchError> {
+			if old_deposit == deposit {
+				return Ok(());
+			};
 			if let Some(amount) = old_deposit {
 				let _ = T::Currency::unreserve(T::ProtocolTokenId::get(), &who, *amount);
 			}
