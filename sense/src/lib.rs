@@ -12,57 +12,20 @@
 //! This pallet aggregates datapoints to reflect user experience and behaviour.
 //! Sense Properties: Experience, Reputation and Trust.
 #![cfg_attr(not(feature = "std"), no_std)]
-#[warn(unused_imports)]
-use frame_support::{pallet_prelude::*, storage::bounded_vec::BoundedVec};
-use frame_system::pallet_prelude::*;
-use scale_info::TypeInfo;
-use sp_std::convert::TryInto;
-use codec::MaxEncodedLen;
-pub use weights::WeightInfo;
+pub mod types;
+pub use types::*;
 
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
 mod mock;
 mod tests;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 pub mod weights;
 
 pub use pallet::*;
-
-
-#[derive(Encode, Decode, Default, Eq, Copy, PartialEq, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct Entity<AccountId, BlockNumber, BoundedString> {
-	account: AccountId,
-	index: u128,
-	cid: BoundedString,
-	created: BlockNumber,
-	mutated: BlockNumber,
-}
-
-#[derive(Encode, Decode, Default, Eq, Copy, PartialEq, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct EntityProperty<BlockNumber> {
-	value: u64,
-	mutated: BlockNumber,
-}
-
-impl<AccountId, BlockNumber, BoundedString> Entity<AccountId, BlockNumber, BoundedString> {
-	pub fn new(
-		account: AccountId,
-		block_number: BlockNumber,
-		index: u128,
-		cid: BoundedString,
-	) -> Entity<AccountId, BlockNumber, BoundedString>
-	where
-		BlockNumber: Clone,
-	{
-		Entity { account, index, cid, created: block_number.clone(), mutated: block_number }
-	}
-}
-
-impl<BlockNumber> EntityProperty<BlockNumber> {
-	pub fn new(value: u64, block_number: BlockNumber) -> EntityProperty<BlockNumber> {
-		EntityProperty { value, mutated: block_number }
-	}
-}
+use frame_support::{pallet_prelude::*, storage::bounded_vec::BoundedVec};
+use frame_system::pallet_prelude::*;
+use sp_std::convert::TryInto;
+pub use weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -86,54 +49,49 @@ pub mod pallet {
 
 	/// Sense Entity of the account.
 	/// 
-	/// SenseEntity: map AccountId => Entity
+	/// Entities: map AccountId => Entity
 	#[pallet::storage]
-	#[pallet::getter(fn entity)]
-	pub(super) type SenseEntity<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId,
-		Entity<T::AccountId, T::BlockNumber, BoundedVec<u8, T::StringLimit>>, OptionQuery>;
+	#[pallet::getter(fn get_entity)]
+	pub(super) type Entities<T: Config> = StorageMap<_, 
+		Blake2_128Concat, 
+		T::AccountId,
+		Entity<T::AccountId, T::BlockNumber, BoundedVec<u8, T::StringLimit>>, 
+		OptionQuery
+	>;
 
-	/// Experience property of the account.
+	/// EntityCount. Increase per each entity creation.
 	/// 
-	/// SenseEntity: map AccountId => EntityProperty
+	/// EntityCount: u128
 	#[pallet::storage]
-	#[pallet::getter(fn xp)]
-	pub(super) type SenseXP<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AccountId, EntityProperty<T::BlockNumber>, OptionQuery>;
+	#[pallet::getter(fn get_entity_count)]
+	pub type EntityCount<T: Config> = StorageValue<_, u128, ValueQuery>;
 
-	/// Reputation property of the account.
+	/// All properties of the account.
 	/// 
-	/// SenseEntity: map AccountId => EntityProperty
+	/// Properties: map (PropertyType, AccountId) => EntityProperty
 	#[pallet::storage]
-	#[pallet::getter(fn rep)]
-	pub(super) type SenseREP<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AccountId, EntityProperty<T::BlockNumber>, OptionQuery>;
-
-	/// Trust property of the account.
-	/// 
-	/// SenseEntity: map AccountId => EntityProperty
-	#[pallet::storage]
-	#[pallet::getter(fn trust)]
-	pub(super) type SenseTrust<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AccountId, EntityProperty<T::BlockNumber>, OptionQuery>;
-
-	/// Nonce. Increase per each entity creation.
-	/// 
-	/// Nonce: u128
-	#[pallet::storage]
-	#[pallet::getter(fn nonce)]
-	pub type Nonce<T: Config> = StorageValue<_, u128, ValueQuery>;
+	#[pallet::getter(fn get_property)]
+	pub(super) type Properties<T: Config> = StorageDoubleMap<_, 
+		Blake2_128Concat, PropertyType,
+		Blake2_128Concat, T::AccountId, 
+		EntityProperty<T::BlockNumber>, 
+		OptionQuery
+	>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// New Sense Entity was created.
-		EntityInit(T::AccountId, T::BlockNumber),
-		/// Experience property was updated.
-		EntityMutateXP(T::AccountId, T::BlockNumber),
-		/// Reputation property was updated.
-		EntityMutateREP(T::AccountId, T::BlockNumber),
-		/// Trust property was updated.
-		EntityMutateTrust(T::AccountId, T::BlockNumber),
+		EntityCreated{
+			account_id: T::AccountId, 
+			block_number: T::BlockNumber
+		},
+		/// Property was updated.
+		PropertyUpdated{
+			property_type: PropertyType,
+			account_id: T::AccountId, 
+			block_number: T::BlockNumber
+		},
 	}
 
 	#[pallet::error]
@@ -142,12 +100,12 @@ pub mod pallet {
 		EntityExists,
 		/// Entity unknown.
 		EntityUnknown,
-		/// Guru Meditation.
-		GuruMeditation,
 		/// Invalid param.
 		InvalidParam,
 		/// Overflow adding a value to the entity property
 		EntityPropertyOverflow,
+		/// Overflow adding a value to the entity count
+		EntityCountOverflow,
 	}
 
 	#[pallet::call]
@@ -159,7 +117,7 @@ pub mod pallet {
 		/// - `account_id`: account id.
 		/// - `cid`: IPFS content identifier.
 		///
-		/// Emits `EntityInit` event when successful.
+		/// Emits `EntityCreated` event when successful.
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(<T as Config>::WeightInfo::create_entity())]
@@ -170,24 +128,23 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_root(origin)?;
 			ensure!(cid.len() > 0, Error::<T>::InvalidParam);
-			ensure!(!<SenseEntity<T>>::contains_key(&account_id), Error::<T>::EntityExists);
+			ensure!(!Entities::<T>::contains_key(account_id.clone()), Error::<T>::EntityExists);
 
 			let current_block = <frame_system::Pallet<T>>::block_number();
-			let index = <Nonce<T>>::get();
+			let index = Self::get_entity_count();
 
-			let entity = Entity::new(account_id.clone(), current_block, index, cid.clone());
-			let xp = EntityProperty { value: 0, mutated: current_block.clone() };
-			let rep = EntityProperty { value: 0, mutated: current_block.clone() };
-			let trust = EntityProperty { value: 0, mutated: current_block.clone() };
+			let count = index.checked_add(1).ok_or(Error::<T>::EntityCountOverflow)?;
+			let entity = Entity::new(account_id.clone(), current_block, index, cid);
+			let experience = EntityProperty { value: 0, mutated: current_block };
+			let reputation = EntityProperty { value: 0, mutated: current_block };
+			let trust = EntityProperty { value: 0, mutated: current_block };
 
-			<SenseXP<T>>::insert(account_id.clone(), xp);
-			<SenseREP<T>>::insert(account_id.clone(), rep);
-			<SenseTrust<T>>::insert(account_id.clone(), trust);
-			<SenseEntity<T>>::insert(account_id.clone(), entity);
-			// TODO: safe increment, checked_add
-			<Nonce<T>>::mutate(|n| *n += 1);
+			Self::save_entity(account_id.clone(), entity, count, experience, reputation, trust);
 
-			Self::deposit_event(Event::EntityInit(account_id, current_block));
+			Self::deposit_event(Event::EntityCreated{
+				account_id, 
+				block_number: current_block
+			});
 			Ok(())
 		}
 
@@ -200,93 +157,63 @@ pub mod pallet {
 		// all:   governance
 		//        sudo ( until its removal )
 
-		/// Modifies an Experience property of the account.
+		/// Modifies a property of the account.
 		/// 
 		/// Parameters:
 		/// - `account_id`: account id.
-		/// - `cid`: IPFS content identifier.
+		/// - `property_type`: property type (Experience, Reputation, Trust).
+		/// - `value`: value to be incremented to property.
 		///
-		/// Emits `EntityMutateXP` event when successful.
-		///
-		/// Weight: `O(1)`
-		#[pallet::weight(<T as Config>::WeightInfo::mod_xp())]
-		pub fn mod_xp(origin: OriginFor<T>, account_id: T::AccountId, value: u8) -> DispatchResult {
-			ensure_root(origin)?;
-			ensure!(<SenseEntity<T>>::contains_key(&account_id), Error::<T>::EntityUnknown);
-
-			let now = <frame_system::Pallet<T>>::block_number();
-			let v = u64::from(value);
-			let current = Self::xp(&account_id).unwrap();
-
-			let updated = EntityProperty {
-				value: current.value.checked_add(v).ok_or(Error::<T>::EntityPropertyOverflow)?,
-				mutated: now.clone(),
-			};
-
-			<SenseXP<T>>::insert(account_id.clone(), updated);
-
-			Self::deposit_event(Event::EntityMutateXP(account_id, now));
-			Ok(())
-		}
-
-		/// Modifies a Reputation property of the account.
-		/// 
-		/// Parameters:
-		/// - `account_id`: account id.
-		/// - `cid`: IPFS content identifier.
-		///
-		/// Emits `EntityMutateREP` event when successful.
+		/// Emits `PropertyUpdated` event when successful.
 		///
 		/// Weight: `O(1)`
-		#[pallet::weight(<T as Config>::WeightInfo::mod_rep())]
-		pub fn mod_rep(origin: OriginFor<T>, account_id: T::AccountId, value: u8) -> DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::update_property())]
+		pub fn update_property(
+			origin: OriginFor<T>, 
+			account_id: T::AccountId, 
+			property_type: PropertyType, 
+			value: u8
+		) -> DispatchResult {
 			ensure_root(origin)?;
-			ensure!(<SenseEntity<T>>::contains_key(&account_id), Error::<T>::EntityUnknown);
+			ensure!(Entities::<T>::contains_key(account_id.clone()), Error::<T>::EntityUnknown);
 
-			let now = <frame_system::Pallet<T>>::block_number();
+			let current_block = <frame_system::Pallet<T>>::block_number();
 			let v = u64::from(value);
-			let current = Self::rep(&account_id).unwrap();
-
+			let current = Self::get_property(property_type.clone(), account_id.clone()).unwrap();
 			let updated = EntityProperty {
 				value: current.value.checked_add(v).ok_or(Error::<T>::EntityPropertyOverflow)?,
-				mutated: now.clone(),
+				mutated: current_block,
 			};
 
-			<SenseREP<T>>::insert(account_id.clone(), updated);
+			Self::save_property(property_type.clone(), account_id.clone(), updated);
 
-			Self::deposit_event(Event::EntityMutateREP(account_id, now));
+			Self::deposit_event(Event::PropertyUpdated{
+				property_type,
+				account_id, 
+				block_number: current_block
+			});
 			Ok(())
 		}
+	}
 
-		/// Modifies a Trust property of the account.
-		/// 
-		/// Parameters:
-		/// - `account_id`: account id.
-		/// - `cid`: IPFS content identifier.
-		///
-		/// Emits `EntityMutateTrust` event when successful.
-		///
-		/// Weight: `O(1)`
-		#[pallet::weight(<T as Config>::WeightInfo::mod_trust())]
-		pub fn mod_trust(origin: OriginFor<T>, account_id: T::AccountId, value: u8) -> DispatchResult {
-			ensure_root(origin)?;
-			ensure!(<SenseEntity<T>>::contains_key(&account_id), Error::<T>::EntityUnknown);
-
-			let now = <frame_system::Pallet<T>>::block_number();
-			let v = u64::from(value);
-			let current = Self::trust(&account_id).unwrap();
-
-			let updated = EntityProperty {
-				value: current.value.checked_add(v).ok_or(Error::<T>::EntityPropertyOverflow)?,
-				mutated: now,
-			};
-
-			<SenseTrust<T>>::insert(account_id.clone(), updated);
-
-			Self::deposit_event(Event::EntityMutateTrust(account_id, now));
-			Ok(())
+	impl<T: Config> Pallet<T> {
+		fn save_entity(
+			account_id: T::AccountId, 
+			entity: Entity<T::AccountId, T::BlockNumber, BoundedVec<u8, T::StringLimit>>, 
+			count: u128, 
+			experience: EntityProperty<T::BlockNumber>, 
+			reputation: EntityProperty<T::BlockNumber>, 
+			trust: EntityProperty<T::BlockNumber>
+		) {
+			Entities::<T>::insert(account_id.clone(), entity);
+			EntityCount::<T>::put(count);
+			Properties::<T>::insert(PropertyType::Experience, account_id.clone(), experience);
+			Properties::<T>::insert(PropertyType::Reputation, account_id.clone(), reputation);
+			Properties::<T>::insert(PropertyType::Trust, account_id, trust);
 		}
 
-		// TODO: generic mod for all properties
+		fn save_property(property_type: PropertyType, account_id: T::AccountId, value: EntityProperty<T::BlockNumber>) {
+			Properties::<T>::insert(property_type, account_id, value);
+		}
 	}
 }
