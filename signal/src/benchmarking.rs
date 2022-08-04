@@ -77,8 +77,8 @@ benchmarks! {
 		// TODO: change to token weighted voting
 	}: _(
 		RawOrigin::Signed(caller), prop.proposal_type, prop.org_id,
-		prop.title, prop.cid, prop.deposit, prop.expiry,
-		Majority::Relative, Unit::Person, Scale::Linear, Some(prop.start), Some(quorum),
+		prop.title, prop.cid, prop.expiry, Majority::Relative, Unit::Person,
+		Scale::Linear, Some(prop.start), Some(quorum), Some(prop.deposit),
 		prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id
 	)
 	verify {
@@ -119,8 +119,8 @@ benchmarks! {
 
 		Pallet::<T>::proposal(
 			RawOrigin::Signed(proposer.clone()).into(), prop.proposal_type.clone(), prop.org_id,
-			prop.title.clone(), prop.cid.clone(), prop.deposit, prop.expiry,
-			Majority::Simple, Unit::Person, Scale::Linear, None, Some(quorum),
+			prop.title.clone(), prop.cid.clone(), prop.expiry,
+			Majority::Simple, Unit::Person, Scale::Linear, None, Some(quorum), Some(prop.deposit),
 			prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id,
 		)?;
 
@@ -180,8 +180,8 @@ benchmarks! {
 			let proposal_id = T::Hashing::hash_of(&prop);
 			Pallet::<T>::proposal(
 				RawOrigin::Signed(caller.clone()).into(), prop.proposal_type.clone(), prop.org_id,
-				prop.title.clone(), prop.cid.clone(), prop.deposit, prop.expiry,
-				Majority::Simple, Unit::Person, Scale::Linear, Some(prop.start), Some(quorum),
+				prop.title.clone(), prop.cid.clone(), prop.expiry, Majority::Simple, Unit::Person,
+				Scale::Linear, Some(prop.start), Some(quorum), Some(prop.deposit),
 				prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id,
 			)?;
 			// Ensure that proposal exists and Activated

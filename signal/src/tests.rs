@@ -51,8 +51,8 @@ fn signal_0_0() {
 				Unit::Person,
 				Scale::Linear,
 				None, // start
-				None, // deposit
 				None, // quorum
+				None, // deposit
 				proposal.campaign_id, proposal.amount, proposal.beneficiary, proposal.currency_id),
 			Error::<Test>::OrgInactive
 		);
