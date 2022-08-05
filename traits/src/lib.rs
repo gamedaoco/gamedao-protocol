@@ -25,7 +25,6 @@ pub trait ControlTrait<AccountId, Hash> {
 	fn org_treasury_account(org_id: &Hash) -> Option<AccountId>;
 	fn is_org_active(org_id: &Hash) -> bool;
 	fn is_org_member_active(org_id: &Hash, accont_id: &AccountId) -> bool;
-	fn org_member_count(org_id: &Hash) -> u64;
 }
 
 pub trait ControlBenchmarkingTrait<AccountId, Hash> {
@@ -46,7 +45,6 @@ pub trait FlowTrait<AccountId, Balance, Hash> {
 
 	fn campaign_balance(campaign_id: &Hash) -> Balance;
 	fn is_campaign_succeeded(campaign_id: &Hash) -> bool;
-	fn is_campaign_contributor(campaign_id: &Hash, who: &AccountId) -> bool;
 	fn campaign_contributors_count(campaign_id: &Hash) -> u64;
 	fn campaign_org(campaign_id: &Hash) -> Hash;
 	fn campaign_owner(campaign_id: &Hash) -> Option<AccountId>;
