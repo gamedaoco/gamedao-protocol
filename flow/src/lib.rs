@@ -1062,6 +1062,9 @@ impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
 	fn is_campaign_succeeded(campaign_id: &T::Hash) -> bool {
 		CampaignState::<T>::get(campaign_id) == FlowState::Success
 	}
+	fn is_campaign_contributor(campaign_id: &T::Hash, who: &T::AccountId) -> bool {
+		CampaignContribution::<T>::contains_key((campaign_id, who))
+	}
 }
 
 impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for Pallet<T> {

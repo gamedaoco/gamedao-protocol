@@ -2,8 +2,8 @@
 
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, whitelisted_caller};
 use frame_system::RawOrigin;
-use frame_support::{dispatch::DispatchError, traits::Get, BoundedVec};
-use sp_runtime::traits::{SaturatedConversion};
+use frame_support::{dispatch::DispatchError, traits::{Get, Hooks}, BoundedVec};
+use sp_runtime::traits::SaturatedConversion;
 use sp_std::vec::Vec;
 
 use crate::*;
@@ -11,7 +11,6 @@ use crate::*;
 
 const SEED: u32 = 0;
 const DEPOSIT_AMOUNT: u128 = 10_000_000_000_000_000_000;
-
 
 /// Fund account with tokens, needed for org and campaign interactions
 fn fund_account<T: Config>(account_id: &T::AccountId) -> Result<(), DispatchError> {
@@ -28,8 +27,7 @@ fn fund_accounts<T: Config>(account_ids: &Vec<T::AccountId>) -> Result<(), Dispa
 	Ok(())
 }
 
-
-fn create_and_finalize_campaign<T: Config>(caller: T::AccountId, contributors_count: u32) -> Result<T::Hash, DispatchError> {
+fn create_org_campaign<T: Config>(caller: T::AccountId, contributors_count: u32, members: Option<Vec<T::AccountId>>) -> Result<(T::Hash, T::Hash), DispatchError> {
 	let org_id = T::Control::create_org(caller.clone())?;
 	let treasury_account_id = T::Control::org_treasury_account(&org_id).unwrap();
 	fund_account::<T>(&treasury_account_id)?;
@@ -47,177 +45,166 @@ fn create_and_finalize_campaign<T: Config>(caller: T::AccountId, contributors_co
 		}
 		expiry = expiry + 1_u32.into();
 	}
-	Ok(campaign_id)
+	if let Some(members) = members {
+		T::Control::fill_org_with_members(&org_id, members)?;
+	}
+	Ok((campaign_id, org_id))
 }
 
 
 benchmarks! {
 
-	general_proposal {
+	proposal {
 		let caller: T::AccountId = whitelisted_caller();
 		fund_account::<T>(&caller)?;
-		let org_id = T::Control::create_org(caller.clone())?;
-		let start = frame_system::Pallet::<T>::block_number() + 1_u32.into();
-		let expiry = start + 100_u32.into();
-		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
+		let (campaign_id, org_id) = create_org_campaign::<T>(caller.clone(), 10, None)?;
+		let bounded_str = BoundedVec::truncate_from((0..255).collect());
+		let start = frame_system::Pallet::<T>::block_number();
+		let expiry = frame_system::Pallet::<T>::block_number() + 200_u32.into();
+		let deposit = T::MinProposalDeposit::get();
+		let amount: T::Balance = 10_000u32.saturated_into();
+		let currency = T::PaymentTokenId::get();
+		let beneficiary = account("beneficiary", 1, SEED);
+		let quorum = Permill::from_rational(1u32, 3u32);
+		let prop = types::Proposal {
+			index: ProposalCount::<T>::get(), proposal_type: ProposalType::Spending,
+			owner: caller.clone(), title: bounded_str.clone(), cid: bounded_str.clone(),
+			slashing_rule: SlashingRule::Automated, start, expiry, deposit, org_id,
+			campaign_id: Some(campaign_id), amount: Some(amount),
+			beneficiary: Some(beneficiary), currency_id: Some(currency)
+		};
+		let proposal_id = T::Hashing::hash_of(&prop);
+		// TODO: change to token weighted voting
 	}: _(
-		RawOrigin::Signed(caller.clone()),
-		org_id.clone(),
-		BoundedVec::truncate_from((0..255).collect()),
-		BoundedVec::truncate_from((0..255).collect()),
-		start,
-		expiry
+		RawOrigin::Signed(caller), prop.proposal_type, prop.org_id,
+		prop.title, prop.cid, prop.expiry, Majority::Relative, Unit::Person,
+		Scale::Linear, Some(prop.start), Some(quorum), Some(prop.deposit),
+		prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id
 	)
 	verify {
-		assert!(Proposals::<T>::contains_key(&proposal_id));
+		assert!(ProposalOf::<T>::contains_key(&proposal_id));
 	}
 
-	membership_proposal {
-		let caller: T::AccountId = whitelisted_caller();
-		fund_account::<T>(&caller)?;
-		let org_id = T::Control::create_org(caller.clone())?;
-		let start = frame_system::Pallet::<T>::block_number() + 1_u32.into();
-		let expiry = start + 100_u32.into();
-		let member: T::AccountId = account("member", 0, SEED);
-		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
-	}: _(RawOrigin::Signed(caller), org_id, member, 0, start, expiry)
+	vote {
+		// The most heavy execution path is triggering an early finalization flow (fn try_finalize_proposal)
+		//	with either Withdrawal or Spending proposal type and Relative or Simple majority type.
+		let m in 0 .. T::MaxMembersPerOrg::get();
 
-	withdraw_proposal {
-		let caller: T::AccountId = whitelisted_caller();
-		fund_account::<T>(&caller)?;
-		let campaign_id = create_and_finalize_campaign::<T>(caller.clone(), 10)?;
-		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
-	}: _(
-		RawOrigin::Signed(caller),
-		campaign_id.clone(),
-		BoundedVec::truncate_from((0..255).collect()),
-		BoundedVec::truncate_from((0..255).collect()),
-		T::Flow::campaign_balance(&campaign_id),
-		frame_system::Pallet::<T>::block_number() + 1_u32.into(),
-		frame_system::Pallet::<T>::block_number() + 200_u32.into()
-	)
-	verify {
-		assert!(Proposals::<T>::contains_key(&proposal_id));
-	}
+		let mut members = vec![];
+		let proposer: T::AccountId = account::<T::AccountId>("proposer", 0, SEED);
+		fund_account::<T>(&proposer)?;
 
-	simple_vote_general {
-		let b in 0 .. T::MaxVotesPerProposal::get()-1;  // limit number of votes
-
-		let caller: T::AccountId = whitelisted_caller();
-		fund_account::<T>(&caller)?;
-		let org_id = T::Control::create_org(caller.clone())?;
-		let start = frame_system::Pallet::<T>::block_number() + 1_u32.into();
-		let expiry = start + 500_u32.into();
-		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
-		Pallet::<T>::general_proposal(
-			RawOrigin::Signed(caller.clone()).into(),
-			org_id.clone(),
-			BoundedVec::truncate_from((0..255).collect()),
-			BoundedVec::truncate_from((0..255).collect()),
-			start,
-			expiry
-		)?;
-		let voters: Vec<T::AccountId> = (0..b).collect::<Vec<u32>>().iter()
-			.map(|i| account("voter", *i, SEED)).collect();
-		fund_accounts::<T>(&voters)?;
-		for voter in voters.iter().step_by(2) {
-			Pallet::<T>::simple_vote(RawOrigin::Signed(voter.clone()).into(), proposal_id, true)?;
+		for i in 1 .. m {
+			let member = account::<T::AccountId>("member", i, SEED);
+			fund_account::<T>(&member)?;
+			members.push(member);
 		}
-		for voter in voters.iter().skip(1).step_by(2) {
-			Pallet::<T>::simple_vote(RawOrigin::Signed(voter.clone()).into(), proposal_id, false)?;
+		let (campaign_id, org_id) = create_org_campaign::<T>(proposer.clone(), 10, Some(members.clone()))?;
+		let bounded_str: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from((0..255).collect());
+		let start = frame_system::Pallet::<T>::block_number();
+		let expiry = frame_system::Pallet::<T>::block_number() + 200_u32.into();
+		let deposit = T::MinProposalDeposit::get();
+		let amount: T::Balance = 10_000u32.saturated_into();
+		let currency_id = T::PaymentTokenId::get();
+		let quorum = Permill::from_rational(1u32, 3u32);
+		let beneficiary = account::<T::AccountId>("beneficiary", 0, SEED);
+		let prop = types::Proposal {
+			index: ProposalCount::<T>::get(), proposal_type: ProposalType::Spending,
+			owner: proposer.clone(), title: bounded_str.clone(), cid: bounded_str.clone(),
+			slashing_rule: SlashingRule::Automated, start, expiry, deposit, org_id,
+			campaign_id: Some(campaign_id), amount: Some(amount),
+			beneficiary: Some(beneficiary), currency_id: Some(currency_id)
+		};
+		let proposal_id = T::Hashing::hash_of(&prop);
+
+		Pallet::<T>::proposal(
+			RawOrigin::Signed(proposer.clone()).into(), prop.proposal_type.clone(), prop.org_id,
+			prop.title.clone(), prop.cid.clone(), prop.expiry,
+			Majority::Simple, Unit::Person, Scale::Linear, None, Some(quorum), Some(prop.deposit),
+			prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id,
+		)?;
+
+		// Ensure that proposal exists and Activated
+		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Activated);
+
+		// Have everyone vote aye on proposal and not yet trigger early finalization flow.
+		for j in 1 .. m {
+			let voter = &members[(j - 1) as usize];
+			let approve = true;
+			Pallet::<T>::vote(
+				RawOrigin::Signed(voter.clone()).into(),
+				proposal_id,
+				approve,
+				None
+			)?;
 		}
-		let votes_count_before = ProposalVotes::<T>::get(&proposal_id);
-	}: {
-		Pallet::<T>::simple_vote(
-			RawOrigin::Signed(caller.clone()).into(),
-			proposal_id.clone(),
-			true
-		)?;
-	}
-	verify {
-		assert!(ProposalVotes::<T>::get(&proposal_id) == votes_count_before + 1);
-	}
 
-	simple_vote_withdraw {
-		let b in 0 .. T::MaxVotesPerProposal::get()-1;
+		// Ensure that proposal is still Active and not Finalized yet
+		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Activated);
 
-		let caller: T::AccountId = whitelisted_caller();
-		fund_account::<T>(&caller)?;
+		// Only proposer haven't voted "YES", so his vote should trigger an early finalization flow
+		let voter = proposer;
+		let approve = true;
+		// Whitelist voter account from further DB operations.
+		let voter_key = frame_system::Account::<T>::hashed_key_for(&voter);
+		frame_benchmarking::benchmarking::add_to_whitelist(voter_key.into());
 
-		// Create campaign and withdraw proposal
-		let campaign_id = create_and_finalize_campaign::<T>(caller.clone(), 10)?;
-		let withdraw_amount = T::Flow::campaign_balance(&campaign_id);
-		let start = frame_system::Pallet::<T>::block_number() + 1_u32.into();
-		let expiry = start + 200_u32.into();
-		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
-		Pallet::<T>::withdraw_proposal(
-			RawOrigin::Signed(caller.clone()).into(),
-			campaign_id,
-			BoundedVec::truncate_from((0..255).collect()),
-			BoundedVec::truncate_from((0..255).collect()),
-			withdraw_amount,
-			start,
-			expiry
-		)?;
+	}: _(RawOrigin::Signed(voter), proposal_id.clone(), approve, None)
 
-		let voters: Vec<T::AccountId> = (0 .. b).collect::<Vec<u32>>().iter()
-			.map(|i| account("voter", *i, SEED)).collect();
-		fund_accounts::<T>(&voters)?;
-		for voter in voters {
-			Pallet::<T>::simple_vote(RawOrigin::Signed(voter.clone()).into(), proposal_id.clone(), false)?;
-		}
-		let votes_count_before = ProposalVotes::<T>::get(&proposal_id);
-
-	}: {
-		Pallet::<T>::simple_vote(
-			RawOrigin::Signed(caller.clone()).into(),
-			proposal_id.clone(),
-			true
-		)?;
-	}
-	verify {
-		assert!(ProposalVotes::<T>::get(&proposal_id) == votes_count_before + 1);
-	}
-
-	unlock_balance {
-		let b in 2 .. 100;
-
-		let caller: T::AccountId = whitelisted_caller();
-		fund_account::<T>(&caller)?;
-
-		// Create campaign and withdraw proposal
-		let campaign_id = create_and_finalize_campaign::<T>(caller.clone(), b*2)?;
-		let withdraw_amount = T::Flow::campaign_balance(&campaign_id);
-		let start = frame_system::Pallet::<T>::block_number() + 1_u32.into();
-		let expiry = start + 200_u32.into();
-		let proposal_id = T::Hashing::hash_of(&Nonce::<T>::get());
-		Pallet::<T>::withdraw_proposal(
-			RawOrigin::Signed(caller.clone()).into(),
-			campaign_id,
-			BoundedVec::truncate_from((0..255).collect()),
-			BoundedVec::truncate_from((0..255).collect()),
-			withdraw_amount,
-			start,
-			expiry
-		)?;
-
-		let voters: Vec<T::AccountId> = (0 .. b).collect::<Vec<u32>>().iter()
-			.map(|i| account("voter", *i, SEED)).collect();
-		fund_accounts::<T>(&voters)?;
-		for voter in voters {
-			Pallet::<T>::simple_vote(RawOrigin::Signed(voter.clone()).into(), proposal_id.clone(), true)?;
-		}
-		ProposalSimpleVotes::<T>::insert(proposal_id, (b as u64 + 1, 0));
-		let proposal = Proposals::<T>::get(&proposal_id).unwrap();
-	}: {
-		Pallet::<T>::unlock_balance(
-			&proposal,
-			0
-		).map_err(|e| "Unlock balance error")?;
-	}
 	verify {
 		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Finalized);
 	}
-}
 
-impl_benchmark_test_suite!(Signal, crate::tests::new_test_ext(), crate::tests::Test);
+	on_initialize {
+		let p in 0 .. T::MaxProposalsPerBlock::get();
+
+		let caller: T::AccountId = whitelisted_caller();
+		fund_account::<T>(&caller)?;
+		let (campaign_id, org_id) = create_org_campaign::<T>(caller.clone(), 10, None)?;
+		let bounded_str: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from((0..255).collect());
+		let start = frame_system::Pallet::<T>::block_number() + 10_u32.into();
+		let expiry = frame_system::Pallet::<T>::block_number() + 200_u32.into();
+		let deposit = T::MinProposalDeposit::get();
+		let amount: T::Balance = 10_000u32.saturated_into();
+		let currency_id = T::PaymentTokenId::get();
+		let quorum = Permill::from_rational(1u32, 3u32);
+
+		for i in 0 .. p {
+			let prop = types::Proposal {
+				index: i as u32, proposal_type: ProposalType::Withdrawal,
+				owner: caller.clone(), title: bounded_str.clone(), cid: bounded_str.clone(),
+				slashing_rule: SlashingRule::Automated, start, expiry, deposit, org_id,
+				campaign_id: Some(campaign_id), amount: Some(amount),
+				beneficiary: None, currency_id: Some(currency_id)
+			};
+			let proposal_id = T::Hashing::hash_of(&prop);
+			Pallet::<T>::proposal(
+				RawOrigin::Signed(caller.clone()).into(), prop.proposal_type.clone(), prop.org_id,
+				prop.title.clone(), prop.cid.clone(), prop.expiry, Majority::Simple, Unit::Person,
+				Scale::Linear, Some(prop.start), Some(quorum), Some(prop.deposit),
+				prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id,
+			)?;
+			// Ensure that proposal exists and Activated
+			assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Created);
+		}
+
+	}: { Pallet::<T>::on_initialize(start); }
+
+	verify {
+		// Ensure proposals were Activated
+		for i in 0 .. p {
+			let prop = types::Proposal {
+				index: i as u32, proposal_type: ProposalType::Withdrawal,
+				owner: caller.clone(), title: bounded_str.clone(), cid: bounded_str.clone(),
+				slashing_rule: SlashingRule::Automated, start, expiry, deposit, org_id,
+				campaign_id: Some(campaign_id), amount: Some(amount),
+				beneficiary: None, currency_id: Some(currency_id)
+			};
+			let proposal_id = T::Hashing::hash_of(&prop);
+			assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Activated);
+		}
+	}
+
+	impl_benchmark_test_suite!(Signal, crate::tests::new_test_ext(), crate::tests::Test);
+
+}
