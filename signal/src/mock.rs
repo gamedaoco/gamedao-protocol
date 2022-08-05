@@ -19,11 +19,10 @@ use sp_std::convert::{TryFrom, TryInto};
 pub type AccountId = u64;
 pub type Amount = i128;
 pub type Balance = u128;
-pub type BlockNumber = u64;
+pub type BlockNumber = u32;
 pub type CurrencyId = u32;
 pub type Hash = H256;
 pub type Moment = u64;
-// pub type BoundedString = BoundedVec<u8, <Test as Config>::StringLimit>;
 
 pub const MILLICENTS: Balance = 1_000_000_000;
 pub const CENTS: Balance = 1_000 * MILLICENTS;
@@ -33,12 +32,12 @@ pub const MILLISECS_PER_BLOCK: u64 = 6000;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-pub const ALICE: AccountId = 101;
-pub const BOB: AccountId = 102;
-pub const CHARLIE: AccountId = 103;
-pub const TREASURY_ACC: AccountId = 104;
-pub const GAME3_TREASURY: AccountId = 105;
-pub const GAMEDAO_TREASURY: AccountId = 106;
+pub const ACC1: AccountId = 1;
+pub const ACC2: AccountId = 2;
+pub const ACC3: AccountId = 3;
+pub const TREASURY_ACC: AccountId = 4;
+pub const GAME3_TREASURY: AccountId = 5;
+pub const GAMEDAO_TREASURY: AccountId = 6;
 pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
 pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
@@ -165,7 +164,7 @@ impl pallet_timestamp::Config for Test {
 
 parameter_types! {
 	pub const MaxOrgsPerAccount: u32 = 2;
-	pub const MaxMembersPerOrg: u32 = 200;
+	pub const MaxMembersPerOrg: u32 = 2;
 	pub const MaxCreationsPerBlock: u32 = 2;
 	pub const MaxCreationsPerAccount: u32 = 100;
 	pub const MaxOrgsPerController: u32 = 100;
@@ -205,8 +204,8 @@ parameter_types! {
 	pub const MaxCampaignsPerOrg: u32 = 64;
 	pub const MaxCampaignContributions: u32 = 100;
 	pub const MaxCampaignsPerStatus: u32 = 1000;
-	pub const MaxContributionsPerBlock: u32 = 100;
-	pub const MaxContributorsProcessing: u32 = 100;
+	pub const MaxContributionsPerBlock: u32 = 3;
+	pub const MaxContributorsProcessing: u32 = 5;
 	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
 	pub const MaxCampaignDuration: BlockNumber = 100 * DAYS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
@@ -240,130 +239,28 @@ impl gamedao_flow::Config for Test {
 
 parameter_types! {
 	pub const MaxProposalsPerBlock: u32 = 2;
-	pub const MinProposalDeposit: Balance = 10 * DOLLARS;
-	pub SlashingMajority: Permill = Permill::from_rational(2u32, 3u32);
-	pub GameDAOGetsFromSlashing: Permill = Permill::from_rational(1u32, 10u32);
-	pub const ProposalDurationLimits: (BlockNumber, BlockNumber) = (10, 100);
+	pub const MaxProposalsPerOrg: u32 = 1000;
+	pub const MaxProposalsPerAccount: u32 = 1000;
+	pub const MaxProposalDuration: u32 = 20;
+	pub const MaxVotesPerProposal: u32 = 1000;
 }
 impl gamedao_signal::Config for Test {
 	type Event = Event;
-	type Balance = Balance;
-	type CurrencyId = CurrencyId;
-	type Currency = Currencies;
+	type WeightInfo = ();
 	type Control = Control;
 	type Flow = Flow;
-	type WeightInfo = ();
+	type MaxVotesPerProposal = MaxVotesPerProposal;
+	type MaxProposalsPerBlock = MaxProposalsPerBlock;
+	type MaxProposalsPerOrg = MaxProposalsPerOrg;
+	type MaxProposalsPerAccount = MaxProposalsPerAccount;
+	type MaxProposalDuration = MaxProposalDuration;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
-	type MinProposalDeposit = MinProposalDeposit;
-	type ProposalDurationLimits = ProposalDurationLimits;
-	type GameDAOTreasury = GameDAOTreasury;
-	type SlashingMajority = SlashingMajority;
-	type GameDAOGetsFromSlashing = GameDAOGetsFromSlashing;
-	type MaxMembersPerOrg = MaxMembersPerOrg;
-	type MaxProposalsPerBlock = MaxProposalsPerBlock;
-	type StringLimit = StringLimit;	
+	type Currency = Currencies;
+	type Balance = Balance;
+	type CurrencyId = CurrencyId;
+	type StringLimit = StringLimit;
 }
-
-use sp_runtime::traits::{Hash as HashTrait, AccountIdConversion};
-use gamedao_traits::ControlTrait;
-use crate::ProposalCount;
-use gamedao_control::{AccessModel, FeeModel, OrgType};
-use gamedao_flow::{FlowGovernance, FlowProtocol};
-use super::types::{Proposal, ProposalType, SlashingRule};
-use frame_support::assert_ok;
-use frame_system::RawOrigin;
-
-pub fn create_org(members: &Vec<AccountId>) -> (H256, AccountId) {
-	let org_creator = ALICE;
-	let nonce = Control::nonce();
-	let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
-	let init_balance = 100 * DOLLARS;
-
-	assert_ok!(Control::create_org(
-		Origin::signed(org_creator),
-		org_creator, 		// controller_id
-		bounded_str.clone(),// name
-		bounded_str.clone(),// cid
-		OrgType::Dao,
-		AccessModel::Open,
-		FeeModel::NoFees,
-		0,					// fee
-		1,					// gov_asset
-		1,					// pay_asset
-		100,				// member_limit
-		Some(1 * DOLLARS)	// deposit
-	));
-	let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account_truncating(nonce as i32);
-	let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);
-	assert_eq!(treasury_id, Control::org_treasury_account(&org_id).unwrap());
-	assert_ok!(Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, init_balance, 0));
-	for x in members {
-		assert_ok!(Control::add_member(Origin::signed(org_creator), org_id, *x));
-	}
-	(org_id, treasury_id)
-}
-
-pub fn set_balance(accounts: &Vec<AccountId>, amount: Balance) {
-	for x in accounts {
-		assert_ok!(Tokens::set_balance(RawOrigin::Root.into(), *x, PROTOCOL_TOKEN_ID, amount, 0));
-		assert_ok!(Tokens::set_balance(RawOrigin::Root.into(), *x, PAYMENT_TOKEN_ID, amount, 0));
-	}
-}
-
-pub fn create_finalize_campaign(
-	org_id: H256,
-	contributors: &Vec<AccountId>,
-	contribution: Balance,
-	expiry: BlockNumber,
-	finalize: bool
-) -> H256 {
-	let nonce = Flow::nonce();
-	let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
-	assert_ok!(Flow::create_campaign(
-		Origin::signed(ALICE),
-		org_id,						// org_id
-		ALICE, 						// admin_id
-		bounded_str.clone(), 		// name
-		10 * DOLLARS,				// target
-		10 * DOLLARS,				// deposit
-		expiry,						// expiry
-		FlowProtocol::default(),	// protocol
-		FlowGovernance::default(),	// governance
-		bounded_str.clone(),		// cid
-		bounded_str.clone(),		// token_symbol
-		bounded_str.clone(),		// token_name
-	));
-	let campaign_id = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
-	for x in contributors {
-		assert_ok!(Flow::contribute(Origin::signed(*x), campaign_id, contribution));
-	}
-	// Finalize campaign
-	if finalize {
-		System::set_block_number(expiry);
-		Flow::on_finalize(expiry);
-		System::set_block_number(expiry + 1);
-		Flow::on_initialize(expiry + 1);
-	}
-
-	campaign_id
-}
-
-pub fn create_proposal(
-	proposal_type: ProposalType, org_id: H256, start: BlockNumber, expiry: BlockNumber, deposit: Balance, campaign_id: Option<H256>,
-	currency_id: Option<CurrencyId>, beneficiary: Option<AccountId>, amount: Option<Balance>
-) -> (H256, Proposal<Hash, BlockNumber, AccountId, Balance, CurrencyId, BoundedVec<u8, <Test as gamedao_signal::Config>::StringLimit>>) {
-	let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
-	let proposal = Proposal {
-		index: <ProposalCount<Test>>::get(), owner: ALICE, title: bounded_str.clone(),
-		cid: bounded_str, slashing_rule: SlashingRule::Automated,
-		start, expiry, org_id, deposit, campaign_id,
-		amount, beneficiary, proposal_type, currency_id,
-	};
-	let proposal_id: H256 = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
-	(proposal_id, proposal)
-}
-
 
 #[derive(Default)]
 pub struct ExtBuilder;
@@ -372,12 +269,12 @@ impl ExtBuilder {
 		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		orml_tokens::GenesisConfig::<Test> {
 			balances: vec![
-				(ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-				(ALICE, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-				(BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-				(BOB, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-				(CHARLIE, PAYMENT_TOKEN_ID, 0 * DOLLARS),
-				(CHARLIE, PROTOCOL_TOKEN_ID, 0 * DOLLARS),
+				(ACC1, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+				(ACC1, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(ACC2, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+				(ACC2, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
+				(ACC3, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+				(ACC3, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
 			],
 		}
 		.assimilate_storage(&mut t)

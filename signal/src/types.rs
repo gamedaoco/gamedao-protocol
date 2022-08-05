@@ -1,126 +1,70 @@
 use frame_support::pallet_prelude::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::Permill;
-use frame_support::BoundedVec;
-use frame_support::pallet_prelude::Get;
-
-
-/// Simple index type for proposal counting.
-pub type ProposalIndex = u32;
-
-pub type VotingPower = u128;
 
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub enum BlockType {
-	Start = 0, 	// Proposal Init -> Active
-	Expiry = 1,	// Proposal Active -> Approved | Rejected
+pub enum ProposalState {
+	Init = 0,      // waiting for start block
+	Active = 1,    // voting is active
+	Accepted = 2,  // voters did approve
+	Rejected = 3,  // voters did not approve
+	Expired = 4,   // ended without votes
+	Aborted = 5,   // sudo abort
+	Finalized = 6, // accepted withdrawal proposal is processed
+}
+impl Default for ProposalState {
+	fn default() -> Self {
+		ProposalState::Init
+	}
 }
 
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum ProposalType {
 	General = 0,
-	Withdrawal = 1,
-	Spending = 2,
+	Multiple = 1,
+	Member = 2,
+	Withdrawal = 3,
+	Spending = 4,
 }
-
-#[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub enum SlashingRule {
-	Automated = 0,
-	Tribunal = 1,
-}
-impl Default for SlashingRule {
+impl Default for ProposalType {
 	fn default() -> Self {
-		SlashingRule::Automated
+		ProposalType::General
 	}
 }
 
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub enum ProposalState {
-	Created = 0,      // waiting for start block
-	Activated = 1,    // voting is active
-	Accepted = 2,  // voters did approve
-	Rejected = 3,  // voters did not approve
-	Expired = 4,   // ended without votes
-	// TODO: Aborted
-	Aborted = 5,   // sudo abort
-	Finalized = 6, // proposal's action applied
+pub enum VotingType {
+	Simple = 0,   // votes across participating votes
+	Token = 1,    // weight across participating votes
+	Absolute = 2, // votes vs all eligible voters
+	Quadratic = 3,
+	Ranked = 4,
+	Conviction = 5,
 }
-impl Default for ProposalState {
+impl Default for VotingType {
 	fn default() -> Self {
-		ProposalState::Created
+		VotingType::Simple
 	}
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Proposal<Hash, BlockNumber, AccountId, Balance, CurrencyId, BoundedString> {
-	pub index: ProposalIndex,
-	pub owner: AccountId,
-	pub title: BoundedString,
-	pub cid: BoundedString,
+pub struct Proposal<Hash, BlockNumber> {
+	pub proposal_id: Hash,
 	pub org_id: Hash,
 	pub campaign_id: Option<Hash>,
 	pub proposal_type: ProposalType,
-	pub deposit: Balance,
+	pub voting_type: VotingType,
 	pub start: BlockNumber,
 	pub expiry: BlockNumber,
-	pub amount: Option<Balance>,
-	pub currency_id: Option<CurrencyId>,
-	pub beneficiary: Option<AccountId>,
-	pub slashing_rule: SlashingRule,
 }
 
-#[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub enum Majority {
-	Simple = 0,
-	Relative = 1,
-	Absolute = 2,
-}
-
-#[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub enum Unit {
-	Person = 0,
-	Token = 1,
-}
-
-#[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub enum Scale {
-	Linear = 0,
-	Quadratic = 1,
-}
-
-#[derive(Encode, Decode, Clone, TypeInfo, MaxEncodedLen)]
-#[scale_info(skip_type_params(MaxMembersPerOrg))]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub struct Voting<AccountId, Balance, MaxMembersPerOrg>
-where
-MaxMembersPerOrg: Get<u32>,
-{
-	pub index: ProposalIndex, // Nonce
-	pub unit: Unit, // Person or Token
-	// 1. Voting process:
-	// Currently support only Yes/No voting type
-	pub ayes: BoundedVec<(AccountId, VotingPower, Option<Balance>), MaxMembersPerOrg>,
-	pub nays: BoundedVec<(AccountId, VotingPower, Option<Balance>), MaxMembersPerOrg>,
-	// For multiple choice/options should be refactored, ex.:
-	// 	pub votes: BoundedVec<(AccountId, Option, VotingPower, Option<Balance>), MaxMembersPerOrg>,
-	// Transforms vote's weight during voting process
-	pub scale: Scale, // Linear or Quadratic
-	// 2. Voting finalization:
-	// TODO: how to calculate "eligible" for token quadratic voting? (research needed)
-	// Either total number of eligible members or total number of 
-	//  eligible tokens, converted to Power
-	pub eligible: VotingPower,
-	pub participating: VotingPower, // yes power + no power
-	pub yes: VotingPower,
-	pub no: VotingPower,
-	pub quorum: Option<Permill>, // Percent of eligible
-	pub majority: Majority, // Simple, Relative, Absolute
+pub struct ProposalMetadata<Balance, BoundedString> {
+	pub title: BoundedString,
+	pub cid: BoundedString,
+	pub amount: Balance,
 }
