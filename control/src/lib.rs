@@ -938,6 +938,9 @@ impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 	fn org_treasury_account(org_id: &T::Hash) -> Option<T::AccountId> {
 		OrgTreasury::<T>::get(org_id)
 	}
+	fn org_member_count(org_id: &T::Hash) -> u64 {
+		OrgMemberCount::<T>::get(org_id)
+	}
 	fn is_org_active(org_id: &T::Hash) -> bool {
 		OrgState::<T>::get(org_id) == ControlState::Active
 	}
