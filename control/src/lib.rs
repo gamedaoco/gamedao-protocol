@@ -313,6 +313,10 @@ pub mod pallet {
 			org_id: T::Hash,
 			account_id: T::AccountId,
 		},
+		/// Org configuration has been updated.
+		OrgConfigUpdated {
+			org_id: T::Hash
+		}
 	}
 
 	#[pallet::error]
@@ -346,7 +350,11 @@ pub mod pallet {
 		/// Minimum deposit to Treasury too low.
 		MinimumDepositTooLow,
 		/// Too many orgs, created or controlled by the account
-		TooManyOrgs
+		TooManyOrgs,
+		/// Account does not have required permissions to perform action on the org
+		NoPermission,
+		/// Attempt to change configuration without providing updated parameters
+		NoConfigChanges
 	}
 
 	#[pallet::call]
@@ -591,6 +599,47 @@ pub mod pallet {
 		// 	Prime::<T, I>::kill();
 		// 	T::MembershipChanged::set_prime(None);
 		// }
+
+		#[transactional]
+		pub fn update_org(origin: OriginFor<T>,
+			org_id: T::Hash, controller_id: Option<T::AccountId>,
+			fee_model: Option<FeeModel>, fee: Option<T::Balance>,
+			access_model: Option<AccessModel>, member_limit: Option<u64>,
+			// control_type: Option<ControlType>,  // todo: implement this
+		) -> DispatchResult {
+			let controller = OrgController::<T>::get(org_id);
+			let raw_origin: RawOrigin = origin.into();
+			ensure!(
+				origin == controller || raw_origin == Ok(RawOrigin::Root),
+				Error::<T>::NoPermission
+			);
+			let mut contains_changes = false;
+			let mut config = OrgConfiguration::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?.clone();
+			if let Some(controller_id) = controller_id {
+				OrgController::<T>::insert(&org_id, controller_id);
+				contains_changes = true;
+			}
+			if let Some(access_model) = access_model {
+				config.access_model = access_model;
+				contains_changes = true;
+			}
+			if let Some(member_limit) = member_limit {
+				config.member_limit = member_limit;
+				contains_changes = true;
+			}
+			if let Some(fee_model) = fee_model {
+				ensure!(fee_model == FeeModel::NoFees || fee.is_some());
+				config.fee_model = fee_model;
+				config.fee = fee.unwrap_or_default();
+			}
+			ensure!(contains_changes, Error::<T>::NoConfigChanges);
+
+			OrgConfiguration::<T>::insert(&org_id, config);
+			self.deposit_event(Event::OrgConfigUpdated {
+				org_id: org_id
+			});
+			Ok(())
+		}
 	}
 }
 
