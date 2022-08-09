@@ -26,9 +26,7 @@ These all together, T, XP, REP and the opaque identity provide increased trust a
 ### Dispatchable Functions
 
 * `create_entity` - Create sense entity, attached to the user account.
-* `mod_xp` - Update entity experience value, root only.
-* `mod_rep` - Update entity reputation value, root only.
-* `mod_trust` - Update entity trust value, root only.
+* `update_property` - Update entity property value, root only.
 
 ## Usage
 
