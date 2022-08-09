@@ -27,19 +27,21 @@ impl<AccountId, BlockNumber, BoundedString> Entity<AccountId, BlockNumber, Bound
 
 #[derive(Encode, Decode, Default, Eq, Copy, PartialEq, Clone, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct EntityProperty<BlockNumber> {
-	pub(crate) value: u64,
-	pub(crate) mutated: BlockNumber,
+	value: u64,
+	mutated: BlockNumber,
 }
 
 impl<BlockNumber> EntityProperty<BlockNumber> {
 	pub fn new(value: u64, block_number: BlockNumber) -> EntityProperty<BlockNumber> {
 		EntityProperty { value, mutated: block_number }
 	}
+	pub fn get_value(&self) -> &u64 { &self.value }
 }
+
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum PropertyType {
-	Experience, 
-    Trust, 
-    Reputation
+	Experience,
+	Trust,
+	Reputation
 }

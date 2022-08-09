@@ -135,9 +135,9 @@ pub mod pallet {
 
 			let count = index.checked_add(1).ok_or(Error::<T>::EntityCountOverflow)?;
 			let entity = Entity::new(account_id.clone(), current_block, index, cid);
-			let experience = EntityProperty { value: 0, mutated: current_block };
-			let reputation = EntityProperty { value: 0, mutated: current_block };
-			let trust = EntityProperty { value: 0, mutated: current_block };
+			let experience = EntityProperty::new(0, current_block);
+			let reputation = EntityProperty::new(0, current_block);
+			let trust = EntityProperty::new(0, current_block);
 
 			Self::save_entity(account_id.clone(), entity, count, experience, reputation, trust);
 
@@ -180,10 +180,10 @@ pub mod pallet {
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			let v = u64::from(value);
 			let current = Self::get_property(property_type.clone(), account_id.clone()).unwrap();
-			let updated = EntityProperty {
-				value: current.value.checked_add(v).ok_or(Error::<T>::EntityPropertyOverflow)?,
-				mutated: current_block,
-			};
+			let updated = EntityProperty::new(
+				current.get_value().checked_add(v).ok_or(Error::<T>::EntityPropertyOverflow)?,
+				current_block
+			);
 
 			Self::save_property(property_type.clone(), account_id.clone(), updated);
 
