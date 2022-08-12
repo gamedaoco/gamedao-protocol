@@ -21,20 +21,18 @@ impl Default for FlowProtocol {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 #[repr(u8)]
-pub enum FlowState {
-	Init = 0,
-	Active = 1,
-	Paused = 2,
-	Finalizing = 3,
-	Reverting = 4,
-	Success = 5,
-	Failed = 6,
-	Locked = 7,
+pub enum CampaignState {
+	Created = 0,	// waiting for start block
+	Activated = 1,	// contributions are allowed
+	Paused = 2, 	// under discussion, pending council decision, can be unpaused or failed and therefore reverted
+	Succeeded = 3,
+	Failed = 4,
+	Locked = 5,		// authority lock due to e.g. legal actions, community votes. similar to a circuit breaker
 }
 
-impl Default for FlowState {
+impl Default for CampaignState {
 	fn default() -> Self {
-		Self::Init
+		Self::Created
 	}
 }
 
@@ -52,56 +50,62 @@ impl Default for FlowGovernance {
 	}
 }
 
-// TODO: this can be decomposed to improve weight
+/// Simple index type for proposal counting.
+pub type CampaignIndex = u32;
+
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Campaign<Hash, AccountId, Balance, BlockNumber, Moment, BoundedString> {
-	// unique hash to identify campaign (generated)
-	pub(super) id: Hash,
+pub struct Campaign<Hash, AccountId, Balance, BlockNumber, BoundedString> {
+	// unique id to identify campaign
+	pub index: CampaignIndex,
 	// hash of the overarching body from module-control
-	pub(super) org: Hash,
+	pub org_id: Hash,
 	// name
-	pub(super) name: BoundedString,
+	pub name: BoundedString,
 
 	// controller account -> must match body controller
 	// during campaing runtime controller change is not allowed
 	// needs to be revised to avoid campaign attack by starting
 	// a campagin when dao wants to remove controller for reasons
-	pub(super) owner: AccountId,
+	pub owner: AccountId,
 
 	// TODO: THIS NEEDS TO BE GAMEDAO COUNCIL
 	/// admin account of the campaign (operator)
-	pub(super) admin: AccountId,
+	pub admin: AccountId,
 
 	// TODO: assets => GAME
 	/// campaign owners deposit
-	pub(super) deposit: Balance,
+	pub deposit: Balance,
 
-	// TODO: /// campaign start block
+	pub start: BlockNumber,
 	// start: BlockNumber,
 	/// block until campaign has to reach cap
-	pub(super) expiry: BlockNumber,
+	pub expiry: BlockNumber,
 	/// minimum amount of token to become a successful campaign
-	pub(super) cap: Balance,
+	pub cap: Balance,
 
 	/// protocol after successful raise
-	pub(super) protocol: FlowProtocol,
+	pub protocol: FlowProtocol,
 	/// governance after successful raise
-	pub(super) governance: FlowGovernance,
+	pub governance: FlowGovernance,
 
 	/// content storage
-	pub(super) cid: BoundedString,
+	pub cid: BoundedString,
 
 	// TODO: prepare for launchpad functionality
 	// token cap
 	// token_cap: u64,
 	// token_price
 	// token_price: u64,
-	// /// token symbol
-	pub(super) token_symbol: BoundedString,
-	// /// token name
-	pub(super) token_name: BoundedString,
-
+	pub token_symbol: Option<BoundedString>,
+	pub token_name: Option<BoundedString>,
 	/// creation timestamp
-	pub(super) created: Moment,
+	pub created: BlockNumber,
+}
+
+#[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(Debug))]
+pub enum BlockType {
+	Start = 0, 	// Campaign Init -> Active
+	Expiry = 1,	// Campaign Active -> Approved | Rejected
 }

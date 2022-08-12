@@ -48,7 +48,6 @@ pub trait FlowTrait<AccountId, Balance, Hash> {
 	fn is_campaign_succeeded(campaign_id: &Hash) -> bool;
 	fn is_campaign_contributor(campaign_id: &Hash, who: &AccountId) -> bool;
 	fn campaign_contributors_count(campaign_id: &Hash) -> u64;
-	fn campaign_org(campaign_id: &Hash) -> Hash;
 	fn campaign_owner(campaign_id: &Hash) -> Option<AccountId>;
 }
 
@@ -58,7 +57,7 @@ pub trait FlowBenchmarkingTrait<AccountId, BlockNumber, Hash> {
 	/// Helper method to create campaign
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
-	fn create_campaign(caller: &AccountId, org_id: &Hash) -> Result<Hash, &'static str>;
+	fn create_campaign(caller: &AccountId, org_id: &Hash, start: BlockNumber) -> Result<Hash, &'static str>;
 
 	/// Helper method to fill campaign with contributions
 	/// It is assumed those accounts have enought currency to contribute

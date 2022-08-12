@@ -15,6 +15,7 @@ use sp_runtime::{
 	Permill,
 };
 use sp_std::convert::{TryFrom, TryInto};
+use gamedao_traits::FlowTrait;
 
 pub type AccountId = u64;
 pub type Amount = i128;
@@ -194,48 +195,38 @@ impl gamedao_control::Config for Test {
 	type PalletId = ControlPalletId;
 	type Game3FoundationTreasury = Game3FoundationTreasuryAccountId;
 	type GameDAOTreasury = GameDAOTreasuryAccountId;
-	type StringLimit = StringLimit;
+	type StringLimit = ConstU32<256>;
 }
 
 parameter_types! {
 	pub const MinNameLength: u32 = 2;
-	pub const StringLimit: u32 = 4;
-	pub const MaxCampaignsPerAddress: u32 = 3;
-	pub const MaxCampaignsPerBlock: u32 = 1;
-	pub const MaxCampaignsPerOrg: u32 = 64;
-	pub const MaxCampaignContributions: u32 = 100;
-	pub const MaxCampaignsPerStatus: u32 = 1000;
-	pub const MaxContributionsPerBlock: u32 = 100;
+	pub const MaxCampaignsPerBlock: u32 = 2;
 	pub const MaxContributorsProcessing: u32 = 100;
-	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
-	pub const MaxCampaignDuration: BlockNumber = 100 * DAYS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
 	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
+	pub const CampaignDurationLimits: (BlockNumber, BlockNumber) = (1 * DAYS, 100 * DAYS);
+	pub MinCampaignDeposit: Permill = Permill::from_rational(1u32, 10u32); // 10%
 }
+
 impl gamedao_flow::Config for Test {
+	type Event = Event;
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
-	type Event = Event;
 	type Currency = Currencies;
-	type ProtocolTokenId = ProtocolTokenId;
-	type PaymentTokenId = PaymentTokenId;
-	type UnixTime = PalletTimestamp;
 	type Control = Control;
 	type GameDAOTreasury = GameDAOTreasury;
 	type MinNameLength = MinNameLength;
-	type StringLimit = StringLimit;
-	type MaxContributorsProcessing = MaxContributorsProcessing;
-	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
-	type MaxCampaignsPerOrg = MaxCampaignsPerOrg;
-	type MaxCampaignContributions = MaxCampaignContributions;
-	type MaxCampaignsPerStatus = MaxCampaignsPerStatus;
-	type MaxContributionsPerBlock = MaxContributionsPerBlock;
-	type MinCampaignDuration = MinCampaignDuration;
-	type MaxCampaignDuration = MaxCampaignDuration;
+	type MaxCampaignContributors = ConstU32<1000>;
+	type MaxContributorsProcessing = MaxContributorsProcessing;
+	type MinCampaignDeposit = MinCampaignDeposit;
 	type MinContribution = MinContribution;
+	type ProtocolTokenId = ProtocolTokenId;
+	type PaymentTokenId = PaymentTokenId;
 	type CampaignFee = CampaignFee;
+	type StringLimit = ConstU32<256>;
+	type CampaignDurationLimits = CampaignDurationLimits;
 }
 
 parameter_types! {
@@ -262,7 +253,7 @@ impl gamedao_signal::Config for Test {
 	type GameDAOGetsFromSlashing = GameDAOGetsFromSlashing;
 	type MaxMembersPerOrg = MaxMembersPerOrg;
 	type MaxProposalsPerBlock = MaxProposalsPerBlock;
-	type StringLimit = StringLimit;	
+	type StringLimit = ConstU32<256>;	
 }
 
 use sp_runtime::traits::{Hash as HashTrait, AccountIdConversion};
@@ -312,29 +303,39 @@ pub fn set_balance(accounts: &Vec<AccountId>, amount: Balance) {
 }
 
 pub fn create_finalize_campaign(
+	current_block: BlockNumber,
 	org_id: H256,
 	contributors: &Vec<AccountId>,
 	contribution: Balance,
 	expiry: BlockNumber,
 	finalize: bool
 ) -> H256 {
-	let nonce = Flow::nonce();
+	let index = Flow::campaign_count();
 	let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
+	let campaign = gamedao_flow::types::Campaign {
+		index,
+		org_id,
+		name: bounded_str.clone(),
+		owner: ALICE,
+		admin: ALICE,
+		deposit: 10 * DOLLARS,
+		start: current_block,
+		expiry,
+		cap: 40 * DOLLARS, 
+		protocol: FlowProtocol::default(),
+		governance: FlowGovernance::default(),
+		cid: bounded_str.clone(),
+		token_symbol: None,
+		token_name: None,
+		created: current_block,
+	};
 	assert_ok!(Flow::create_campaign(
 		Origin::signed(ALICE),
-		org_id,						// org_id
-		ALICE, 						// admin_id
-		bounded_str.clone(), 		// name
-		10 * DOLLARS,				// target
-		10 * DOLLARS,				// deposit
-		expiry,						// expiry
-		FlowProtocol::default(),	// protocol
-		FlowGovernance::default(),	// governance
-		bounded_str.clone(),		// cid
-		bounded_str.clone(),		// token_symbol
-		bounded_str.clone(),		// token_name
+		org_id, campaign.admin, campaign.name.clone(), campaign.cap,
+		campaign.deposit, campaign.expiry, campaign.protocol.clone(),
+		campaign.governance.clone(), campaign.cid.clone(), None, None, None
 	));
-	let campaign_id = <Test as frame_system::Config>::Hashing::hash_of(&nonce);
+	let campaign_id = <Test as frame_system::Config>::Hashing::hash_of(&campaign);
 	for x in contributors {
 		assert_ok!(Flow::contribute(Origin::signed(*x), campaign_id, contribution));
 	}
@@ -344,6 +345,7 @@ pub fn create_finalize_campaign(
 		Flow::on_finalize(expiry);
 		System::set_block_number(expiry + 1);
 		Flow::on_initialize(expiry + 1);
+		assert_eq!(Flow::is_campaign_succeeded(&campaign_id), true);
 	}
 
 	campaign_id
