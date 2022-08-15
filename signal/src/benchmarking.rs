@@ -31,7 +31,8 @@ fn create_org_campaign<T: Config>(caller: T::AccountId, contributors_count: u32,
 	let org_id = T::Control::create_org(caller.clone())?;
 	let treasury_account_id = T::Control::org_treasury_account(&org_id).unwrap();
 	fund_account::<T>(&treasury_account_id)?;
-	let campaign_id = T::Flow::create_campaign(&caller, &org_id)?;
+	let now = frame_system::Pallet::<T>::block_number();
+	let campaign_id = T::Flow::create_campaign(&caller, &org_id, now)?;
 	let contributors: Vec<T::AccountId> = (0..contributors_count).collect::<Vec<u32>>().iter()
 		.map(|i| account("contributor", *i, SEED)).collect();
 	fund_accounts::<T>(&contributors)?;
