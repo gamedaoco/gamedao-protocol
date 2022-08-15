@@ -226,7 +226,7 @@ pub mod pallet {
 	pub enum Error<T> {
 		AuthorizationError,
 		BalanceLow,
-		CampaignFailed,
+		CampaignNotSucceeded,
 		DepositInsufficient,
 		DuplicateVote,
 		MissingParameter,
@@ -237,6 +237,7 @@ pub mod pallet {
 		ProposalUnknown,
 		TooManyProposals,
 		TreasuryBalanceLow,
+		TreasuryNotExist,
 		VoteLimitReached,
 		WrongParameter,
 	}
@@ -286,19 +287,21 @@ pub mod pallet {
 				ensure!(proposal_deposit >= T::MinProposalDeposit::get(), Error::<T>::DepositInsufficient);
 			}
 			// Check if all parameters are combinable:
-			if unit == Unit::Person && scale == Scale::Quadratic {
-				return Err(Error::<T>::WrongParameter)?;
-			};
-			if unit == Unit::Token && majority == Majority::Absolute {
-				return Err(Error::<T>::WrongParameter)?;
-			};
-			// TODO: quorum validation. Should work only for the Unit:Person
+			match unit {
+				Unit::Person => {
+					// Unit::Person doesn't work with quadratic scale
+					ensure!(scale != Scale::Quadratic, Error::<T>::WrongParameter);
+				}
+				Unit::Token => {
+					// Since it's not possible to calculate eligible voting power, 
+					// 	Absolute majority and quorum doesn't work for Unit::Token
+					ensure!(majority != Majority::Absolute, Error::<T>::WrongParameter);
+					ensure!(quorum.is_none(), Error::<T>::WrongParameter);
+				}
+			}
 			// Proposal type specific validation:
 			match proposal_type {
-				ProposalType::Withdrawal | ProposalType::Spending => {
-					if proposal_type == ProposalType::Spending && beneficiary.is_none() {
-						return Err(Error::<T>::MissingParameter)?;
-					}
+				ProposalType::Withdrawal => {
 					if currency_id.is_none() {
 						return Err(Error::<T>::MissingParameter)?;
 					}
@@ -307,7 +310,7 @@ pub mod pallet {
 
 					let campaign_owner = T::Flow::campaign_owner(&c_id).ok_or(Error::<T>::AuthorizationError)?;
 					ensure!(proposer == campaign_owner, Error::<T>::AuthorizationError);
-					ensure!(T::Flow::is_campaign_succeeded(&c_id), Error::<T>::CampaignFailed);
+					ensure!(T::Flow::is_campaign_succeeded(&c_id), Error::<T>::CampaignNotSucceeded);
 					
 					let used_balance = CampaignBalanceUsed::<T>::get(&c_id);
 					let total_balance = T::Flow::campaign_balance(&c_id);
@@ -315,7 +318,12 @@ pub mod pallet {
 						.checked_sub(&used_balance)
 						.ok_or(Error::<T>::BalanceLow)?;
 					ensure!(remaining_balance >= bond, Error::<T>::BalanceLow);
-				},
+				}
+				ProposalType::Spending => {
+					if currency_id.is_none() || amount.is_none() || beneficiary.is_none() {
+						return Err(Error::<T>::MissingParameter)?;
+					}
+				}
 				_ => {}
 			}
 
@@ -575,9 +583,9 @@ pub mod pallet {
 			).map_err(|_| Error::<T>::BalanceLow)?;
 
 			if proposal.proposal_type == ProposalType::Spending {
-				let org_trsry = T::Control::org_treasury_account(&proposal.org_id).unwrap();
+				let treasury_id = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryNotExist)?;
 				T::Currency::reserve(
-					proposal.currency_id.unwrap(), &org_trsry, proposal.amount.unwrap()
+					proposal.currency_id.unwrap(), &treasury_id, proposal.amount.unwrap()
 				).map_err(|_| Error::<T>::TreasuryBalanceLow)?;
 			}
 
@@ -676,10 +684,13 @@ pub mod pallet {
 		fn apply_proposal_actions(proposal: &Proposal<T>, proposal_state: ProposalState) -> ProposalState {
 			match proposal.proposal_type {
 				ProposalType::Withdrawal => {
+					let campaign_id = proposal.campaign_id.unwrap();
+					let amount = proposal.amount.unwrap();
 					T::Currency::unreserve(
 						proposal.currency_id.unwrap(),
-						&T::Control::org_treasury_account(&proposal.org_id).unwrap(),
-						proposal.amount.unwrap());
+						&T::Control::org_treasury_account(&proposal.org_id).unwrap(), amount);
+					let used_balance = CampaignBalanceUsed::<T>::get(&campaign_id);
+					CampaignBalanceUsed::<T>::insert(&campaign_id, used_balance + amount);
 					return ProposalState::Finalized;
 				}
 				ProposalType::Spending => {

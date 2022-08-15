@@ -30,7 +30,6 @@ Flow is designed to make the following possible:
 ### Dispatchable Functions
 
 * `create_campaign` - Create an on chain campaign by organization controller, allowing to specify its lifetime and amount to be raised.
-* `update_state` - Update status of the campaign allowing it to be finized earlier its due date.
 * `contribute` - Contribute to the campaign as an investor. This will lock some of your funds and transfer them to treasury of campaign succeeds.
 
 
@@ -38,7 +37,6 @@ Flow is designed to make the following possible:
 
 * `campaign_balance` - Get balance of the `campaign_id` campaign.
 * `campaign_contributors_count` - Get number of contributors to the campaign `campaign_id`.
-* `campaign_org` - Get the organization, which owns campaign `campaign_id`.
 * `campaign_owner` - Get owner of the campaign `campaign_id`.
 * `is_campaign_succeeded` - Did campaign finished successfully or not.
 
