@@ -1,36 +1,18 @@
 #![cfg(test)]
 
-pub use super::*;
+use super::{FlowProtocol, FlowGovernance};
+use sp_std::{vec, vec::Vec, convert::{TryFrom, TryInto}};
 use frame_support::{
 	construct_runtime, parameter_types, PalletId,
 	traits::{Everything, GenesisBuild, Nothing},
 	pallet_prelude::*,
 };
 use sp_core::H256;
-use sp_runtime::{traits::IdentityLookup, Permill};
+use sp_runtime::{traits::{IdentityLookup, BlakeTwo256}, Permill};
+use frame_system;
 
 use orml_traits::parameter_type_with_key;
 
-impl Campaign<Hash, AccountId, Balance, BlockNumber, Moment, BoundedVec<u8, <Test as Config>::StringLimit>> {
-	pub fn new(campaign_id: Hash, expiry: BlockNumber) -> Campaign<Hash, AccountId, Balance, BlockNumber, Moment, BoundedVec<u8, <Test as Config>::StringLimit>> {
-		Campaign {
-			id: campaign_id,
-			org: H256::random(),
-			name: BoundedVec::truncate_from(vec![1, 2]),
-			owner: BOB,
-			admin: BOB,
-			deposit: 10 * DOLLARS,
-			expiry: expiry,
-			cap: 110 * DOLLARS,
-			protocol: FlowProtocol::Raise,
-			governance: FlowGovernance::No,
-			cid: BoundedVec::truncate_from(vec![1, 2]),
-			token_symbol: BoundedVec::truncate_from(vec![1, 2]),
-			token_name: BoundedVec::truncate_from(vec![1, 2]),
-			created: PalletTimestamp::now(),
-		}
-	}
-}
 
 #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord, MaxEncodedLen, TypeInfo)]
 #[repr(u8)]
@@ -48,11 +30,9 @@ pub enum ReserveIdentifier {
 pub type AccountId = u32;
 pub type BlockNumber = u64;
 pub type Hash = H256;
-pub type Moment = u64;
 pub type Balance = u128;
 pub type Amount = i128;
 pub type CurrencyId = u32;
-// pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -68,22 +48,14 @@ pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
 pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
 // Contributors:
-pub const ACC_1: AccountId = 1;
-pub const ACC_2: AccountId = 2;
-pub const ACC_3: AccountId = 3;
-pub const ACC_4: AccountId = 4;
-pub const ACC_5: AccountId = 5;
-pub const ACC_6: AccountId = 6;
-pub const ACC_7: AccountId = 7;
-pub const ACC_8: AccountId = 8;
-pub const ACC_9: AccountId = 9;
-pub const ACC_10: AccountId = 10;
 pub const ALICE: AccountId = 11;
 // Org creator:
 pub const BOB: AccountId = 12;
 
 pub const GAMEDAO_TREASURY: AccountId = 13;
 pub const GAME3_TREASURY: AccountId = 14;
+
+pub const INIT_BALANCE: Balance = 100 * DOLLARS;
 
 mod gamedao_flow {
 	pub use super::super::*;
@@ -98,8 +70,8 @@ impl frame_system::Config for Test {
 	type Index = u64;
 	type BlockNumber = BlockNumber;
 	type Call = Call;
-	type Hash = H256;
-	type Hashing = ::sp_runtime::traits::BlakeTwo256;
+	type Hash = Hash;
+	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = sp_runtime::testing::Header;
@@ -169,17 +141,6 @@ impl orml_currencies::Config for Test {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const MinimumPeriod: Moment = 1000;
-}
-
-impl pallet_timestamp::Config for Test {
-	type Moment = Moment;
-	type OnTimestampSet = ();
-	type MinimumPeriod = MinimumPeriod;
-	type WeightInfo = ();
-}
-
 frame_support::parameter_types! {
 	pub const MaxOrgsPerAccount: u32 = 2;
 	pub const MaxMembersPerOrg: u32 = 2;
@@ -216,43 +177,34 @@ impl gamedao_control::Config for Test {
 
 parameter_types! {
 	pub const MinNameLength: u32 = 2;
-	pub const MaxCampaignsPerAddress: u32 = 2;
 	pub const MaxCampaignsPerBlock: u32 = 2;
-	pub const MaxCampaignsPerOrg: u32 = 64;
-	pub const MaxContributionsPerBlock: u32 = 3;
 	pub const MaxContributorsProcessing: u32 = 4;
-	pub const MinCampaignDuration: BlockNumber = 1 * DAYS;
-	pub const MaxCampaignDuration: BlockNumber = 100 * DAYS;
 	pub const MinContribution: Balance = 1 * DOLLARS;
 	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
-	// pub const CampaignFee: Balance = 25 * CENTS;
 	pub const GameDAOTreasury: AccountId = GAMEDAO_TREASURY;
+	pub const CampaignDurationLimits: (BlockNumber, BlockNumber) = (1 * DAYS, 100 * DAYS);
+	pub MinCampaignDeposit: Permill = Permill::from_rational(1u32, 10u32); // 10%
 }
 
-impl Config for Test {
+impl gamedao_flow::Config for Test {
+	type Event = Event;
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
-	type Event = Event;
 	type Currency = Currencies;
-	type ProtocolTokenId = ProtocolTokenId;
-	type PaymentTokenId = PaymentTokenId;
-	type UnixTime = PalletTimestamp;
 	type Control = Control;
 	type GameDAOTreasury = GameDAOTreasury;
-	type MaxContributorsProcessing = MaxContributorsProcessing;
 	type MinNameLength = MinNameLength;
-	type MaxCampaignsPerAddress = MaxCampaignsPerAddress;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
-	type MaxCampaignsPerOrg = MaxCampaignsPerOrg;
-	type MaxContributionsPerBlock = MaxContributionsPerBlock;
-	type MaxCampaignContributions = ConstU32<1000>;
-	type MaxCampaignsPerStatus = ConstU32<10000>;
-	type MinCampaignDuration = MinCampaignDuration;
-	type MaxCampaignDuration = MaxCampaignDuration;
+	type MaxCampaignContributors = ConstU32<1000>;
+	type MaxContributorsProcessing = MaxContributorsProcessing;
 	type MinContribution = MinContribution;
+	type MinCampaignDeposit = MinCampaignDeposit;
+	type ProtocolTokenId = ProtocolTokenId;
+	type PaymentTokenId = PaymentTokenId;
 	type CampaignFee = CampaignFee;
 	type StringLimit = ConstU32<256>;
+	type CampaignDurationLimits = CampaignDurationLimits;
 }
 
 construct_runtime!(
@@ -261,11 +213,10 @@ construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Currencies: orml_currencies::{Pallet, Call},
 		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
 		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		PalletTimestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 		Flow: gamedao_flow,
 		Control: gamedao_control,
 	}
@@ -276,21 +227,21 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	orml_tokens::GenesisConfig::<Test> {
 		balances: vec![
 			// BOB org creator
-			(BOB, PROTOCOL_TOKEN_ID, 100 * DOLLARS),
-			(BOB, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(BOB, PROTOCOL_TOKEN_ID, INIT_BALANCE),
+			(BOB, PAYMENT_TOKEN_ID, INIT_BALANCE),
 			
 			// Contributors
-			(ALICE, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(ACC_1, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(ACC_2, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(ACC_3, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(ACC_4, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(ACC_5, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(ACC_6, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(ACC_7, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(ACC_8, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(ACC_9, PAYMENT_TOKEN_ID, 100 * DOLLARS),
-			(ACC_10, PAYMENT_TOKEN_ID, 100 * DOLLARS),
+			(ALICE, PAYMENT_TOKEN_ID, INIT_BALANCE),
+			(1, PAYMENT_TOKEN_ID, INIT_BALANCE),
+			(2, PAYMENT_TOKEN_ID, INIT_BALANCE),
+			(3, PAYMENT_TOKEN_ID, INIT_BALANCE),
+			(4, PAYMENT_TOKEN_ID, INIT_BALANCE),
+			(5, PAYMENT_TOKEN_ID, INIT_BALANCE),
+			(6, PAYMENT_TOKEN_ID, INIT_BALANCE),
+			(7, PAYMENT_TOKEN_ID, INIT_BALANCE),
+			(8, PAYMENT_TOKEN_ID, INIT_BALANCE),
+			(9, PAYMENT_TOKEN_ID, INIT_BALANCE),
+			(10, PAYMENT_TOKEN_ID, INIT_BALANCE),
 
 			(GAMEDAO_TREASURY, PROTOCOL_TOKEN_ID, 0),
 			(GAMEDAO_TREASURY, PAYMENT_TOKEN_ID, 0),
