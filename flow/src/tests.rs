@@ -87,17 +87,16 @@ fn flow_create_errors() {
 		// Check if organization's treasury has enough deposit
 		// Error: TreasuryBalanceLow
 
-		// TODO: fix this test (super fun error)
-		// let deposit_more_than_treasury = 1000 * DOLLARS;
-		// assert_noop!(
-		// 	Flow::create_campaign(
-		// 		Origin::signed(BOB), org_id, BOB,
-		// 		bounded_vec.clone(), deposit_more_than_treasury + 1, deposit_more_than_treasury, expiry,
-		// 		FlowProtocol::default(), FlowGovernance::default(),
-		// 		bounded_vec.clone(), None, None, None,
-		// 	),
-		// 	Error::<Test>::TreasuryBalanceLow
-		// );
+		let deposit_more_than_treasury = 1000 * DOLLARS;
+		assert_noop!(
+			Flow::create_campaign(
+				Origin::signed(BOB), org_id, BOB,
+				bounded_vec.clone(), deposit_more_than_treasury + 1, deposit_more_than_treasury, expiry,
+				FlowProtocol::default(), FlowGovernance::default(),
+				bounded_vec.clone(), None, None, None,
+			),
+			Error::<Test>::TreasuryBalanceLow
+		);
 
 		// Check if deposit is not too high
 		// Error: DepositTooHigh
@@ -229,13 +228,11 @@ fn flow_contribute_errors() {
 
 		// Check if contributor has enough balance
 		// Error: BalanceLow
-
-		// TODO: same error while reserving tokens
-		// let more_than_balance = 110 * DOLLARS;
-		// assert_noop!(
-		// 	Flow::contribute(Origin::signed(ALICE), campaign_id, more_than_balance),
-		// 	Error::<Test>::BalanceLow
-		// );
+		let more_than_balance = 110 * DOLLARS;
+		assert_noop!(
+			Flow::contribute(Origin::signed(ALICE), campaign_id, more_than_balance),
+			Error::<Test>::BalanceLow
+		);
 
 		// Check that owner is not caller
 		// NoContributionToOwnCampaign

@@ -1,21 +1,31 @@
 #![cfg(test)]
 
 use frame_support::{assert_noop, assert_ok};
-use sp_runtime::traits::BadOrigin;
+use sp_runtime::traits::{BadOrigin};
 use sp_core::H256;
 use super::*;
-use mock::*;
+use mock::{new_test_ext, System, Test, Event, Control, Origin, Tokens, CurrencyId, Balance, AccountId,
+	ALICE, BOB, CHARLIE, PAYMENT_TOKEN_ID, PROTOCOL_TOKEN_ID, DOLLARS};
 
 
 fn create_org() -> H256 {
-	let nonce: u128 = Nonce::<Test>::get();
 	let bounded_str = BoundedVec::truncate_from(vec![1,2]);
+	let index = OrgCount::<Test>::get();
+	let now = frame_system::Pallet::<Test>::block_number();
+	let org = types::Org {
+		index, creator: ALICE, prime: ALICE, name: bounded_str.clone(), cid: bounded_str.clone(),
+		org_type: OrgType::Individual, fee_model: FeeModel::NoFees, membership_fee: Some(1 * DOLLARS),
+		gov_currency: PROTOCOL_TOKEN_ID, pay_currency: PAYMENT_TOKEN_ID, access_model: AccessModel::Prime,
+		member_limit: <Test as Config>::MaxMembers::get(), created: now.clone(), mutated: now
+	};
+	let org_id = <Test as frame_system::Config>::Hashing::hash_of(&org);
+
 	assert_ok!(
-		Control::create_org(Origin::signed(ALICE), BOB, bounded_str.clone(), bounded_str,
-		Default::default(), Default::default(), Default::default(),
-		1 * DOLLARS, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, 10, None
+		Control::create_org(
+			Origin::signed(ALICE), org.name, org.cid, org.org_type, org.access_model,
+			org.fee_model, None, org.membership_fee, None, None, None
 	));
-	OrgByNonce::<Test>::get(nonce).unwrap()
+	org_id
 }
 
 
@@ -25,39 +35,115 @@ fn control_create_org() {
 		let current_block = 3;
 		System::set_block_number(current_block);
 		let bounded_str = BoundedVec::truncate_from(vec![1,2]);
+
+		// Create org with org type Company
+		// Error: WrongOrganizationType
+		assert_noop!(Control::create_org(
+			Origin::signed(ALICE), bounded_str.clone(), bounded_str.clone(), OrgType::Company,
+			AccessModel::Prime, FeeModel::NoFees, None, None, None, None, None),
+			Error::<Test>::WrongOrganizationType);
+		
+		// Create org with org type Hybrid
+		// Error: WrongOrganizationType
+		assert_noop!(Control::create_org(
+			Origin::signed(ALICE), bounded_str.clone(), bounded_str.clone(), OrgType::Hybrid,
+			AccessModel::Prime, FeeModel::NoFees, None, None, None, None, None),
+			Error::<Test>::WrongOrganizationType);
+
+		// Deposit into Org treasury less than MinDeposit
+		// Error: MinimumDepositTooLow
+		assert_noop!(Control::create_org(
+			Origin::signed(ALICE), bounded_str.clone(), bounded_str.clone(), OrgType::Individual,
+			AccessModel::Prime, FeeModel::NoFees, None, None, None, None, Some(1 * DOLLARS)),
+			Error::<Test>::MinimumDepositTooLow);
+
+		// No membership_fee set for FeeModel::Transfer
+		// Error: MissingParameter
+		assert_noop!(Control::create_org(
+			Origin::signed(ALICE), bounded_str.clone(), bounded_str.clone(), OrgType::Individual,
+			AccessModel::Prime, FeeModel::Transfer, None, None, None, None, None),
+			Error::<Test>::MissingParameter);
+
+		// Check if creator (sender) has enough protocol token free balance 
+		// to make a deposit into org's treasury
+		// Error: BalanceLow
+		assert_noop!(Control::create_org(
+			Origin::signed(ALICE), bounded_str.clone(), bounded_str.clone(), OrgType::Individual,
+			AccessModel::Prime, FeeModel::NoFees, None, None, None, None, Some(1000 * DOLLARS)),
+			Error::<Test>::BalanceLow);
+
+		// Create org Success, check event
 		let org_id = create_org();
 		System::assert_has_event(
-			mock::Event::Control(
+			Event::Control(
 				crate::Event::OrgCreated {
-					sender_id: ALICE,
 					org_id,
+					creator: ALICE,
 					treasury_id: OrgTreasury::<Test>::get(org_id).unwrap(),
 					created_at: current_block,
 					realm_index: 0
 				}
 			)
 		);
-		// Check if creator (sender) has enough protocol token free balance 
-		// to make a deposit into org's treasury
-		// Error: BalanceTooLow
-		assert_noop!(
-			Control::create_org(Origin::signed(BOB), BOB, bounded_str.clone(), bounded_str.clone(),
-			Default::default(), Default::default(), Default::default(),
-			1 * DOLLARS, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, 10, None),
-			
-			Error::<Test>::BalanceTooLow
+
+	})
+}
+
+#[test]
+fn control_update_org() {
+	new_test_ext().execute_with(|| {
+		let current_block = 3;
+		System::set_block_number(current_block);
+		let org_id = create_org();
+
+		// Check if no changes were provided
+		// Error: NoChangesProvided
+		assert_noop!(Control::update_org(
+			Origin::signed(ALICE), org_id, None, None, None, None, None),
+			Error::<Test>::NoChangesProvided);
+
+		// FeeModel::Transfer and no membership_fee provided
+		// Error: NoChangesProvided
+		assert_noop!(Control::update_org(
+			Origin::signed(ALICE), org_id, None, None, None, Some(FeeModel::Transfer), None),
+			Error::<Test>::MissingParameter);
+		
+		// Check if update_org works as expected
+		let prime_id = Some(BOB);
+		let access_model = Some(AccessModel::Voting);
+		let member_limit = Some(100 as MemberLimit);
+		let fee_model = Some(FeeModel::NoFees);
+		let membership_fee = Some(99 * DOLLARS);
+
+		assert_ok!(Control::update_org(
+			Origin::signed(ALICE), org_id, prime_id, access_model.clone(), member_limit,
+			fee_model.clone(), membership_fee));
+
+		let org = Orgs::<Test>::get(org_id).unwrap();
+		assert_eq!(org.prime, prime_id.clone().unwrap());
+		assert_eq!(org.access_model, access_model.clone().unwrap());
+		assert_eq!(org.member_limit, member_limit.unwrap());
+		assert_eq!(org.fee_model, fee_model.clone().unwrap());
+		assert_eq!(org.membership_fee, membership_fee);
+		assert_eq!(OrgPrime::<Test>::get(org_id), prime_id.clone());
+		System::assert_has_event(
+			Event::Control(
+				crate::Event::OrgUpdated {
+					org_id, prime_id, access_model, member_limit,
+					fee_model, membership_fee, block_number: current_block
+				}
+			)
 		);
-		// Check if creator (sender) has enough protocol token free balance 
-		// to make a deposit into org's treasury (custom deposit value)
-		// Error: BalanceTooLow
-		let deposit = 101 * DOLLARS;
-		assert_noop!(
-			Control::create_org(Origin::signed(BOB), BOB, bounded_str.clone(), bounded_str,
-			Default::default(), Default::default(), Default::default(),
-			1 * DOLLARS, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, 10, Some(deposit)),
-			
-			Error::<Test>::BalanceTooLow
-		);
+
+		// ALICE is not a prime anymore, shouldn't be possible to update_org
+		// Error: BadOrigin
+		assert_noop!(Control::update_org(
+			Origin::signed(ALICE), org_id, Some(BOB), None, None, None, None),
+			BadOrigin);
+		
+		// Check if root can update
+		assert_ok!(Control::update_org(Origin::root(), org_id, Some(ALICE), None, None, None, None));
+		
 	})
 }
 
@@ -67,21 +153,22 @@ fn control_enable_deisable_org() {
 		let current_block = 3;
 		System::set_block_number(current_block);
 		let org_id = create_org();
-		// Disable org
+		// Disable org root
 		assert_noop!(Control::disable_org(Origin::signed(BOB), org_id), BadOrigin);
 		assert_ok!(Control::disable_org(Origin::root(), org_id));
-		assert_eq!(OrgState::<Test>::get(org_id), ControlState::Inactive);
-		System::assert_has_event(
-			mock::Event::Control(crate::Event::OrgDisabled(org_id))
-		);
-		// Enable org
+		assert_eq!(OrgStates::<Test>::get(org_id), OrgState::Inactive);
+		System::assert_has_event(mock::Event::Control(crate::Event::OrgDisabled(org_id)));
+		// Enable org root
 		assert_noop!(Control::enable_org(Origin::signed(BOB), org_id), BadOrigin);
 		assert_ok!(Control::enable_org(Origin::root(), org_id));
-		assert_eq!(OrgState::<Test>::get(org_id), ControlState::Active);
-		System::assert_has_event(
-			mock::Event::Control(crate::Event::OrgEnabled(org_id))
-		);
-
+		assert_eq!(OrgStates::<Test>::get(org_id), OrgState::Active);
+		System::assert_has_event(mock::Event::Control(crate::Event::OrgEnabled(org_id)));
+		// Disable org prime
+		assert_ok!(Control::disable_org(Origin::signed(ALICE), org_id));
+		assert_eq!(OrgStates::<Test>::get(org_id), OrgState::Inactive);
+		// Enable org prime
+		assert_ok!(Control::enable_org(Origin::signed(ALICE), org_id));
+		assert_eq!(OrgStates::<Test>::get(org_id), OrgState::Active);
 	})
 }
 
@@ -91,67 +178,65 @@ fn control_add_remove_member() {
 		let current_block = 3;
 		System::set_block_number(current_block);
 		let org_id = create_org();
-		// Add member
-		assert_ok!(Control::add_member(Origin::signed(BOB), org_id, CHARLIE));
-		assert!(OrgMembers::<Test>::get(org_id).contains(&CHARLIE));
+		// Add member prime
+		assert_ok!(Control::add_member(Origin::signed(ALICE), org_id, CHARLIE));
+		assert!(Members::<Test>::get(org_id).contains(&CHARLIE));
+		assert_noop!(Control::add_member(Origin::signed(ALICE), org_id, CHARLIE), Error::<Test>::AlreadyMember);
+		assert_noop!(Control::remove_member(Origin::signed(BOB), org_id, CHARLIE), BadOrigin);
 		System::assert_has_event(
-			mock::Event::Control(crate::Event::AddMember{
-				org_id, account_id: CHARLIE, added_at: current_block
+			mock::Event::Control(crate::Event::MemberAdded{
+				org_id, who: CHARLIE, block_number: current_block
 			})
 		);
-		// Remove member
-		assert_ok!(Control::remove_member(Origin::signed(BOB), org_id, CHARLIE));
-		assert!(!OrgMembers::<Test>::get(org_id).contains(&CHARLIE));
+		// Remove member prime
+		assert_ok!(Control::remove_member(Origin::signed(ALICE), org_id, CHARLIE));
+		assert!(!Members::<Test>::get(org_id).contains(&CHARLIE));
+		assert_noop!(Control::remove_member(Origin::signed(ALICE), org_id, CHARLIE), Error::<Test>::NotMember);
+		assert_noop!(Control::add_member(Origin::signed(BOB), org_id, CHARLIE), BadOrigin);
 		System::assert_has_event(
-			mock::Event::Control(crate::Event::RemoveMember{
-				org_id, account_id: CHARLIE, removed_at: current_block
+			mock::Event::Control(crate::Event::MemberRemoved{
+				org_id, who: CHARLIE, block_number: current_block
 			})
 		);
+
+		// Add member root
+		assert_ok!(Control::add_member(Origin::root(), org_id, CHARLIE));
+		assert!(Members::<Test>::get(org_id).contains(&CHARLIE));
+		// Remove member root
+		assert_ok!(Control::remove_member(Origin::root(), org_id, CHARLIE));
+		assert!(!Members::<Test>::get(org_id).contains(&CHARLIE));
+
+		// TODO: since membership_fee logic is unclear for the moment, there is no tests for it yet
 	})
 }
 
+fn set_balance(account_id: AccountId, currency_id: CurrencyId, balance: Balance) {
+	let _ = Tokens::set_balance(RawOrigin::Root.into(), account_id, currency_id, balance, 0);
+}
+
 #[test]
-fn control_add_remove_member_errors() {
+fn control_spend_funds() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;
 		System::set_block_number(current_block);
 		let org_id = create_org();
-		
-		// Add member
+		let treasury_id = OrgTreasury::<Test>::get(org_id).unwrap();
+		set_balance(treasury_id.clone(), PROTOCOL_TOKEN_ID, 100 * DOLLARS);
 
-		// Check if org already exists
-		// Error: OrganizationUnknown
+		let beneficiary = BOB;
+		let amount = 10 * DOLLARS;
+		let currency_id = PROTOCOL_TOKEN_ID;
+		assert_ok!(Control::spend_funds(Origin::signed(ALICE), org_id, currency_id, beneficiary, amount));
 		assert_noop!(
-			Control::add_member(Origin::signed(BOB), H256::random(), CHARLIE),
-			Error::<Test>::OrganizationUnknown
-		);
-		// Check if member already exists
-		// Error: MemberExists
+			Control::spend_funds(Origin::signed(ALICE), org_id, PAYMENT_TOKEN_ID, beneficiary, amount),
+			Error::<Test>::BalanceLow);
 		assert_noop!(
-			Control::add_member(Origin::signed(BOB), org_id, BOB),
-			Error::<Test>::MemberExists
-		);
-		// Check if member limit does not reached
-		// Error: MembershipLimitReached
-		assert_ok!(Control::add_member(Origin::signed(BOB), org_id, CHARLIE));
-		assert_noop!(
-			Control::add_member(Origin::signed(BOB), org_id, DAVE),
-			Error::<Test>::MembershipLimitReached
-		);
-
-		// Remove member
-
-		// Check if org already exists
-		// Error: OrganizationUnknown
-		assert_noop!(
-			Control::remove_member(Origin::signed(BOB), H256::random(), CHARLIE),
-			Error::<Test>::OrganizationUnknown
-		);
-		// Check if member exists
-		// Error: MemberUnknown
-		assert_noop!(
-			Control::remove_member(Origin::signed(BOB), org_id, DAVE),
-			Error::<Test>::MemberUnknown
+			Control::spend_funds(Origin::signed(BOB), org_id, PAYMENT_TOKEN_ID, beneficiary, amount),
+			BadOrigin);
+		System::assert_has_event(
+			mock::Event::Control(crate::Event::FundsSpended{
+				org_id, beneficiary, amount, currency_id, block_number: current_block
+			})
 		);
 	})
 }

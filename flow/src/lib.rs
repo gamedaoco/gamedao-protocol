@@ -35,7 +35,7 @@
 // 1. create campaigns with custom funding goal and runtime
 // 2. invest into open campaigns
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(deprecated)] // TODO: clean transactional
+#![allow(deprecated)] // TODO: tests are not working without transactional macro
 pub mod types;
 pub use types::{FlowProtocol, CampaignState, FlowGovernance, BlockType};
 
@@ -49,7 +49,7 @@ pub mod weights;
 use frame_support::{
 	dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo},
 	traits::{Get, BalanceStatus, Hooks, StorageVersion},
-	weights::Weight, BoundedVec, log
+	weights::Weight, BoundedVec, log, transactional
 };
 
 use scale_info::TypeInfo;
@@ -76,8 +76,6 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-// use sp_runtime::traits::Bounded;
-// use sp_runtime::traits::Saturating;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -402,6 +400,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(T::WeightInfo::create_campaign())]
+		#[transactional]
 		pub fn create_campaign(
 			origin: OriginFor<T>,
 			org_id: T::Hash,
@@ -460,6 +459,7 @@ pub mod pallet {
 		///
 		/// Weight: O(1)
 		#[pallet::weight(T::WeightInfo::contribute())]
+		#[transactional]
 		pub fn contribute(origin: OriginFor<T>, campaign_id: T::Hash, contribution: T::Balance) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let campaign = CampaignOf::<T>::get(&campaign_id).ok_or(Error::<T>::CampaignUnknown)?;

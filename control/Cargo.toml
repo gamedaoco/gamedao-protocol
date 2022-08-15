@@ -28,6 +28,7 @@ sp-storage = { default-features = false, git = "https://github.com/paritytech/su
 frame-support = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 frame-system = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25", default-features = false, optional = true }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25", default-features=false }
 
 pallet-balances = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 
@@ -39,7 +40,6 @@ gamedao-traits = { package = "gamedao-traits", path = "../traits", default-featu
 [dev-dependencies]
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
-sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 frame-support-test = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 orml-tokens = { path = "../../orml/tokens", default-features = false }
