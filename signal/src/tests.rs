@@ -250,18 +250,18 @@ fn signal_0_1() {
 			Error::<Test>::BalanceLow
 		);
 
-		// CampaignNotSucceeded
+		// CampaignUnsucceeded
 		let now = campaign_expiry + 1;
 		let campaign_id = create_finalize_campaign(now, org_id, &(51..52).collect(), 50 * DOLLARS, now + 2 * DAYS, false);
 		// TODO: fix this test
-		// assert_ok!(Flow::update_state(Origin::signed(ALICE), campaign_id, CampaignState::Failed));
+		// assert_ok!(Flow::update_state(Origin::signed(ALICE), campaign_id, CampaignStates::Failed));
 		// assert_noop!(
 		// 	Signal::proposal(
 		// 		Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 		// 		proposal.title.clone(), proposal.cid.clone(), proposal.expiry,
 		// 		Majority::Relative, Unit::Account, Scale::Linear, None, None, None,
 		// 		Some(campaign_id), proposal.amount, proposal.beneficiary, proposal.currency_id),
-		// 	Error::<Test>::CampaignNotSucceeded
+		// 	Error::<Test>::CampaignUnsucceeded
 		// );
 	});
 }

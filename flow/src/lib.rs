@@ -417,8 +417,8 @@ pub mod pallet {
 			token_name: Option<BoundedVec<u8, T::StringLimit>>,
 		) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
-			let controller = T::Control::org_prime_account(&org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
-			ensure!(creator == controller, Error::<T>::AuthorizationError);
+			let prime = T::Control::org_prime_account(&org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
+			ensure!(creator == prime, Error::<T>::AuthorizationError);
 			ensure!((name.len() as u32) >= T::MinNameLength::get(), Error::<T>::NameTooShort);
 
 			// Campaign deposit validation:

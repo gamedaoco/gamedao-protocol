@@ -226,7 +226,7 @@ pub mod pallet {
 	pub enum Error<T> {
 		AuthorizationError,
 		BalanceLow,
-		CampaignNotSucceeded,
+		CampaignUnsucceeded,
 		DepositInsufficient,
 		DuplicateVote,
 		MissingParameter,
@@ -310,7 +310,7 @@ pub mod pallet {
 
 					let campaign_owner = T::Flow::campaign_owner(&c_id).ok_or(Error::<T>::AuthorizationError)?;
 					ensure!(proposer == campaign_owner, Error::<T>::AuthorizationError);
-					ensure!(T::Flow::is_campaign_succeeded(&c_id), Error::<T>::CampaignNotSucceeded);
+					ensure!(T::Flow::is_campaign_succeeded(&c_id), Error::<T>::CampaignUnsucceeded);
 					
 					let used_balance = CampaignBalanceUsed::<T>::get(&c_id);
 					let total_balance = T::Flow::campaign_balance(&c_id);
