@@ -152,12 +152,6 @@ pub mod pallet {
 	pub(super) type MemberStates<T: Config> =
 	StorageDoubleMap<_, Blake2_128Concat, T::Hash, Blake2_128Concat, T::AccountId, MemberState, ValueQuery, GetDefault>;
 
-	/// Prime account of an Org.
-	///
-	/// OrgPrime: map Hash => AccountId
-	#[pallet::storage]
-	pub(super) type OrgPrime<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
-
 	/// Treasury account of an Org.
 	///
 	/// OrgTreasury: map Hash => AccountId
@@ -165,6 +159,7 @@ pub mod pallet {
 	pub(super) type OrgTreasury<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::AccountId, OptionQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn org_count)]
 	pub type OrgCount<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	#[pallet::genesis_config]
@@ -338,9 +333,7 @@ pub mod pallet {
 				Error::<T>::WrongOrganizationType
 			);
 			ensure!(deposit >= T::MinimumDeposit::get(), Error::<T>::MinimumDepositTooLow);
-			if fee_model != FeeModel::NoFees && membership_fee.is_none() {
-				return Err(Error::<T>::MissingParameter)?
-			};
+			ensure!(fee_model == FeeModel::NoFees || membership_fee.is_some(), Error::<T>::MissingParameter);
 
 			let index = OrgCount::<T>::get();
 			let treasury_id = T::PalletId::get().into_sub_account_truncating(index as i32);
@@ -362,6 +355,23 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Update Org
+		///
+		/// Allowed origins: Root or prime if OrgType::Individual
+		///
+		/// Parameters:
+		/// - `org_id`: Org hash.
+		/// 
+		/// Optional parameters:
+		/// - `prime_id`: new prime id.
+		/// - `access_model`: new access model.
+		/// - `member_limit`: new member limit.
+		/// - `fee_model`: new fee model.
+		/// - `membership_fee`: new membership fee.
+		///
+		/// Emits `OrgUpdated` event when successful.
+		///
+		/// Weight: `O(1)`
 		#[pallet::weight(T::WeightInfo::update_org())]
 		pub fn update_org(
 			origin: OriginFor<T>,
@@ -381,15 +391,12 @@ pub mod pallet {
 			if let Some(access_model) = access_model.clone() { org.access_model = access_model; };
 			if let Some(member_limit) = member_limit.clone() { org.member_limit = member_limit; };
 			if let Some(_) = membership_fee.clone() { org.membership_fee = membership_fee; };
+			if let Some(prime_id) = prime_id.clone() { org.prime = prime_id; };
 			if let Some(fee_model) = fee_model.clone() {
 				if fee_model != FeeModel::NoFees && membership_fee.is_none() {
 					return Err(Error::<T>::MissingParameter)?
 				};
 				org.fee_model = fee_model;
-			};
-			if let Some(prime_id) = prime_id.clone() {
-				org.prime = prime_id;
-				OrgPrime::<T>::insert(&org_id, org.prime.clone());
 			};
 
 			Orgs::<T>::insert(&org_id, org);
@@ -406,9 +413,10 @@ pub mod pallet {
 		/// Enable Org
 		///
 		/// Enables an Org to be used and changes it's state to Active.
+		/// Allowed origins: Root or prime if OrgType::Individual
 		///
 		/// Parameters:
-		/// `org_id`: Org hash.
+		/// - `org_id`: Org hash.
 		///
 		/// Emits `OrgEnabled` event when successful.
 		///
@@ -426,9 +434,10 @@ pub mod pallet {
 		/// Disable Org
 		///
 		/// Disables an Org to be used and changes it's state to Inactive.
-		///
+		/// Allowed origins: Root or prime if OrgType::Individual
+		/// 
 		/// Parameters:
-		/// `org_id`: Org hash.
+		/// - `org_id`: Org hash.
 		///
 		/// Emits `OrgDisabled` event when successful.
 		///
@@ -444,7 +453,9 @@ pub mod pallet {
 		}
 
 		/// Add Member to Org
-		///
+		/// 
+		/// Allowed origins: Root or prime if OrgType::Individual
+		/// 
 		/// Parameters:
 		/// - `org_id`: Org id
 		/// - `who`: Account to be added
@@ -474,6 +485,8 @@ pub mod pallet {
 
 		/// Remove member from Org
 		///
+		/// Allowed origins: Root or prime if OrgType::Individual
+		/// 
 		/// Parameters:
 		/// - `org_id`: Org id
 		/// - `who`: Account to be removed
@@ -495,6 +508,8 @@ pub mod pallet {
 		}
 
 		/// Make spending from the org treasury
+		/// 
+		/// Allowed origins: Root or prime if OrgType::Individual
 		///
 		/// Parameters:
 		/// - `org_id`: Org id
@@ -536,7 +551,6 @@ impl<T: Config> Pallet<T> {
 		let creator = org.creator.clone();
 		let created_at = org.created.clone();
 
-		OrgPrime::<T>::insert(&org_id, org.prime.clone());
 		OrgTreasury::<T>::insert(&org_id, &treasury_id);
 		OrgStates::<T>::insert(&org_id, OrgState::Active);
 		OrgCount::<T>::set(org.index.checked_add(1).ok_or(Overflow)?);
@@ -625,9 +639,11 @@ impl<T: Config> Pallet<T> {
 
 
 impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
-	// TODO: rename org_prime_account
-	fn org_controller_account(org_id: &T::Hash) -> Option<T::AccountId> {
-		OrgPrime::<T>::get(org_id)
+
+	fn org_prime_account(org_id: &T::Hash) -> Option<T::AccountId> {
+		if let Some(org) = Orgs::<T>::get(org_id) {
+			return Some(org.prime)
+		} else { return None }
 	}
 	fn org_treasury_account(org_id: &T::Hash) -> Option<T::AccountId> {
 		OrgTreasury::<T>::get(org_id)

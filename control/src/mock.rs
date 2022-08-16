@@ -146,8 +146,6 @@ frame_support::parameter_types! {
 	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
 	pub const MinimumDeposit: Balance = 5 * DOLLARS;
 	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
-	pub const Game3FoundationTreasuryAccountId: AccountId = GAME3_TREASURY;
-	pub const GameDAOTreasuryAccountId: AccountId = GAMEDAO_TREASURY;
 }
 impl pallet_control::Config for Test {
 	type Balance = Balance;

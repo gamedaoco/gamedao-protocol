@@ -21,7 +21,7 @@ use sp_std::vec::Vec;
 
 pub trait ControlTrait<AccountId, Hash> {
 
-	fn org_controller_account(org_id: &Hash) -> Option<AccountId>;
+	fn org_prime_account(org_id: &Hash) -> Option<AccountId>;
 	fn org_treasury_account(org_id: &Hash) -> Option<AccountId>;
 	fn is_org_active(org_id: &Hash) -> bool;
 	fn is_org_member_active(org_id: &Hash, accont_id: &AccountId) -> bool;

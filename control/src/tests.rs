@@ -125,7 +125,6 @@ fn control_update_org() {
 		assert_eq!(org.member_limit, member_limit.unwrap());
 		assert_eq!(org.fee_model, fee_model.clone().unwrap());
 		assert_eq!(org.membership_fee, membership_fee);
-		assert_eq!(OrgPrime::<Test>::get(org_id), prime_id.clone());
 		System::assert_has_event(
 			Event::Control(
 				crate::Event::OrgUpdated {

@@ -282,7 +282,7 @@ pub mod pallet {
 		NameTooShort,
 		NoContributionsAllowed,
 		NoContributionToOwnCampaign,
-		OrgControllerUnknown,
+		OrgPrimeUnknown,
 		/// Campaign starts/expires validation failed.
 		OutOfBounds,
 		TreasuryBalanceLow,
@@ -300,7 +300,7 @@ pub mod pallet {
 				if campaign_state != CampaignState::Created {
 					continue; // Just a safety check, never should happen
 				};
-				CampaignStates::<T>::insert(&campaign_id, CampaignState::Activated);
+				CampaignStates::<T>::insert(&campaign_id, CampaignState::Active);
 				Self::deposit_event(Event::<T>::Activated { campaign_id: *campaign_id });
 			}
 
@@ -417,7 +417,7 @@ pub mod pallet {
 			token_name: Option<BoundedVec<u8, T::StringLimit>>,
 		) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
-			let controller = T::Control::org_controller_account(&org_id).ok_or(Error::<T>::OrgControllerUnknown)?;
+			let controller = T::Control::org_prime_account(&org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
 			ensure!(creator == controller, Error::<T>::AuthorizationError);
 			ensure!((name.len() as u32) >= T::MinNameLength::get(), Error::<T>::NameTooShort);
 
@@ -468,7 +468,7 @@ pub mod pallet {
 			ensure!(block_number < campaign.expiry, Error::<T>::CampaignExpired);
 			ensure!(campaign.owner != sender, Error::<T>::NoContributionToOwnCampaign);
 			ensure!(
-				CampaignStates::<T>::get(campaign_id) == CampaignState::Activated,
+				CampaignStates::<T>::get(campaign_id) == CampaignState::Active,
 				Error::<T>::NoContributionsAllowed
 			);
 			ensure!(contribution >= T::MinContribution::get(), Error::<T>::ContributionInsufficient);
@@ -491,7 +491,7 @@ impl<T: Config> Pallet<T> {
 		if campaign.start > <frame_system::Pallet<T>>::block_number() {
 			campaign_state = CampaignState::Created;
 		} else {
-			campaign_state = CampaignState::Activated;
+			campaign_state = CampaignState::Active;
 		}
 		CampaignStates::<T>::insert(&campaign_id, campaign_state);
 		CampaignsByBlock::<T>::try_mutate(

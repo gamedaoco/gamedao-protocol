@@ -106,7 +106,7 @@ benchmarks! {
 			fund_account::<T>(&account)?;
 			Flow::<T>::contribute(RawOrigin::Signed(account).into(), campaign_id.clone(), T::MinContribution::get())?;
 		}
-		let mut expiry_block = CampaignOf::<T>::get(&campaign_id).unwrap().expiry;
+		let expiry_block = CampaignOf::<T>::get(&campaign_id).unwrap().expiry;
 
 		// 2. Prepare for Campaign activation. Create campaigns to be Activated at the same block when finalization happens
 		let finalization_block = expiry_block.clone().saturating_add(1_u32.into());
@@ -119,7 +119,7 @@ benchmarks! {
 		Flow::<T>::on_finalize(expiry_block.clone());
 
 		frame_system::Pallet::<T>::set_block_number(finalization_block);
-		assert!(CampaignStates::<T>::get(&campaign_id) == CampaignState::Activated);
+		assert!(CampaignStates::<T>::get(&campaign_id) == CampaignState::Active);
 	}: { Flow::<T>::on_initialize(finalization_block); }
 
 	verify {
@@ -127,7 +127,7 @@ benchmarks! {
 
 		// assert!(CampaignStates::<T>::get(&campaign_id) == CampaignState::Created);
 		// assert!(CampaignStates::<T>::get(&campaign_id) == CampaignState::Failed);
-		// assert!(CampaignStates::<T>::get(&campaign_id) == CampaignState::Activated);
+		// assert!(CampaignStates::<T>::get(&campaign_id) == CampaignState::Active);
 		// assert!(CampaignStates::<T>::get(&campaign_id) == CampaignState::Succeeded);
 	}
 
