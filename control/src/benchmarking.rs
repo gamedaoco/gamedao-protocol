@@ -32,35 +32,46 @@ benchmarks! {
 	create_org {
 		let caller: T::AccountId = whitelisted_caller();
 		fund_account::<T>(&caller)?;
-		let org_nonce = Nonce::<T>::get();
+		let text = BoundedVec::truncate_from((0..255).collect());
+		let count = OrgCount::<T>::get();
 	}: 	_(
-		RawOrigin::Signed(caller.clone()),
-		caller.clone().into(),
-		BoundedVec::truncate_from((0..255).collect()),
-		BoundedVec::truncate_from((0..255).collect()),
-		OrgType::Individual,
-		AccessModel::Open,
-		FeeModel::NoFees,
-		T::Balance::default(),
-		T::ProtocolTokenId::get(),
-		T::PaymentTokenId::get(),
-		100,
-		None
+		RawOrigin::Signed(caller), text.clone(), text.clone(),
+		OrgType::Individual, AccessModel::Open, FeeModel::NoFees,
+		None, None, None, None, None
 	)
 	verify {
-		assert!(OrgByNonce::<T>::get(org_nonce).is_some());
+		assert!(OrgCount::<T>::get() == count + 1);
+	}
+
+	update_org {
+		let caller: T::AccountId = whitelisted_caller();
+		fund_account::<T>(&caller)?;
+
+		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
+		let prime_id = Some(caller.clone());
+		let access_model = Some(AccessModel::Voting);
+		let member_limit = Some(100 as MemberLimit);
+		let fee_model = Some(FeeModel::NoFees);
+		let membership_fee: Option<T::Balance> = Some(99_u32.saturated_into());
+	}: _(
+		RawOrigin::Signed(caller), org_id, prime_id, access_model.clone(),
+		member_limit, fee_model.clone(), membership_fee
+	)
+	
+	verify {
+		let org = Orgs::<T>::get(org_id).unwrap();
+		assert_eq!(org.membership_fee, membership_fee);
 	}
 
 	disable_org {
 		let caller: T::AccountId = whitelisted_caller();
 		fund_account::<T>(&caller)?;
 		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
-	}: _(
-		RawOrigin::Root,
-		org_id
-	)
+
+	}: _(RawOrigin::Root, org_id)
+
 	verify {
-		assert!(OrgState::<T>::get(org_id) == ControlState::Inactive);
+		assert!(OrgStates::<T>::get(org_id) == OrgState::Inactive);
 	}
 
 	enable_org {
@@ -68,16 +79,15 @@ benchmarks! {
 		fund_account::<T>(&caller)?;
 		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
 		Pallet::<T>::disable_org(RawOrigin::Root.into(), org_id)?;
-	}: _(
-		RawOrigin::Root,
-		org_id
-	)
+
+	}: _(RawOrigin::Root, org_id)
+
 	verify {
-		assert!(OrgState::<T>::get(org_id) == ControlState::Active);
+		assert!(OrgStates::<T>::get(org_id) == OrgState::Active);
 	}
 
 	add_member {
-		let r in 1 .. T::MaxMembersPerOrg::get()-1;  // Limit members per org
+		let r in 1 .. T::MaxMembers::get();
 
 		// Prepare org creator and members
 		let creator: T::AccountId = whitelisted_caller();
@@ -93,17 +103,15 @@ benchmarks! {
 		// Create org and fill with members
 		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(creator.clone()).unwrap();
 		Pallet::<T>::fill_org_with_members(&org_id, accounts)?;
-	}: _(
-		RawOrigin::Signed(creator),
-		org_id,
-		member.clone()
-	)
+
+	}: _(RawOrigin::Signed(creator), org_id, member.clone())
+
 	verify {
-		assert!(OrgMembers::<T>::get(&org_id).contains(&member));
+		assert!(Members::<T>::get(&org_id).contains(&member));
 	}
 
 	remove_member {
-		let r in 1 .. T::MaxMembersPerOrg::get();  // Limit members per org
+		let r in 1 .. T::MaxMembers::get();
 
 		// Prepare org creator and members
 		let creator: T::AccountId = whitelisted_caller();
@@ -118,24 +126,28 @@ benchmarks! {
 
 		// Add members to org
 		Pallet::<T>::fill_org_with_members(&org_id, accounts.clone())?;
-	}: _(
-		RawOrigin::Signed(creator),
-		org_id,
-		accounts[0].clone()
-	)
+
+	}: _(RawOrigin::Signed(creator), org_id, accounts[0].clone())
+
 	verify {
-		assert!(!OrgMembers::<T>::get(&org_id).contains(&accounts[0]));
+		assert!(!Members::<T>::get(&org_id).contains(&accounts[0]));
 	}
 
-	check_membership {
+	spend_funds {
 		let caller: T::AccountId = whitelisted_caller();
+		let beneficiary: T::AccountId = account("beneficiary", 1, SEED);
 		fund_account::<T>(&caller)?;
 		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
-	}: _(
-		RawOrigin::Signed(caller.clone()),
-		org_id,
-		caller.clone()
-	)
+		let treasury_id = OrgTreasury::<T>::get(&org_id).unwrap();
+		let currency_id = T::PaymentTokenId::get();
+		let amount: T::Balance = 300_000_000_000_00_u128.saturated_into();
+		fund_account::<T>(&treasury_id)?;
+		
+	}: _(RawOrigin::Signed(caller), org_id, currency_id, beneficiary.clone(), amount)
+
+	verify {
+		assert!(T::Currency::free_balance(currency_id, &beneficiary) == amount);
+	}
 
 	impl_benchmark_test_suite!(Control, crate::mock::new_test_ext(), crate::mock::Test);
 }

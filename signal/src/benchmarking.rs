@@ -78,7 +78,7 @@ benchmarks! {
 		// TODO: change to token weighted voting
 	}: _(
 		RawOrigin::Signed(caller), prop.proposal_type, prop.org_id,
-		prop.title, prop.cid, prop.expiry, Majority::Relative, Unit::Person,
+		prop.title, prop.cid, prop.expiry, Majority::Relative, Unit::Account,
 		Scale::Linear, Some(prop.start), Some(quorum), Some(prop.deposit),
 		prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id
 	)
@@ -89,7 +89,7 @@ benchmarks! {
 	vote {
 		// The most heavy execution path is triggering an early finalization flow (fn try_finalize_proposal)
 		//	with either Withdrawal or Spending proposal type and Relative or Simple majority type.
-		let m in 0 .. T::MaxMembersPerOrg::get();
+		let m in 0 .. T::MaxMembers::get();
 
 		let mut members = vec![];
 		let proposer: T::AccountId = account::<T::AccountId>("proposer", 0, SEED);
@@ -121,12 +121,12 @@ benchmarks! {
 		Pallet::<T>::proposal(
 			RawOrigin::Signed(proposer.clone()).into(), prop.proposal_type.clone(), prop.org_id,
 			prop.title.clone(), prop.cid.clone(), prop.expiry,
-			Majority::Simple, Unit::Person, Scale::Linear, None, Some(quorum), Some(prop.deposit),
+			Majority::Simple, Unit::Account, Scale::Linear, None, Some(quorum), Some(prop.deposit),
 			prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id,
 		)?;
 
 		// Ensure that proposal exists and Activated
-		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Activated);
+		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Active);
 
 		// Have everyone vote aye on proposal and not yet trigger early finalization flow.
 		for j in 1 .. m {
@@ -141,7 +141,7 @@ benchmarks! {
 		}
 
 		// Ensure that proposal is still Active and not Finalized yet
-		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Activated);
+		assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Active);
 
 		// Only proposer haven't voted "YES", so his vote should trigger an early finalization flow
 		let voter = proposer;
@@ -181,7 +181,7 @@ benchmarks! {
 			let proposal_id = T::Hashing::hash_of(&prop);
 			Pallet::<T>::proposal(
 				RawOrigin::Signed(caller.clone()).into(), prop.proposal_type.clone(), prop.org_id,
-				prop.title.clone(), prop.cid.clone(), prop.expiry, Majority::Simple, Unit::Person,
+				prop.title.clone(), prop.cid.clone(), prop.expiry, Majority::Simple, Unit::Account,
 				Scale::Linear, Some(prop.start), Some(quorum), Some(prop.deposit),
 				prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id,
 			)?;
@@ -202,7 +202,7 @@ benchmarks! {
 				beneficiary: None, currency_id: Some(currency_id)
 			};
 			let proposal_id = T::Hashing::hash_of(&prop);
-			assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Activated);
+			assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Active);
 		}
 	}
 

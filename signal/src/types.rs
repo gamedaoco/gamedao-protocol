@@ -41,7 +41,7 @@ impl Default for SlashingRule {
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum ProposalState {
 	Created = 0,      // waiting for start block
-	Activated = 1,    // voting is active
+	Active = 1,    // voting is active
 	Accepted = 2,  // voters did approve
 	Rejected = 3,  // voters did not approve
 	Expired = 4,   // ended without votes
@@ -85,7 +85,7 @@ pub enum Majority {
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum Unit {
-	Person = 0,
+	Account = 0,
 	Token = 1,
 }
 
@@ -104,7 +104,7 @@ where
 MaxMembersPerOrg: Get<u32>,
 {
 	pub index: ProposalIndex, // Nonce
-	pub unit: Unit, // Person or Token
+	pub unit: Unit, // Account or Token
 	// 1. Voting process:
 	// Currently support only Yes/No voting type
 	pub ayes: BoundedVec<(AccountId, VotingPower, Option<Balance>), MaxMembersPerOrg>,

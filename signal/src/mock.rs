@@ -164,19 +164,12 @@ impl pallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const MaxOrgsPerAccount: u32 = 2;
-	pub const MaxMembersPerOrg: u32 = 200;
-	pub const MaxCreationsPerBlock: u32 = 2;
-	pub const MaxCreationsPerAccount: u32 = 100;
-	pub const MaxOrgsPerController: u32 = 100;
+frame_support::parameter_types! {
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
-	pub const PaymentTokenId: u32 = PAYMENT_TOKEN_ID;
+	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
 	pub const MinimumDeposit: Balance = 1 * DOLLARS;
-	pub const GameDAOTreasury: AccountId = TREASURY_ACC;
 	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
-	pub const Game3FoundationTreasuryAccountId: AccountId = GAME3_TREASURY;
-	pub const GameDAOTreasuryAccountId: AccountId = GAMEDAO_TREASURY;
+	pub const MaxMembers: u32 = 1000;
 }
 impl gamedao_control::Config for Test {
 	type Balance = Balance;
@@ -184,17 +177,11 @@ impl gamedao_control::Config for Test {
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
-	type MaxOrgsPerAccount = MaxOrgsPerAccount;
-	type MaxMembersPerOrg = MaxMembersPerOrg;
-	type MaxCreationsPerBlock = MaxCreationsPerBlock;
-	type MaxCreationsPerAccount = MaxCreationsPerAccount;
-	type MaxOrgsPerController = MaxOrgsPerController;
+	type MaxMembers = MaxMembers;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
 	type MinimumDeposit = MinimumDeposit;
 	type PalletId = ControlPalletId;
-	type Game3FoundationTreasury = Game3FoundationTreasuryAccountId;
-	type GameDAOTreasury = GameDAOTreasuryAccountId;
 	type StringLimit = ConstU32<256>;
 }
 
@@ -206,6 +193,7 @@ parameter_types! {
 	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
 	pub const CampaignDurationLimits: (BlockNumber, BlockNumber) = (1 * DAYS, 100 * DAYS);
 	pub MinCampaignDeposit: Permill = Permill::from_rational(1u32, 10u32); // 10%
+	pub const GameDAOTreasury: AccountId = TREASURY_ACC;
 }
 
 impl gamedao_flow::Config for Test {
@@ -251,7 +239,7 @@ impl gamedao_signal::Config for Test {
 	type GameDAOTreasury = GameDAOTreasury;
 	type SlashingMajority = SlashingMajority;
 	type GameDAOGetsFromSlashing = GameDAOGetsFromSlashing;
-	type MaxMembersPerOrg = MaxMembersPerOrg;
+	type MaxMembers = MaxMembers;
 	type MaxProposalsPerBlock = MaxProposalsPerBlock;
 	type StringLimit = ConstU32<256>;	
 }
@@ -259,38 +247,33 @@ impl gamedao_signal::Config for Test {
 use sp_runtime::traits::{Hash as HashTrait, AccountIdConversion};
 use gamedao_traits::ControlTrait;
 use crate::ProposalCount;
-use gamedao_control::{AccessModel, FeeModel, OrgType};
+use gamedao_control::types::{AccessModel, FeeModel, OrgType, Org};
 use gamedao_flow::{FlowGovernance, FlowProtocol};
 use super::types::{Proposal, ProposalType, SlashingRule};
 use frame_support::assert_ok;
 use frame_system::RawOrigin;
 
 pub fn create_org(members: &Vec<AccountId>) -> (H256, AccountId) {
-	let org_creator = ALICE;
-	let nonce = Control::nonce();
-	let bounded_str = BoundedVec::truncate_from(vec![1, 2, 3]);
-	let init_balance = 100 * DOLLARS;
-
-	assert_ok!(Control::create_org(
-		Origin::signed(org_creator),
-		org_creator, 		// controller_id
-		bounded_str.clone(),// name
-		bounded_str.clone(),// cid
-		OrgType::Dao,
-		AccessModel::Open,
-		FeeModel::NoFees,
-		0,					// fee
-		1,					// gov_asset
-		1,					// pay_asset
-		100,				// member_limit
-		Some(1 * DOLLARS)	// deposit
+	let bounded_str = BoundedVec::truncate_from(vec![1,2]);
+	let index = Control::org_count();
+	let now = frame_system::Pallet::<Test>::block_number();
+	let org = Org {
+		index, creator: ALICE, prime: ALICE, name: bounded_str.clone(), cid: bounded_str.clone(),
+		org_type: OrgType::Individual, fee_model: FeeModel::NoFees, membership_fee: Some(1 * DOLLARS),
+		gov_currency: PROTOCOL_TOKEN_ID, pay_currency: PAYMENT_TOKEN_ID, access_model: AccessModel::Open,
+		member_limit: <Test as gamedao_control::Config>::MaxMembers::get(), created: now.clone(), mutated: now
+	};
+	let org_id = <Test as frame_system::Config>::Hashing::hash_of(&org);
+	assert_ok!(
+		Control::create_org(
+			Origin::signed(ALICE), org.name, org.cid, org.org_type, org.access_model,
+			org.fee_model, None, org.membership_fee, None, None, None
 	));
-	let treasury_id = <Test as gamedao_control::Config>::PalletId::get().into_sub_account_truncating(nonce as i32);
-	let org_id = <Test as frame_system::Config>::Hashing::hash_of(&treasury_id);
-	assert_eq!(treasury_id, Control::org_treasury_account(&org_id).unwrap());
+	let treasury_id = Control::org_treasury_account(&org_id).unwrap();
+	let init_balance = 100 * DOLLARS;
 	assert_ok!(Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, init_balance, 0));
 	for x in members {
-		assert_ok!(Control::add_member(Origin::signed(org_creator), org_id, *x));
+		assert_ok!(Control::add_member(Origin::signed(ALICE), org_id, *x));
 	}
 	(org_id, treasury_id)
 }
