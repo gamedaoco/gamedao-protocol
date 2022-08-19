@@ -2,6 +2,8 @@ use super::*;
 use frame_support::pallet_prelude::*;
 use codec::MaxEncodedLen;
 
+pub type MemberLimit = u32;
+
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 pub enum OrgType {
@@ -19,7 +21,7 @@ impl Default for OrgType {
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[repr(u8)]
-pub enum ControlMemberState {
+pub enum MemberState {
 	Inactive = 0, // eg inactive after threshold period
 	Active = 1,
 	Pending = 2, // application voting pending
@@ -28,7 +30,7 @@ pub enum ControlMemberState {
 	Exited = 5,
 }
 
-impl Default for ControlMemberState {
+impl Default for MemberState {
 	fn default() -> Self {
 		Self::Inactive
 	}
@@ -37,13 +39,13 @@ impl Default for ControlMemberState {
 #[derive(Encode, Decode, PartialEq, Clone, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[repr(u8)]
-pub enum ControlState {
+pub enum OrgState {
 	Inactive = 0,
 	Active = 1,
 	Locked = 2,
 }
 
-impl Default for ControlState {
+impl Default for OrgState {
 	fn default() -> Self {
 		Self::Inactive
 	}
@@ -67,7 +69,7 @@ impl Default for FeeModel {
 pub enum AccessModel {
 	Open = 0,       // anyDAO can join
 	Voting = 1,     // application creates membership voting
-	Controller = 2, // controller invites
+	Prime = 2, 		// prime invites
 }
 impl Default for AccessModel {
 	fn default() -> Self {
@@ -78,40 +80,19 @@ impl Default for AccessModel {
 /// Organization
 #[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-pub struct Org<Hash, AccountId, BlockNumber, BoundedString> {
-	/// Org Hash
-	pub(super) id: Hash,
-	/// Org global index
-	pub(super) index: u128,
-	/// Org Creator
-	pub(super) creator: AccountId,
-	/// Org Name
-	pub(super) name: BoundedString,
-	/// IPFS Hash
-	pub(super) cid: BoundedString,
-	/// Organization Type
-	pub(super) org_type: OrgType,
-	/// Creation Block
-	pub(super) created: BlockNumber,
-	/// Last Mutation Block
-	pub(super) mutated: BlockNumber,
-}
-
-/// Organization Config
-// TODO: refactor to bit flags
-#[derive(Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-pub struct OrgConfig<Balance, CurrencyId> {
-	/// Fee Model: TX only | Reserve | Transfer
-	pub(super) fee_model: FeeModel,
-	/// Fee amount
-	pub(super) fee: Balance,
-	/// Governance Asset
-	pub(super) gov_asset: CurrencyId,
-	/// Payment Asset
-	pub(super) pay_asset: CurrencyId,
-	/// Access Model
-	pub(super) access: AccessModel,
-	/// Max Member Limit
-	pub(super) member_limit: u64,
+pub struct Org<AccountId, Balance, CurrencyId, BlockNumber, BoundedString> {
+	pub index: u32,
+	pub creator: AccountId,
+	pub prime: AccountId,
+	pub name: BoundedString,
+	pub cid: BoundedString,
+	pub org_type: OrgType,
+	pub fee_model: FeeModel,
+	pub membership_fee: Option<Balance>,
+	pub gov_currency: CurrencyId,
+	pub pay_currency: CurrencyId,
+	pub access_model: AccessModel,
+	pub member_limit: MemberLimit,
+	pub created: BlockNumber,
+	pub mutated: BlockNumber,
 }
