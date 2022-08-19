@@ -42,7 +42,7 @@ Control is designed to make the following possible:
 
 ### Public Functions
 
-* `org_controller_account` - Get controller of the organization with `org_id`.
+* `org_prime_account` - Get prime of the organization with `org_id`.
 * `org_treasury_account` - Get treasury of the organization with `org_id`.
 * `is_org_active` - Find out if organization with `org_id` is active or not.
 * `is_org_member_active` - Find out if organization with `org_id` has an active member with `account_id`.

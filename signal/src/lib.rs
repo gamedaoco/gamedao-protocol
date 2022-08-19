@@ -57,7 +57,7 @@ type Proposal<T> = types::Proposal<
 
 type Voting<T> = types::Voting<
 	<T as frame_system::Config>::AccountId, <T as pallet::Config>::Balance,
-	<T as pallet::Config>::MaxMembersPerOrg
+	<T as pallet::Config>::MaxMembers
 >;
 
 #[frame_support::pallet]
@@ -139,7 +139,7 @@ pub mod pallet {
 
 		/// Max number of members per organization
 		#[pallet::constant]
-		type MaxMembersPerOrg: Get<u32>;
+		type MaxMembers: Get<u32>;
 
 		/// The max number of proposals per one block.
 		#[pallet::constant]
@@ -226,18 +226,18 @@ pub mod pallet {
 	pub enum Error<T> {
 		AuthorizationError,
 		BalanceLow,
-		CampaignNotSucceeded,
+		CampaignUnsucceeded,
 		DepositInsufficient,
 		DuplicateVote,
 		MissingParameter,
 		OrgInactive,
 		OutOfBounds,
 		ProposalExists,
-		ProposalNotActivated,
+		ProposalNotActive,
 		ProposalUnknown,
 		TooManyProposals,
 		TreasuryBalanceLow,
-		TreasuryNotExist,
+		TreasuryUnknown,
 		VoteLimitReached,
 		WrongParameter,
 	}
@@ -288,8 +288,8 @@ pub mod pallet {
 			}
 			// Check if all parameters are combinable:
 			match unit {
-				Unit::Person => {
-					// Unit::Person doesn't work with quadratic scale
+				Unit::Account => {
+					// Unit::Account doesn't work with quadratic scale
 					ensure!(scale != Scale::Quadratic, Error::<T>::WrongParameter);
 				}
 				Unit::Token => {
@@ -310,7 +310,7 @@ pub mod pallet {
 
 					let campaign_owner = T::Flow::campaign_owner(&c_id).ok_or(Error::<T>::AuthorizationError)?;
 					ensure!(proposer == campaign_owner, Error::<T>::AuthorizationError);
-					ensure!(T::Flow::is_campaign_succeeded(&c_id), Error::<T>::CampaignNotSucceeded);
+					ensure!(T::Flow::is_campaign_succeeded(&c_id), Error::<T>::CampaignUnsucceeded);
 					
 					let used_balance = CampaignBalanceUsed::<T>::get(&c_id);
 					let total_balance = T::Flow::campaign_balance(&c_id);
@@ -353,7 +353,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(T::WeightInfo::vote(T::MaxMembersPerOrg::get()))]
+		#[pallet::weight(T::WeightInfo::vote(T::MaxMembers::get()))]
 		pub fn vote(
 			origin: OriginFor<T>,
 			proposal_id: T::Hash,
@@ -366,7 +366,7 @@ pub mod pallet {
 			// Deposit is required for token weighted voting only
 			if voting.unit == Unit::Token && deposit.is_none() {
 				return Err(Error::<T>::MissingParameter)?;
-			} else if voting.unit == Unit::Person && deposit.is_some() {
+			} else if voting.unit == Unit::Account && deposit.is_some() {
 				return Err(Error::<T>::WrongParameter)?;
 			}
 
@@ -389,8 +389,8 @@ pub mod pallet {
 
 			// Ensure the Proposal is Active
 			ensure!(
-				ProposalStates::<T>::get(&proposal_id) == ProposalState::Activated,
-				Error::<T>::ProposalNotActivated
+				ProposalStates::<T>::get(&proposal_id) == ProposalState::Active,
+				Error::<T>::ProposalNotActive
 			);
 
 			let participating = Self::do_vote(who, voting, proposal_id, approve, deposit)?;
@@ -412,7 +412,7 @@ pub mod pallet {
 				if proposal_state != ProposalState::Created {
 					continue; // Just a safety check, never should happen
 				};
-				ProposalStates::<T>::insert(proposal_id, ProposalState::Activated);
+				ProposalStates::<T>::insert(proposal_id, ProposalState::Active);
 				Self::deposit_event(Event::<T>::Activated { proposal_id: *proposal_id });
 			}
 			T::WeightInfo::on_initialize(proposals.len().saturated_into())
@@ -422,7 +422,7 @@ pub mod pallet {
 			for proposal_id in &ProposalsByBlock::<T>::get(BlockType::Expiry, &block_number) {
 				// Skip already finalized proposals (ex. if absolute majority was achieved)
 				let mut proposal_state = ProposalStates::<T>::get(&proposal_id);
-				if proposal_state != ProposalState::Activated {
+				if proposal_state != ProposalState::Active {
 					continue;
 				};
 				let voting_exists = ProposalVoting::<T>::contains_key(&proposal_id);
@@ -446,7 +446,7 @@ pub mod pallet {
 		pub fn get_voting_power(voting: &Voting<T>, deposit: &Option<T::Balance>) -> VotingPower {
 			let mut power: VotingPower = 1;
 			match voting.unit {
-				Unit::Person => {
+				Unit::Account => {
 					match voting.scale {
 						Scale::Linear => { 
 							power = 1;
@@ -576,14 +576,14 @@ pub mod pallet {
 			if proposal.start > <frame_system::Pallet<T>>::block_number() {
 				proposal_state = ProposalState::Created;
 			} else {
-				proposal_state = ProposalState::Activated;
+				proposal_state = ProposalState::Active;
 			}
 			T::Currency::reserve(
 				T::ProtocolTokenId::get(), &proposal.owner, proposal.deposit
 			).map_err(|_| Error::<T>::BalanceLow)?;
 
 			if proposal.proposal_type == ProposalType::Spending {
-				let treasury_id = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryNotExist)?;
+				let treasury_id = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
 				T::Currency::reserve(
 					proposal.currency_id.unwrap(), &treasury_id, proposal.amount.unwrap()
 				).map_err(|_| Error::<T>::TreasuryBalanceLow)?;
@@ -623,7 +623,7 @@ pub mod pallet {
 			let mut eligible: VotingPower = 0;
 
 			match unit {
-				Unit::Person => {
+				Unit::Account => {
 					match proposal_type {
 						ProposalType::Withdrawal => {
 							eligible = T::Flow::campaign_contributors_count(&campaign_id.unwrap()).into();

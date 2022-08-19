@@ -23,7 +23,7 @@ impl Default for FlowProtocol {
 #[repr(u8)]
 pub enum CampaignState {
 	Created = 0,	// waiting for start block
-	Activated = 1,	// contributions are allowed
+	Active = 1,	// contributions are allowed
 	Paused = 2, 	// under discussion, pending council decision, can be unpaused or failed and therefore reverted
 	Succeeded = 3,
 	Failed = 4,

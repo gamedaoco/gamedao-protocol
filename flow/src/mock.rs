@@ -142,36 +142,22 @@ impl orml_currencies::Config for Test {
 }
 
 frame_support::parameter_types! {
-	pub const MaxOrgsPerAccount: u32 = 2;
-	pub const MaxMembersPerOrg: u32 = 2;
-	pub const MaxCreationsPerBlock: u32 = 2;
-	pub const MaxCreationsPerAccount: u32 = 1000;
-	pub const MaxOrgsPerController: u32 = 100;
 	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
-	pub const MinimumDeposit: Balance = 1 * DOLLARS;
+	pub const MinimumDeposit: Balance = 5 * DOLLARS;
 	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
-	pub const Game3FoundationTreasuryAccountId: AccountId = GAME3_TREASURY;
-	pub const GameDAOTreasuryAccountId: AccountId = GAMEDAO_TREASURY;
 }
-
 impl gamedao_control::Config for Test {
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
-	type MaxOrgsPerAccount = MaxOrgsPerAccount;
-	type MaxMembersPerOrg = MaxMembersPerOrg;
-	type MaxCreationsPerAccount = MaxCreationsPerAccount;
-	type MaxOrgsPerController = MaxOrgsPerController;
-	type MaxCreationsPerBlock = MaxCreationsPerBlock;
+	type MaxMembers = ConstU32<10000>;
 	type ProtocolTokenId = ProtocolTokenId;
-	type PaymentTokenId = ProtocolTokenId;
+	type PaymentTokenId = PaymentTokenId;
 	type MinimumDeposit = MinimumDeposit;
 	type PalletId = ControlPalletId;
-	type Game3FoundationTreasury = Game3FoundationTreasuryAccountId;
-	type GameDAOTreasury = GameDAOTreasuryAccountId;
 	type StringLimit = ConstU32<256>;
 }
 
