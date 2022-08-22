@@ -99,28 +99,47 @@ fn control_update_org() {
 		// Check if no changes were provided
 		// Error: NoChangesProvided
 		assert_noop!(Control::update_org(
-			Origin::signed(ALICE), org_id, None, None, None, None, None),
+			Origin::signed(ALICE), org_id, None, None, None, None, None, None),
 			Error::<Test>::NoChangesProvided);
 
 		// FeeModel::Transfer and no membership_fee provided
 		// Error: NoChangesProvided
 		assert_noop!(Control::update_org(
-			Origin::signed(ALICE), org_id, None, None, None, Some(FeeModel::Transfer), None),
+			Origin::signed(ALICE), org_id, None, None, None, None, Some(FeeModel::Transfer), None),
 			Error::<Test>::MissingParameter);
 		
+		// Check if prime can be not a member
+		// Error: NotMember
+		assert_noop!(Control::update_org(
+			Origin::signed(ALICE), org_id, Some(BOB), None, None, None, None, None),
+			Error::<Test>::NotMember);
+
+		assert_ok!(Control::add_member(Origin::signed(ALICE), org_id, BOB));
+		
+		// Check if only prime can perform update_org
+		// Error: BadOrigin
+		assert_noop!(Control::update_org(
+			Origin::signed(BOB), org_id, None, Some(OrgType::Dao), None, None, None, None),
+			BadOrigin);
+		
+		// Check if root can update
+		assert_ok!(Control::update_org(Origin::root(), org_id, None, None, None, None, None, Some(199 * DOLLARS)));
+
 		// Check if update_org works as expected
 		let prime_id = Some(BOB);
+		let org_type = Some(OrgType::Dao);
 		let access_model = Some(AccessModel::Voting);
 		let member_limit = Some(100 as MemberLimit);
 		let fee_model = Some(FeeModel::NoFees);
 		let membership_fee = Some(99 * DOLLARS);
 
 		assert_ok!(Control::update_org(
-			Origin::signed(ALICE), org_id, prime_id, access_model.clone(), member_limit,
+			Origin::signed(ALICE), org_id, prime_id, org_type.clone(), access_model.clone(), member_limit,
 			fee_model.clone(), membership_fee));
 
 		let org = Orgs::<Test>::get(org_id).unwrap();
 		assert_eq!(org.prime, prime_id.clone().unwrap());
+		assert_eq!(org.org_type, org_type.clone().unwrap());
 		assert_eq!(org.access_model, access_model.clone().unwrap());
 		assert_eq!(org.member_limit, member_limit.unwrap());
 		assert_eq!(org.fee_model, fee_model.clone().unwrap());
@@ -128,20 +147,11 @@ fn control_update_org() {
 		System::assert_has_event(
 			Event::Control(
 				crate::Event::OrgUpdated {
-					org_id, prime_id, access_model, member_limit,
+					org_id, prime_id, org_type, access_model, member_limit,
 					fee_model, membership_fee, block_number: current_block
 				}
 			)
 		);
-
-		// ALICE is not a prime anymore, shouldn't be possible to update_org
-		// Error: BadOrigin
-		assert_noop!(Control::update_org(
-			Origin::signed(ALICE), org_id, Some(BOB), None, None, None, None),
-			BadOrigin);
-		
-		// Check if root can update
-		assert_ok!(Control::update_org(Origin::root(), org_id, Some(ALICE), None, None, None, None));
 		
 	})
 }
