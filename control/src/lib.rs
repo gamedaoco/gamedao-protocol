@@ -230,6 +230,7 @@ pub mod pallet {
 		OrgUpdated {
 			org_id: T::Hash,
 			prime_id: Option<T::AccountId>,
+			org_type: Option<OrgType>,
 			access_model: Option<AccessModel>,
 			member_limit: Option<MemberLimit>,
 			fee_model: Option<FeeModel>,
@@ -377,6 +378,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			org_id: T::Hash,
 			prime_id: Option<T::AccountId>,
+			org_type: Option<OrgType>,
 			access_model: Option<AccessModel>,
 			member_limit: Option<MemberLimit>,
 			fee_model: Option<FeeModel>,
@@ -385,13 +387,18 @@ pub mod pallet {
 			let mut org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
 			Self::ensure_root_or_prime(origin, org.prime.clone(), org.org_type.clone())?;
 
-			let args = [prime_id.is_some(), fee_model.is_some(), membership_fee.is_some(), access_model.is_some(), member_limit.is_some()];
+			let args = [prime_id.is_some(), fee_model.is_some(), membership_fee.is_some(),
+						access_model.is_some(), member_limit.is_some(), org_type.is_some()];
 			ensure!(args.iter().any(|x| *x == true), Error::<T>::NoChangesProvided);
 
 			if let Some(access_model) = access_model.clone() { org.access_model = access_model; };
+			if let Some(org_type) = org_type.clone() { org.org_type = org_type; };
 			if let Some(member_limit) = member_limit.clone() { org.member_limit = member_limit; };
 			if let Some(_) = membership_fee.clone() { org.membership_fee = membership_fee; };
-			if let Some(prime_id) = prime_id.clone() { org.prime = prime_id; };
+			if let Some(prime_id) = prime_id.clone() {
+				ensure!(MemberStates::<T>::contains_key(&org_id, &prime_id), Error::<T>::NotMember);
+				org.prime = prime_id;
+			};
 			if let Some(fee_model) = fee_model.clone() {
 				if fee_model != FeeModel::NoFees && membership_fee.is_none() {
 					return Err(Error::<T>::MissingParameter)?
@@ -403,7 +410,7 @@ pub mod pallet {
 			
 			let block_number = frame_system::Pallet::<T>::block_number();
 			Self::deposit_event(Event::OrgUpdated {
-				org_id, prime_id, access_model, member_limit,
+				org_id, prime_id, org_type, access_model, member_limit,
 				fee_model, membership_fee, block_number
 			});
 
