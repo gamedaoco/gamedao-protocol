@@ -8,14 +8,14 @@ use mock::{new_test_ext, System, Test, Event, Control, Origin, Tokens, CurrencyI
 	ALICE, BOB, CHARLIE, PAYMENT_TOKEN_ID, PROTOCOL_TOKEN_ID, DOLLARS};
 
 
-fn create_org() -> H256 {
+fn create_org(access_model: AccessModel) -> H256 {
 	let bounded_str = BoundedVec::truncate_from(vec![1,2]);
 	let index = OrgCount::<Test>::get();
 	let now = frame_system::Pallet::<Test>::block_number();
 	let org = types::Org {
 		index, creator: ALICE, prime: ALICE, name: bounded_str.clone(), cid: bounded_str.clone(),
 		org_type: OrgType::Individual, fee_model: FeeModel::NoFees, membership_fee: Some(1 * DOLLARS),
-		gov_currency: PROTOCOL_TOKEN_ID, pay_currency: PAYMENT_TOKEN_ID, access_model: AccessModel::Prime,
+		gov_currency: PROTOCOL_TOKEN_ID, pay_currency: PAYMENT_TOKEN_ID, access_model,
 		member_limit: <Test as Config>::MaxMembers::get(), created: now.clone(), mutated: now
 	};
 	let org_id = <Test as frame_system::Config>::Hashing::hash_of(&org);
@@ -73,7 +73,7 @@ fn control_create_org() {
 			Error::<Test>::BalanceLow);
 
 		// Create org Success, check event
-		let org_id = create_org();
+		let org_id = create_org(AccessModel::Prime);
 		System::assert_has_event(
 			Event::Control(
 				crate::Event::OrgCreated {
@@ -94,7 +94,7 @@ fn control_update_org() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;
 		System::set_block_number(current_block);
-		let org_id = create_org();
+		let org_id = create_org(AccessModel::Prime);
 
 		// Check if no changes were provided
 		// Error: NoChangesProvided
@@ -161,7 +161,7 @@ fn control_enable_deisable_org() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;
 		System::set_block_number(current_block);
-		let org_id = create_org();
+		let org_id = create_org(AccessModel::Prime);
 		// Disable org root
 		assert_noop!(Control::disable_org(Origin::signed(BOB), org_id), BadOrigin);
 		assert_ok!(Control::disable_org(Origin::root(), org_id));
@@ -182,26 +182,26 @@ fn control_enable_deisable_org() {
 }
 
 #[test]
-fn control_add_remove_member() {
+fn control_add_remove_member_access_prime() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;
 		System::set_block_number(current_block);
-		let org_id = create_org();
+		let org_id = create_org(AccessModel::Prime);
 		// Add member prime
+		assert_noop!(Control::add_member(Origin::signed(BOB), org_id, CHARLIE), BadOrigin);
 		assert_ok!(Control::add_member(Origin::signed(ALICE), org_id, CHARLIE));
 		assert!(Members::<Test>::get(org_id).contains(&CHARLIE));
 		assert_noop!(Control::add_member(Origin::signed(ALICE), org_id, CHARLIE), Error::<Test>::AlreadyMember);
-		assert_noop!(Control::remove_member(Origin::signed(BOB), org_id, CHARLIE), BadOrigin);
 		System::assert_has_event(
 			mock::Event::Control(crate::Event::MemberAdded{
 				org_id, who: CHARLIE, block_number: current_block
 			})
 		);
 		// Remove member prime
+		assert_noop!(Control::remove_member(Origin::signed(BOB), org_id, CHARLIE), BadOrigin);
 		assert_ok!(Control::remove_member(Origin::signed(ALICE), org_id, CHARLIE));
 		assert!(!Members::<Test>::get(org_id).contains(&CHARLIE));
 		assert_noop!(Control::remove_member(Origin::signed(ALICE), org_id, CHARLIE), Error::<Test>::NotMember);
-		assert_noop!(Control::add_member(Origin::signed(BOB), org_id, CHARLIE), BadOrigin);
 		System::assert_has_event(
 			mock::Event::Control(crate::Event::MemberRemoved{
 				org_id, who: CHARLIE, block_number: current_block
@@ -219,6 +219,55 @@ fn control_add_remove_member() {
 	})
 }
 
+#[test]
+fn control_add_remove_member_access_open() {
+	new_test_ext().execute_with(|| {
+		let current_block = 3;
+		System::set_block_number(current_block);
+		let org_id = create_org(AccessModel::Open);
+		// Add member
+		assert_noop!(Control::add_member(Origin::signed(BOB), org_id, CHARLIE), BadOrigin);
+		assert_ok!(Control::add_member(Origin::signed(BOB), org_id, BOB));
+		assert!(Members::<Test>::get(org_id).contains(&BOB));
+		assert_noop!(Control::add_member(Origin::signed(BOB), org_id, BOB), Error::<Test>::AlreadyMember);
+		// Remove member prime
+		assert_noop!(Control::remove_member(Origin::signed(BOB), org_id, CHARLIE), BadOrigin);
+		assert_ok!(Control::remove_member(Origin::signed(BOB), org_id, BOB));
+		assert!(!Members::<Test>::get(org_id).contains(&BOB));
+		assert_noop!(Control::remove_member(Origin::signed(BOB), org_id, BOB), Error::<Test>::NotMember);
+
+		// Add member root
+		assert_ok!(Control::add_member(Origin::root(), org_id, BOB));
+		assert!(Members::<Test>::get(org_id).contains(&BOB));
+		// Remove member root
+		assert_ok!(Control::remove_member(Origin::root(), org_id, BOB));
+		assert!(!Members::<Test>::get(org_id).contains(&BOB));
+	})
+}
+
+#[test]
+fn control_add_remove_member_access_voting() {
+	new_test_ext().execute_with(|| {
+		let current_block = 3;
+		System::set_block_number(current_block);
+		let org_id = create_org(AccessModel::Voting);
+		// Add member prime / not member
+		assert_noop!(Control::add_member(Origin::signed(ALICE), org_id, CHARLIE), BadOrigin);
+		assert_noop!(Control::add_member(Origin::signed(BOB), org_id, CHARLIE), BadOrigin);
+		// TODO: Not implemented yet
+
+		// Remove member prime
+		// TODO: Not implemented yet
+
+		// Add member root
+		assert_ok!(Control::add_member(Origin::root(), org_id, CHARLIE));
+		assert!(Members::<Test>::get(org_id).contains(&CHARLIE));
+		// Remove member root
+		assert_ok!(Control::remove_member(Origin::root(), org_id, CHARLIE));
+		assert!(!Members::<Test>::get(org_id).contains(&CHARLIE));
+	})
+}
+
 fn set_balance(account_id: AccountId, currency_id: CurrencyId, balance: Balance) {
 	let _ = Tokens::set_balance(RawOrigin::Root.into(), account_id, currency_id, balance, 0);
 }
@@ -228,7 +277,7 @@ fn control_spend_funds() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;
 		System::set_block_number(current_block);
-		let org_id = create_org();
+		let org_id = create_org(AccessModel::Prime);
 		let treasury_id = OrgTreasury::<Test>::get(org_id).unwrap();
 		set_balance(treasury_id.clone(), PROTOCOL_TOKEN_ID, 100 * DOLLARS);
 
