@@ -475,17 +475,7 @@ pub mod pallet {
 			who: T::AccountId
 		) -> DispatchResultWithPostInfo {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
-			match org.access_model {
-				AccessModel::Open => {
-					Self::ensure_root_or_self(origin, who.clone())?;
-				},
-				AccessModel::Prime => {
-					Self::ensure_root_or_prime(origin, org.prime.clone(), org.org_type)?;
-				},
-				AccessModel::Voting => {
-					Self::ensure_root_or_governance(origin)?;
-				},
-			}
+			Self::ensure_membership_permissions(origin, who.clone(), org.prime.clone(), org.org_type.clone(), org.access_model.clone())?;
 			let member_state = match org.access_model {
 				AccessModel::Open => MemberState::Active,
 				_ => MemberState::Pending,
@@ -509,17 +499,7 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::remove_member(T::MaxMembers::get()))]
 		pub fn remove_member(origin: OriginFor<T>, org_id: T::Hash, who: T::AccountId) -> DispatchResultWithPostInfo {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
-			match org.access_model {
-				AccessModel::Open => {
-					Self::ensure_root_or_self(origin, who.clone())?;
-				},
-				AccessModel::Prime => {
-					Self::ensure_root_or_prime(origin, org.prime.clone(), org.org_type)?;
-				},
-				AccessModel::Voting => {
-					Self::ensure_root_or_governance(origin)?;
-				},
-			}
+			Self::ensure_membership_permissions(origin, who.clone(), org.prime.clone(), org.org_type.clone(), org.access_model.clone())?;
 			let member_count = Self::do_remove_member(org_id.clone(), who.clone())?;
 			if org.fee_model == FeeModel::Reserve {
 				T::Currency::unreserve(org.gov_currency, &who, org.membership_fee.unwrap());
@@ -641,6 +621,26 @@ impl<T: Config> Pallet<T> {
 			}
 		};
 		Ok(())
+	}
+
+	fn ensure_membership_permissions(
+		origin: T::Origin,
+		who: T::AccountId,
+		prime: T::AccountId,
+		org_type: OrgType,
+		access_model: AccessModel
+	) -> Result<(), BadOrigin> {
+		match access_model {
+			AccessModel::Open => {
+				return Ok(Self::ensure_root_or_self(origin, who.clone())?);
+			},
+			AccessModel::Prime => {
+				return Ok(Self::ensure_root_or_prime(origin, prime, org_type)?);
+			},
+			AccessModel::Voting => {
+				return Ok(Self::ensure_root_or_governance(origin)?);
+			},
+		}
 	}
 
 	fn ensure_root_or_prime(origin: T::Origin, prime: T::AccountId, org_type: OrgType) -> Result<(), BadOrigin> {
