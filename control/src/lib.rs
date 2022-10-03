@@ -461,8 +461,6 @@ pub mod pallet {
 
 		/// Add Member to Org
 		/// 
-		/// Allowed origins: Root or prime if OrgType::Individual
-		/// 
 		/// Parameters:
 		/// - `org_id`: Org id
 		/// - `who`: Account to be added
@@ -477,8 +475,17 @@ pub mod pallet {
 			who: T::AccountId
 		) -> DispatchResultWithPostInfo {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
-			Self::ensure_root_or_prime(origin, org.prime.clone(), org.org_type)?;
-
+			match org.access_model {
+				AccessModel::Open => {
+					Self::ensure_root_or_self(origin, who.clone())?;
+				},
+				AccessModel::Prime => {
+					Self::ensure_root_or_prime(origin, org.prime.clone(), org.org_type)?;
+				},
+				AccessModel::Voting => {
+					Self::ensure_root_or_governance(origin)?;
+				},
+			}
 			let member_state = match org.access_model {
 				AccessModel::Open => MemberState::Active,
 				_ => MemberState::Pending,
@@ -491,8 +498,6 @@ pub mod pallet {
 		}
 
 		/// Remove member from Org
-		///
-		/// Allowed origins: Root or prime if OrgType::Individual
 		/// 
 		/// Parameters:
 		/// - `org_id`: Org id
@@ -504,8 +509,17 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::remove_member(T::MaxMembers::get()))]
 		pub fn remove_member(origin: OriginFor<T>, org_id: T::Hash, who: T::AccountId) -> DispatchResultWithPostInfo {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
-			Self::ensure_root_or_prime(origin, org.prime, org.org_type)?;
-
+			match org.access_model {
+				AccessModel::Open => {
+					Self::ensure_root_or_self(origin, who.clone())?;
+				},
+				AccessModel::Prime => {
+					Self::ensure_root_or_prime(origin, org.prime.clone(), org.org_type)?;
+				},
+				AccessModel::Voting => {
+					Self::ensure_root_or_governance(origin)?;
+				},
+			}
 			let member_count = Self::do_remove_member(org_id.clone(), who.clone())?;
 			if org.fee_model == FeeModel::Reserve {
 				T::Currency::unreserve(org.gov_currency, &who, org.membership_fee.unwrap());
@@ -634,6 +648,27 @@ impl<T: Config> Pallet<T> {
 			Ok(RawOrigin::Root) => Ok(()),
 			Ok(RawOrigin::Signed(t)) => {
 				if org_type == OrgType::Individual && t == prime {
+					return Ok(());
+				}
+				Err(BadOrigin)
+			},
+			_ => Err(BadOrigin),
+		}
+	}
+
+	fn ensure_root_or_governance(origin: T::Origin) -> Result<(), BadOrigin> {
+		match origin.into() {
+			Ok(RawOrigin::Root) => Ok(()),
+			// TODO: implement governance origin type
+			_ => Err(BadOrigin),
+		}
+	}
+
+	fn ensure_root_or_self(origin: T::Origin, who: T::AccountId) -> Result<(), BadOrigin> {
+		match origin.into() {
+			Ok(RawOrigin::Root) => Ok(()),
+			Ok(RawOrigin::Signed(t)) => {
+				if t == who {
 					return Ok(());
 				}
 				Err(BadOrigin)
