@@ -23,7 +23,7 @@ pub mod weights;
 
 use codec::Codec;
 use frame_support::{dispatch::{DispatchResult, DispatchError, RawOrigin},
-	ensure, PalletId, traits::{Get, StorageVersion}, weights::Weight, BoundedVec, transactional
+	ensure, PalletId, traits::Get, weights::Weight, BoundedVec, transactional
 };
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
@@ -53,12 +53,8 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
-	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
-
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
-	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
@@ -270,15 +266,6 @@ pub mod pallet {
 		MinimumDepositTooLow,
 		MissingParameter,
 		WrongOrganizationType
-	}
-
-	#[pallet::hooks]
-	impl<T: Config> Hooks<T::BlockNumber> for Pallet<T> {
-
-		fn on_runtime_upgrade() -> Weight {
-			migration::migrate::<T, Self>()
-		}
-
 	}
 
 	#[pallet::call]

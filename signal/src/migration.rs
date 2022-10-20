@@ -8,40 +8,32 @@
 // Copyright (C) 2018-2022 GameDAO AG.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{Config, Pallet, Weight};
-use frame_support::{
-	traits::{Get, PalletInfoAccess},
-};
+// use frame_support::{
+// 	traits::{Get, PalletInfoAccess, StorageVersion},
+// };
+// use crate::{Config, Pallet, Weight};
 
-pub fn migrate<T: Config>() -> Weight {
-	use frame_support::traits::StorageVersion;
 
-	let version = StorageVersion::get::<Pallet<T>>();
-	let mut weight: Weight = 0;
+// pub fn migrate<T: Config, P: PalletInfoAccess>() -> Weight {
 
-	if version < 1 {
-		weight = weight.saturating_add(v1::migrate::<T>());
-		StorageVersion::new(1).put::<Pallet<T>>();
-	}
-	if version < 2 {
-		weight = weight.saturating_add(v1::migrate::<T>());
-		StorageVersion::new(2).put::<Pallet<T>>();
-	}
+// 	let version = StorageVersion::get::<Pallet<T>>();
+// 	let mut weight: Weight = 0;
 
-	weight
-}
+// 	if version == 0 {
+// 		weight = weight.saturating_add(v1::migrate::<T, P>());
+// 		StorageVersion::new(1).put::<Pallet<T>>();
+// 	}
 
-/// V1: Clean up pallet storage
-mod v1 {
-	use super::*;
-	use sp_io::hashing::twox_128;
+// 	weight
+// }
 
-	pub fn migrate<T: Config>() -> Weight {
+// mod v1 {
+// 	use super::*;
 
-		let _ = frame_support::storage::unhashed::clear_prefix(
-			&twox_128(<Pallet<T>>::name().as_bytes()), None, None
-		);
-
-		T::DbWeight::get().writes(1)
-	}
-}
+// 	pub fn migrate<T: Config, P: PalletInfoAccess>() -> Weight {
+// 		//
+// 		// Migration logic should be placed here
+// 		//
+// 		T::DbWeight::get().writes(1)
+// 	}
+// }
