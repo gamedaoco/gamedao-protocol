@@ -120,7 +120,7 @@ pub mod pallet {
 	pub(super) type Orgs<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, Org<T>, OptionQuery>;
 
-	/// Org state (Inactive | Active | Locked) by org id.	
+	/// Org state (Inactive | Active | Locked) by org id.
 	///
 	/// OrgStates: map Hash => OrgState
 	#[pallet::storage]
@@ -177,8 +177,10 @@ pub mod pallet {
 				.iter()
 				.for_each(|(creator, prime, treasury_id, name, cid, org_type,
 					access_model, fee_model, membership_fee, gov_currency, pay_currency, member_limit, deposit)| {
+						// SBP-M2 review: for genesis build block number should be known
 						let now = frame_system::Pallet::<T>::block_number();
 						let index = OrgCount::<T>::get();
+						// SBP-M2 review: think about some kind of `new` function for `types::Org`
 						let org: Org<T> = types::Org {
 							index, creator: creator.clone(), prime: prime.clone(), name: name.clone(), cid: cid.clone(),
 							org_type: org_type.clone(), fee_model: fee_model.clone(), membership_fee: Some(*membership_fee),
@@ -187,6 +189,8 @@ pub mod pallet {
 						};
 						let org_id = <T as frame_system::Config>::Hashing::hash_of(&org);
 
+						// SBP-M2 review: you should print some logs if sth goes wrong while genesis build
+						// Unwrap will not help you with debugging
 						Pallet::<T>::do_create_org(org_id.clone(), &org, treasury_id.clone(), *deposit).unwrap();
 						Pallet::<T>::do_add_member(org_id, creator.clone(), MemberState::Active).unwrap();
 						Pallet::<T>::pay_membership_fee(
@@ -197,6 +201,8 @@ pub mod pallet {
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	// SBP-M2 review: I would suggest limiting events' attributes.
+	// When someone is interested, there should be a possibility to query current state.
 	pub enum Event<T: Config> {
 		/// Org was successfully created.
 		OrgCreated {
@@ -271,7 +277,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 
 		/// Create an on chain organization
-		/// 
+		///
 		/// Parameters:
 		/// - `origin`: Org creator.
 		/// - `name`: Org name.
@@ -279,7 +285,7 @@ pub mod pallet {
 		/// - `org_type`: Individual | Company | Dao | Hybrid.
 		/// - `access_model`:
 		/// - `fee_model`:
-		/// 
+		///
 		/// Optional parameters:
 		/// - `member_limit`: max members. Default: MaxMembers.
 		/// - `member_fee`: fees amount to be applied to new members based on fee model (in `gov_asset` tokens).
@@ -327,6 +333,7 @@ pub mod pallet {
 			ensure!(!<frame_system::Pallet<T>>::account_exists(&treasury_id), Error::<T>::TreasuryExists);
 
 			let now = frame_system::Pallet::<T>::block_number();
+			// SBP-M2 review: I definiately suggest having `types::Org::new` function :)
 			let org = types::Org {
 				index, creator: sender.clone(), prime: sender.clone(), name, cid, org_type,
 				fee_model: fee_model.clone(), membership_fee: membership_fee.clone(), gov_currency,
@@ -348,7 +355,7 @@ pub mod pallet {
 		///
 		/// Parameters:
 		/// - `org_id`: Org hash.
-		/// 
+		///
 		/// Optional parameters:
 		/// - `prime_id`: new prime id.
 		/// - `access_model`: new access model.
@@ -371,12 +378,16 @@ pub mod pallet {
 			membership_fee: Option<T::Balance>,
 		) -> DispatchResult {
 			let mut org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
+			// SBP-M2 review: Get rid of Sudo calls
+			// Create entity like a council
 			Self::ensure_root_or_prime(origin, org.prime.clone(), org.org_type.clone())?;
 
 			let args = [prime_id.is_some(), fee_model.is_some(), membership_fee.is_some(),
 						access_model.is_some(), member_limit.is_some(), org_type.is_some()];
 			ensure!(args.iter().any(|x| *x == true), Error::<T>::NoChangesProvided);
 
+			// SBP-M2 review: I do not like these instructions with pattern matching
+			// I would use quick check `is_some`: https://doc.rust-lang.org/std/option/enum.Option.html#method.is_some
 			if let Some(access_model) = access_model.clone() { org.access_model = access_model; };
 			if let Some(org_type) = org_type.clone() { org.org_type = org_type; };
 			if let Some(member_limit) = member_limit.clone() { org.member_limit = member_limit; };
@@ -393,7 +404,7 @@ pub mod pallet {
 			};
 
 			Orgs::<T>::insert(&org_id, org);
-			
+
 			let block_number = frame_system::Pallet::<T>::block_number();
 			Self::deposit_event(Event::OrgUpdated {
 				org_id, prime_id, org_type, access_model, member_limit,
@@ -417,6 +428,7 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::enable_org())]
 		pub fn enable_org(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
+			// SBP-M2 review: same comment about Sudo pallet
 			Self::ensure_root_or_prime(origin, org.prime, org.org_type)?;
 
 			OrgStates::<T>::insert(org_id.clone(), OrgState::Active);
@@ -428,7 +440,7 @@ pub mod pallet {
 		///
 		/// Disables an Org to be used and changes it's state to Inactive.
 		/// Allowed origins: Root or prime if OrgType::Individual
-		/// 
+		///
 		/// Parameters:
 		/// - `org_id`: Org hash.
 		///
@@ -438,6 +450,7 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::disable_org())]
 		pub fn disable_org(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
+			// SBP-M2 review: same comment about Sudo pallet
 			Self::ensure_root_or_prime(origin, org.prime, org.org_type)?;
 
 			OrgStates::<T>::insert(org_id.clone(), OrgState::Inactive);
@@ -446,7 +459,7 @@ pub mod pallet {
 		}
 
 		/// Add Member to Org
-		/// 
+		///
 		/// Parameters:
 		/// - `org_id`: Org id
 		/// - `who`: Account to be added
@@ -467,14 +480,16 @@ pub mod pallet {
 				_ => MemberState::Pending,
 			};
 			let treasury_id = OrgTreasury::<T>::get(org_id).ok_or(Error::<T>::TreasuryUnknown)?;
+			// SBP-M2 review: you could rewrite this function to pass `org` struct and then unpack it inside
 			Self::pay_membership_fee(&org.prime, &treasury_id, org.membership_fee, org.fee_model, org.gov_currency)?;
 			let members_count = Self::do_add_member(org_id, who.clone(), member_state)?;
 
+			// SBP-M2 review: why do you return WeightInfo in extrinsics?
 			Ok(Some(T::WeightInfo::add_member(members_count)).into())
 		}
 
 		/// Remove member from Org
-		/// 
+		///
 		/// Parameters:
 		/// - `org_id`: Org id
 		/// - `who`: Account to be removed
@@ -488,14 +503,17 @@ pub mod pallet {
 			Self::ensure_membership_permissions(origin, who.clone(), org.prime.clone(), org.org_type.clone(), org.access_model.clone())?;
 			let member_count = Self::do_remove_member(org_id.clone(), who.clone())?;
 			if org.fee_model == FeeModel::Reserve {
+				// SBP-M2 review: you should not use `unwrap` in extrinsics
+				// Apply error handling
 				T::Currency::unreserve(org.gov_currency, &who, org.membership_fee.unwrap());
 			}
 
+			// SBP-M2 review: same comment about returning `WeightInfo`
 			Ok(Some(T::WeightInfo::remove_member(member_count)).into())
 		}
 
 		/// Make spending from the org treasury
-		/// 
+		///
 		/// Allowed origins: Root or prime if OrgType::Individual
 		///
 		/// Parameters:
@@ -518,11 +536,12 @@ pub mod pallet {
 		) -> DispatchResult {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
 			let treasury_id = OrgTreasury::<T>::get(org_id).ok_or(Error::<T>::TreasuryUnknown)?;
+			// SBP-M2 review: same comment about Sudo pallet
 			Self::ensure_root_or_prime(origin, org.prime, org.org_type)?;
 
 			T::Currency::transfer(currency_id, &treasury_id, &beneficiary, amount
 				).map_err(|_| Error::<T>::BalanceLow)?;
-			
+
 			let block_number = frame_system::Pallet::<T>::block_number();
 			Self::deposit_event(Event::FundsSpended { org_id, beneficiary, amount, currency_id, block_number });
 
@@ -548,6 +567,8 @@ impl<T: Config> Pallet<T> {
 
 		Orgs::<T>::insert(&org_id, org);
 
+		// SBP-M2 review: I strongly suggest emitting events in extrinsics
+		// It clarifies code and its responsibility
 		Self::deposit_event(Event::OrgCreated { org_id, creator, treasury_id, created_at, realm_index: 0 });
 		Ok(())
 	}
@@ -564,10 +585,11 @@ impl<T: Config> Pallet<T> {
 		Members::<T>::insert(&org_id, &members);
 		OrgMemberCount::<T>::insert(&org_id, members_count);
 		MemberStates::<T>::insert(&org_id, &who, member_state);
-		
+
 		let block_number = frame_system::Pallet::<T>::block_number();
+		// SBP-M2 review: same comment about events
 		Self::deposit_event(Event::MemberAdded { org_id, who, block_number });
-		
+
 		Ok(members_count)
 	}
 
@@ -609,6 +631,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	// SBP-M2 review: same comment about Sudo pallet
 	fn ensure_membership_permissions(
 		origin: T::Origin,
 		who: T::AccountId,
@@ -645,6 +668,7 @@ impl<T: Config> Pallet<T> {
 	fn ensure_root_or_governance(origin: T::Origin) -> Result<(), BadOrigin> {
 		match origin.into() {
 			Ok(RawOrigin::Root) => Ok(()),
+			// SBP-M2 review: #TODO comment not implemented
 			// TODO: implement governance origin type
 			_ => Err(BadOrigin),
 		}
@@ -687,6 +711,8 @@ impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 	}
 }
 
+// SBP-M2 review: if functions for benchmarking
+// Move to benchmarking or mock module
 impl<T: Config> ControlBenchmarkingTrait<T::AccountId, T::Hash> for Pallet<T> {
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]

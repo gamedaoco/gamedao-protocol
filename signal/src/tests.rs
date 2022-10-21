@@ -18,6 +18,8 @@ use frame_support::{
 
 /// Test 0.0
 /// - Proposal validation Errors
+// SBP-M2 review: I would split into separate test cases
+// SBP-M2 review: Tests should have self-explanatory names
 #[test]
 fn signal_0_0() {
 	ExtBuilder::default().build().execute_with(|| {
@@ -287,7 +289,7 @@ fn signal_0_2() {
 		let expiry: BlockNumber = now + 20;
 		let (proposal_id, proposal) = create_proposal(
 			ProposalType::General, org_id, start, expiry, 20 * DOLLARS, None, None, None, None);
-		
+
 		assert_ok!(Signal::proposal(
 			Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
 			proposal.title.clone(), proposal.cid.clone(), proposal.expiry,
@@ -404,7 +406,7 @@ fn signal_1_0() {
 		// Check if deposit was reserved
 		assert_eq!(<Test as Config>::Currency::total_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance);
 		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance - deposit);
-		
+
 		System::assert_has_event(Event::Signal(crate::Event::Created {
 			account: ALICE,
 			proposal_id: proposal_id.clone(),
@@ -438,7 +440,7 @@ fn signal_1_0() {
 			yes: members.len().saturated_into(),
 			no: 1,
 		}));
-		
+
 		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
 		Signal::on_finalize(expiry);
@@ -496,7 +498,7 @@ fn signal_1_1() {
 			yes: 0,
 			no: (members.len() + 1).saturated_into(),
 		}));
-		
+
 		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
 		Signal::on_finalize(expiry);
@@ -508,7 +510,7 @@ fn signal_1_1() {
 
 		// Check if deposit was slashed
 		assert_eq!(<Test as Config>::Currency::free_balance(PROTOCOL_TOKEN_ID, &ALICE), total_balance - deposit);
-		
+
 		// TODO: check balances of GameDAO and Org treasury
 
 	});
@@ -733,7 +735,7 @@ fn signal_1_6() {
 		}
 		// Proposal creator votes "NO"
 		assert_ok!(Signal::vote(Origin::signed(ALICE), proposal_id, false, Some(voting_deposit)));
-		
+
 		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
 		Signal::on_finalize(expiry);
@@ -780,7 +782,7 @@ fn signal_1_7() {
 		}
 		// Proposal creator votes "YES"
 		assert_ok!(Signal::vote(Origin::signed(ALICE), proposal_id, true, None));
-		
+
 		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
 		Signal::on_finalize(expiry);
@@ -827,7 +829,7 @@ fn signal_1_8() {
 		assert_ok!(Signal::vote(Origin::signed(0), proposal_id, false, None));
 		// Proposal creator votes "YES"
 		assert_ok!(Signal::vote(Origin::signed(ALICE), proposal_id, true, None));
-		
+
 		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
 		Signal::on_finalize(expiry);
@@ -870,11 +872,11 @@ fn signal_2_0() {
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		let withdrawal_amount = 10 * DOLLARS;
-		
+
 
 		let campaign_expiry = now + 2 * DAYS;
 		let campaign_id = create_finalize_campaign(now, org_id, &contributors, contribution, campaign_expiry, true);
-		
+
 		// Check if campaign was finalized and all treasury balance is reserved
 		assert_eq!(<Test as Config>::Currency::total_balance(currency, &treasury_id), total_contribution - commission);
 		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
@@ -897,7 +899,7 @@ fn signal_2_0() {
 		for x in &contributors {
 			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
 		}
-		
+
 		// Check if proposal finalized earlier
 		System::assert_has_event(Event::Signal(crate::Event::Finalized {
 			proposal_id: proposal_id.clone(),
@@ -941,7 +943,7 @@ fn signal_2_0() {
 		for x in &members {
 			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
 		}
-		
+
 		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
 		Signal::on_finalize(expiry);
@@ -988,10 +990,10 @@ fn signal_2_1() {
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		let withdrawal_amount = 10 * DOLLARS;
-		
+
 		let campaign_expiry = now + 2 * DAYS;
 		let campaign_id = create_finalize_campaign(now, org_id, &contributors, contribution, campaign_expiry, true);
-		
+
 		// Check if campaign was finalized and all treasury balance is reserved
 		assert_eq!(<Test as Config>::Currency::total_balance(currency, &treasury_id), total_contribution - commission);
 		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
@@ -1014,7 +1016,7 @@ fn signal_2_1() {
 		for x in &contributors {
 			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, true, None));
 		}
-		
+
 		// Check if proposal finalized earlier
 		System::assert_has_event(Event::Signal(crate::Event::Finalized {
 			proposal_id: proposal_id.clone(),
@@ -1055,7 +1057,7 @@ fn signal_2_1() {
 		for x in &members {
 			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, false, None));
 		}
-		
+
 		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
 		Signal::on_finalize(expiry);
@@ -1096,7 +1098,7 @@ fn signal_2_2() {
 		let withdrawal_amount = 10 * DOLLARS;
 		let campaign_expiry = now + 2 * DAYS;
 		let campaign_id = create_finalize_campaign(now, org_id, &contributors, contribution, campaign_expiry, true);
-		
+
 		// Check if campaign was finalized and all treasury balance is reserved
 		assert_eq!(<Test as Config>::Currency::total_balance(currency, &treasury_id), total_contribution - commission);
 		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
@@ -1119,7 +1121,7 @@ fn signal_2_2() {
 		for x in &contributors {
 			assert_ok!(Signal::vote(Origin::signed(*x), proposal_id, false, None));
 		}
-		
+
 		// Hop to the proposal's expiry block and check proposal finalized
 		System::set_block_number(expiry);
 		Signal::on_finalize(expiry);
