@@ -49,8 +49,8 @@ pub use pallet::*;
 pub use weights::WeightInfo;
 
 type Proposal<T> = types::Proposal<
-	<T as frame_system::Config>::Hash, <T as frame_system::Config>::BlockNumber, 
-	<T as frame_system::Config>::AccountId, <T as pallet::Config>::Balance, 
+	<T as frame_system::Config>::Hash, <T as frame_system::Config>::BlockNumber,
+	<T as frame_system::Config>::AccountId, <T as pallet::Config>::Balance,
 	<T as pallet::Config>::CurrencyId, BoundedVec<u8, <T as pallet::Config>::StringLimit>
 >;
 
@@ -111,7 +111,7 @@ pub mod pallet {
 
 		/// Weight information for extrinsics in this module.
 		type WeightInfo: WeightInfo;
-		
+
 		/// The CurrencyId which is used as a payment token.
 		#[pallet::constant]
 		type PaymentTokenId: Get<Self::CurrencyId>;
@@ -158,7 +158,7 @@ pub mod pallet {
 	///
 	/// Proposals: map Hash => Proposal
 	#[pallet::storage]
-	pub(super) type ProposalOf<T: Config> = 
+	pub(super) type ProposalOf<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash,
 		Proposal<T>, OptionQuery>;
 
@@ -166,7 +166,7 @@ pub mod pallet {
 	///
 	/// ProposalStates: map Hash => ProposalState
 	#[pallet::storage]
-	pub(super) type ProposalStates<T: Config> = 
+	pub(super) type ProposalStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, ProposalState, ValueQuery, GetDefault>;
 
 	/// Proposals ending in a block.
@@ -175,7 +175,7 @@ pub mod pallet {
 	#[pallet::storage]
 	pub(super) type ProposalsByBlock<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, BlockType, Blake2_128Concat, T::BlockNumber, BoundedVec<T::Hash, T::MaxProposalsPerBlock>, ValueQuery>;
-	
+
 	#[pallet::storage]
 	pub type ProposalCount<T: Config> = StorageValue<_, ProposalIndex, ValueQuery>;
 
@@ -242,6 +242,7 @@ pub mod pallet {
 
 		#[pallet::weight(T::WeightInfo::proposal())]
 		#[transactional]
+		// SBP-M2 review: I would recommend some refactor; too long function
 		pub fn proposal(
 			origin: OriginFor<T>,
 			proposal_type: ProposalType,
@@ -288,7 +289,7 @@ pub mod pallet {
 					ensure!(scale != Scale::Quadratic, Error::<T>::WrongParameter);
 				}
 				Unit::Token => {
-					// Since it's not possible to calculate eligible voting power, 
+					// Since it's not possible to calculate eligible voting power,
 					// 	Absolute majority and quorum doesn't work for Unit::Token
 					ensure!(majority != Majority::Absolute, Error::<T>::WrongParameter);
 					ensure!(quorum.is_none(), Error::<T>::WrongParameter);
@@ -306,7 +307,7 @@ pub mod pallet {
 					let campaign_owner = T::Flow::campaign_owner(&c_id).ok_or(Error::<T>::AuthorizationError)?;
 					ensure!(proposer == campaign_owner, Error::<T>::AuthorizationError);
 					ensure!(T::Flow::is_campaign_succeeded(&c_id), Error::<T>::CampaignUnsucceeded);
-					
+
 					let used_balance = CampaignBalanceUsed::<T>::get(&c_id);
 					let total_balance = T::Flow::campaign_balance(&c_id);
 					let remaining_balance = total_balance
@@ -376,6 +377,8 @@ pub mod pallet {
 				},
 				ProposalType::Withdrawal => {
 					ensure!(
+						// SBP-M2 review: do not use `unwrap`
+						// Add error handling
 						T::Flow::is_campaign_contributor(&proposal.campaign_id.unwrap(), &who),
 						Error::<T>::AuthorizationError
 					);
@@ -423,11 +426,12 @@ pub mod pallet {
 				if !voting_exists || !proposal_exists {
 					continue;	// should never happen
 				}
+				// SBP-M2 review: just another comment about `unwrap`
 				let voting =  ProposalVoting::<T>::get(&proposal_id).unwrap();
 
 				// Get the final state based on Voting participation, quorum, majority
 				proposal_state = Self::get_final_proposal_state(&voting);
-				
+
 				Self::finalize_proposal(&proposal_id, proposal_state, &voting);
 			}
 		}
@@ -440,21 +444,22 @@ pub mod pallet {
 			match voting.unit {
 				Unit::Account => {
 					match voting.scale {
-						Scale::Linear => { 
+						Scale::Linear => {
 							power = 1;
 						}
-						Scale::Quadratic => { 
+						Scale::Quadratic => {
 							// So far not possible, maybe in case of delegation
 						}
 					}
 				}
 				Unit::Token => {
+					// SBP-M2 review: `unwrap`
 					let linear_power: VotingPower = deposit.unwrap().saturated_into();
 					match voting.scale {
-						Scale::Linear => { 
+						Scale::Linear => {
 							power = linear_power;
 						}
-						Scale::Quadratic => { 
+						Scale::Quadratic => {
 							let linear_power: VotingPower = deposit.unwrap().saturated_into();
 							power = linear_power.integer_sqrt();
 						}
@@ -491,6 +496,7 @@ pub mod pallet {
 					}
 				}
 				_ => {
+					// SBP-M2 review: #TODO comment
 					// TODO: Collect other cases when voting could be finalized earlier
 				}
 			}
@@ -552,6 +558,8 @@ pub mod pallet {
 
 			ProposalVoting::<T>::insert(&proposal_id, &voting);
 
+			// SBP-M2 review: what if proposal is not finalized?
+			// Is it properly handled?
 			// For Absolute majority if more then 50% of members vote for one option, the proposal period ends earlier.
 			if let Some(final_proposal_state) = Self::try_finalize_proposal(&voting) {
 				Self::finalize_proposal(&proposal_id, final_proposal_state, &voting);
@@ -679,6 +687,7 @@ pub mod pallet {
 					let campaign_id = proposal.campaign_id.unwrap();
 					let amount = proposal.amount.unwrap();
 					T::Currency::unreserve(
+						// SBP-M2 review: `unwrap`
 						proposal.currency_id.unwrap(),
 						&T::Control::org_treasury_account(&proposal.org_id).unwrap(), amount);
 					let used_balance = CampaignBalanceUsed::<T>::get(&campaign_id);
@@ -692,6 +701,7 @@ pub mod pallet {
 						&proposal.beneficiary.as_ref().unwrap(),
 						proposal.amount.unwrap(),
 						BalanceStatus::Free);
+					// SBP-M2 review: why not proper error handling here?
 					debug_assert!(res.is_ok());
 					return ProposalState::Finalized;
 				}
@@ -714,7 +724,8 @@ pub mod pallet {
 								let org_share = proposal.deposit - gamedao_share;
 								let gamedo_trsry = T::GameDAOTreasury::get();
 								let org_trsry = T::Control::org_treasury_account(&proposal.org_id).unwrap();
-								
+
+								// SBP-M2 review: there must be proper error handling on these operations
 								let res = T::Currency::transfer(currency_id, &proposal.owner, &gamedo_trsry, gamedao_share);
 								debug_assert!(res.is_ok());
 								let res = T::Currency::transfer(currency_id, &proposal.owner, &org_trsry, org_share);
