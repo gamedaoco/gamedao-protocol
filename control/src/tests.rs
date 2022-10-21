@@ -30,6 +30,9 @@ fn create_org(access_model: AccessModel) -> H256 {
 
 
 #[test]
+// SBP-M2 review: I would split into separated test cases
+// It would be easier to find bug if exists
+// And this attitude follows unit testing
 fn control_create_org() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;
@@ -42,7 +45,7 @@ fn control_create_org() {
 			Origin::signed(ALICE), bounded_str.clone(), bounded_str.clone(), OrgType::Company,
 			AccessModel::Prime, FeeModel::NoFees, None, None, None, None, None),
 			Error::<Test>::WrongOrganizationType);
-		
+
 		// Create org with org type Hybrid
 		// Error: WrongOrganizationType
 		assert_noop!(Control::create_org(
@@ -64,7 +67,7 @@ fn control_create_org() {
 			AccessModel::Prime, FeeModel::Transfer, None, None, None, None, None),
 			Error::<Test>::MissingParameter);
 
-		// Check if creator (sender) has enough protocol token free balance 
+		// Check if creator (sender) has enough protocol token free balance
 		// to make a deposit into org's treasury
 		// Error: BalanceLow
 		assert_noop!(Control::create_org(
@@ -107,7 +110,7 @@ fn control_update_org() {
 		assert_noop!(Control::update_org(
 			Origin::signed(ALICE), org_id, None, None, None, None, Some(FeeModel::Transfer), None),
 			Error::<Test>::MissingParameter);
-		
+
 		// Check if prime can be not a member
 		// Error: NotMember
 		assert_noop!(Control::update_org(
@@ -115,13 +118,13 @@ fn control_update_org() {
 			Error::<Test>::NotMember);
 
 		assert_ok!(Control::add_member(Origin::signed(ALICE), org_id, BOB));
-		
+
 		// Check if only prime can perform update_org
 		// Error: BadOrigin
 		assert_noop!(Control::update_org(
 			Origin::signed(BOB), org_id, None, Some(OrgType::Dao), None, None, None, None),
 			BadOrigin);
-		
+
 		// Check if root can update
 		assert_ok!(Control::update_org(Origin::root(), org_id, None, None, None, None, None, Some(199 * DOLLARS)));
 
@@ -152,7 +155,7 @@ fn control_update_org() {
 				}
 			)
 		);
-		
+
 	})
 }
 

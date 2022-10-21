@@ -53,7 +53,7 @@ pub fn create_campaign(
 		deposit,
 		start,
 		expiry,
-		cap: target, 
+		cap: target,
 		protocol: FlowProtocol::default(),
 		governance: FlowGovernance::default(),
 		cid: bounded_str.clone(),
@@ -68,6 +68,7 @@ pub fn create_campaign(
 // TODO: error ContributionInsufficient
 
 #[test]
+// SBP-M2 review: I would split into separate test cases
 fn flow_create_errors() {
 	new_test_ext().execute_with(|| {
 		let (org_id, _, _) = create_org_treasury();
@@ -324,7 +325,7 @@ fn flow_on_finalize_campaign_succeess() {
 			campaign_rev.deposit, campaign_rev.expiry, campaign_rev.protocol.clone(), campaign_rev.governance.clone(),
 			campaign_rev.cid.clone(), None, None, None
 		));
-		
+
 		// Contribute (10/500)
 		assert_ok!(Flow::contribute(Origin::signed(1), campaign_id_rev, 10 * DOLLARS));
 
@@ -483,7 +484,7 @@ fn flow_on_finalize_campaign_failed() {
 		System::set_block_number(expiry + 1);
 		Flow::on_initialize(expiry + 1);
 
-		// Account's balance from the first batch was unlocked		
+		// Account's balance from the first batch was unlocked
 		assert_eq!(<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &c[0]), INIT_BALANCE);
 		assert_eq!(<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &c[1]), INIT_BALANCE);
 		assert_eq!(<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &c[2]), INIT_BALANCE);

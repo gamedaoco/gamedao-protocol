@@ -100,7 +100,7 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
-		
+
 		/// The currency ID type
 		type CurrencyId: Member
 			+ Parameter
@@ -108,7 +108,7 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
-		
+
 		/// Weight information for extrinsics in this module.
 		type WeightInfo: WeightInfo;
 
@@ -126,7 +126,7 @@ pub mod pallet {
 		/// The min length of a campaign name.
 		#[pallet::constant]
 		type MinNameLength: Get<u32>;
-		
+
 		/// The max number of campaigns per one block.
 		#[pallet::constant]
 		type MaxCampaignsPerBlock: Get<u32>;
@@ -151,12 +151,12 @@ pub mod pallet {
 		/// The CurrencyId which is used as a protokol token.
 		#[pallet::constant]
 		type ProtocolTokenId: Get<Self::CurrencyId>;
-		
+
 		/// The CurrencyId which is used as a payment token.
 		#[pallet::constant]
 		type PaymentTokenId: Get<Self::CurrencyId>;
 
-		/// The amount of comission to be paid from the Org treasury to GameDAO treasury 
+		/// The amount of comission to be paid from the Org treasury to GameDAO treasury
 		/// after successfull Campaign finalization
 		#[pallet::constant]
 		type CampaignFee: Get<Permill>;
@@ -171,27 +171,27 @@ pub mod pallet {
 	}
 
 	/// Campaign by its id.
-	/// 
+	///
 	/// CampaignOf: map Hash => Campaign
 	#[pallet::storage]
 	pub(super) type CampaignOf<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Campaign<T>, OptionQuery>;
 
 	/// Total number of campaigns.
-	/// 
+	///
 	/// CampaignCount: u32
 	#[pallet::storage]
 	#[pallet::getter(fn campaign_count)]
 	pub type CampaignCount<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// Total contributions balance per campaign.
-	/// 
+	///
 	/// CampaignBalance: map Hash => Balance
 	#[pallet::storage]
 	pub(super) type CampaignBalance<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Balance, ValueQuery>;
 
 	/// Total contribution made by account id for particular campaign.
 	/// campaign id, account id -> contribution.
-	/// 
+	///
 	/// CampaignContribution: double map Hash, AccountId => Balance
 	#[pallet::storage]
 	pub(super) type CampaignContribution<T: Config> =
@@ -199,14 +199,14 @@ pub mod pallet {
 
 	/// Campaign state by campaign id.
 	/// 0 created, 1 activated, 2 paused, ...
-	/// 
+	///
 	/// CampaignStates: map Hash => CampaignState
 	#[pallet::storage]
 	pub(super) type CampaignStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, CampaignState, ValueQuery, GetDefault>;
 
 	/// Campaigns starting/ending in block x.
-	/// 
+	///
 	/// CampaignsByBlock: double map BlockType, BlockNumber => BoundedVec<Hash>
 	#[pallet::storage]
 	pub(super) type CampaignsByBlock<T: Config> =
@@ -219,14 +219,14 @@ pub mod pallet {
 	/// Offset value - number of processed and sucessfully finalized contributions.
 	/// Used during campaign finalization for processing contributors in batches.
 	/// When MaxContributorsProcessing is achieved, set this offset to save the progress.
-	/// 
+	///
 	/// ProcessingOffset: map Hash => u32
 	#[pallet::storage]
 	pub(super) type ProcessingOffset<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u32, ValueQuery>;
 
 	/// Total number of contributors for particular campaign. This is needed for voting
 	/// in order do determine eligible voters for Withdrawal proposal.
-	/// 
+	///
 	/// CampaignContributors: map Hash => u64
 	#[pallet::storage]
 	pub(super) type CampaignContributorsCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
@@ -333,6 +333,8 @@ pub mod pallet {
 			T::WeightInfo::on_initialize(processed, campaigns.len() as u32)
 		}
 
+		// SBP-M2 reviews: I am wondering if just `continue` in case of unexpected state in this functions is a
+		// correct & proper way of handling
 		fn on_finalize(block_number: T::BlockNumber) {
 			// Prepare and validate data for campaign settlement
 			for campaign_id in &CampaignsByBlock::<T>::get(BlockType::Expiry, block_number) {
@@ -341,6 +343,8 @@ pub mod pallet {
 					log::error!(target: "runtime::gamedao_flow", "Campaign unknown: '{:?}'", campaign_id);
 					continue
 				}
+				// SBP-M2 review: Do not unwrap
+				// Use error handling
 				let campaign = maybe_campaign.unwrap();
 				let maybe_treasury_id = T::Control::org_treasury_account(&campaign.org_id);
 				if maybe_treasury_id.is_none() {
@@ -358,7 +362,7 @@ pub mod pallet {
 				}
 				if contributors.len() as u32 > T::MaxCampaignContributors::get() {
 					log::error!(
-						target: "runtime::gamedao_flow", "MaxCampaignContributors exceeds limits {}, 
+						target: "runtime::gamedao_flow", "MaxCampaignContributors exceeds limits {},
 						campaign '{:?}' haven't been scheduled for settlement",
 						T::MaxCampaignContributors::get(), campaign_id,
 					);
@@ -391,9 +395,9 @@ pub mod pallet {
 		/// - `token_symbol`: a new custom token symbol
 		/// - `token_name`: a new custom token name
 		/// - `start`:
-		/// 
-		/// The two params `token_symbol` and `token_name` are meant for setting up a new custom token if creator wants to 
-		/// conduct a token generation event. Therefore these two are optionals and would result in a TGE dropping 
+		///
+		/// The two params `token_symbol` and `token_name` are meant for setting up a new custom token if creator wants to
+		/// conduct a token generation event. Therefore these two are optionals and would result in a TGE dropping
 		/// fungible token with a new currency id to contributors.
 		///
 		/// Emits `CampaignCreated` event when successful.
@@ -425,7 +429,7 @@ pub mod pallet {
 			let min_deposit = T::MinCampaignDeposit::get().mul_floor(target);
 			ensure!(deposit >= min_deposit, Error::<T>::DepositInsufficient);
 			ensure!(deposit <= target, Error::<T>::DepositTooHigh);
-			
+
 			// Campaign start/expiry validation:
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			let starts = start.unwrap_or(current_block);
@@ -438,7 +442,7 @@ pub mod pallet {
 			let index = CampaignCount::<T>::get();
 			let campaign = types::Campaign {
 				index, org_id, name: name.clone(), owner: creator.clone(),
-				admin: admin_id.clone(), deposit, start: starts, expiry, cap: target, 
+				admin: admin_id.clone(), deposit, start: starts, expiry, cap: target,
 				protocol, governance, cid, token_symbol, token_name, created: current_block,
 			};
 
@@ -472,7 +476,7 @@ pub mod pallet {
 				Error::<T>::NoContributionsAllowed
 			);
 			ensure!(contribution >= T::MinContribution::get(), Error::<T>::ContributionInsufficient);
-			
+
 			Self::create_contribution(sender.clone(), campaign_id, contribution)?;
 			Self::deposit_event(Event::Contributed {
 				campaign_id, sender,
@@ -543,6 +547,7 @@ impl<T: Config> Pallet<T> {
 		campaign_id: T::Hash,
 		org_treasury: &T::AccountId,
 	) {
+		// SBP-M2 review: consider match clause
 		if campaign_state == &CampaignState::Succeeded {
 			let contributor_balance = CampaignContribution::<T>::get(campaign_id, &contributor);
 			let _transfer_amount = T::Currency::repatriate_reserved(
@@ -566,6 +571,7 @@ impl<T: Config> Pallet<T> {
 		org_treasury: T::AccountId,
 		block_number: T::BlockNumber,
 	) {
+		// SBP-M2 review: consider match clause
 		if campaign_state == &CampaignState::Succeeded {
 			let commission = T::CampaignFee::get().mul_floor(campaign_balance.clone());
 			let _transfer_commission = T::Currency::repatriate_reserved(
@@ -616,6 +622,7 @@ impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
 	}
 }
 
+// SBP-M2 review: move benchmarking stuff to benchmarking/mock module
 impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for Pallet<T> {
 
 	/// ** Should be used for benchmarking only!!! **
@@ -635,7 +642,7 @@ impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for
 			deposit: T::MinContribution::get(),
 			start,
 			expiry: start + 57_600_u32.into(), // 60/3*60*24*2 (2 days with 3 sec block time)
-			cap: target, 
+			cap: target,
 			protocol: FlowProtocol::default(),
 			governance: FlowGovernance::default(),
 			cid: bounded_str.clone(),
