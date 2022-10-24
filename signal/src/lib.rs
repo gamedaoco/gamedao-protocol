@@ -14,7 +14,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(deprecated)] // TODO: clean transactional
 pub mod types;
-pub mod migration;
 
 #[cfg(test)]
 pub mod mock;

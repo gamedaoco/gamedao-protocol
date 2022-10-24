@@ -41,7 +41,6 @@ pub use types::{FlowProtocol, CampaignState, FlowGovernance, BlockType};
 
 mod mock;
 mod tests;
-mod migration;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod weights;

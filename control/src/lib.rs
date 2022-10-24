@@ -17,7 +17,6 @@ pub mod types;
 
 mod mock;
 mod tests;
-mod migration;
 mod benchmarking;
 pub mod weights;
 
