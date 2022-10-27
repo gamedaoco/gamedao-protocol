@@ -14,7 +14,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(deprecated)] // TODO: clean transactional
 pub mod types;
-pub mod migration;
 
 #[cfg(test)]
 pub mod mock;
@@ -26,7 +25,7 @@ pub mod weights;
 
 use frame_support::{
 	BoundedVec,
-	traits::{StorageVersion, BalanceStatus},
+	traits::BalanceStatus,
 	dispatch::DispatchResult,
 	weights::Weight,
 	transactional
@@ -67,12 +66,8 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
-	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
-
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
-	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
@@ -401,9 +396,6 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 
-		fn on_runtime_upgrade() -> Weight {
-			migration::migrate::<T>()
-		}
 
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			let proposals = ProposalsByBlock::<T>::get(BlockType::Start, &block_number);
