@@ -177,7 +177,7 @@ pub mod pallet {
 				.iter()
 				.for_each(|(creator, prime, treasury_id, name, cid, org_type,
 					access_model, fee_model, membership_fee, gov_currency, pay_currency, member_limit, deposit)| {
-						// SBP-M2 review: for genesis build block number should be known
+						// SBP-M2 review: for genesis build block number should be known //
 						let now = frame_system::Pallet::<T>::block_number();
 						let index = OrgCount::<T>::get();
 						// SBP-M2 review: think about some kind of `new` function for `types::Org`
