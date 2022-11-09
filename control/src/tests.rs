@@ -30,9 +30,6 @@ fn create_org(access_model: AccessModel) -> H256 {
 
 
 #[test]
-// SBP-M2 review: I would split into separated test cases
-// It would be easier to find bug if exists
-// And this attitude follows unit testing
 fn control_create_org() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;

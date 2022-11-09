@@ -46,7 +46,7 @@ mod benchmarking;
 pub mod weights;
 
 use frame_support::{
-	dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo},
+	dispatch::{DispatchResult, DispatchError},
 	traits::{Get, BalanceStatus, Hooks},
 	weights::Weight, BoundedVec, log, transactional
 };
@@ -328,8 +328,6 @@ pub mod pallet {
 			T::WeightInfo::on_initialize(processed, campaigns.len() as u32)
 		}
 
-		// SBP-M2 reviews: I am wondering if just `continue` in case of unexpected state in this functions is a
-		// correct & proper way of handling
 		fn on_finalize(block_number: T::BlockNumber) {
 			// Prepare and validate data for campaign settlement
 			for campaign_id in &CampaignsByBlock::<T>::get(BlockType::Expiry, block_number) {
@@ -338,9 +336,7 @@ pub mod pallet {
 					log::error!(target: "runtime::gamedao_flow", "Campaign unknown: '{:?}'", campaign_id);
 					continue
 				}
-				// SBP-M2 review: Do not unwrap
-				// Use error handling
-				let campaign = maybe_campaign.unwrap();
+				let campaign = maybe_campaign.unwrap();	// Should never panic, checked above.
 				let maybe_treasury_id = T::Control::org_treasury_account(&campaign.org_id);
 				if maybe_treasury_id.is_none() {
 					log::error!(target: "runtime::gamedao_flow", "Treasury unknown for Org: '{:?}'", &campaign.org_id);
@@ -538,19 +534,24 @@ impl<T: Config> Pallet<T> {
 		campaign_id: T::Hash,
 		org_treasury: &T::AccountId,
 	) {
-		// SBP-M2 review: consider match clause
-		if campaign_state == &CampaignState::Succeeded {
-			let contributor_balance = CampaignContribution::<T>::get(campaign_id, &contributor);
-			let _transfer_amount = T::Currency::repatriate_reserved(
-				T::PaymentTokenId::get(),
-				&contributor,
-				&org_treasury,
-				contributor_balance.clone(),
-				BalanceStatus::Reserved
-			);
-		} else if campaign_state == &CampaignState::Failed {
-			let contribution = CampaignContribution::<T>::get(campaign_id, contributor.clone());
-			T::Currency::unreserve(T::PaymentTokenId::get(), &contributor, contribution);
+		match campaign_state {
+			&CampaignState::Succeeded => {
+				let contributor_balance = CampaignContribution::<T>::get(campaign_id, &contributor);
+				let _transfer_amount = T::Currency::repatriate_reserved(
+					T::PaymentTokenId::get(),
+					&contributor,
+					&org_treasury,
+					contributor_balance.clone(),
+					BalanceStatus::Reserved
+				);
+			},
+
+			&CampaignState::Failed => {
+				let contribution = CampaignContribution::<T>::get(campaign_id, contributor.clone());
+				T::Currency::unreserve(T::PaymentTokenId::get(), &contributor, contribution);
+			},
+			
+			_ => {},
 		}
 	}
 
@@ -562,31 +563,34 @@ impl<T: Config> Pallet<T> {
 		org_treasury: T::AccountId,
 		block_number: T::BlockNumber,
 	) {
-		// SBP-M2 review: consider match clause
-		if campaign_state == &CampaignState::Succeeded {
-			let commission = T::CampaignFee::get().mul_floor(campaign_balance.clone());
-			let _transfer_commission = T::Currency::repatriate_reserved(
-				T::PaymentTokenId::get(),
-				&org_treasury,
-				&T::GameDAOTreasury::get(),
-				commission,
-				BalanceStatus::Free
-			);
-			// Update campaign balance
-			let updated_balance = campaign_balance - commission;
-			CampaignBalance::<T>::insert(campaign_id, updated_balance);
-			CampaignStates::<T>::insert(&campaign_id, CampaignState::Succeeded);
+		match campaign_state {
+			&CampaignState::Succeeded => {
+				let commission = T::CampaignFee::get().mul_floor(campaign_balance.clone());
+				let _transfer_commission = T::Currency::repatriate_reserved(
+					T::PaymentTokenId::get(),
+					&org_treasury,
+					&T::GameDAOTreasury::get(),
+					commission,
+					BalanceStatus::Free
+				);
+				// Update campaign balance
+				let updated_balance = campaign_balance - commission;
+				CampaignBalance::<T>::insert(campaign_id, updated_balance);
+				CampaignStates::<T>::insert(&campaign_id, CampaignState::Succeeded);
 
-			Self::deposit_event(Event::Succeeded { campaign_id, campaign_balance: updated_balance, block_number });
+				Self::deposit_event(Event::Succeeded { campaign_id, campaign_balance: updated_balance, block_number });
+			}, 
 
-		} else if campaign_state == &CampaignState::Failed {
-			// Unreserve Initial deposit
-			T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, campaign.deposit);
-			CampaignStates::<T>::insert(campaign_id, CampaignState::Failed);
+			&CampaignState::Failed => {
+				// Unreserve Initial deposit
+				T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, campaign.deposit);
+				CampaignStates::<T>::insert(campaign_id, CampaignState::Failed);
 
-			Self::deposit_event(Event::Failed { campaign_id, campaign_balance, block_number });
+				Self::deposit_event(Event::Failed { campaign_id, campaign_balance, block_number });
+			},
+
+			_ => {},
 		}
-
 	}
 
 }
@@ -613,7 +617,6 @@ impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
 	}
 }
 
-// SBP-M2 review: move benchmarking stuff to benchmarking/mock module
 impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for Pallet<T> {
 
 	/// ** Should be used for benchmarking only!!! **

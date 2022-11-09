@@ -28,6 +28,7 @@ use frame_support::{
 	traits::BalanceStatus,
 	dispatch::DispatchResult,
 	weights::Weight,
+	log,
 	transactional
 };
 use frame_system::ensure_signed;
@@ -242,7 +243,6 @@ pub mod pallet {
 
 		#[pallet::weight(T::WeightInfo::proposal())]
 		#[transactional]
-		// SBP-M2 review: I would recommend some refactor; too long function
 		pub fn proposal(
 			origin: OriginFor<T>,
 			proposal_type: ProposalType,
@@ -376,9 +376,8 @@ pub mod pallet {
 					);
 				},
 				ProposalType::Withdrawal => {
+					ensure!(proposal.campaign_id.is_some(), Error::<T>::MissingParameter);
 					ensure!(
-						// SBP-M2 review: do not use `unwrap`
-						// Add error handling
 						T::Flow::is_campaign_contributor(&proposal.campaign_id.unwrap(), &who),
 						Error::<T>::AuthorizationError
 					);
@@ -420,26 +419,28 @@ pub mod pallet {
 				if proposal_state != ProposalState::Active {
 					continue;
 				};
-				let voting_exists = ProposalVoting::<T>::contains_key(&proposal_id);
+				let voting_option = ProposalVoting::<T>::get(&proposal_id);
 				let proposal_exists = ProposalOf::<T>::contains_key(&proposal_id);
 
-				if !voting_exists || !proposal_exists {
+				if voting_option.is_none() || !proposal_exists {
+					log::error!(target: "runtime::gamedao_signal", "Proposal [{:?}] or voting [{:?}] is missing.", proposal_exists, voting_option.is_some());
 					continue;	// should never happen
 				}
-				// SBP-M2 review: just another comment about `unwrap`
-				let voting =  ProposalVoting::<T>::get(&proposal_id).unwrap();
+				let voting =  voting_option.unwrap();
 
 				// Get the final state based on Voting participation, quorum, majority
 				proposal_state = Self::get_final_proposal_state(&voting);
 
-				Self::finalize_proposal(&proposal_id, proposal_state, &voting);
+				if Self::finalize_proposal(&proposal_id, proposal_state, &voting).is_err() {
+					log::error!(target: "runtime::gamedao_signal", "Failed to finalize a proposal {:?}.", proposal_id);
+				};
 			}
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
 
-		pub fn get_voting_power(voting: &Voting<T>, deposit: &Option<T::Balance>) -> VotingPower {
+		pub fn get_voting_power(voting: &Voting<T>, deposit: &Option<T::Balance>) -> Result<VotingPower, DispatchError> {
 			let mut power: VotingPower = 1;
 			match voting.unit {
 				Unit::Account => {
@@ -453,20 +454,18 @@ pub mod pallet {
 					}
 				}
 				Unit::Token => {
-					// SBP-M2 review: `unwrap`
-					let linear_power: VotingPower = deposit.unwrap().saturated_into();
+					let linear_power: VotingPower = deposit.ok_or(Error::<T>::MissingParameter)?.saturated_into();
 					match voting.scale {
 						Scale::Linear => {
 							power = linear_power;
 						}
 						Scale::Quadratic => {
-							let linear_power: VotingPower = deposit.unwrap().saturated_into();
 							power = linear_power.integer_sqrt();
 						}
 					}
 				}
 			}
-			power
+			Ok(power)
 		}
 
 		pub fn process_voting_deposits(
@@ -496,7 +495,6 @@ pub mod pallet {
 					}
 				}
 				_ => {
-					// SBP-M2 review: #TODO comment
 					// TODO: Collect other cases when voting could be finalized earlier
 				}
 			}
@@ -516,7 +514,7 @@ pub mod pallet {
 		) -> Result<u32, DispatchError> {
 			let position_yes = voting.ayes.iter().position(|a| a.0 == who);
 			let position_no = voting.nays.iter().position(|a| a.0 == who);
-			let power = Self::get_voting_power(&voting, &deposit);
+			let power = Self::get_voting_power(&voting, &deposit)?;
 			let mut old_deposit: Option<T::Balance> = None;
 
 			if approve {
@@ -558,11 +556,11 @@ pub mod pallet {
 
 			ProposalVoting::<T>::insert(&proposal_id, &voting);
 
-			// SBP-M2 review: what if proposal is not finalized?
-			// Is it properly handled?
 			// For Absolute majority if more then 50% of members vote for one option, the proposal period ends earlier.
 			if let Some(final_proposal_state) = Self::try_finalize_proposal(&voting) {
-				Self::finalize_proposal(&proposal_id, final_proposal_state, &voting);
+				Self::finalize_proposal(&proposal_id, final_proposal_state, &voting)?;
+			} else {
+				log::error!("No proposal state has been set for proposal_id: {:?}.", proposal_id);
 			}
 
 			Ok(voting.participating as u32)
@@ -681,36 +679,37 @@ pub mod pallet {
 			}
 		}
 
-		fn apply_proposal_actions(proposal: &Proposal<T>, proposal_state: ProposalState) -> ProposalState {
+		fn apply_proposal_actions(proposal: &Proposal<T>, proposal_state: ProposalState) -> Result<ProposalState, DispatchError> {
 			match proposal.proposal_type {
 				ProposalType::Withdrawal => {
-					let campaign_id = proposal.campaign_id.unwrap();
-					let amount = proposal.amount.unwrap();
-					T::Currency::unreserve(
-						// SBP-M2 review: `unwrap`
-						proposal.currency_id.unwrap(),
-						&T::Control::org_treasury_account(&proposal.org_id).unwrap(), amount);
+					let campaign_id = proposal.campaign_id.ok_or(Error::<T>::MissingParameter)?;
+					let amount = proposal.amount.ok_or(Error::<T>::MissingParameter)?;
+					let currency_id = proposal.currency_id.ok_or(Error::<T>::MissingParameter)?;
+					let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::MissingParameter)?;
+					T::Currency::unreserve(currency_id, &treasury, amount);
 					let used_balance = CampaignBalanceUsed::<T>::get(&campaign_id);
 					CampaignBalanceUsed::<T>::insert(&campaign_id, used_balance + amount);
-					return ProposalState::Finalized;
+					return Ok(ProposalState::Finalized);
 				}
 				ProposalType::Spending => {
-					let res = T::Currency::repatriate_reserved(
-						proposal.currency_id.unwrap(),
-						&T::Control::org_treasury_account(&proposal.org_id).unwrap(),
-						&proposal.beneficiary.as_ref().unwrap(),
-						proposal.amount.unwrap(),
-						BalanceStatus::Free);
-					// SBP-M2 review: why not proper error handling here?
-					debug_assert!(res.is_ok());
-					return ProposalState::Finalized;
+					let amount = proposal.amount.ok_or(Error::<T>::MissingParameter)?;
+					let currency_id = proposal.currency_id.ok_or(Error::<T>::MissingParameter)?;
+					let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::MissingParameter)?;
+					let beneficiary = proposal.beneficiary.as_ref().ok_or(Error::<T>::MissingParameter)?;
+					T::Currency::repatriate_reserved(
+						currency_id,
+						&treasury,
+						&beneficiary,
+						amount,
+						BalanceStatus::Free)?;
+					return Ok(ProposalState::Finalized);
 				}
-				_ => { return proposal_state }
+				_ => { return Ok(proposal_state) }
 			}
 
 		}
 
-		fn process_proposal_deposit(proposal: &Proposal<T>, voting: &Voting<T>, proposal_state: &ProposalState) {
+		fn process_proposal_deposit(proposal: &Proposal<T>, voting: &Voting<T>, proposal_state: &ProposalState) -> DispatchResult {
 			let currency_id = T::ProtocolTokenId::get();
 			match proposal_state {
 				ProposalState::Rejected => {
@@ -723,13 +722,9 @@ pub mod pallet {
 								let gamedao_share = T::GameDAOGetsFromSlashing::get().mul_floor(proposal.deposit);
 								let org_share = proposal.deposit - gamedao_share;
 								let gamedo_trsry = T::GameDAOTreasury::get();
-								let org_trsry = T::Control::org_treasury_account(&proposal.org_id).unwrap();
-
-								// SBP-M2 review: there must be proper error handling on these operations
-								let res = T::Currency::transfer(currency_id, &proposal.owner, &gamedo_trsry, gamedao_share);
-								debug_assert!(res.is_ok());
-								let res = T::Currency::transfer(currency_id, &proposal.owner, &org_trsry, org_share);
-								debug_assert!(res.is_ok());
+								let org_trsry = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
+								T::Currency::transfer(currency_id, &proposal.owner, &gamedo_trsry, gamedao_share)?;
+								T::Currency::transfer(currency_id, &proposal.owner, &org_trsry, org_share)?;
 							}
 						}
 						SlashingRule::Tribunal => {
@@ -739,7 +734,7 @@ pub mod pallet {
 				}
 				_ => { T::Currency::unreserve(currency_id, &proposal.owner, proposal.deposit); }
 			}
-
+			Ok(())
 		}
 
 		fn emit_event(proposal_state: &ProposalState, proposal_id: &T::Hash) {
@@ -760,19 +755,22 @@ pub mod pallet {
 			}
 		}
 
-		fn finalize_proposal(proposal_id: &T::Hash, mut proposal_state: ProposalState, voting: &Voting<T>) {
+		fn finalize_proposal(proposal_id: &T::Hash, mut proposal_state: ProposalState, voting: &Voting<T>) -> DispatchResult {
 			let proposal = ProposalOf::<T>::get(&proposal_id).unwrap();  // should not fail, checked before
 
 			match proposal_state {
 				ProposalState::Accepted => {
-					proposal_state = Self::apply_proposal_actions(&proposal, proposal_state);
+					proposal_state = Self::apply_proposal_actions(&proposal, proposal_state)?;
 				}
 				_ => {
 					if proposal.proposal_type == ProposalType::Spending {
+						let amount = proposal.amount.ok_or(Error::<T>::MissingParameter)?;
+						let currency_id = proposal.currency_id.ok_or(Error::<T>::MissingParameter)?;
+						let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
 						T::Currency::unreserve(
-							proposal.currency_id.unwrap(),
-							& T::Control::org_treasury_account(&proposal.org_id).unwrap(),
-							proposal.amount.unwrap());
+							currency_id,
+							&treasury,
+							amount);
 					};
 				}
 			}
@@ -781,17 +779,19 @@ pub mod pallet {
 				let currency_id = T::ProtocolTokenId::get();
 				// TODO: chain -  &voting.ayes.iter().chain(&voting.nays.iter())
 				for (who, _, deposit) in &voting.ayes {
-					let _ = T::Currency::unreserve(currency_id, &who, deposit.unwrap());
+					let _ = T::Currency::unreserve(currency_id, &who, deposit.ok_or(Error::<T>::MissingParameter)?);
 				};
 				for (who, _, deposit) in &voting.nays {
-					let _ = T::Currency::unreserve(currency_id, &who, deposit.unwrap());
+					let _ = T::Currency::unreserve(currency_id, &who, deposit.ok_or(Error::<T>::MissingParameter)?);
 				};
 			}
 			// Refund or slash proposal's deposit based on proposal state and majority of rejection
-			Self::process_proposal_deposit(&proposal, &voting, &proposal_state);
+			Self::process_proposal_deposit(&proposal, &voting, &proposal_state)?;
 
 			Self::emit_event(&proposal_state, &proposal_id);
 			ProposalStates::<T>::insert(proposal_id, proposal_state);
+
+			Ok(())
 		}
 	}
 }

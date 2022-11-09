@@ -22,7 +22,7 @@ pub mod weights;
 
 use codec::Codec;
 use frame_support::{dispatch::{DispatchResult, DispatchError, RawOrigin},
-	ensure, PalletId, traits::Get, weights::Weight, BoundedVec, transactional
+	ensure, PalletId, traits::Get, BoundedVec, transactional, log
 };
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
@@ -177,10 +177,8 @@ pub mod pallet {
 				.iter()
 				.for_each(|(creator, prime, treasury_id, name, cid, org_type,
 					access_model, fee_model, membership_fee, gov_currency, pay_currency, member_limit, deposit)| {
-						// SBP-M2 review: for genesis build block number should be known //
-						let now = frame_system::Pallet::<T>::block_number();
+						let now = T::BlockNumber::from(0u32);
 						let index = OrgCount::<T>::get();
-						// SBP-M2 review: think about some kind of `new` function for `types::Org`
 						let org: Org<T> = types::Org {
 							index, creator: creator.clone(), prime: prime.clone(), name: name.clone(), cid: cid.clone(),
 							org_type: org_type.clone(), fee_model: fee_model.clone(), membership_fee: Some(*membership_fee),
@@ -189,20 +187,15 @@ pub mod pallet {
 						};
 						let org_id = <T as frame_system::Config>::Hashing::hash_of(&org);
 
-						// SBP-M2 review: you should print some logs if sth goes wrong while genesis build
-						// Unwrap will not help you with debugging
-						Pallet::<T>::do_create_org(org_id.clone(), &org, treasury_id.clone(), *deposit).unwrap();
-						Pallet::<T>::do_add_member(org_id, creator.clone(), MemberState::Active).unwrap();
-						Pallet::<T>::pay_membership_fee(
-							&creator, &treasury_id, Some(*membership_fee), fee_model.clone(), *gov_currency).unwrap();
+						if Pallet::<T>::do_create_org(org_id.clone(), &org, treasury_id.clone(), *deposit).is_err() { log::error!("Error creating organization in genesis.") };
+						if Pallet::<T>::do_add_member(org_id, creator.clone(), MemberState::Active).is_err() { log::error!("Error adding member in genesis.") };
+						if Pallet::<T>::pay_membership_fee(&creator, &treasury_id, &org).is_err() { log::error!("Error paying membership fee in genesis.") };
 				});
 		}
 	}
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	// SBP-M2 review: I would suggest limiting events' attributes.
-	// When someone is interested, there should be a possibility to query current state.
 	pub enum Event<T: Config> {
 		/// Org was successfully created.
 		OrgCreated {
@@ -333,7 +326,6 @@ pub mod pallet {
 			ensure!(!<frame_system::Pallet<T>>::account_exists(&treasury_id), Error::<T>::TreasuryExists);
 
 			let now = frame_system::Pallet::<T>::block_number();
-			// SBP-M2 review: I definiately suggest having `types::Org::new` function :)
 			let org = types::Org {
 				index, creator: sender.clone(), prime: sender.clone(), name, cid, org_type,
 				fee_model: fee_model.clone(), membership_fee: membership_fee.clone(), gov_currency,
@@ -344,7 +336,7 @@ pub mod pallet {
 
 			Self::do_create_org(org_id, &org, treasury_id.clone(), deposit)?;
 			Self::do_add_member(org_id, sender.clone(), MemberState::Active)?;
-			Self::pay_membership_fee(&sender, &treasury_id, membership_fee, fee_model, gov_currency)?;
+			Self::pay_membership_fee(&sender, &treasury_id, &org)?;
 
 			Ok(())
 		}
@@ -378,7 +370,6 @@ pub mod pallet {
 			membership_fee: Option<T::Balance>,
 		) -> DispatchResult {
 			let mut org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
-			// SBP-M2 review: Get rid of Sudo calls
 			// Create entity like a council
 			Self::ensure_root_or_prime(origin, org.prime.clone(), org.org_type.clone())?;
 
@@ -386,17 +377,17 @@ pub mod pallet {
 						access_model.is_some(), member_limit.is_some(), org_type.is_some()];
 			ensure!(args.iter().any(|x| *x == true), Error::<T>::NoChangesProvided);
 
-			// SBP-M2 review: I do not like these instructions with pattern matching
-			// I would use quick check `is_some`: https://doc.rust-lang.org/std/option/enum.Option.html#method.is_some
-			if let Some(access_model) = access_model.clone() { org.access_model = access_model; };
-			if let Some(org_type) = org_type.clone() { org.org_type = org_type; };
-			if let Some(member_limit) = member_limit.clone() { org.member_limit = member_limit; };
-			if let Some(_) = membership_fee.clone() { org.membership_fee = membership_fee; };
-			if let Some(prime_id) = prime_id.clone() {
+			if access_model.is_some() { org.access_model = access_model.clone().unwrap(); };
+			if org_type.is_some() { org.org_type = org_type.clone().unwrap(); };
+			if member_limit.is_some() { org.member_limit = member_limit.clone().unwrap(); };
+			if membership_fee.is_some() { org.membership_fee = membership_fee.clone(); };
+			if prime_id.is_some() {
+				let prime_id = prime_id.clone().unwrap();
 				ensure!(MemberStates::<T>::contains_key(&org_id, &prime_id), Error::<T>::NotMember);
 				org.prime = prime_id;
 			};
-			if let Some(fee_model) = fee_model.clone() {
+			if fee_model.is_some() {
+				let fee_model = fee_model.clone().unwrap();
 				if fee_model != FeeModel::NoFees && membership_fee.is_none() {
 					return Err(Error::<T>::MissingParameter)?
 				};
@@ -428,7 +419,6 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::enable_org())]
 		pub fn enable_org(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
-			// SBP-M2 review: same comment about Sudo pallet
 			Self::ensure_root_or_prime(origin, org.prime, org.org_type)?;
 
 			OrgStates::<T>::insert(org_id.clone(), OrgState::Active);
@@ -450,7 +440,6 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::disable_org())]
 		pub fn disable_org(origin: OriginFor<T>, org_id: T::Hash) -> DispatchResult {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
-			// SBP-M2 review: same comment about Sudo pallet
 			Self::ensure_root_or_prime(origin, org.prime, org.org_type)?;
 
 			OrgStates::<T>::insert(org_id.clone(), OrgState::Inactive);
@@ -480,11 +469,9 @@ pub mod pallet {
 				_ => MemberState::Pending,
 			};
 			let treasury_id = OrgTreasury::<T>::get(org_id).ok_or(Error::<T>::TreasuryUnknown)?;
-			// SBP-M2 review: you could rewrite this function to pass `org` struct and then unpack it inside
-			Self::pay_membership_fee(&org.prime, &treasury_id, org.membership_fee, org.fee_model, org.gov_currency)?;
+			Self::pay_membership_fee(&org.prime, &treasury_id, &org)?;
 			let members_count = Self::do_add_member(org_id, who.clone(), member_state)?;
 
-			// SBP-M2 review: why do you return WeightInfo in extrinsics?
 			Ok(Some(T::WeightInfo::add_member(members_count)).into())
 		}
 
@@ -503,12 +490,9 @@ pub mod pallet {
 			Self::ensure_membership_permissions(origin, who.clone(), org.prime.clone(), org.org_type.clone(), org.access_model.clone())?;
 			let member_count = Self::do_remove_member(org_id.clone(), who.clone())?;
 			if org.fee_model == FeeModel::Reserve {
-				// SBP-M2 review: you should not use `unwrap` in extrinsics
-				// Apply error handling
-				T::Currency::unreserve(org.gov_currency, &who, org.membership_fee.unwrap());
+				T::Currency::unreserve(org.gov_currency, &who, org.membership_fee.ok_or(Error::<T>::MissingParameter)?);
 			}
 
-			// SBP-M2 review: same comment about returning `WeightInfo`
 			Ok(Some(T::WeightInfo::remove_member(member_count)).into())
 		}
 
@@ -536,7 +520,6 @@ pub mod pallet {
 		) -> DispatchResult {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
 			let treasury_id = OrgTreasury::<T>::get(org_id).ok_or(Error::<T>::TreasuryUnknown)?;
-			// SBP-M2 review: same comment about Sudo pallet
 			Self::ensure_root_or_prime(origin, org.prime, org.org_type)?;
 
 			T::Currency::transfer(currency_id, &treasury_id, &beneficiary, amount
@@ -567,8 +550,6 @@ impl<T: Config> Pallet<T> {
 
 		Orgs::<T>::insert(&org_id, org);
 
-		// SBP-M2 review: I strongly suggest emitting events in extrinsics
-		// It clarifies code and its responsibility
 		Self::deposit_event(Event::OrgCreated { org_id, creator, treasury_id, created_at, realm_index: 0 });
 		Ok(())
 	}
@@ -587,7 +568,6 @@ impl<T: Config> Pallet<T> {
 		MemberStates::<T>::insert(&org_id, &who, member_state);
 
 		let block_number = frame_system::Pallet::<T>::block_number();
-		// SBP-M2 review: same comment about events
 		Self::deposit_event(Event::MemberAdded { org_id, who, block_number });
 
 		Ok(members_count)
@@ -612,26 +592,23 @@ impl<T: Config> Pallet<T> {
 	fn pay_membership_fee(
 		who: &T::AccountId,
 		treasury_id: &T::AccountId,
-		fee: Option<T::Balance>,
-		fee_model: FeeModel,
-		gov_currency_id: T::CurrencyId
+		org: &Org<T>
 	) -> Result<(), DispatchError> {
-		match fee_model {
+		match org.fee_model {
 			FeeModel::NoFees => {},
 			FeeModel::Reserve => {
-				T::Currency::reserve(gov_currency_id, &who, fee.unwrap()
+				T::Currency::reserve(org.gov_currency, &who, org.membership_fee.unwrap()
 					).map_err(|_| Error::<T>::BalanceLow)?;
 			},
 			FeeModel::Transfer => {
 				T::Currency::transfer(
-					gov_currency_id, &who, &treasury_id, fee.unwrap()
+					org.gov_currency, &who, &treasury_id, org.membership_fee.unwrap()
 				).map_err(|_| Error::<T>::BalanceLow)?;
 			}
 		};
 		Ok(())
 	}
 
-	// SBP-M2 review: same comment about Sudo pallet
 	fn ensure_membership_permissions(
 		origin: T::Origin,
 		who: T::AccountId,
@@ -668,7 +645,6 @@ impl<T: Config> Pallet<T> {
 	fn ensure_root_or_governance(origin: T::Origin) -> Result<(), BadOrigin> {
 		match origin.into() {
 			Ok(RawOrigin::Root) => Ok(()),
-			// SBP-M2 review: #TODO comment not implemented
 			// TODO: implement governance origin type
 			_ => Err(BadOrigin),
 		}
@@ -711,8 +687,6 @@ impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 	}
 }
 
-// SBP-M2 review: if functions for benchmarking
-// Move to benchmarking or mock module
 impl<T: Config> ControlBenchmarkingTrait<T::AccountId, T::Hash> for Pallet<T> {
 	/// ** Should be used for benchmarking only!!! **
 	#[cfg(feature = "runtime-benchmarks")]
