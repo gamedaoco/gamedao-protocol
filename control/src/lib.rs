@@ -22,7 +22,7 @@ pub mod weights;
 
 use codec::Codec;
 use frame_support::{dispatch::{DispatchResult, DispatchError, RawOrigin},
-	ensure, PalletId, traits::Get, weights::Weight, BoundedVec, transactional
+	ensure, PalletId, traits::Get, BoundedVec, transactional
 };
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
