@@ -46,7 +46,7 @@ mod benchmarking;
 pub mod weights;
 
 use frame_support::{
-	dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo},
+	dispatch::{DispatchResult, DispatchError},
 	traits::{Get, BalanceStatus, Hooks},
 	weights::Weight, BoundedVec, log, transactional
 };
@@ -54,8 +54,7 @@ use frame_support::{
 use scale_info::TypeInfo;
 use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash}, Permill, ArithmeticError::Overflow};
 
-use sp_std::{vec, vec::Vec, convert::{TryFrom, TryInto}};
-
+use sp_std::{vec::Vec, convert::{TryFrom, TryInto}};
 
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
