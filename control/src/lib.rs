@@ -492,11 +492,14 @@ pub mod pallet {
 			who: T::AccountId
 		) -> DispatchResultWithPostInfo {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
+			// why do we need so many parameters here?
+			// afaiu we need org and origin to determine any rights to execute
 			Self::ensure_membership_permissions(origin, who.clone(), org.prime.clone(), org.org_type.clone(), org.access_model.clone())?;
+
 			let current_member_state = MemberStates::<T>::get( org_id.clone(), who.clone() )?;
 			if current_member_state == MemberState::Pending {
-				let update_member_state = Self::do_update_member(org_id, who.clone(), member_state)?;
-				Ok(Some(T::WeightInfo::update_member_state(MemberState::Pending)).into())
+				let update_member_state = Self::do_update_member(org_id, who.clone(), MemberState::Active)?;
+				Ok(Some(T::WeightInfo::approve_member(MemberState::Active)).into())
 			}
 			Ok(())
 		}
