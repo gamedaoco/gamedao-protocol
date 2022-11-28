@@ -273,7 +273,7 @@ pub fn create_org(members: &Vec<AccountId>) -> (H256, AccountId) {
 	let init_balance = 100 * DOLLARS;
 	assert_ok!(Tokens::set_balance(RawOrigin::Root.into(), treasury_id, PROTOCOL_TOKEN_ID, init_balance, 0));
 	for x in members {
-		assert_ok!(Control::add_member(Origin::signed(ALICE), org_id, *x));
+		assert_ok!(Control::add_member(Origin::signed(x.clone()), org_id, *x));
 	}
 	(org_id, treasury_id)
 }
