@@ -3,6 +3,7 @@
 # ███░█▄▀█░▀▀░█░█▄█░█░▄▄█░█░█░▀▀░█░██░██
 # ███▄▄▄▄█▄██▄█▄███▄█▄▄▄█▄▄██▄██▄██▄▄███
 # ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+
 [package]
 name = "gamedao-flow"
 version = "1.2.0"
@@ -23,9 +24,9 @@ frame-system = { git = "https://github.com/paritytech/substrate", branch = "polk
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false, optional = true }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features=false }
 
-orml-traits = { path = "../../orml/traits", default-features = false }
-orml-tokens = { path = "../../orml/tokens", optional = true }
-orml-currencies = { path = "../../orml/currencies", optional = true }
+orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
 
 gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 gamedao-control = { package = "gamedao-control", path = "../control", optional = true }

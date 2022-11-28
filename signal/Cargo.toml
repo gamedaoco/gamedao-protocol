@@ -41,8 +41,8 @@ frame-support-test = { git = "https://github.com/paritytech/substrate.git", bran
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
 pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
 
-orml-tokens = { path = "../../orml/tokens", default-features = false }
-orml-currencies = { path = "../../orml/currencies", default-features = false }
+orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
 
 gamedao-control = { path = "../control", default-features = true }
 gamedao-flow = { path = "../flow", default-features = true }
