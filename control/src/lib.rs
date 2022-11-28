@@ -221,6 +221,13 @@ pub mod pallet {
 			who: T::AccountId,
 			block_number: T::BlockNumber,
 		},
+		/// A member state has been updated
+		MemberUpdated {
+			org_id: T::Hash,
+			who: T::AccountId,
+			state: T::MemberState,
+			block_number: T::BlockNumber,
+		},
 		OrgUpdated {
 			org_id: T::Hash,
 			prime_id: Option<T::AccountId>,
@@ -498,7 +505,7 @@ pub mod pallet {
 
 			let current_member_state = MemberStates::<T>::get( org_id.clone(), who.clone() )?;
 			if current_member_state == MemberState::Pending {
-				let update_member_state = Self::do_update_member(org_id, who.clone(), MemberState::Active)?;
+				let update = Self::do_update_member( org_id, who.clone(), MemberState::Active )?;
 				Ok(Some(T::WeightInfo::approve_member(MemberState::Active)).into())
 			}
 			Ok(())
@@ -603,12 +610,15 @@ impl<T: Config> Pallet<T> {
 		Ok(members_count)
 	}
 
-	fn do_update_member(org_id: T::Hash, who: T::AccountId, updated_member_state: MemberState
+	fn do_update_member(
+		org_id: T::Hash,
+		who: T::AccountId,
+		state: MemberState
 	) -> Result<u32, DispatchError> {
-		MemberStates::<T>::update(&org_id, &who, member_state);
+		MemberStates::<T>::update(&org_id, &who, &state);
 		let block_number = frame_system::Pallet::<T>::block_number();
-		Self::deposit_event(Event::MemberUpdated { org_id, who, block_number });
-		Ok(members_count)
+		Self::deposit_event(Event::MemberUpdated { org_id, who, state, block_number });
+		Ok(())
 	}
 
 	fn do_remove_member(org_id: T::Hash, who: T::AccountId) -> Result<u32, DispatchError> {
