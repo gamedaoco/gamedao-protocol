@@ -475,6 +475,32 @@ pub mod pallet {
 			Ok(Some(T::WeightInfo::add_member(members_count)).into())
 		}
 
+		/// Approve Membership Application
+		/// for users which apply to join and their state is `pending`
+		///
+		/// Parameters:
+		/// - `org_id`: Org id
+		/// - `who`: Account to be set `active`
+		///
+		/// Emits `MemberAdded` event when successful.
+		///
+		/// Weight: `O(log n)`
+		#[pallet::weight(T::WeightInfo::add_member(T::MaxMembers::get()))]
+		pub fn approve_member(
+			origin: OriginFor<T>,
+			org_id: T::Hash,
+			who: T::AccountId
+		) -> DispatchResultWithPostInfo {
+			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
+			Self::ensure_membership_permissions(origin, who.clone(), org.prime.clone(), org.org_type.clone(), org.access_model.clone())?;
+			let current_member_state = MemberStates::<T>::get( org_id.clone(), who.clone() )?;
+			if current_member_state == MemberState::Pending {
+				let update_member_state = Self::do_update_member(org_id, who.clone(), member_state)?;
+				Ok(Some(T::WeightInfo::update_member_state(MemberState::Pending)).into())
+			}
+			Ok(())
+		}
+
 		/// Remove member from Org
 		///
 		/// Parameters:
@@ -563,6 +589,7 @@ impl<T: Config> Pallet<T> {
 			.map_err(|_| Error::<T>::MembershipLimitReached)?;
 		let members_count = members.len() as u32;
 
+		// TODO: flatten Members and MemberStates
 		Members::<T>::insert(&org_id, &members);
 		OrgMemberCount::<T>::insert(&org_id, members_count);
 		MemberStates::<T>::insert(&org_id, &who, member_state);
@@ -570,6 +597,14 @@ impl<T: Config> Pallet<T> {
 		let block_number = frame_system::Pallet::<T>::block_number();
 		Self::deposit_event(Event::MemberAdded { org_id, who, block_number });
 
+		Ok(members_count)
+	}
+
+	fn do_update_member(org_id: T::Hash, who: T::AccountId, updated_member_state: MemberState
+	) -> Result<u32, DispatchError> {
+		MemberStates::<T>::update(&org_id, &who, member_state);
+		let block_number = frame_system::Pallet::<T>::block_number();
+		Self::deposit_event(Event::MemberUpdated { org_id, who, block_number });
 		Ok(members_count)
 	}
 
