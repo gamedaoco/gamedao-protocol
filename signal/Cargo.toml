@@ -29,9 +29,10 @@ sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false }
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false, optional = true }
-orml-traits = { path = "../../orml/traits", default-features = false }
-gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features=false }
+
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library.git", branch= "polkadot-v0.9.28", default-features = false }
+gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 
 [dev-dependencies]
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
@@ -41,8 +42,8 @@ frame-support-test = { git = "https://github.com/paritytech/substrate.git", bran
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
 pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
 
-orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
-orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
+orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library.git", branch= "polkadot-v0.9.28", default-features = false }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library.git", branch= "polkadot-v0.9.28", default-features = false }
 
 gamedao-control = { path = "../control", default-features = true }
 gamedao-flow = { path = "../flow", default-features = true }
