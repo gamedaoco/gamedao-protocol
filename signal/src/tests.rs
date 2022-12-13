@@ -18,8 +18,6 @@ use frame_support::{
 
 /// Test 0.0
 /// - Proposal validation Errors
-// SBP-M2 review: I would split into separate test cases
-// SBP-M2 review: Tests should have self-explanatory names
 #[test]
 fn signal_0_0() {
 	ExtBuilder::default().build().execute_with(|| {

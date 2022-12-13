@@ -104,6 +104,8 @@ pub mod pallet {
 		InvalidParam,
 		/// Overflow adding a value to the entity property
 		EntityPropertyOverflow,
+		/// No EntityProperty found for account.
+		EntityPropertyUnknown,
 		/// Overflow adding a value to the entity count
 		EntityCountOverflow,
 	}
@@ -126,7 +128,6 @@ pub mod pallet {
 			account_id: T::AccountId,
 			cid: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
-			// SBP-M2 review: create entity like a council instead of Sudo
 			ensure_root(origin)?;
 			ensure!(cid.len() > 0, Error::<T>::InvalidParam);
 			ensure!(!Entities::<T>::contains_key(account_id.clone()), Error::<T>::EntityExists);
@@ -149,16 +150,6 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// SBP-M2 review: #TODO comment
-		// TODO:
-		// mutation of values should be restricted
-		// certain roles are allowed to mutate values
-		// xp:    realm
-		// rep:   social
-		// trust: id
-		// all:   governance
-		//        sudo ( until its removal )
-
 		/// Modifies a property of the account.
 		///
 		/// Parameters:
@@ -176,15 +167,12 @@ pub mod pallet {
 			property_type: PropertyType,
 			value: u8
 		) -> DispatchResult {
-			// SBP-M2 review: another Sudo call...
 			ensure_root(origin)?;
 			ensure!(Entities::<T>::contains_key(account_id.clone()), Error::<T>::EntityUnknown);
 
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			let v = u64::from(value);
-			// SBP-M2 review: do not use `unwrap`
-			// Apply error handling
-			let current = Self::get_property(property_type.clone(), account_id.clone()).unwrap();
+			let current = Self::get_property(property_type.clone(), account_id.clone()).ok_or(Error::<T>::EntityPropertyUnknown)?;
 			let updated = EntityProperty::new(
 				current.get_value().checked_add(v).ok_or(Error::<T>::EntityPropertyOverflow)?,
 				current_block
