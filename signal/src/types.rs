@@ -40,14 +40,22 @@ impl Default for SlashingRule {
 #[derive(Encode, Decode, PartialEq, Clone, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum ProposalState {
-	Created = 0,      // waiting for start block
-	Active = 1,    // voting is active
-	Accepted = 2,  // voters did approve
-	Rejected = 3,  // voters did not approve
-	Expired = 4,   // ended without votes
+	/// Waiting for start block
+	Created = 0,
+	/// Voting is active
+	Active = 1,
+	/// Voters did approve
+	Accepted = 2,
+	/// Voters did not approve
+	Rejected = 3,
+	/// Ended without votes
+	Expired = 4,
+	/// Sudo abort
+	Aborted = 5,
+	/// Proposal's action applied
+	Finalized = 6,
+
 	// TODO: Aborted
-	Aborted = 5,   // sudo abort
-	Finalized = 6, // proposal's action applied
 }
 impl Default for ProposalState {
 	fn default() -> Self {

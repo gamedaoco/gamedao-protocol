@@ -68,7 +68,6 @@ pub fn create_campaign(
 // TODO: error ContributionInsufficient
 
 #[test]
-// SBP-M2 review: I would split into separate test cases
 fn flow_create_errors() {
 	new_test_ext().execute_with(|| {
 		let (org_id, _, _) = create_org_treasury();
