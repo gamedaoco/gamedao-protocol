@@ -335,7 +335,7 @@ pub mod pallet {
 					log::error!(target: "runtime::gamedao_flow", "Campaign unknown: '{:?}'", campaign_id);
 					continue
 				}
-				let campaign = maybe_campaign.unwrap();	// Should never panic, checked above.
+				let campaign = maybe_campaign.unwrap();
 				let maybe_treasury_id = T::Control::org_treasury_account(&campaign.org_id);
 				if maybe_treasury_id.is_none() {
 					log::error!(target: "runtime::gamedao_flow", "Treasury unknown for Org: '{:?}'", &campaign.org_id);

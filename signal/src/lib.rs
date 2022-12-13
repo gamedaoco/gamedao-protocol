@@ -229,12 +229,14 @@ pub mod pallet {
 		OrgInactive,
 		OutOfBounds,
 		ProposalExists,
+		ProposalInvalid,
 		ProposalNotActive,
 		ProposalUnknown,
 		TooManyProposals,
 		TreasuryBalanceLow,
 		TreasuryUnknown,
 		VoteLimitReached,
+		VotingInvalid,
 		WrongParameter,
 	}
 
@@ -376,7 +378,7 @@ pub mod pallet {
 					);
 				},
 				ProposalType::Withdrawal => {
-					ensure!(proposal.campaign_id.is_some(), Error::<T>::MissingParameter);
+					ensure!(proposal.campaign_id.is_some(), Error::<T>::ProposalInvalid);
 					ensure!(
 						T::Flow::is_campaign_contributor(&proposal.campaign_id.unwrap(), &who),
 						Error::<T>::AuthorizationError
@@ -419,14 +421,14 @@ pub mod pallet {
 				if proposal_state != ProposalState::Active {
 					continue;
 				};
-				let voting_option = ProposalVoting::<T>::get(&proposal_id);
+				let maybe_voting = ProposalVoting::<T>::get(&proposal_id);
 				let proposal_exists = ProposalOf::<T>::contains_key(&proposal_id);
 
-				if voting_option.is_none() || !proposal_exists {
-					log::error!(target: "runtime::gamedao_signal", "Proposal [{:?}] or voting [{:?}] is missing.", proposal_exists, voting_option.is_some());
+				if maybe_voting.is_none() || !proposal_exists {
+					log::error!(target: "runtime::gamedao_signal", "Proposal [{:?}] or voting [{:?}] is missing for proposal id: {:?}.", proposal_exists, maybe_voting.is_some(), proposal_id);
 					continue;	// should never happen
 				}
-				let voting =  voting_option.unwrap();
+				let voting =  maybe_voting.unwrap();
 
 				// Get the final state based on Voting participation, quorum, majority
 				proposal_state = Self::get_final_proposal_state(&voting);
@@ -560,7 +562,7 @@ pub mod pallet {
 			if let Some(final_proposal_state) = Self::try_finalize_proposal(&voting) {
 				Self::finalize_proposal(&proposal_id, final_proposal_state, &voting)?;
 			} else {
-				log::error!("No proposal state has been set for proposal_id: {:?}.", proposal_id);
+				log::error!("Proposal finalization failed for proposal_id: {:?}.", proposal_id);
 			}
 
 			Ok(voting.participating as u32)
@@ -682,20 +684,20 @@ pub mod pallet {
 		fn apply_proposal_actions(proposal: &Proposal<T>, proposal_state: ProposalState) -> Result<ProposalState, DispatchError> {
 			match proposal.proposal_type {
 				ProposalType::Withdrawal => {
-					let campaign_id = proposal.campaign_id.ok_or(Error::<T>::MissingParameter)?;
-					let amount = proposal.amount.ok_or(Error::<T>::MissingParameter)?;
-					let currency_id = proposal.currency_id.ok_or(Error::<T>::MissingParameter)?;
-					let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::MissingParameter)?;
+					let campaign_id = proposal.campaign_id.ok_or(Error::<T>::ProposalInvalid)?;
+					let amount = proposal.amount.ok_or(Error::<T>::ProposalInvalid)?;
+					let currency_id = proposal.currency_id.ok_or(Error::<T>::ProposalInvalid)?;
+					let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
 					T::Currency::unreserve(currency_id, &treasury, amount);
 					let used_balance = CampaignBalanceUsed::<T>::get(&campaign_id);
 					CampaignBalanceUsed::<T>::insert(&campaign_id, used_balance + amount);
 					return Ok(ProposalState::Finalized);
 				}
 				ProposalType::Spending => {
-					let amount = proposal.amount.ok_or(Error::<T>::MissingParameter)?;
-					let currency_id = proposal.currency_id.ok_or(Error::<T>::MissingParameter)?;
-					let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::MissingParameter)?;
-					let beneficiary = proposal.beneficiary.as_ref().ok_or(Error::<T>::MissingParameter)?;
+					let amount = proposal.amount.ok_or(Error::<T>::ProposalInvalid)?;
+					let currency_id = proposal.currency_id.ok_or(Error::<T>::ProposalInvalid)?;
+					let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
+					let beneficiary = proposal.beneficiary.as_ref().ok_or(Error::<T>::ProposalInvalid)?;
 					T::Currency::repatriate_reserved(
 						currency_id,
 						&treasury,
@@ -756,7 +758,7 @@ pub mod pallet {
 		}
 
 		fn finalize_proposal(proposal_id: &T::Hash, mut proposal_state: ProposalState, voting: &Voting<T>) -> DispatchResult {
-			let proposal = ProposalOf::<T>::get(&proposal_id).unwrap();  // should not fail, checked before
+			let proposal = ProposalOf::<T>::get(&proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
 
 			match proposal_state {
 				ProposalState::Accepted => {
@@ -764,8 +766,8 @@ pub mod pallet {
 				}
 				_ => {
 					if proposal.proposal_type == ProposalType::Spending {
-						let amount = proposal.amount.ok_or(Error::<T>::MissingParameter)?;
-						let currency_id = proposal.currency_id.ok_or(Error::<T>::MissingParameter)?;
+						let amount = proposal.amount.ok_or(Error::<T>::ProposalInvalid)?;
+						let currency_id = proposal.currency_id.ok_or(Error::<T>::ProposalInvalid)?;
 						let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
 						T::Currency::unreserve(
 							currency_id,
@@ -779,10 +781,10 @@ pub mod pallet {
 				let currency_id = T::ProtocolTokenId::get();
 				// TODO: chain -  &voting.ayes.iter().chain(&voting.nays.iter())
 				for (who, _, deposit) in &voting.ayes {
-					let _ = T::Currency::unreserve(currency_id, &who, deposit.ok_or(Error::<T>::MissingParameter)?);
+					let _ = T::Currency::unreserve(currency_id, &who, deposit.ok_or(Error::<T>::VotingInvalid)?);
 				};
 				for (who, _, deposit) in &voting.nays {
-					let _ = T::Currency::unreserve(currency_id, &who, deposit.ok_or(Error::<T>::MissingParameter)?);
+					let _ = T::Currency::unreserve(currency_id, &who, deposit.ok_or(Error::<T>::VotingInvalid)?);
 				};
 			}
 			// Refund or slash proposal's deposit based on proposal state and majority of rejection
