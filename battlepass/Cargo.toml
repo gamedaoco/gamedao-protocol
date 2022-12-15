@@ -1,0 +1,47 @@
+# ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+# ███░▄▄▄█░▄▄▀█░▄▀▄░█░▄▄█░▄▀█░▄▄▀█▀▄▄▀██
+# ███░█▄▀█░▀▀░█░█▄█░█░▄▄█░█░█░▀▀░█░██░██
+# ███▄▄▄▄█▄██▄█▄███▄█▄▄▄█▄▄██▄██▄██▄▄███
+# ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+[package]
+name = "gamedao-battlepass"
+version = "1.2.0"
+authors = ["zero.io","gamedao.co"]
+repository = "https://github.com/gamedaoco/gamedao-protocol"
+edition = "2018"
+license = "GPL-3.0-or-later"
+description = "BattlePass pallet provides functionality to create, manage and participate in battlepasses."
+
+[dependencies]
+serde = { version = "1.0.143", optional = true }
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
+scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
+sp-core = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
+sp-std = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
+sp-storage = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features=false }
+frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false, optional = true }
+
+[dev-dependencies]
+frame-support-test = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
+
+[features]
+default = ['std']
+runtime-benchmarks = ["frame-benchmarking"]
+std = [
+    "serde/std",
+    'codec/std',
+    "scale-info/std",
+
+	"frame-support/std",
+	"frame-system/std",
+	"frame-benchmarking/std",
+
+	"sp-core/std",
+	"sp-std/std",
+	"sp-runtime/std",
+]
+try-runtime = ["frame-support/try-runtime"]
