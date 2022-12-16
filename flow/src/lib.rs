@@ -53,8 +53,7 @@ use frame_support::{
 
 use scale_info::TypeInfo;
 use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash}, Permill, ArithmeticError::Overflow};
-
-use sp_std::{vec, vec::Vec, convert::{TryFrom, TryInto}};
+use sp_std::{vec::Vec, convert::{TryFrom, TryInto}};
 
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
@@ -622,6 +621,7 @@ impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for
 	#[cfg(feature = "runtime-benchmarks")]
 	fn create_campaign(caller: &T::AccountId, org_id: &T::Hash, start: T::BlockNumber) -> Result<T::Hash, &'static str> {
 		use sp_runtime::traits::Saturating;
+		use sp_std::vec;
 		let bounded_str: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
 		let now = frame_system::Pallet::<T>::block_number();
 		let index = CampaignCount::<T>::get();
