@@ -13,7 +13,6 @@ impl Default for BattlepassState {
 	}
 }
 
-
 #[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct Battlepass<Hash, AccountId, BlockNumber, BoundedString> {
 	pub creator: AccountId,
@@ -22,6 +21,14 @@ pub struct Battlepass<Hash, AccountId, BlockNumber, BoundedString> {
 	pub cid: BoundedString,
     pub season: u32,
     pub price: u16,				// TODO: introduce currency
+	/// Collection that will store all claimed Battlepass-NFTs
+	pub collection_id: u32,
 	pub created: BlockNumber,
 	pub mutated: BlockNumber,
+}
+
+#[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub struct BattlepassNft {
+	pub collection_id: u32,
+	pub nft_id: u32,
 }

@@ -18,14 +18,20 @@ use frame_system::pallet_prelude::*;
 use sp_std::convert::TryInto;
 use sp_runtime::traits::Hash;
 use gamedao_traits::ControlTrait;
-// use pallet_rmrk_core::*;
-// use rmrk_traits::{primitives::*, Collection, Nft};
-// use rmrk_traits::{primitives::*, Collection};
+use rmrk_traits::{primitives::PartId, Collection, Nft, ResourceInfoMin};
 
 pub mod types;
 pub use types::*;
 
-type String<T> = BoundedVec<u8, <T as pallet::Config>::StringLimit>;
+pub type String<T> = BoundedVec<u8, <T as Config>::StringLimit>;
+pub type Symbol<T> = BoundedVec<u8, <T as Config>::SymbolLimit>;
+pub type Resource<T> = BoundedVec<
+	ResourceInfoMin<
+		BoundedVec<u8, <T as Config>::StringLimit>,
+		BoundedVec<PartId, <T as Config>::PartsLimit>,
+	>,
+	<T as Config>::MaxResourcesOnMint,
+>;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -36,22 +42,29 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_rmrk_core::Config {
 		type Event: From<Event<Self>>
 			+ IsType<<Self as frame_system::Config>::Event>
 			+ Into<<Self as frame_system::Config>::Event>;
 
 		type Control: ControlTrait<Self::AccountId, Self::Hash>;
 
-		// type Rmrk: rmrk_traits::Collection<String<Self>, Self::BoundedSymbol, Self::AccountId>;
+		type Rmrk: Collection<String<Self>, Symbol<Self>, Self::AccountId>
+			+ Nft<Self::AccountId, String<Self>, Resource<Self>>;
 
-		/// The maximum length of a name or cid stored on-chain.
+		/// The maximum length of a name, cid or metadata strings stored on-chain.
 		#[pallet::constant]
 		type StringLimit: Get<u32>;
 
-		/// The maximum number of battlepasses in organization.
+		/// The maximum length of a Collection symbol.
 		#[pallet::constant]
-		type MaxBattlepassesPerOrg: Get<u32>;
+		type SymbolLimit: Get<u32>;
+
+		/// The maximum number of parts each resource may have
+		#[pallet::constant]
+		type PartsLimit: Get<u32>;
+
+		type MaxResourcesOnMint: Get<u32>;
 	}
 
 	#[pallet::event]
@@ -61,17 +74,14 @@ pub mod pallet {
 		BattlepassCreated {
 			org_id: T::Hash,
 			battlepass_id: T::Hash,
-			season: u32,
-			block_number: T::BlockNumber
+			season: u32
 		},
 		
 		/// BattlePass claimed
 		BattlepassClaimed {
 			claimer: T::AccountId,
 			org_id: T::Hash,
-			battlepass_id: T::Hash,
-			nft_id: T::Hash,
-			block_number: T::BlockNumber
+			battlepass_id: T::Hash
 		},
 
 		/// BattlePass closed
@@ -85,16 +95,13 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		AuthorizationError,
-		MissingParameter,
-		InvalidParameter,
-		OrgHasActiveBattlepass,
 		OrgPrimeUnknown,
 		OrgUnknown,
 		BattlepassExists,
 		BattlepassClaimed,
 		BattlepassUnknown,
-		BattlepassLimitReached,
 		NotMember,
+		CollectionUnknown,
 	  }
 
 	/// Battlepass by its id.
@@ -125,15 +132,15 @@ pub mod pallet {
 	#[pallet::getter(fn get_active_battlepass)]
 	pub type ActiveBattlepassByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Hash, OptionQuery>;
 
-	/// Claimed Battlepass by user.
+	/// Claimed Battlepass-NFT by user account.
 	///
-	/// ClaimedBattlepass: map (AccountId, Hash) => Hash
+	/// ClaimedBattlepass: map (AccountId, Hash) => BattlepassNft
 	#[pallet::storage]
 	#[pallet::getter(fn get_claimed_battlepass)]
 	pub(super) type ClaimedBattlepass<T: Config> = StorageDoubleMap<_,
 		Blake2_128Concat, T::AccountId,
 		Blake2_128Concat, T::Hash,
-		T::Hash,
+		BattlepassNft,
 		OptionQuery
 	>;
 
@@ -152,34 +159,36 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&org_id), Error::<T>::OrgUnknown);
 			// check if origin is an Org Prime
 			let prime = T::Control::org_prime_account(&org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
-			ensure!(creator == prime, Error::<T>::AuthorizationError);  // TODO: Add Root temporaryly
+			ensure!(creator == prime, Error::<T>::AuthorizationError);  												// TODO: Add Root temporaryly
 			// check is there is no active battlepass for the Org
 			ensure!(!ActiveBattlepassByOrg::<T>::contains_key(&org_id), Error::<T>::BattlepassExists);
 			let new_season = Self::get_battlepass_count(org_id) + 1;
-			// check if battlepass count reached the limit for the Org
-			ensure!(new_season <= T::MaxBattlepassesPerOrg::get(), Error::<T>::BattlepassLimitReached);
 			let now = <frame_system::Pallet<T>>::block_number();
+
+			// Create collection 
+			let metadata = BoundedVec::truncate_from(b"meta".to_vec());		// TODO: what should be here?
+			let symbol = BoundedVec::truncate_from(b"symbol".to_vec());		// TODO: what should be here?
+			let collection_id = T::Rmrk::collection_create(creator.clone(), metadata, None, symbol)?;
+
+			// Create Battlepass
 			let battlepass: Battlepass<T::Hash, T::AccountId, T::BlockNumber, String<T>> = types::Battlepass {
 				creator, 
 				org_id,
 				name,
 				cid,
 				season: new_season,
+				collection_id,
 				price,
 				created: now.clone(), mutated: now
 			};
 			let battlepass_id = <T as frame_system::Config>::Hashing::hash_of(&battlepass);
 
 			Battlepasses::<T>::insert(&battlepass_id, battlepass);
-			BattlepassStates::<T>::insert(&battlepass_id, types::BattlepassState::Active); // TODO: change to Draft
+			BattlepassStates::<T>::insert(&battlepass_id, types::BattlepassState::Active); 								// TODO: change to Draft
 			ActiveBattlepassByOrg::<T>::insert(org_id, battlepass_id);
 			BattlepassCount::<T>::insert(org_id, new_season);
 
-			// <pallet_rmrk_core::Pallet<T>>::nfts(1, 2);
-			// pallet_rmrk_core::Call::mint_nft { owner: (), nft_id: (), collection_id: (), royalty_recipient: (), royalty: (), metadata: (), transferable: (), resources: () };
-			// let col = pallet_rmrk_core::Collections::<T>::create_collection(origin, 0x87241, 10, 0x9873);
-
-			Self::deposit_event(Event::BattlepassCreated { org_id, battlepass_id, season: new_season, block_number: now });
+			Self::deposit_event(Event::BattlepassCreated { org_id, battlepass_id, season: new_season });
 
 			Ok(())
 		}
@@ -196,17 +205,28 @@ pub mod pallet {
 			ensure!(T::Control::is_org_member_active(&org_id, &claimer), Error::<T>::NotMember);
 			// check if Org has active battlepass
 			let battlepass_id = Self::get_active_battlepass(org_id).ok_or(Error::<T>::BattlepassUnknown)?;
-			let now = <frame_system::Pallet<T>>::block_number();
 			// check if Battlepass already claimed
 			ensure!(!ClaimedBattlepass::<T>::contains_key(claimer.clone(), battlepass_id), Error::<T>::BattlepassClaimed);
 
+			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
+			let collection = <pallet_rmrk_core::Pallet<T>>::collections(battlepass.collection_id).ok_or(Error::<T>::CollectionUnknown)?;
+
 			// Create NFT
-			let nft_id = <T as frame_system::Config>::Hashing::hash_of(&claimer);
+			let (collection_id, nft_id) = T::Rmrk::nft_mint(
+				claimer.clone(), 									// sender
+				claimer.clone(), 									// owner
+				collection.nfts_count, 								// nft_id
+				battlepass.collection_id, 							// collection_id
+				None, 												// royalty_recipient
+				None, 												// royalty_amount
+				BoundedVec::truncate_from(b"NFT meta".to_vec()), 	// metadata 			TODO: what should be here?
+				false, 												// transferable
+				None												// resources
+			)?;
 
-			
-			ClaimedBattlepass::<T>::insert(&claimer, battlepass_id, nft_id);
+			ClaimedBattlepass::<T>::insert(&claimer, battlepass_id, BattlepassNft{collection_id, nft_id});
 
-			Self::deposit_event(Event::BattlepassClaimed { claimer, org_id, battlepass_id, nft_id, block_number: now });
+			Self::deposit_event(Event::BattlepassClaimed { claimer, org_id, battlepass_id });
 
 			Ok(())
 		}
