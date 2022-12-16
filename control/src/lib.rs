@@ -225,7 +225,7 @@ pub mod pallet {
 		MemberUpdated {
 			org_id: T::Hash,
 			who: T::AccountId,
-			state: T::MemberState,
+			state: MemberState,
 			block_number: T::BlockNumber,
 		},
 		OrgUpdated {
@@ -482,31 +482,29 @@ pub mod pallet {
 			Ok(Some(T::WeightInfo::add_member(members_count)).into())
 		}
 
-		/// Approve Membership Application
-		/// for users which apply to join and their state is `pending`
+		/// Update member state in the organization
 		///
 		/// Parameters:
 		/// - `org_id`: Org id
-		/// - `who`: Account to be set `active`
+		/// - `who`: Account to change state for
+		/// - `state`: new state value
 		///
-		/// Emits `MemberAdded` event when successful.
+		/// Emits `MemberUpdated` event when successful.
 		///
 		/// Weight: `O(log n)`
-		#[pallet::weight(T::WeightInfo::add_member(T::MaxMembers::get()))]
-		pub fn approve_member(
+		#[pallet::weight(T::WeightInfo::update_member_state())]
+		pub fn update_member_state(
 			origin: OriginFor<T>,
 			org_id: T::Hash,
-			who: T::AccountId
-		) -> DispatchResultWithPostInfo {
+			who: T::AccountId,
+			state: MemberState
+		) -> DispatchResult {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
-			// why do we need so many parameters here?
-			// afaiu we need org and origin to determine any rights to execute
 			Self::ensure_membership_permissions(origin, who.clone(), org.prime.clone(), org.org_type.clone(), org.access_model.clone())?;
 
-			let current_member_state = MemberStates::<T>::get( org_id.clone(), who.clone() )?;
+			let current_member_state = MemberStates::<T>::get(org_id.clone(), who.clone());
 			if current_member_state == MemberState::Pending {
-				let update = Self::do_update_member( org_id, who.clone(), MemberState::Active )?;
-				Ok(Some(T::WeightInfo::approve_member(MemberState::Active)).into())
+				Self::do_update_member(org_id, who.clone(), state)?;
 			}
 			Ok(())
 		}
@@ -614,8 +612,8 @@ impl<T: Config> Pallet<T> {
 		org_id: T::Hash,
 		who: T::AccountId,
 		state: MemberState
-	) -> Result<u32, DispatchError> {
-		MemberStates::<T>::update(&org_id, &who, &state);
+	) -> Result<(), DispatchError> {
+		MemberStates::<T>::set(&org_id, &who, state.clone());
 		let block_number = frame_system::Pallet::<T>::block_number();
 		Self::deposit_event(Event::MemberUpdated { org_id, who, state, block_number });
 		Ok(())

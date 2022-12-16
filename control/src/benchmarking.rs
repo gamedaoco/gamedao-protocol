@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use crate::*;
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, whitelisted_caller};
+use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_system::RawOrigin;
 use sp_runtime::{DispatchError, traits::SaturatedConversion};
 use sp_std::vec;
@@ -88,7 +88,7 @@ benchmarks! {
 	}
 
 	add_member {
-		let r in 1 .. T::MaxMembers::get();
+		let r in 1 .. T::MaxMembers::get()-1;
 
 		// Prepare org creator and members
 		let creator: T::AccountId = whitelisted_caller();
@@ -111,8 +111,24 @@ benchmarks! {
 		assert!(Members::<T>::get(&org_id).contains(&member));
 	}
 
+	update_member_state {
+		// Prepare org creator and members
+		let creator: T::AccountId = whitelisted_caller();
+		fund_account::<T>(&creator)?;
+		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(creator.clone()).unwrap();
+		let member: T::AccountId = account("member", 0, SEED);
+		fund_account::<T>(&member)?;
+
+		// Add member to org
+		Pallet::<T>::fill_org_with_members(&org_id, vec![member.clone()])?;
+	}: _(RawOrigin::Signed(creator), org_id, member.clone(), MemberState::Active)
+
+	verify {
+		assert!(MemberStates::<T>::get(org_id.clone(), member.clone()) == MemberState::Active);
+	}
+
 	remove_member {
-		let r in 1 .. T::MaxMembers::get();
+		let r in 1 .. T::MaxMembers::get()-1;
 
 		// Prepare org creator and members
 		let creator: T::AccountId = whitelisted_caller();
