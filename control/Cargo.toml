@@ -32,7 +32,7 @@ sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkado
 
 pallet-balances = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
 
-orml-traits = { git = 'https://github.com/open-web3-stack/open-runtime-module-library', branch= 'polkadot-v0.9.28', default-features = false }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
 gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 
 # tangram = { package = "module-tangram", path = "../../zero/tangram", default-features = false }
@@ -42,8 +42,8 @@ sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkad
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
 frame-support-test = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
-orml-tokens = { git = 'https://github.com/open-web3-stack/open-runtime-module-library', branch= 'polkadot-v0.9.28', default-features = false }
-orml-currencies = { git = 'https://github.com/open-web3-stack/open-runtime-module-library', branch= 'polkadot-v0.9.28', default-features = false }
+orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
 
 [features]
 default = ["std"]

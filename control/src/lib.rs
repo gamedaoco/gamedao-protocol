@@ -221,6 +221,13 @@ pub mod pallet {
 			who: T::AccountId,
 			block_number: T::BlockNumber,
 		},
+		/// A member state has been updated
+		MemberUpdated {
+			org_id: T::Hash,
+			who: T::AccountId,
+			state: MemberState,
+			block_number: T::BlockNumber,
+		},
 		OrgUpdated {
 			org_id: T::Hash,
 			prime_id: Option<T::AccountId>,
@@ -475,6 +482,33 @@ pub mod pallet {
 			Ok(Some(T::WeightInfo::add_member(members_count)).into())
 		}
 
+		/// Update member state in the organization
+		///
+		/// Parameters:
+		/// - `org_id`: Org id
+		/// - `who`: Account to change state for
+		/// - `state`: new state value
+		///
+		/// Emits `MemberUpdated` event when successful.
+		///
+		/// Weight: `O(log n)`
+		#[pallet::weight(T::WeightInfo::update_member_state())]
+		pub fn update_member_state(
+			origin: OriginFor<T>,
+			org_id: T::Hash,
+			who: T::AccountId,
+			state: MemberState
+		) -> DispatchResult {
+			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
+			Self::ensure_membership_permissions(origin, who.clone(), org.prime.clone(), org.org_type.clone(), org.access_model.clone())?;
+
+			let current_member_state = MemberStates::<T>::get(org_id.clone(), who.clone());
+			if current_member_state == MemberState::Pending {
+				Self::do_update_member(org_id, who.clone(), state)?;
+			}
+			Ok(())
+		}
+
 		/// Remove member from Org
 		///
 		/// Parameters:
@@ -563,6 +597,7 @@ impl<T: Config> Pallet<T> {
 			.map_err(|_| Error::<T>::MembershipLimitReached)?;
 		let members_count = members.len() as u32;
 
+		// TODO: flatten Members and MemberStates
 		Members::<T>::insert(&org_id, &members);
 		OrgMemberCount::<T>::insert(&org_id, members_count);
 		MemberStates::<T>::insert(&org_id, &who, member_state);
@@ -571,6 +606,17 @@ impl<T: Config> Pallet<T> {
 		Self::deposit_event(Event::MemberAdded { org_id, who, block_number });
 
 		Ok(members_count)
+	}
+
+	fn do_update_member(
+		org_id: T::Hash,
+		who: T::AccountId,
+		state: MemberState
+	) -> Result<(), DispatchError> {
+		MemberStates::<T>::set(&org_id, &who, state.clone());
+		let block_number = frame_system::Pallet::<T>::block_number();
+		Self::deposit_event(Event::MemberUpdated { org_id, who, state, block_number });
+		Ok(())
 	}
 
 	fn do_remove_member(org_id: T::Hash, who: T::AccountId) -> Result<u32, DispatchError> {
