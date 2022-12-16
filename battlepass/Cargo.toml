@@ -25,6 +25,12 @@ frame-support = { git = "https://github.com/paritytech/substrate", branch = "pol
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false }
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false, optional = true }
 
+pallet-rmrk-core = { git = "https://github.com/rmrk-team/rmrk-substrate", default-features = false, branch = "polkadot-v0.9.28" }
+rmrk-traits = { git = "https://github.com/rmrk-team/rmrk-substrate", default-features = false, branch = "polkadot-v0.9.28" }
+
+gamedao-control = { package = "gamedao-control", path = "../control", optional = true }
+gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
+
 [dev-dependencies]
 frame-support-test = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
 
@@ -43,5 +49,11 @@ std = [
 	"sp-core/std",
 	"sp-std/std",
 	"sp-runtime/std",
+
+	"pallet-rmrk-core/std",
+	"rmrk-traits/std",
+
+	"gamedao-control/std",
+	"gamedao-traits/std",
 ]
 try-runtime = ["frame-support/try-runtime"]
