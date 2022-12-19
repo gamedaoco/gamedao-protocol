@@ -24,6 +24,7 @@ use codec::Codec;
 use frame_support::{dispatch::{DispatchResult, DispatchError, RawOrigin},
 	ensure, PalletId, traits::Get, BoundedVec, transactional, log
 };
+use frame_system::ensure_root;
 use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use scale_info::TypeInfo;
@@ -470,7 +471,15 @@ pub mod pallet {
 			who: T::AccountId
 		) -> DispatchResultWithPostInfo {
 			let org = Orgs::<T>::get(&org_id).ok_or(Error::<T>::OrganizationUnknown)?;
-			Self::ensure_membership_permissions(origin, who.clone(), org.prime.clone(), org.org_type.clone(), org.access_model.clone())?;
+			if let Ok(sender) = ensure_signed(origin.clone()) {
+				ensure!(
+					sender == who || (org.access_model == AccessModel::Prime && sender == org.prime.clone()),
+					BadOrigin
+				);
+			}
+			else {
+				ensure_root(origin)?;
+			}
 			let member_state = match org.access_model {
 				AccessModel::Open => MemberState::Active,
 				_ => MemberState::Pending,
