@@ -215,6 +215,11 @@ fn control_add_remove_member_access_prime() {
 		assert_ok!(Control::remove_member(Origin::root(), org_id, CHARLIE));
 		assert!(!Members::<Test>::get(org_id).contains(&CHARLIE));
 
+		// Add member signed
+		assert_ok!(Control::add_member(Origin::signed(CHARLIE), org_id, CHARLIE));
+		assert!(Members::<Test>::get(org_id).contains(&CHARLIE));
+		assert_eq!(MemberStates::<Test>::get(org_id, CHARLIE), MemberState::Pending);
+
 		// TODO: since membership_fee logic is unclear for the moment, there is no tests for it yet
 	})
 }
