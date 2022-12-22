@@ -18,7 +18,7 @@ use frame_system::pallet_prelude::*;
 use sp_std::convert::TryInto;
 use sp_runtime::traits::Hash;
 use gamedao_traits::ControlTrait;
-use rmrk_traits::{primitives::PartId, Collection, Nft, ResourceInfoMin};
+use rmrk_traits::{primitives::{PartId, NftId}, Collection, Nft, ResourceInfoMin};
 
 pub mod types;
 pub use types::*;
@@ -36,7 +36,7 @@ pub type Resource<T> = BoundedVec<
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-  
+	
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
@@ -79,14 +79,23 @@ pub mod pallet {
 		
 		/// BattlePass claimed
 		BattlepassClaimed {
-			claimer: T::AccountId,
+			by_who: T::AccountId,
+			for_who: T::AccountId,
+			org_id: T::Hash,
+			battlepass_id: T::Hash,
+			nft_id: NftId
+		},
+
+		/// BattlePass activated
+		BattlepassActivated {
+			by_who: T::AccountId,
 			org_id: T::Hash,
 			battlepass_id: T::Hash
 		},
 
-		/// BattlePass closed
-		BattlepassClosed {
-			closed_by: T::AccountId,
+		/// BattlePass ended
+		BattlepassEnded {
+			by_who: T::AccountId,
 			org_id: T::Hash,
 			battlepass_id: T::Hash
 		},
@@ -96,10 +105,14 @@ pub mod pallet {
 	pub enum Error<T> {
 		AuthorizationError,
 		OrgPrimeUnknown,
-		OrgUnknown,
+		OrgUnknownOrInactive,
 		BattlepassExists,
 		BattlepassClaimed,
+		BattlepassInactive,
 		BattlepassUnknown,
+		BattlepassStateUnknown,
+		BattlepassStateWrong,
+		BattlepassInfoUnknown,
 		NotMember,
 		CollectionUnknown,
 	  }
@@ -109,7 +122,7 @@ pub mod pallet {
 	/// Battlepasses: map Hash => Battlepass
 	#[pallet::storage]
 	#[pallet::getter(fn get_battlepass)]
-	pub(super) type Battlepasses<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Battlepass<T::Hash, T::AccountId, T::BlockNumber, String<T>>, OptionQuery>;
+	pub(super) type Battlepasses<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Battlepass<T::Hash, T::AccountId, String<T>>, OptionQuery>;
 
 	/// Battlepass state.
 	///
@@ -118,29 +131,22 @@ pub mod pallet {
 	#[pallet::getter(fn get_battlepass_state)]
 	pub type BattlepassStates<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, BattlepassState, OptionQuery>;
 
-	/// Total number of battlepasses per organization.
+	/// Battlepass info by organization.
 	///
-	/// BattlepassCount: map Hash => u32
+	/// BattlepassInfoByOrg: map Hash => BattlepassInfo
 	#[pallet::storage]
-	#[pallet::getter(fn get_battlepass_count)]
-	pub type BattlepassCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u32, ValueQuery>;
+	// #[pallet::getter(fn get_battlepass_info)]
+	pub type BattlepassInfoByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, BattlepassInfo<T::Hash>, OptionQuery>;
 
-	/// Current active battlepass in organization.
+	/// Claimed Battlepass-NFT by user and battlepass.
 	///
-	/// ActiveBattlepassByOrg: map Hash => Hash
-	#[pallet::storage]
-	#[pallet::getter(fn get_active_battlepass)]
-	pub type ActiveBattlepassByOrg<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Hash, OptionQuery>;
-
-	/// Claimed Battlepass-NFT by user account.
-	///
-	/// ClaimedBattlepass: map (AccountId, Hash) => BattlepassNft
+	/// ClaimedBattlepasses: map (Hash, AccountId) => NftId
 	#[pallet::storage]
 	#[pallet::getter(fn get_claimed_battlepass)]
-	pub(super) type ClaimedBattlepass<T: Config> = StorageDoubleMap<_,
-		Blake2_128Concat, T::AccountId,
+	pub(super) type ClaimedBattlepasses<T: Config> = StorageDoubleMap<_,
 		Blake2_128Concat, T::Hash,
-		BattlepassNft,
+		Blake2_128Concat, T::AccountId,
+		NftId,
 		OptionQuery
 	>;
 
@@ -155,38 +161,19 @@ pub mod pallet {
 			price: u16,
 		) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
-			// check if Org exists
-			ensure!(T::Control::is_org_active(&org_id), Error::<T>::OrgUnknown);
+			// check if Org is active
+			ensure!(T::Control::is_org_active(&org_id), Error::<T>::OrgUnknownOrInactive);
 			// check if origin is an Org Prime
 			let prime = T::Control::org_prime_account(&org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
-			ensure!(creator == prime, Error::<T>::AuthorizationError);  												// TODO: Add Root temporaryly
-			// check is there is no active battlepass for the Org
-			ensure!(!ActiveBattlepassByOrg::<T>::contains_key(&org_id), Error::<T>::BattlepassExists);
-			let new_season = Self::get_battlepass_count(org_id) + 1;
-			let now = <frame_system::Pallet<T>>::block_number();
+			ensure!(creator == prime, Error::<T>::AuthorizationError);  												// TODO: Add Bot account
+			let (battlepass_count, maybe_active) = Self::get_battlepass_info(org_id);
+			// check if there is no active battlepass for the Org
+			ensure!(maybe_active.is_none(), Error::<T>::BattlepassExists);
+			let new_season = battlepass_count + 1;
 
-			// Create collection 
-			let metadata = BoundedVec::truncate_from(b"meta".to_vec());		// TODO: what should be here?
-			let symbol = BoundedVec::truncate_from(b"symbol".to_vec());		// TODO: what should be here?
-			let collection_id = T::Rmrk::collection_create(creator.clone(), metadata, None, symbol)?;
-
-			// Create Battlepass
-			let battlepass: Battlepass<T::Hash, T::AccountId, T::BlockNumber, String<T>> = types::Battlepass {
-				creator, 
-				org_id,
-				name,
-				cid,
-				season: new_season,
-				collection_id,
-				price,
-				created: now.clone(), mutated: now
-			};
-			let battlepass_id = <T as frame_system::Config>::Hashing::hash_of(&battlepass);
-
-			Battlepasses::<T>::insert(&battlepass_id, battlepass);
-			BattlepassStates::<T>::insert(&battlepass_id, types::BattlepassState::Active); 								// TODO: change to Draft
-			ActiveBattlepassByOrg::<T>::insert(org_id, battlepass_id);
-			BattlepassCount::<T>::insert(org_id, new_season);
+			// Create a collection to store Battlepass NFTs
+			let collection_id = Self::create_collection(creator.clone())?;
+			let battlepass_id = Self::do_create_battlepass(creator, org_id, name, cid, collection_id, price, new_season)?;
 
 			Self::deposit_event(Event::BattlepassCreated { org_id, battlepass_id, season: new_season });
 
@@ -196,62 +183,159 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn claim_battlepass(
 			origin: OriginFor<T>,
-			org_id: T::Hash,
+			battlepass_id: T::Hash,
+			for_who: T::AccountId,
 		) -> DispatchResult {
-			let claimer = ensure_signed(origin)?;
-			// check if Org exists
-			ensure!(T::Control::is_org_active(&org_id), Error::<T>::OrgUnknown);
-			// check if user is a member of organization
-			ensure!(T::Control::is_org_member_active(&org_id, &claimer), Error::<T>::NotMember);
-			// check if Org has active battlepass
-			let battlepass_id = Self::get_active_battlepass(org_id).ok_or(Error::<T>::BattlepassUnknown)?;
-			// check if Battlepass already claimed
-			ensure!(!ClaimedBattlepass::<T>::contains_key(claimer.clone(), battlepass_id), Error::<T>::BattlepassClaimed);
-
+			let by_who = ensure_signed(origin)?;
+			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
-			let collection = <pallet_rmrk_core::Pallet<T>>::collections(battlepass.collection_id).ok_or(Error::<T>::CollectionUnknown)?;
+			// check if Battlepass in ACTIVE state
+			ensure!(Self::check_battlepass_state(battlepass_id, BattlepassState::ACTIVE)?, Error::<T>::BattlepassInactive);
+			// check if Org is active
+			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
+			// check if origin is an Org Prime
+			let prime = T::Control::org_prime_account(&battlepass.org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
+			ensure!(by_who == prime, Error::<T>::AuthorizationError);  // TODO: Add Root temporarily
 
-			// Create NFT
-			let (collection_id, nft_id) = T::Rmrk::nft_mint(
-				claimer.clone(), 									// sender
-				claimer.clone(), 									// owner
-				collection.nfts_count, 								// nft_id
-				battlepass.collection_id, 							// collection_id
-				None, 												// royalty_recipient
-				None, 												// royalty_amount
-				BoundedVec::truncate_from(b"NFT meta".to_vec()), 	// metadata 			TODO: what should be here?
-				false, 												// transferable
-				None												// resources
-			)?;
+			// check if user is a member of organization
+			ensure!(T::Control::is_org_member_active(&battlepass.org_id, &for_who), Error::<T>::NotMember);
+			// check if Battlepass already claimed
+			ensure!(!ClaimedBattlepasses::<T>::contains_key(battlepass_id, for_who.clone()), Error::<T>::BattlepassClaimed);
 
-			ClaimedBattlepass::<T>::insert(&claimer, battlepass_id, BattlepassNft{collection_id, nft_id});
+			let collection = <pallet_rmrk_core::Pallet<T>>::collections(battlepass.collection_id).ok_or(Error::<T>::CollectionUnknown)?;	
+			let new_nft_id = collection.nfts_count;
 
-			Self::deposit_event(Event::BattlepassClaimed { claimer, org_id, battlepass_id });
+			Self::do_claim_battlepass(by_who.clone(), for_who.clone(), battlepass_id, new_nft_id, battlepass.collection_id)?;
+
+			Self::deposit_event(Event::BattlepassClaimed { by_who, for_who, org_id: battlepass.org_id, battlepass_id, nft_id: new_nft_id });
 
 			Ok(())
 		}
 
 		#[pallet::weight(0)]
-		pub fn close_battlepass(
+		pub fn activate_battlepass(
 			origin: OriginFor<T>,
-			org_id: T::Hash,
+			battlepass_id: T::Hash,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			// check if Org exists
-			ensure!(T::Control::is_org_active(&org_id), Error::<T>::OrgUnknown);
+			// check if Battlepass exists
+			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
+			// check if Battlepass in DRAFT state
+			ensure!(Self::check_battlepass_state(battlepass_id, BattlepassState::DRAFT)?, Error::<T>::BattlepassStateWrong);
+			// check if Org is active
+			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check if origin is an Org Prime
-			let prime = T::Control::org_prime_account(&org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
-			ensure!(sender == prime, Error::<T>::AuthorizationError);  // TODO: Add Root temporaryly
-			// check if Org has active battlepass
-			let battlepass_id = Self::get_active_battlepass(org_id).ok_or(Error::<T>::BattlepassUnknown)?;
+			let prime = T::Control::org_prime_account(&battlepass.org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
+			ensure!(sender == prime, Error::<T>::AuthorizationError);  // TODO: Add Root temporarily
 
-			BattlepassStates::<T>::insert(&battlepass_id, types::BattlepassState::Closed); 
-			ActiveBattlepassByOrg::<T>::remove(org_id);
+			Self::change_battlepass_state(battlepass.org_id, battlepass_id, types::BattlepassState::ACTIVE)?;
 
-			Self::deposit_event(Event::BattlepassClosed { closed_by: sender, org_id, battlepass_id });
+			Self::deposit_event(Event::BattlepassActivated { by_who: sender, org_id: battlepass.org_id, battlepass_id });
 
 			Ok(())
 		}
 
+		#[pallet::weight(0)]
+		pub fn conclude_battlepass(
+			origin: OriginFor<T>,
+			battlepass_id: T::Hash,
+		) -> DispatchResult {
+			let sender = ensure_signed(origin)?;
+			// check if Battlepass exists
+			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
+			// check if Battlepass in ACTIVE state
+			ensure!(Self::check_battlepass_state(battlepass_id, BattlepassState::ACTIVE)?, Error::<T>::BattlepassStateWrong);
+			// check if Org is active - no need to conclude battlepass
+			// check if origin is an Org Prime
+			let prime = T::Control::org_prime_account(&battlepass.org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
+			ensure!(sender == prime, Error::<T>::AuthorizationError);  // TODO: Add Bot account
+
+			Self::change_battlepass_state(battlepass.org_id, battlepass_id, types::BattlepassState::ENDED)?;
+
+			Self::deposit_event(Event::BattlepassEnded { by_who: sender, org_id: battlepass.org_id, battlepass_id });
+
+			Ok(())
+		}
+	}
+}
+
+impl<T: Config> Pallet<T> {
+	fn create_collection(owner: T::AccountId) -> Result<u32, DispatchError> {
+		let metadata = BoundedVec::truncate_from(b"meta".to_vec());		// TODO: what should be here?
+		let symbol = BoundedVec::truncate_from(b"symbol".to_vec());		// TODO: what should be here?
+		let collection_id = T::Rmrk::collection_create(owner, metadata, None, symbol)?;
+
+		Ok(collection_id)
+	}
+
+	fn check_battlepass_state(battlepass_id: T::Hash, state: types::BattlepassState) -> Result<bool, DispatchError> {
+		let current_state = Self::get_battlepass_state(battlepass_id).ok_or(Error::<T>::BattlepassStateUnknown)?;
+		
+		Ok(current_state == state)
+	}
+
+	fn get_battlepass_info(org_id: T::Hash) -> (u32, Option<T::Hash>) {
+		if let Some(bp_info) = BattlepassInfoByOrg::<T>::get(&org_id) {
+			return (bp_info.count, bp_info.active);
+		} else {
+			return (0, None);
+		}
+	}
+	
+	fn do_create_battlepass(creator: T::AccountId, org_id: T::Hash, name: String<T>, cid: String<T>, collection_id: u32, price: u16, new_season:u32) -> Result<T::Hash, DispatchError> {
+		let battlepass: Battlepass<T::Hash, T::AccountId, String<T>> = types::Battlepass {
+			creator, 
+			org_id,
+			name,
+			cid,
+			season: new_season,
+			collection_id,
+			price
+		};
+		let battlepass_id = <T as frame_system::Config>::Hashing::hash_of(&battlepass);
+
+		Battlepasses::<T>::insert(&battlepass_id, battlepass);
+		BattlepassStates::<T>::insert(&battlepass_id, types::BattlepassState::DRAFT);
+		BattlepassInfoByOrg::<T>::insert(org_id, BattlepassInfo{count: new_season, active: Some(battlepass_id)});
+
+		Ok(battlepass_id)
+	}
+
+	fn do_claim_battlepass(by_who: T::AccountId, for_who: T::AccountId, battlepass_id: T::Hash, nft_id: u32, collection_id: u32) -> DispatchResult {
+
+		// Create Battlepass NFT
+		// let metadata = battlepass_id.to_string().into_bytes();
+		let metadata = b"meta".to_vec();
+		let (_, nft_id) = T::Rmrk::nft_mint(
+			by_who.clone(),									// sender
+			for_who.clone(),										// owner
+			nft_id,														// nft_id
+			collection_id,												// collection_id
+			None,									// royalty_recipient
+			None,										// royalty_amount
+			BoundedVec::truncate_from(metadata),				// metadata 			TODO: what should be here?
+			false,										// transferable
+			None												// resources
+		)?;
+
+		ClaimedBattlepasses::<T>::insert(battlepass_id, &for_who, nft_id);
+
+		Ok(())
+	}
+
+	fn change_battlepass_state(org_id: T::Hash, battlepass_id: T::Hash, state: types::BattlepassState) -> DispatchResult {
+		let active_battlepass = if state == types::BattlepassState::ACTIVE { Some(battlepass_id) } else { None };
+
+		BattlepassStates::<T>::insert(&battlepass_id, state); 
+		BattlepassInfoByOrg::<T>::try_mutate(org_id, |info| -> Result<(), DispatchError> {
+			if let Some(inf) = info {
+				inf.active = active_battlepass;
+				Ok(())
+			} else {
+				return Err(Error::<T>::BattlepassInfoUnknown)?;
+			}
+		})?;
+
+		Ok(())
 	}
 }
