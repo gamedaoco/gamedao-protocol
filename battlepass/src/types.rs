@@ -1,11 +1,11 @@
 use frame_support::pallet_prelude::*;
 use codec::MaxEncodedLen;
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub enum BattlepassState {
 	DRAFT = 0,
 	ACTIVE = 1,
-	CLOSED = 2,
+	ENDED = 2,
 }
 impl Default for BattlepassState {
 	fn default() -> Self {
