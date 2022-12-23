@@ -688,7 +688,7 @@ impl<T: Config> Pallet<T> {
 		match origin.into() {
 			Ok(RawOrigin::Root) => Ok(()),
 			Ok(RawOrigin::Signed(t)) => {
-				if org_type == OrgType::Individual && t == prime {
+				if t == prime {
 					return Ok(());
 				}
 				Err(BadOrigin)
