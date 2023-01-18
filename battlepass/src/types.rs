@@ -27,7 +27,7 @@ pub struct Battlepass<Hash, AccountId, BoundedString> {
 	pub collection_id: u32
 }
 
-#[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct BattlepassInfo<Hash> {
 	/// Total number of battlepasses per organization.
 	pub count: u32,

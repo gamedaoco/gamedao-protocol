@@ -13,15 +13,18 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
-use frame_support::pallet_prelude::*;
+use frame_support::{pallet_prelude::*, transactional};
 use frame_system::pallet_prelude::*;
 use sp_std::convert::TryInto;
 use sp_runtime::traits::Hash;
 use gamedao_traits::ControlTrait;
-use rmrk_traits::{primitives::{PartId, NftId}, Collection, Nft, ResourceInfoMin};
+use rmrk_traits::{primitives::{PartId, NftId, CollectionId}, Collection, Nft, ResourceInfoMin};
 
 pub mod types;
 pub use types::*;
+
+mod mock;
+mod tests;
 
 pub type String<T> = BoundedVec<u8, <T as Config>::StringLimit>;
 pub type Symbol<T> = BoundedVec<u8, <T as Config>::SymbolLimit>;
@@ -42,7 +45,7 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_rmrk_core::Config {
+	pub trait Config: frame_system::Config + pallet_rmrk_core::Config + pallet_uniques::Config {
 		type Event: From<Event<Self>>
 			+ IsType<<Self as frame_system::Config>::Event>
 			+ Into<<Self as frame_system::Config>::Event>;
@@ -82,8 +85,7 @@ pub mod pallet {
 			by_who: T::AccountId,
 			for_who: T::AccountId,
 			org_id: T::Hash,
-			battlepass_id: T::Hash,
-			nft_id: NftId
+			battlepass_id: T::Hash
 		},
 
 		/// BattlePass activated
@@ -149,18 +151,20 @@ pub mod pallet {
 		CollectionUnknown,
 		BattlepassExists,
 		BattlepassClaimed,
-		BattlepassInactive,
 		BattlepassNotClaimed,
 		BattlepassUnknown,
 		BattlepassStateUnknown,
 		BattlepassStateWrong,
 		BattlepassInfoUnknown,
-		NftUnknown,
-		NftInvalid,
+		BattlepassNftUnknown,
+		BattlepassNftInvalid,
+		LevelNotReached,
+		LevelUnknown,
 		NotMember,
-		NotEnoughPoints,
+		NotOwnNft,
 		OrgPrimeUnknown,
 		OrgUnknownOrInactive,
+		RewardClaimed,
 		RewardInactive,
 		RewardUnknown,
 		RewardStateUnknown,
@@ -231,8 +235,8 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn get_claimed_rewards)]
 	pub(super) type ClaimedRewards<T: Config> = StorageDoubleMap<_,
-		Blake2_128Concat, T::AccountId,
 		Blake2_128Concat, T::Hash,
+		Blake2_128Concat, T::AccountId,
 		NftId,
 		OptionQuery
 	>;
@@ -241,7 +245,7 @@ pub mod pallet {
 	///
 	/// Levels: map (Hash, u8) => u32
 	#[pallet::storage]
-	#[pallet::getter(fn get_levels)]
+	#[pallet::getter(fn get_level)]
 	pub(super) type Levels<T: Config> = StorageDoubleMap<_,
 		Blake2_128Concat, T::Hash,
 		Blake2_128Concat, u8,
@@ -250,8 +254,11 @@ pub mod pallet {
 	>;
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T> 
+		where T: pallet_uniques::Config<CollectionId = CollectionId, ItemId = NftId>,
+	{
 		#[pallet::weight(0)]
+		#[transactional]
 		pub fn create_battlepass(
 			origin: OriginFor<T>,
 			org_id: T::Hash,
@@ -279,6 +286,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
+		#[transactional]
 		pub fn claim_battlepass(
 			origin: OriginFor<T>,
 			battlepass_id: T::Hash,
@@ -288,7 +296,7 @@ pub mod pallet {
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check if Battlepass in ACTIVE state
-			ensure!(Self::check_battlepass_state(battlepass_id, BattlepassState::ACTIVE)?, Error::<T>::BattlepassInactive);
+			ensure!(Self::check_battlepass_state(battlepass_id, BattlepassState::ACTIVE)?, Error::<T>::BattlepassStateWrong);
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime, bot, self - temp)
@@ -299,17 +307,15 @@ pub mod pallet {
 			// check if Battlepass already claimed
 			ensure!(!ClaimedBattlepasses::<T>::contains_key(battlepass_id, for_who.clone()), Error::<T>::BattlepassClaimed);
 
-			let collection = <pallet_rmrk_core::Pallet<T>>::collections(battlepass.collection_id).ok_or(Error::<T>::CollectionUnknown)?;	
-			let new_nft_id = collection.nfts_count;
+			Pallet::<T>::do_claim_battlepass(by_who.clone(), for_who.clone(), battlepass_id, battlepass.collection_id)?;
 
-			Self::do_claim_battlepass(by_who.clone(), for_who.clone(), battlepass_id, new_nft_id, battlepass.collection_id)?;
-
-			Self::deposit_event(Event::BattlepassClaimed { by_who, for_who, org_id: battlepass.org_id, battlepass_id, nft_id: new_nft_id });
+			Self::deposit_event(Event::BattlepassClaimed { by_who, for_who, org_id: battlepass.org_id, battlepass_id });
 
 			Ok(())
 		}
 
 		#[pallet::weight(0)]
+		#[transactional]
 		pub fn activate_battlepass(
 			origin: OriginFor<T>,
 			battlepass_id: T::Hash,
@@ -332,6 +338,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
+		#[transactional]
 		pub fn conclude_battlepass(
 			origin: OriginFor<T>,
 			battlepass_id: T::Hash,
@@ -378,6 +385,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
+		#[transactional]
 		pub fn create_reward(
 			origin: OriginFor<T>,
 			battlepass_id: T::Hash,
@@ -390,8 +398,8 @@ pub mod pallet {
 			let creator = ensure_signed(origin)?;
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
-			// check if Battlepass in ACTIVE state
-			ensure!(Self::check_battlepass_state(battlepass_id, BattlepassState::ACTIVE)?, Error::<T>::BattlepassStateWrong);
+			// check if Battlepass is not ended
+			ensure!(!Self::check_battlepass_state(battlepass_id, BattlepassState::ENDED)?, Error::<T>::BattlepassStateWrong);
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
@@ -430,6 +438,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
+		#[transactional]
 		pub fn claim_reward(
 			origin: OriginFor<T>,
 			reward_id: T::Hash,
@@ -439,6 +448,8 @@ pub mod pallet {
 			let reward = Self::get_reward(reward_id).ok_or(Error::<T>::RewardUnknown)?;
 			// check if Reward is active
 			ensure!(Self::check_reward_state(reward_id, RewardState::ACTIVE)?, Error::<T>::RewardInactive);
+			// check if Reward has not been claimed yet
+			ensure!(!ClaimedRewards::<T>::contains_key(&reward_id, &claimer), Error::<T>::RewardClaimed);
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(&reward.battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check if Battlepass in ACTIVE state
@@ -447,17 +458,20 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check if user is a member of organization
 			ensure!(T::Control::is_org_member_active(&battlepass.org_id, &claimer), Error::<T>::NotMember);
-			// check if user owns Battlepass NFT
+			// check if user claimed Battlepass NFT
 			let nft_id = Self::get_claimed_battlepass(reward.battlepass_id, &claimer).ok_or(Error::<T>::BattlepassNotClaimed)?;
-			// check if NFT exists
-			let bp_nft = <pallet_rmrk_core::Pallet<T>>::nfts(&reward.collection_id, nft_id).ok_or(Error::<T>::NftUnknown)?;
-			// validate NFT
+			// check if Battlepass NFT exists
+			let bp_nft = pallet_rmrk_core::Pallet::<T>::nfts(&battlepass.collection_id, nft_id).ok_or(Error::<T>::BattlepassNftUnknown)?;
+			// validate Battlepass NFT ownership
+			let (root_owner, _) = pallet_rmrk_core::Pallet::<T>::lookup_root_owner(battlepass.collection_id, nft_id)?;
+			ensure!(root_owner == claimer, Error::<T>::NotOwnNft);
+			// validate Battlepass NFT metadata
 			let metadata: String<T> = BoundedVec::truncate_from(reward.battlepass_id.encode());
-			ensure!(metadata == bp_nft.metadata, Error::<T>::NftInvalid);
+			ensure!(metadata == bp_nft.metadata, Error::<T>::BattlepassNftInvalid);
 			// check if user has enough Points
-			ensure!(Self::is_enough_points(&reward.battlepass_id, &claimer, reward.level), Error::<T>::NotEnoughPoints);
+			ensure!(Self::is_level_reached(&reward.battlepass_id, &claimer, reward.level), Error::<T>::LevelNotReached);
 
-			Self::do_claim_reward(claimer.clone(), reward_id, nft_id, reward.collection_id, reward.transferable)?;
+			Self::do_claim_reward(claimer.clone(), reward_id, reward.collection_id, reward.transferable)?;
 
 			Self::deposit_event(Event::RewardClaimed {reward_id, claimer, collection_id: reward.collection_id, nft_id} );
 
@@ -503,6 +517,8 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
 			ensure!(Self::is_prime(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
+			// check if Level exists
+			ensure!(Levels::<T>::contains_key(battlepass_id, level), Error::<T>::LevelUnknown);
 
 			Levels::<T>::remove(battlepass_id, level);
 
@@ -526,7 +542,7 @@ impl<T: Config> Pallet<T> {
 		Ok(Self::is_prime(org_id, who)? || is_bot)
 	}
 
-	fn is_enough_points(battlepass_id: &T::Hash, account: &T::AccountId, level: u8) -> bool {
+	fn is_level_reached(battlepass_id: &T::Hash, account: &T::AccountId, level: u8) -> bool {
 		let user_points = Self::get_points(battlepass_id, account);
 		let levels = Levels::<T>::iter_prefix(battlepass_id)
 			.filter(
@@ -566,7 +582,7 @@ impl<T: Config> Pallet<T> {
 	
 	fn do_create_battlepass(creator: T::AccountId, org_id: T::Hash, name: String<T>, cid: String<T>, collection_id: u32, price: u16, new_season:u32) -> Result<T::Hash, DispatchError> {
 		let battlepass: Battlepass<T::Hash, T::AccountId, String<T>> = Battlepass {
-			creator, 
+			creator,
 			org_id,
 			name,
 			cid,
@@ -578,12 +594,13 @@ impl<T: Config> Pallet<T> {
 
 		Battlepasses::<T>::insert(&battlepass_id, battlepass);
 		BattlepassStates::<T>::insert(&battlepass_id, BattlepassState::DRAFT);
-		BattlepassInfoByOrg::<T>::insert(org_id, BattlepassInfo{count: new_season, active: Some(battlepass_id)});
+		BattlepassInfoByOrg::<T>::insert(org_id, BattlepassInfo{count: new_season, active: None});
 
 		Ok(battlepass_id)
 	}
 
-	fn do_claim_battlepass(by_who: T::AccountId, for_who: T::AccountId, battlepass_id: T::Hash, nft_id: u32, collection_id: u32) -> DispatchResult {
+	fn do_claim_battlepass(by_who: T::AccountId, for_who: T::AccountId, battlepass_id: T::Hash, collection_id: u32) -> DispatchResult {
+		let nft_id = ClaimedBattlepasses::<T>::iter_key_prefix(battlepass_id).count() as u32;
 
 		// Create Battlepass NFT
 		let metadata = battlepass_id.encode();
@@ -595,7 +612,7 @@ impl<T: Config> Pallet<T> {
 			None,									// royalty_recipient
 			None,										// royalty_amount
 			BoundedVec::truncate_from(metadata),				// metadata 			TODO: what should be here?
-			false,										// transferable
+			true,											// transferable
 			None												// resources
 		)?;
 
@@ -637,7 +654,9 @@ impl<T: Config> Pallet<T> {
 		Ok(reward_id)
 	}
 
-	fn do_claim_reward(claimer: T::AccountId, reward_id: T::Hash, nft_id: u32, collection_id: u32, transferable: bool) -> DispatchResult {
+	fn do_claim_reward(claimer: T::AccountId, reward_id: T::Hash, collection_id: u32, transferable: bool) -> DispatchResult {
+		let nft_id = ClaimedRewards::<T>::iter_key_prefix(reward_id).count() as u32;
+
 		// Create Battlepass NFT
 		let metadata = reward_id.encode();
 		let (_, nft_id) = T::Rmrk::nft_mint(
@@ -652,7 +671,7 @@ impl<T: Config> Pallet<T> {
 			None												// resources
 		)?;
 
-		ClaimedRewards::<T>::insert(&claimer, &reward_id, nft_id);
+		ClaimedRewards::<T>::insert(&reward_id, &claimer, nft_id);
 
 		Ok(())
 	}
