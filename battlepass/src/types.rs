@@ -28,11 +28,13 @@ pub struct Battlepass<Hash, AccountId, BoundedString> {
 }
 
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct BattlepassInfo<Hash> {
+pub struct BattlepassInfo<Hash, AccountId> {
 	/// Total number of battlepasses per organization.
 	pub count: u32,
 	/// Curent active battlepass
-	pub active: Option<Hash>
+	pub active: Option<Hash>,
+	/// Account of the authorized service which can update users' data
+	pub bot: Option<AccountId>
 }
 
 #[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]

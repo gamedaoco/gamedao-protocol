@@ -53,7 +53,7 @@ fn get_battlepass_hash(creator: AccountId, org_id: H256, season: u32, price: u16
 
 fn create_battlepass(org_id: H256) -> H256 {
     let creator = ALICE;
-    let season = Battlepass::get_battlepass_info(org_id).0 + 1;
+    let season = Battlepass::get_battlepass_info(&org_id).0 + 1;
     let price = 10;
     let collection_id = pallet_rmrk_core::CollectionIndex::<Test>::get();
     
@@ -172,7 +172,6 @@ fn create_battlepass_test(){
         assert_eq!(bp_info.is_some(), true);
         assert_eq!(bp_info.clone().unwrap().count, 1);
         assert_eq!(bp_info.clone().unwrap().active, None);
-
         
         // Should create another Battlepass (may be multiple in DRAFT state)
         assert_ok!(
@@ -447,6 +446,7 @@ fn set_points_test() {
         let creator = ALICE;
         let not_creator = BOB;
         let not_member = EVA;
+        let bot = 333u32;
 
         // Should not set if Battlepass unknown
         assert_noop!(
@@ -487,6 +487,12 @@ fn set_points_test() {
             Battlepass::set_points(Origin::signed(not_member), battlepass_id, creator, 10),
             Error::<Test>::AuthorizationError
         );
+
+        // Should not set by Bot if Bot is not authorized
+        assert_noop!(
+            Battlepass::set_points(Origin::signed(bot), battlepass_id, creator, 10),
+            Error::<Test>::AuthorizationError
+        );
         
         // Should not set for non members
         assert_noop!(
@@ -494,12 +500,22 @@ fn set_points_test() {
             Error::<Test>::NotMember
         );
 
-        // Should set points
+        // Should set points by Prime
         assert_ok!(
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_creator, 10)
         );
-        // Check if Points record created
-        assert_eq!(Points::<Test>::contains_key(battlepass_id, not_creator), true);
+        // Check if Points record updated
+        assert_eq!(Points::<Test>::get(battlepass_id, not_creator) == 10, true);
+
+        // Should set points by Bot
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, bot)
+        );
+        assert_ok!(
+            Battlepass::set_points(Origin::signed(bot), battlepass_id, not_creator, 20)
+        );
+        // Check if Points record updated
+        assert_eq!(Points::<Test>::get(battlepass_id, not_creator) == 20, true);
 
         // Should not set if Battlepass in ENDED state
         assert_ok!(
@@ -761,6 +777,11 @@ fn claim_reward_test() {
         assert_ok!(
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator)
         );
+        Nfts::<Test>::mutate(0, 1, |nft| {
+            if let Some(n) = nft {
+                n.transferable = true
+            }
+        });
         assert_ok!(
             RmrkCore::send(Origin::signed(creator), 0, 1, AccountIdOrCollectionNftTuple::AccountId(not_member))
         );
@@ -879,15 +900,22 @@ fn add_level_test() {
             Error::<Test>::AuthorizationError
         );
 
-        // Should add Level
-        assert_ok!(
-            Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
-        );
+        // Should add Level for DRAFT Battlepass
         assert_ok!(
             Battlepass::add_level(Origin::signed(creator), battlepass_id, 1, 10)
         );
         // Check if Level added
         assert_eq!(Levels::<Test>::contains_key(battlepass_id, 1), true);
+
+        // Should add Level for ACTIVE Battlepass
+        assert_ok!(
+            Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
+        );
+        assert_ok!(
+            Battlepass::add_level(Origin::signed(creator), battlepass_id, 2, 10)
+        );
+        // Check if Level added
+        assert_eq!(Levels::<Test>::contains_key(battlepass_id, 2), true);
 
         // Should not add if Battlepass in ENDED state
         assert_ok!(
@@ -948,10 +976,7 @@ fn remove_level_test() {
             Error::<Test>::LevelUnknown
         );
 
-        // Should remove Level
-        assert_ok!(
-            Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
-        );
+        // Should remove Level for DRAFT Battlepass
         assert_ok!(
             Battlepass::add_level(Origin::signed(creator), battlepass_id, 1, 10)
         );
@@ -962,12 +987,105 @@ fn remove_level_test() {
         // Check if Level removed
         assert_eq!(Levels::<Test>::contains_key(battlepass_id, 1), false);
 
+        // Should remove Level for ACTIVE Battlepass
+        assert_ok!(
+            Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
+        );
+        assert_ok!(
+            Battlepass::add_level(Origin::signed(creator), battlepass_id, 2, 10)
+        );
+        assert_eq!(Levels::<Test>::contains_key(battlepass_id, 2), true);
+        assert_ok!(
+            Battlepass::remove_level(Origin::signed(creator), battlepass_id, 2)
+        );
+        // Check if Level removed
+        assert_eq!(Levels::<Test>::contains_key(battlepass_id, 2), false);
+
         // Should not remove if Battlepass in ENDED state
         assert_ok!(
             Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id)
         );
         assert_noop!(
             Battlepass::remove_level(Origin::signed(creator), battlepass_id, 1),
+            Error::<Test>::BattlepassStateWrong
+        );
+
+    
+        // Check events 
+
+    })
+}
+
+#[test]
+fn add_bot_test() {
+    new_test_ext().execute_with(|| {
+        let org_id = create_org();
+        let battlepass_id = create_battlepass(org_id);
+        let wrong_battlepass_id = <Test as frame_system::Config>::Hashing::hash_of(&"123");
+        let creator = ALICE;
+        let not_creator = BOB;
+        let not_member = EVA;
+        add_member(org_id, not_creator);
+
+        // Should not add if Battlepass unknown
+        assert_noop!(
+            Battlepass::add_bot(Origin::signed(creator), wrong_battlepass_id, 1),
+            Error::<Test>::BattlepassUnknown
+        );
+
+        // Should not add if Org is inactive
+        assert_ok!(
+            Control::disable_org(Origin::signed(creator), org_id)
+        );
+        assert_noop!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, 1),
+            Error::<Test>::OrgUnknownOrInactive
+        );
+        assert_ok!(
+            Control::enable_org(Origin::signed(creator), org_id)
+        );
+
+        // Should not add if origin is not a Prime
+        assert_noop!(
+            Battlepass::add_bot(Origin::signed(not_creator), battlepass_id, 1),
+            Error::<Test>::AuthorizationError
+        );
+        assert_noop!(
+            Battlepass::add_bot(Origin::signed(not_member), battlepass_id, 1),
+            Error::<Test>::AuthorizationError
+        );
+
+        // Should add Bot for DRAFT Battlepass
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, 1)
+        );
+        // Check if bot added
+        let bp_info = BattlepassInfoByOrg::<Test>::get(org_id);
+        assert_eq!(bp_info.is_some(), true);
+        assert_eq!(bp_info.clone().unwrap().count, 1);
+        assert_eq!(bp_info.clone().unwrap().active, None);
+        assert_eq!(bp_info.clone().unwrap().bot, Some(1));
+
+        // Should add Bot for ACTIVE Battlepass
+        assert_ok!(
+            Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
+        );
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, 2)
+        );
+        // Check if bot added
+        let bp_info = BattlepassInfoByOrg::<Test>::get(org_id);
+        assert_eq!(bp_info.is_some(), true);
+        assert_eq!(bp_info.clone().unwrap().count, 1);
+        assert_eq!(bp_info.clone().unwrap().active, Some(battlepass_id));
+        assert_eq!(bp_info.clone().unwrap().bot, Some(2));
+
+        // Should not add if Battlepass in ENDED state
+        assert_ok!(
+            Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id)
+        );
+        assert_noop!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, 1),
             Error::<Test>::BattlepassStateWrong
         );
 
