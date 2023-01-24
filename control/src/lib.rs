@@ -679,7 +679,9 @@ impl<T: Config> Pallet<T> {
 				return Ok(Self::ensure_root_or_prime(origin, prime, org_type)?);
 			},
 			AccessModel::Voting => {
-				return Ok(Self::ensure_root_or_governance(origin)?);
+				return Ok(Self::ensure_root_or_prime(origin, prime, org_type)?);
+				// TODO: add voting when membership voting is available
+				// return Ok(Self::ensure_root_or_governance(origin)?);
 			},
 		}
 	}
