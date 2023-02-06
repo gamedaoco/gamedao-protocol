@@ -16,6 +16,6 @@ benchmarks! {
 		let property_type = PropertyType::Experience;
 		Sense::<T>::create_entity(caller_origin, account("1", 0, 0), BoundedVec::truncate_from(vec![1; 1]))?;
 	}: _(RawOrigin::Root, account("1", 0, 0), property_type, 255)
-}
 
-impl_benchmark_test_suite!(Sense, crate::mock::new_test_ext(), crate::mock::Test);
+	impl_benchmark_test_suite!(Sense, crate::mock::new_test_ext(), crate::mock::Test);
+}

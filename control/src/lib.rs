@@ -25,13 +25,15 @@ use frame_support::{dispatch::{DispatchResult, DispatchError, RawOrigin},
 	ensure, PalletId, traits::Get, BoundedVec, transactional, log
 };
 use frame_system::ensure_root;
-use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait};
+#[cfg(feature = "runtime-benchmarks")]
+use gamedao_traits::ControlBenchmarkingTrait;
+use gamedao_traits::ControlTrait;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 use scale_info::TypeInfo;
 use sp_runtime::{
 	traits::{AccountIdConversion, AtLeast32BitUnsigned, Hash, BadOrigin},
 	ArithmeticError::Overflow};
-use sp_std::{fmt::Debug, convert::TryInto, vec, vec::{Vec}};
+use sp_std::{fmt::Debug, convert::TryInto, vec, vec::Vec};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -742,9 +744,8 @@ impl<T: Config> ControlTrait<T::AccountId, T::Hash> for Pallet<T> {
 	}
 }
 
+#[cfg(feature = "runtime-benchmarks")]
 impl<T: Config> ControlBenchmarkingTrait<T::AccountId, T::Hash> for Pallet<T> {
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn create_org(caller: T::AccountId) -> Result<T::Hash, DispatchError> {
 		let text = BoundedVec::truncate_from(vec![1, 2, 3, 4]);
 		let index = OrgCount::<T>::get();
@@ -765,14 +766,18 @@ impl<T: Config> ControlBenchmarkingTrait<T::AccountId, T::Hash> for Pallet<T> {
 		Ok(org_id)
 	}
 
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn fill_org_with_members(org_id: &T::Hash, accounts: Vec<T::AccountId>) -> Result<(), DispatchError> {
 		for acc in BoundedVec::<T::AccountId, T::MaxMembers>::truncate_from(accounts) {
 			Pallet::<T>::add_member(
 				frame_system::RawOrigin::Root.into(),
 				org_id.clone(),
 				acc.clone()
+			).unwrap();
+			Pallet::<T>::update_member_state(
+				frame_system::RawOrigin::Root.into(),
+				org_id.clone(),
+				acc.clone(),
+				MemberState::Active
 			).unwrap();
 		}
 		Ok(())

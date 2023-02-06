@@ -55,7 +55,9 @@ use scale_info::TypeInfo;
 use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash}, Permill, ArithmeticError::Overflow};
 use sp_std::{vec::Vec, convert::{TryFrom, TryInto}};
 
-use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
+#[cfg(feature = "runtime-benchmarks")]
+use gamedao_traits::{ControlBenchmarkingTrait, FlowBenchmarkingTrait};
+use gamedao_traits::{ControlTrait, FlowTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 
 pub use pallet::*;
@@ -109,8 +111,10 @@ pub mod pallet {
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
 
-		type Control: ControlTrait<Self::AccountId, Self::Hash>
-			+ ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
+		type Control: ControlTrait<Self::AccountId, Self::Hash>;
+		
+		#[cfg(feature = "runtime-benchmarks")]
+		type ControlBenchmarkHelper: ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
 
 		/// The GameDAO Treasury AccountId.
 		#[pallet::constant]
@@ -615,10 +619,9 @@ impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
 	}
 }
 
+#[cfg(feature = "runtime-benchmarks")]
 impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for Pallet<T> {
 
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn create_campaign(caller: &T::AccountId, org_id: &T::Hash, start: T::BlockNumber) -> Result<T::Hash, &'static str> {
 		use sp_runtime::traits::Saturating;
 		use sp_std::vec;
@@ -654,8 +657,6 @@ impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for
 		Ok(campaign_id)
 	}
 
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn create_contributions(campaign_id: &T::Hash, contributors: Vec<T::AccountId>) -> Result<(), DispatchError> {
 		for account_id in BoundedVec::<T::AccountId, T::MaxCampaignContributors>::truncate_from(contributors) {
 			Pallet::<T>::contribute(
@@ -667,8 +668,6 @@ impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for
 		Ok(())
 	}
 
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn finalize_campaigns_by_block(block_number: T::BlockNumber) {
 		use sp_runtime::traits::Saturating;
 		frame_system::Pallet::<T>::set_block_number(block_number);

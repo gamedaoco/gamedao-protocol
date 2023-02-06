@@ -31,8 +31,10 @@ pub type Amount = i128;
 pub const MILLICENTS: Balance = 1_000_000_000;
 pub const CENTS: Balance = 1_000 * MILLICENTS;
 pub const DOLLARS: Balance = 100 * CENTS;
+pub const NATIVE_TOKEN_ID: CurrencyId = 0;
 pub const PROTOCOL_TOKEN_ID: CurrencyId = 1;
 pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
+
 // Org creator:
 pub const ALICE: AccountId = 11;
 // Contributors:
@@ -74,6 +76,7 @@ construct_runtime!(
 
 parameter_types! {
 	pub const BlockHashCount: u32 = 250;
+	pub const SS58Prefix: u8 = 42;
 }
 
 impl frame_system::Config for Test {
@@ -98,7 +101,7 @@ impl frame_system::Config for Test {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
-	type SS58Prefix = (); //SS58Prefix;
+	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = ConstU32<128>;
 }
@@ -154,28 +157,29 @@ impl orml_currencies::Config for Test {
 	type WeightInfo = ();
 }
 
-// parameter_types! {
-// 	pub CollectionDeposit: Balance = cent(ZERO) * 10;
-// 	pub ItemDeposit: Balance = dollar(ZERO);
-// }
+parameter_types! {
+	pub CollectionDeposit: Balance = 0;
+	pub ItemDeposit: Balance = 0;
+	pub MetadataDepositBase: Balance = 0;
+	pub MetadataDepositPerByte: Balance = 0;
+	
+}
 
 impl pallet_uniques::Config for Test {
 	type Event = Event;
 	type CollectionId = u32;
 	type ItemId = u32;
-	type Currency = (); //Balances;
+	type Currency = PalletBalances;
 	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
-	type CollectionDeposit = (); //CollectionDeposit;
-	type ItemDeposit = (); //ItemDeposit;
-	type MetadataDepositBase = (); //MetadataDepositBase;
-	type AttributeDepositBase = (); //MetadataDepositBase;
-	type DepositPerByte = (); //MetadataDepositPerByte;
+	type CollectionDeposit = CollectionDeposit;
+	type ItemDeposit = ItemDeposit;
+	type MetadataDepositBase = MetadataDepositBase;
+	type AttributeDepositBase = MetadataDepositBase;
+	type DepositPerByte = MetadataDepositPerByte;
 	type StringLimit = StringLimit;
 	type KeyLimit = ConstU32<32>;
 	type ValueLimit = ConstU32<256>;
-	type WeightInfo = (); //pallet_uniques::weights::SubstrateWeight<Test>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type Helper = ();
+	type WeightInfo = ();
 	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
 	type Locker = pallet_rmrk_core::Pallet<Test>;
 }
@@ -199,7 +203,8 @@ impl pallet_rmrk_core::Config for Test {
 }
 
 parameter_types! {
-	pub const ProtocolTokenId: u32 = PROTOCOL_TOKEN_ID;
+	pub const NativeTokenId: CurrencyId = NATIVE_TOKEN_ID;
+	pub const ProtocolTokenId: CurrencyId = PROTOCOL_TOKEN_ID;
 	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
 	pub const MinimumDeposit: Balance = 5 * DOLLARS;
 	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
@@ -211,7 +216,7 @@ impl gamedao_control::Config for Test {
 	type WeightInfo = ();
 	type Event = Event;
 	type Currency = Currencies;
-	type MaxMembers = MaxMembers;//ConstU32<10000>;
+	type MaxMembers = MaxMembers;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
 	type MinimumDeposit = MinimumDeposit;
@@ -221,12 +226,20 @@ impl gamedao_control::Config for Test {
 
 impl gamedao_battlepass::Config for Test {
 	type Event = Event;
+	type Balance = Balance;
+	type CurrencyId = CurrencyId;
+	type Currency = Currencies;
 	type Control = Control;
+	#[cfg(feature = "runtime-benchmarks")]
+	type ControlBenchmarkHelper = Control;
 	type Rmrk = RmrkCore;
 	type StringLimit = StringLimit;
 	type SymbolLimit = CollectionSymbolLimit;
 	type PartsLimit = PartsLimit;
 	type MaxResourcesOnMint = MaxResourcesOnMint;
+	type NativeTokenId = NativeTokenId;
+	type ProtocolTokenId = ProtocolTokenId;
+	type WeightInfo = ();
 }
 
 // Build genesis storage according to the mock runtime.
@@ -235,6 +248,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	orml_tokens::GenesisConfig::<Test> {
 		balances: vec![
 			// ALICE org creator
+			(ALICE, NATIVE_TOKEN_ID, INIT_BALANCE),
 			(ALICE, PROTOCOL_TOKEN_ID, INIT_BALANCE),
 			(ALICE, PAYMENT_TOKEN_ID, INIT_BALANCE),
 			

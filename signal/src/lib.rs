@@ -39,7 +39,9 @@ use sp_runtime::{
 };
 use sp_std::vec;
 
-use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
+#[cfg(feature = "runtime-benchmarks")]
+use gamedao_traits::{ControlBenchmarkingTrait, FlowBenchmarkingTrait};
+use gamedao_traits::{ControlTrait, FlowTrait};
 
 use types::{
 	ProposalIndex, ProposalType, ProposalState, SlashingRule,
@@ -103,12 +105,16 @@ pub mod pallet {
 			+ MultiReservableCurrency<Self::AccountId>;
 
 		/// Control pallet's public interface.
-		type Control: ControlTrait<Self::AccountId, Self::Hash>
-			+ ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
+		type Control: ControlTrait<Self::AccountId, Self::Hash>;
 
 		/// Flow pallet's public interface.
-		type Flow: FlowTrait<Self::AccountId, Self::Balance, Self::Hash>
-			+ FlowBenchmarkingTrait<Self::AccountId, Self::BlockNumber, Self::Hash>;
+		type Flow: FlowTrait<Self::AccountId, Self::Balance, Self::Hash>;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type ControlBenchmarkHelper: ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type FlowBenchmarkHelper: FlowBenchmarkingTrait<Self::AccountId, Self::BlockNumber, Self::Hash>;
 
 		/// Weight information for extrinsics in this module.
 		type WeightInfo: WeightInfo;
@@ -561,8 +567,6 @@ pub mod pallet {
 			// For Absolute majority if more then 50% of members vote for one option, the proposal period ends earlier.
 			if let Some(final_proposal_state) = Self::try_finalize_proposal(&voting) {
 				Self::finalize_proposal(&proposal_id, final_proposal_state, &voting)?;
-			} else {
-				log::error!("Proposal finalization failed for proposal_id: {:?}.", proposal_id);
 			}
 
 			Ok(voting.participating as u32)

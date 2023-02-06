@@ -203,6 +203,8 @@ impl gamedao_flow::Config for Test {
 	type WeightInfo = ();
 	type Currency = Currencies;
 	type Control = Control;
+	#[cfg(feature = "runtime-benchmarks")]
+	type ControlBenchmarkHelper = Control;
 	type GameDAOTreasury = GameDAOTreasury;
 	type MinNameLength = MinNameLength;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
@@ -222,7 +224,7 @@ parameter_types! {
 	pub const MinProposalDeposit: Balance = 10 * DOLLARS;
 	pub SlashingMajority: Permill = Permill::from_rational(2u32, 3u32);
 	pub GameDAOGetsFromSlashing: Permill = Permill::from_rational(1u32, 10u32);
-	pub const ProposalDurationLimits: (BlockNumber, BlockNumber) = (10, 100);
+	pub const ProposalDurationLimits: (BlockNumber, BlockNumber) = (100, 864000);
 }
 impl gamedao_signal::Config for Test {
 	type Event = Event;
@@ -231,6 +233,10 @@ impl gamedao_signal::Config for Test {
 	type Currency = Currencies;
 	type Control = Control;
 	type Flow = Flow;
+	#[cfg(feature = "runtime-benchmarks")]
+	type ControlBenchmarkHelper = Control;
+	#[cfg(feature = "runtime-benchmarks")]
+	type FlowBenchmarkHelper = Flow;
 	type WeightInfo = ();
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;

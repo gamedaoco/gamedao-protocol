@@ -3,7 +3,8 @@ use super::{
 	mock::{
 		BlockNumber, AccountId, Balance, Control, Event, ExtBuilder,
 		Origin, Signal, System, Test, ALICE, BOB, CHARLIE, DOLLARS, DAYS,
-		PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, create_proposal, create_finalize_campaign, create_org, set_balance
+		PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, create_proposal, create_finalize_campaign, create_org, set_balance,
+		ProposalDurationLimits
 	},
 	types::{ProposalType, ProposalState, Majority},
 	*,
@@ -34,7 +35,7 @@ fn signal_0_0() {
 		let campaign_id = create_finalize_campaign(now, org_id, &contributors, contribution, campaign_expiry, true);
 
 		let start: BlockNumber = campaign_expiry + 1;
-		let expiry: BlockNumber = start + 10;
+		let expiry: BlockNumber = start + ProposalDurationLimits::get().0;
 		let (_, proposal) = create_proposal(
 			ProposalType::Withdrawal, org_id, start, expiry, 20 * DOLLARS,
 			Some(campaign_id), Some(PAYMENT_TOKEN_ID), None, Some(10 * DOLLARS)
@@ -181,7 +182,7 @@ fn signal_0_1() {
 		let campaign_id = create_finalize_campaign(now, org_id, &contributors, contribution, campaign_expiry, true);
 
 		let start: BlockNumber = campaign_expiry + 1;
-		let expiry: BlockNumber = start + 10;
+		let expiry: BlockNumber = start + ProposalDurationLimits::get().0;
 		let (_, proposal) = create_proposal(
 			ProposalType::Withdrawal, org_id, start, expiry, 20 * DOLLARS,
 			Some(campaign_id), Some(PAYMENT_TOKEN_ID), None, Some(10 * DOLLARS)
@@ -284,7 +285,7 @@ fn signal_0_2() {
 		let now: BlockNumber = 3;
 		System::set_block_number(now);
 		let start: BlockNumber = now + 1;
-		let expiry: BlockNumber = now + 20;
+		let expiry: BlockNumber = now + 1 + ProposalDurationLimits::get().0;
 		let (proposal_id, proposal) = create_proposal(
 			ProposalType::General, org_id, start, expiry, 20 * DOLLARS, None, None, None, None);
 
@@ -316,7 +317,7 @@ fn signal_0_2() {
 		let campaign_expiry = start + 2 * DAYS;
 		let campaign_id = create_finalize_campaign(start, org_id, &contributors, 50 * DOLLARS, campaign_expiry, true);
 		let start: BlockNumber = campaign_expiry + 1;
-		let expiry: BlockNumber = start + 10;
+		let expiry: BlockNumber = start + ProposalDurationLimits::get().0;
 		let (proposal_id, proposal) = create_proposal(
 			ProposalType::Withdrawal, org_id, start, expiry, 20 * DOLLARS,
 			Some(campaign_id), Some(PAYMENT_TOKEN_ID), None, Some(withdrawal_amount)
@@ -385,7 +386,7 @@ fn signal_1_0() {
 		let now: BlockNumber = 3;
 		System::set_block_number(now);
 		let start: BlockNumber = now + 1;
-		let expiry: BlockNumber = now + 20;
+		let expiry: BlockNumber = now + 1 + ProposalDurationLimits::get().0;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		let (proposal_id, proposal) = create_proposal(
@@ -466,7 +467,7 @@ fn signal_1_1() {
 		set_balance(&members, 100 * DOLLARS);
 		let now: BlockNumber = 3;
 		let start: BlockNumber = now;
-		let expiry: BlockNumber = now + 10;
+		let expiry: BlockNumber = now + ProposalDurationLimits::get().0;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		System::set_block_number(now);
@@ -527,7 +528,7 @@ fn signal_1_2() {
 		set_balance(&members, 100 * DOLLARS);
 		let now: BlockNumber = 3;
 		let start: BlockNumber = now;
-		let expiry: BlockNumber = now + 10;
+		let expiry: BlockNumber = now + ProposalDurationLimits::get().0;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		System::set_block_number(now);
@@ -569,7 +570,7 @@ fn signal_1_3() {
 		set_balance(&members, 100 * DOLLARS);
 		let now: BlockNumber = 3;
 		let start: BlockNumber = now;
-		let expiry: BlockNumber = now + 10;
+		let expiry: BlockNumber = now + ProposalDurationLimits::get().0;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		System::set_block_number(now);
@@ -616,7 +617,7 @@ fn signal_1_4() {
 		set_balance(&members, 100 * DOLLARS);
 		let now: BlockNumber = 3;
 		let start: BlockNumber = now;
-		let expiry: BlockNumber = now + 10;
+		let expiry: BlockNumber = now + ProposalDurationLimits::get().0;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		System::set_block_number(now);
@@ -661,7 +662,7 @@ fn signal_1_5() {
 		set_balance(&members, 100 * DOLLARS);
 		let now: BlockNumber = 3;
 		let start: BlockNumber = now;
-		let expiry: BlockNumber = now + 10;
+		let expiry: BlockNumber = now + ProposalDurationLimits::get().0;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		System::set_block_number(now);
@@ -711,7 +712,7 @@ fn signal_1_6() {
 		set_balance(&members, 100 * DOLLARS);
 		let now: BlockNumber = 3;
 		let start: BlockNumber = now;
-		let expiry: BlockNumber = now + 10;
+		let expiry: BlockNumber = now + ProposalDurationLimits::get().0;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		System::set_block_number(now);
@@ -760,7 +761,7 @@ fn signal_1_7() {
 		set_balance(&members, 100 * DOLLARS);
 		let now: BlockNumber = 3;
 		let start: BlockNumber = now;
-		let expiry: BlockNumber = now + 10;
+		let expiry: BlockNumber = now + ProposalDurationLimits::get().0;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		System::set_block_number(now);
@@ -809,7 +810,7 @@ fn signal_1_8() {
 		set_balance(&members, 100 * DOLLARS);
 		let now: BlockNumber = 3;
 		let start: BlockNumber = now;
-		let expiry: BlockNumber = now + 10;
+		let expiry: BlockNumber = now + ProposalDurationLimits::get().0;
 		let total_balance = 100 * DOLLARS - 1 * DOLLARS; // org creation fee
 		let deposit = 20 * DOLLARS;
 		System::set_block_number(now);
@@ -880,7 +881,7 @@ fn signal_2_0() {
 		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
 
 		let start: BlockNumber = campaign_expiry + 1;
-		let expiry: BlockNumber = start + 20;
+		let expiry: BlockNumber = start + ProposalDurationLimits::get().0;
 		let (proposal_id, proposal) = create_proposal(
 			ProposalType::Withdrawal, org_id, start, expiry, deposit,
 			Some(campaign_id), Some(currency), None, Some(withdrawal_amount)
@@ -997,7 +998,7 @@ fn signal_2_1() {
 		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
 
 		let start: BlockNumber = campaign_expiry + 1;
-		let expiry: BlockNumber = start + 20;
+		let expiry: BlockNumber = start + ProposalDurationLimits::get().0;
 		let (proposal_id, proposal) = create_proposal(
 			ProposalType::Withdrawal, org_id, start, expiry, deposit,
 			Some(campaign_id), Some(currency), None, Some(withdrawal_amount)
@@ -1102,7 +1103,7 @@ fn signal_2_2() {
 		assert_eq!(<Test as Config>::Currency::free_balance(currency, &treasury_id), 0);
 
 		let start: BlockNumber = campaign_expiry + 1;
-		let expiry: BlockNumber = start + 20;
+		let expiry: BlockNumber = start + ProposalDurationLimits::get().0;
 		let (proposal_id, proposal) = create_proposal(
 			ProposalType::Withdrawal, org_id, start, expiry, deposit,
 			Some(campaign_id), Some(currency), None, Some(withdrawal_amount)

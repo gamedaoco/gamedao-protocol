@@ -179,6 +179,8 @@ impl gamedao_flow::Config for Test {
 	type WeightInfo = ();
 	type Currency = Currencies;
 	type Control = Control;
+	#[cfg(feature = "runtime-benchmarks")]
+	type ControlBenchmarkHelper = Control;
 	type GameDAOTreasury = GameDAOTreasury;
 	type MinNameLength = MinNameLength;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;

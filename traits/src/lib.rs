@@ -28,17 +28,14 @@ pub trait ControlTrait<AccountId, Hash> {
 	fn org_member_count(org_id: &Hash) -> u32;
 }
 
+#[cfg(feature = "runtime-benchmarks")]
 pub trait ControlBenchmarkingTrait<AccountId, Hash> {
 
 	/// Helper method to create organization.
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn create_org(caller: AccountId) -> Result<Hash, DispatchError>;
 
 	/// Helper method to add accounts to organisation.
 	/// It is assumed those accounts have enough of currency to pay org joining fee.
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn fill_org_with_members(org_id: &Hash, members: Vec<AccountId>) -> Result<(), DispatchError>;
 }
 
@@ -51,22 +48,16 @@ pub trait FlowTrait<AccountId, Balance, Hash> {
 	fn campaign_owner(campaign_id: &Hash) -> Option<AccountId>;
 }
 
-/// ** Should be used for benchmarking only!!! **
+#[cfg(feature = "runtime-benchmarks")]
 pub trait FlowBenchmarkingTrait<AccountId, BlockNumber, Hash> {
 
 	/// Helper method to create campaign
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn create_campaign(caller: &AccountId, org_id: &Hash, start: BlockNumber) -> Result<Hash, &'static str>;
 
 	/// Helper method to fill campaign with contributions
 	/// It is assumed those accounts have enought currency to contribute
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn create_contributions(campaign_id: &Hash, contributors: Vec<AccountId>) -> Result<(), DispatchError>;
 
 	/// Trigger campaigns finalization by setting block number to specified value and calling appropriate hooks
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn finalize_campaigns_by_block(block_number: BlockNumber);
 }

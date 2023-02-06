@@ -13,7 +13,7 @@ license = "GPL-3.0-or-later"
 description = "BattlePass pallet provides functionality to create, manage and participate in battlepasses."
 
 [dependencies]
-serde = { version = "1.0.143", optional = true }
+serde = { version = "1.0.143", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 sp-core = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
@@ -29,14 +29,14 @@ pallet-uniques = { default-features = false, git = "https://github.com/paritytec
 pallet-rmrk-core = { git = "https://github.com/rmrk-team/rmrk-substrate", default-features = false, branch = "polkadot-v0.9.28" }
 rmrk-traits = { git = "https://github.com/rmrk-team/rmrk-substrate", default-features = false, branch = "polkadot-v0.9.28" }
 
-gamedao-control = { package = "gamedao-control", path = "../control", optional = true }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.28", default-features = false }
+
+gamedao-control = { package = "gamedao-control", path = "../control", default-features = false }
 gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 
 [dev-dependencies]
-frame-support-test = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28" }
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
-rand = "0.8.5"
 
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
 pallet-uniques = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
@@ -46,7 +46,11 @@ orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-li
 
 [features]
 default = ['std']
-runtime-benchmarks = ["frame-benchmarking"]
+runtime-benchmarks = [
+	"frame-benchmarking/runtime-benchmarks",
+	"gamedao-traits/runtime-benchmarks",
+	"gamedao-control/runtime-benchmarks"
+]
 std = [
     "serde/std",
     'codec/std',
@@ -56,14 +60,15 @@ std = [
 	"frame-system/std",
 	"frame-benchmarking/std",
 
-	"sp-core/std",
 	"sp-std/std",
-	"sp-runtime/std",
+
+	"pallet-balances/std",
 
 	"orml-traits/std",
 	"orml-tokens/std",
 	"orml-currencies/std",
 
+	"pallet-uniques/std",
 	"pallet-rmrk-core/std",
 	"rmrk-traits/std",
 
