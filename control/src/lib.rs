@@ -61,9 +61,9 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Event: From<Event<Self>>
-			+ IsType<<Self as frame_system::Config>::Event>
-			+ Into<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
+			+ Into<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The units in which we record balances.
 		type Balance: Member
@@ -667,7 +667,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn ensure_membership_permissions(
-		origin: T::Origin,
+		origin: T::RuntimeOrigin,
 		who: T::AccountId,
 		prime: T::AccountId,
 		org_type: OrgType,
@@ -686,7 +686,7 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	fn ensure_root_or_prime(origin: T::Origin, prime: T::AccountId, org_type: OrgType) -> Result<(), BadOrigin> {
+	fn ensure_root_or_prime(origin: T::RuntimeOrigin, prime: T::AccountId, _org_type: OrgType) -> Result<(), BadOrigin> {
 		match origin.into() {
 			Ok(RawOrigin::Root) => Ok(()),
 			Ok(RawOrigin::Signed(t)) => {
@@ -699,7 +699,7 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	fn ensure_root_or_governance(origin: T::Origin) -> Result<(), BadOrigin> {
+	fn ensure_root_or_governance(origin: T::RuntimeOrigin) -> Result<(), BadOrigin> {
 		match origin.into() {
 			Ok(RawOrigin::Root) => Ok(()),
 			// TODO: implement governance origin type
@@ -707,7 +707,7 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	fn ensure_root_or_self(origin: T::Origin, who: T::AccountId) -> Result<(), BadOrigin> {
+	fn ensure_root_or_self(origin: T::RuntimeOrigin, who: T::AccountId) -> Result<(), BadOrigin> {
 		match origin.into() {
 			Ok(RawOrigin::Root) => Ok(()),
 			Ok(RawOrigin::Signed(t)) => {

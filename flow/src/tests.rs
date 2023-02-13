@@ -4,14 +4,14 @@ use frame_support::traits::Hooks;
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_core::H256;
-use sp_runtime::traits::{Hash, AccountIdConversion};
+use sp_runtime::traits::Hash;
 
 use gamedao_control::types::{AccessModel, FeeModel, OrgType, Org};
 use super::{
 	types::{FlowProtocol, FlowGovernance},
 	mock::{
-		BlockNumber, AccountId, Balance, Control, Event, Tokens, INIT_BALANCE,
-		Flow, Origin, System, Test, ALICE, BOB, DOLLARS, DAYS, new_test_ext,
+		BlockNumber, AccountId, Balance, Control, RuntimeEvent as Event, Tokens, INIT_BALANCE,
+		Flow, RuntimeOrigin as Origin, System, Test, ALICE, BOB, DOLLARS, DAYS, new_test_ext,
 		PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, CampaignDurationLimits, MaxContributorsProcessing,
 	},
 	*
@@ -152,7 +152,7 @@ fn flow_create_errors() {
 		);
 		// Ensure campaign expires before expiration limit
 		// Error: OutOfBounds
-		let (min_duration, max_duration) = CampaignDurationLimits::get();
+		let (_min_duration, max_duration) = CampaignDurationLimits::get();
 		let expiration_block = max_duration + now + 1;
 		assert_noop!(
 			Flow::create_campaign(

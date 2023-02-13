@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate as pallet_control;
-use frame_support::{PalletId, {traits::GenesisBuild}, pallet_prelude::*};
+use frame_support::{PalletId, {traits::GenesisBuild}, pallet_prelude::*, traits::Nothing};
 use frame_system;
 use codec::MaxEncodedLen;
 use sp_core::H256;
@@ -64,8 +64,6 @@ frame_support::construct_runtime!(
 frame_support::parameter_types! {
 	pub const BlockHashCount: u32 = 250;
 	pub const SS58Prefix: u8 = 42;
-	pub BlockWeights: frame_system::limits::BlockWeights =
-		frame_system::limits::BlockWeights::simple_max(1024);
 }
 
 impl frame_system::Config for Test {
@@ -73,8 +71,8 @@ impl frame_system::Config for Test {
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
-	type Origin = Origin;
-	type Call = Call;
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = Hash;
@@ -82,7 +80,7 @@ impl frame_system::Config for Test {
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -104,19 +102,17 @@ orml_traits::parameter_type_with_key! {
 	};
 }
 impl orml_tokens::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
 	type Amount = Amount;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type ExistentialDeposits = ExistentialDeposits;
-	type OnDust = ();
+	type CurrencyHooks = ();
 	type MaxLocks = ();
-	type DustRemovalWhitelist = frame_support::traits::Nothing;
-	type OnNewTokenAccount = ();
-	type OnKilledTokenAccount = ();
-	type ReserveIdentifier = ReserveIdentifier;
 	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = ReserveIdentifier;
+	type DustRemovalWhitelist = Nothing;
 }
 
 frame_support::parameter_types! {
@@ -125,11 +121,11 @@ frame_support::parameter_types! {
 impl pallet_balances::Config for Test {
 	type Balance = Balance;
 	type DustRemoval = ();
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = frame_system::Pallet<Test>;
 	type MaxLocks = ();
-	type MaxReserves = MaxReserves;
+	type MaxReserves = ();
 	type ReserveIdentifier = ReserveIdentifier;
 	type WeightInfo = ();
 }
@@ -146,14 +142,15 @@ frame_support::parameter_types! {
 	pub const PaymentTokenId: CurrencyId = PAYMENT_TOKEN_ID;
 	pub const MinimumDeposit: Balance = 5 * DOLLARS;
 	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
+	pub const MaxMembers: u32 = 10000;
 }
 impl pallet_control::Config for Test {
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Currency = Currencies;
-	type MaxMembers = ConstU32<10000>;
+	type MaxMembers = MaxMembers;
 	type ProtocolTokenId = ProtocolTokenId;
 	type PaymentTokenId = PaymentTokenId;
 	type MinimumDeposit = MinimumDeposit;
