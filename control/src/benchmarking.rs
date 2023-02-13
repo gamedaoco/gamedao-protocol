@@ -1,6 +1,8 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use crate::*;
+use super::*;
+use crate::Pallet as Control;
+
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_system::RawOrigin;
 use sp_runtime::{DispatchError, traits::SaturatedConversion};

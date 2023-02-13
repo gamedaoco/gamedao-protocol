@@ -17,14 +17,14 @@ impl Default for BattlepassState {
 /// Battlepass struct
 ///
 /// `collection_id`: Collection that will store all claimed Battlepass-NFTs
-pub struct Battlepass<Hash, AccountId, BoundedString> {
+pub struct Battlepass<Hash, AccountId, BoundedString, CollectionId> {
 	pub creator: AccountId,
 	pub org_id: Hash,
 	pub name: BoundedString,
 	pub cid: BoundedString,
 	pub season: u32,
 	pub price: u16,				// TODO: introduce currency
-	pub collection_id: u32
+	pub collection_id: CollectionId
 }
 
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
@@ -41,13 +41,13 @@ pub struct BattlepassInfo<Hash, AccountId> {
 /// Reward struct
 ///
 /// `collection_id`: Collection that will store all claimed Reward-NFTs
-pub struct Reward<Hash, BoundedString> {
+pub struct Reward<Hash, BoundedString, CollectionId> {
 	pub battlepass_id: Hash,
 	pub name: BoundedString,
 	pub cid: BoundedString,
 	pub level: u8,
 	pub transferable: bool,
-	pub collection_id: u32
+	pub collection_id: CollectionId
 }
 
 #[derive(Encode, Decode, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]

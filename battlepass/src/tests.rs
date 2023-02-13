@@ -6,7 +6,7 @@ use rmrk_traits::AccountIdOrCollectionNftTuple;
 use sp_core::H256;
 
 use crate::mock::{
-    new_test_ext, Origin, Test,
+    new_test_ext, RuntimeOrigin as Origin, Test,
     //System, 
     Battlepass, Control, RmrkCore,
     ALICE, BOB, EVA, TOM, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, DOLLARS, 
@@ -55,7 +55,7 @@ fn create_battlepass(org_id: H256) -> H256 {
     let creator = ALICE;
     let season = Battlepass::get_battlepass_info(&org_id).0 + 1;
     let price = 10;
-    let collection_id = pallet_rmrk_core::CollectionIndex::<Test>::get();
+    let collection_id = CollectionIndex::<Test>::get();
     
     assert_ok!(
         Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), price)
@@ -766,7 +766,7 @@ fn claim_reward_test() {
             Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, not_creator)
         );
         assert_ok!(
-            RmrkCore::burn_nft(Origin::signed(not_creator), 0, 0, 5)
+            RmrkCore::burn_nft(Origin::signed(not_creator), 0, 0)
         );
         assert_noop!(
             Battlepass::claim_reward(Origin::signed(not_creator), reward_id),
