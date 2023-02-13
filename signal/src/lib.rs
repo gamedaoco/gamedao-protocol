@@ -75,9 +75,9 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Event: From<Event<Self>>
-			+ IsType<<Self as frame_system::Config>::Event>
-			+ Into<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
+			+ Into<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The units in which we record balances.
 		type Balance: Member
@@ -417,6 +417,7 @@ pub mod pallet {
 				ProposalStates::<T>::insert(proposal_id, ProposalState::Active);
 				Self::deposit_event(Event::<T>::Activated { proposal_id: *proposal_id });
 			}
+
 			T::WeightInfo::on_initialize(proposals.len().saturated_into())
 		}
 

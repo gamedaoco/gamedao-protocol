@@ -84,8 +84,8 @@ impl frame_system::Config for Test {
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
-	type Origin = Origin;
-	type Call = Call;
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = Hash;
@@ -93,7 +93,7 @@ impl frame_system::Config for Test {
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -117,19 +117,17 @@ parameter_types! {
 }
 
 impl orml_tokens::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
 	type Amount = Amount;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type ExistentialDeposits = ExistentialDeposits;
-	type OnDust = ();
+	type CurrencyHooks = ();
 	type MaxLocks = ();
 	type MaxReserves = MaxReserves;
-	type OnNewTokenAccount = ();
-	type OnKilledTokenAccount = ();
-	type DustRemovalWhitelist = Nothing;
 	type ReserveIdentifier = ReserveIdentifier;
+	type DustRemovalWhitelist = Nothing;
 }
 
 parameter_types! {
@@ -139,7 +137,7 @@ parameter_types! {
 impl pallet_balances::Config for Test {
 	type Balance = Balance;
 	type DustRemoval = ();
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = frame_system::Pallet<Test>;
 	type MaxLocks = ();
@@ -160,46 +158,53 @@ impl orml_currencies::Config for Test {
 parameter_types! {
 	pub CollectionDeposit: Balance = 0;
 	pub ItemDeposit: Balance = 0;
+	pub const KeyLimit: u32 = 32;	// Max 32 bytes per key
+	pub const ValueLimit: u32 = 64;	// Max 64 bytes per value
 	pub MetadataDepositBase: Balance = 0;
 	pub MetadataDepositPerByte: Balance = 0;
 	
 }
 
 impl pallet_uniques::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type CollectionId = u32;
 	type ItemId = u32;
 	type Currency = PalletBalances;
-	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
+	type Locker = pallet_rmrk_core::Pallet<Test>;
 	type CollectionDeposit = CollectionDeposit;
 	type ItemDeposit = ItemDeposit;
 	type MetadataDepositBase = MetadataDepositBase;
 	type AttributeDepositBase = MetadataDepositBase;
 	type DepositPerByte = MetadataDepositPerByte;
 	type StringLimit = StringLimit;
-	type KeyLimit = ConstU32<32>;
-	type ValueLimit = ConstU32<256>;
+	type KeyLimit = KeyLimit;
+	type ValueLimit = ValueLimit;
 	type WeightInfo = ();
-	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
-	type Locker = pallet_rmrk_core::Pallet<Test>;
 }
 
 parameter_types! {
+	pub const ResourceSymbolLimit: u32 = 10;
 	pub const PartsLimit: u32 = 25;
 	pub const CollectionSymbolLimit: u32 = 100;
+	pub const MaxPriorities: u32 = 25;
+	pub const NestingBudget: u32 = 3;
 	pub const MaxResourcesOnMint: u32 = 100;
     pub const StringLimit: u32 = 64;
 }
 
 impl pallet_rmrk_core::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ProtocolOrigin = EnsureRoot<AccountId>;
-	type MaxRecursions = ConstU32<10>;
-	type ResourceSymbolLimit = ConstU32<10>;
+	type ResourceSymbolLimit = ResourceSymbolLimit;
 	type PartsLimit = PartsLimit;
-	type MaxPriorities = ConstU32<25>;
+	type MaxPriorities = MaxPriorities;
 	type CollectionSymbolLimit = CollectionSymbolLimit;
 	type MaxResourcesOnMint = MaxResourcesOnMint;
+	type NestingBudget = NestingBudget;
+	type WeightInfo = pallet_rmrk_core::weights::SubstrateWeight<Test>;
+	type TransferHooks = ();
 }
 
 parameter_types! {
@@ -214,7 +219,7 @@ impl gamedao_control::Config for Test {
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Currency = Currencies;
 	type MaxMembers = MaxMembers;
 	type ProtocolTokenId = ProtocolTokenId;
@@ -225,7 +230,7 @@ impl gamedao_control::Config for Test {
 }
 
 impl gamedao_battlepass::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
 	type Currency = Currencies;
@@ -233,6 +238,7 @@ impl gamedao_battlepass::Config for Test {
 	#[cfg(feature = "runtime-benchmarks")]
 	type ControlBenchmarkHelper = Control;
 	type Rmrk = RmrkCore;
+	type BattlepassHelper = gamedao_battlepass::BpHelper;
 	type StringLimit = StringLimit;
 	type SymbolLimit = CollectionSymbolLimit;
 	type PartsLimit = PartsLimit;

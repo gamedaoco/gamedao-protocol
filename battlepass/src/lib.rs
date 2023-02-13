@@ -21,7 +21,7 @@ use gamedao_traits::ControlTrait;
 #[cfg(feature = "runtime-benchmarks")]
 use gamedao_traits::ControlBenchmarkingTrait;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
-use rmrk_traits::{primitives::{PartId, NftId}, Collection, Nft, ResourceInfoMin, AccountIdOrCollectionNftTuple};
+use rmrk_traits::{primitives::PartId, Collection, Nft, ResourceInfoMin, AccountIdOrCollectionNftTuple};
 
 pub mod types;
 pub use types::*;
@@ -43,6 +43,22 @@ pub type Resource<T> = BoundedVec<
 	<T as Config>::MaxResourcesOnMint,
 >;
 
+pub trait BattlepassHelper<CollectionId, ItemId> {
+	fn collection(i: u32) -> CollectionId;
+	fn item(i: u32) -> ItemId;
+}
+
+pub struct BpHelper;
+
+impl<CollectionId: From<u32>, ItemId: From<u32>> BattlepassHelper<CollectionId, ItemId> for BpHelper {
+	fn collection(i: u32) -> CollectionId {
+		i.into()
+	}
+	fn item(i: u32) -> ItemId {
+		i.into()
+	}
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -53,9 +69,9 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_rmrk_core::Config {
-		type Event: From<Event<Self>>
-			+ IsType<<Self as frame_system::Config>::Event>
-			+ Into<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
+			+ Into<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The units in which we record balances.
 		type Balance: Member
@@ -84,8 +100,10 @@ pub mod pallet {
 		#[cfg(feature = "runtime-benchmarks")]
 		type ControlBenchmarkHelper: ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
 
-		type Rmrk: Collection<String<Self>, Symbol<Self>, Self::AccountId>
-			+ Nft<Self::AccountId, String<Self>, Resource<Self>>;
+		type Rmrk: Collection<String<Self>, Symbol<Self>, Self::AccountId, Self::CollectionId>
+			+ Nft<Self::AccountId, String<Self>, Resource<Self>, Self::CollectionId, Self::ItemId>;
+
+		type BattlepassHelper: BattlepassHelper<Self::CollectionId, Self::ItemId>;
 
 		/// The maximum length of a name, cid or metadata strings stored on-chain.
 		#[pallet::constant]
@@ -129,7 +147,7 @@ pub mod pallet {
 			for_who: T::AccountId,
 			org_id: T::Hash,
 			battlepass_id: T::Hash,
-			nft_id: NftId
+			nft_id: T::ItemId
 		},
 
 		/// BattlePass activated
@@ -165,8 +183,8 @@ pub mod pallet {
 		RewardClaimed {
 			reward_id: T::Hash,
 			claimer: T::AccountId,
-			collection_id: u32,
-			nft_id: NftId
+			collection_id: T::CollectionId,
+			nft_id: T::ItemId
 		},
 
 		/// Reward state updated
@@ -209,6 +227,7 @@ pub mod pallet {
 		BattlepassNftInvalid,
 		LevelNotReached,
 		LevelUnknown,
+		NoAvailableCollectionId,
 		NotMember,
 		NotOwnNft,
 		OrgPrimeUnknown,
@@ -224,7 +243,7 @@ pub mod pallet {
 	/// Battlepasses: map Hash => Battlepass
 	#[pallet::storage]
 	#[pallet::getter(fn get_battlepass)]
-	pub(super) type Battlepasses<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Battlepass<T::Hash, T::AccountId, String<T>>, OptionQuery>;
+	pub(super) type Battlepasses<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Battlepass<T::Hash, T::AccountId, String<T>, T::CollectionId>, OptionQuery>;
 
 	/// Battlepass state.
 	///
@@ -247,7 +266,7 @@ pub mod pallet {
 	pub(super) type ClaimedBattlepasses<T: Config> = StorageDoubleMap<_,
 		Blake2_128Concat, T::Hash,
 		Blake2_128Concat, T::AccountId,
-		NftId,
+		T::ItemId,
 		OptionQuery
 	>;
 
@@ -268,7 +287,7 @@ pub mod pallet {
 	/// Rewards: map Hash => Reward
 	#[pallet::storage]
 	#[pallet::getter(fn get_reward)]
-	pub(super) type Rewards<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Reward<T::Hash, String<T>>, OptionQuery>;
+	pub(super) type Rewards<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Reward<T::Hash, String<T>, T::CollectionId>, OptionQuery>;
 
 	/// Reward state by its id.
 	///
@@ -285,7 +304,7 @@ pub mod pallet {
 	pub(super) type ClaimedRewards<T: Config> = StorageDoubleMap<_,
 		Blake2_128Concat, T::Hash,
 		Blake2_128Concat, T::AccountId,
-		NftId,
+		T::ItemId,
 		OptionQuery
 	>;
 
@@ -300,6 +319,10 @@ pub mod pallet {
 		u32,
 		OptionQuery
 	>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn collection_index)]
+	pub type CollectionIndex<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -641,10 +664,18 @@ impl<T: Config> Pallet<T> {
 		levels.count() == 1
 	}
 
-	fn create_collection(owner: T::AccountId, max: Option<u32>) -> Result<u32, DispatchError> {
+	fn create_collection(owner: T::AccountId, max: Option<u32>) -> Result<T::CollectionId, DispatchError> {
 		let metadata = BoundedVec::truncate_from(b"meta".to_vec());		// TODO: what should be here?
 		let symbol = BoundedVec::truncate_from(b"symbol".to_vec());		// TODO: what should be here?
-		let collection_id = T::Rmrk::collection_create(owner, metadata, max, symbol)?;
+		let collection_index = CollectionIndex::<T>::try_mutate(|n| -> Result<u32, DispatchError> {
+				let id = *n;
+				ensure!(id != u32::max_value(), Error::<T>::NoAvailableCollectionId);
+				*n += 1;
+				Ok(id)
+		})?;
+		let collection_id = T::BattlepassHelper::collection(collection_index);
+
+		T::Rmrk::collection_create(owner, collection_id, metadata, max, symbol)?;
 
 		Ok(collection_id)
 	}
@@ -669,8 +700,8 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 	
-	fn do_create_battlepass(creator: T::AccountId, org_id: T::Hash, name: String<T>, cid: String<T>, collection_id: u32, price: u16, new_season:u32) -> Result<T::Hash, DispatchError> {
-		let battlepass: Battlepass<T::Hash, T::AccountId, String<T>> = Battlepass {
+	fn do_create_battlepass(creator: T::AccountId, org_id: T::Hash, name: String<T>, cid: String<T>, collection_id: T::CollectionId, price: u16, new_season:u32) -> Result<T::Hash, DispatchError> {
+		let battlepass: Battlepass<T::Hash, T::AccountId, String<T>, T::CollectionId> = Battlepass {
 			creator,
 			org_id,
 			name,
@@ -688,12 +719,13 @@ impl<T: Config> Pallet<T> {
 		Ok(battlepass_id)
 	}
 
-	fn do_claim_battlepass(by_who: T::AccountId, for_who: T::AccountId, battlepass_id: T::Hash, collection_id: u32) -> Result<NftId, DispatchError> {
-		let nft_id = ClaimedBattlepasses::<T>::iter_key_prefix(battlepass_id).count() as NftId;
+	fn do_claim_battlepass(by_who: T::AccountId, for_who: T::AccountId, battlepass_id: T::Hash, collection_id: T::CollectionId) -> Result<T::ItemId, DispatchError> {
+		let nft_count = ClaimedBattlepasses::<T>::iter_key_prefix(battlepass_id).count() as u32;
+		let nft_id: T::ItemId = T::BattlepassHelper::item(nft_count);
 
 		// Create Battlepass NFT
 		let metadata = battlepass_id.encode();
-		let (_, nft_id) = T::Rmrk::nft_mint(
+		let _ = T::Rmrk::nft_mint(
 			by_who.clone(),										// sender
 			for_who.clone(),										// owner
 			nft_id,														// nft_id
@@ -726,7 +758,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	fn do_create_reward(battlepass_id: T::Hash, name: String<T>, cid: String<T>, level: u8, transferable: bool, collection_id: u32) -> Result<T::Hash, DispatchError> {
+	fn do_create_reward(battlepass_id: T::Hash, name: String<T>, cid: String<T>, level: u8, transferable: bool, collection_id: T::CollectionId) -> Result<T::Hash, DispatchError> {
 		let reward = Reward{
 			battlepass_id,
 			name,
@@ -743,12 +775,13 @@ impl<T: Config> Pallet<T> {
 		Ok(reward_id)
 	}
 
-	fn do_claim_reward(claimer: T::AccountId, reward_id: T::Hash, collection_id: u32, transferable: bool) -> Result<NftId, DispatchError> {
-		let nft_id = ClaimedRewards::<T>::iter_key_prefix(reward_id).count() as NftId;
+	fn do_claim_reward(claimer: T::AccountId, reward_id: T::Hash, collection_id: T::CollectionId, transferable: bool) -> Result<T::ItemId, DispatchError> {
+		let nft_count = ClaimedRewards::<T>::iter_key_prefix(reward_id).count() as u32;
+		let nft_id = T::BattlepassHelper::item(nft_count);
 
 		// Create Battlepass NFT
 		let metadata = reward_id.encode();
-		let (_, nft_id) = T::Rmrk::nft_mint(
+		let _ = T::Rmrk::nft_mint(
 			claimer.clone(),									// sender
 			claimer.clone(),										// owner
 			nft_id,														// nft_id

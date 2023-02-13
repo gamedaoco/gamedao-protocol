@@ -1,10 +1,10 @@
 #![cfg(test)]
 
 use frame_support::{assert_noop, assert_ok};
-use sp_runtime::traits::{BadOrigin};
+use sp_runtime::traits::BadOrigin;
 use sp_core::H256;
 use super::*;
-use mock::{new_test_ext, System, Test, Event, Control, Origin, Tokens, CurrencyId, Balance, AccountId,
+use mock::{new_test_ext, System, Test, RuntimeEvent as Event, Control, RuntimeOrigin as Origin, Tokens, CurrencyId, Balance, AccountId,
 	ALICE, BOB, CHARLIE, PAYMENT_TOKEN_ID, PROTOCOL_TOKEN_ID, DOLLARS};
 
 
@@ -166,12 +166,12 @@ fn control_enable_deisable_org() {
 		assert_noop!(Control::disable_org(Origin::signed(BOB), org_id), BadOrigin);
 		assert_ok!(Control::disable_org(Origin::root(), org_id));
 		assert_eq!(OrgStates::<Test>::get(org_id), OrgState::Inactive);
-		System::assert_has_event(mock::Event::Control(crate::Event::OrgDisabled(org_id)));
+		System::assert_has_event(Event::Control(crate::Event::OrgDisabled(org_id)));
 		// Enable org root
 		assert_noop!(Control::enable_org(Origin::signed(BOB), org_id), BadOrigin);
 		assert_ok!(Control::enable_org(Origin::root(), org_id));
 		assert_eq!(OrgStates::<Test>::get(org_id), OrgState::Active);
-		System::assert_has_event(mock::Event::Control(crate::Event::OrgEnabled(org_id)));
+		System::assert_has_event(Event::Control(crate::Event::OrgEnabled(org_id)));
 		// Disable org prime
 		assert_ok!(Control::disable_org(Origin::signed(ALICE), org_id));
 		assert_eq!(OrgStates::<Test>::get(org_id), OrgState::Inactive);
@@ -193,7 +193,7 @@ fn control_add_remove_member_access_prime() {
 		assert!(Members::<Test>::get(org_id).contains(&CHARLIE));
 		assert_noop!(Control::add_member(Origin::signed(ALICE), org_id, CHARLIE), Error::<Test>::AlreadyMember);
 		System::assert_has_event(
-			mock::Event::Control(crate::Event::MemberAdded{
+			Event::Control(crate::Event::MemberAdded{
 				org_id, who: CHARLIE, block_number: current_block
 			})
 		);
@@ -203,7 +203,7 @@ fn control_add_remove_member_access_prime() {
 		assert!(!Members::<Test>::get(org_id).contains(&CHARLIE));
 		assert_noop!(Control::remove_member(Origin::signed(ALICE), org_id, CHARLIE), Error::<Test>::NotMember);
 		System::assert_has_event(
-			mock::Event::Control(crate::Event::MemberRemoved{
+			Event::Control(crate::Event::MemberRemoved{
 				org_id, who: CHARLIE, block_number: current_block
 			})
 		);
@@ -297,7 +297,7 @@ fn control_spend_funds() {
 			Control::spend_funds(Origin::signed(BOB), org_id, PAYMENT_TOKEN_ID, beneficiary, amount),
 			BadOrigin);
 		System::assert_has_event(
-			mock::Event::Control(crate::Event::FundsSpended{
+			Event::Control(crate::Event::FundsSpended{
 				org_id, beneficiary, amount, currency_id, block_number: current_block
 			})
 		);

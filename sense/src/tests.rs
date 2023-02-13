@@ -1,6 +1,6 @@
 #![cfg(test)]
 use super::{Event as SenseEvent, Entity, EntityProperty, PropertyType, Error, Config, Entities, Properties};
-use crate::mock::*;
+use crate::mock::{RuntimeEvent as Event, Sense, System, Test, RuntimeOrigin as Origin, new_test_ext};
 use frame_support::{assert_noop, assert_ok, BoundedVec};
 use frame_system::RawOrigin;
 use sp_runtime::traits::BadOrigin;
