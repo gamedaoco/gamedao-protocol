@@ -260,7 +260,7 @@ pub mod pallet {
 
 	/// Claimed Battlepass-NFT by user and battlepass.
 	///
-	/// ClaimedBattlepasses: map (Hash, AccountId) => NftId
+	/// ClaimedBattlepasses: map (Hash, AccountId) => ItemId
 	#[pallet::storage]
 	#[pallet::getter(fn get_claimed_battlepass)]
 	pub(super) type ClaimedBattlepasses<T: Config> = StorageDoubleMap<_,
@@ -272,7 +272,7 @@ pub mod pallet {
 
 	/// Total earned Points for users per each Battlepass.
 	///
-	/// Points: map (Hash, AccountId) => NftId
+	/// Points: map (Hash, AccountId) => u32
 	#[pallet::storage]
 	#[pallet::getter(fn get_points)]
 	pub(super) type Points<T: Config> = StorageDoubleMap<_,
@@ -298,7 +298,7 @@ pub mod pallet {
 
 	/// Claimed Reward-NFT by user.
 	///
-	/// ClaimedRewards: map (AccountId, Hash) => NftId
+	/// ClaimedRewards: map (Hash, AccountId) => ItemId
 	#[pallet::storage]
 	#[pallet::getter(fn get_claimed_rewards)]
 	pub(super) type ClaimedRewards<T: Config> = StorageDoubleMap<_,
@@ -320,6 +320,9 @@ pub mod pallet {
 		OptionQuery
 	>;
 
+	/// A counter for created collections
+	///
+	/// CollectionIndex: u32
 	#[pallet::storage]
 	#[pallet::getter(fn collection_index)]
 	pub type CollectionIndex<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -327,6 +330,15 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 
+		/// Creates a Battlepass.
+		/// May be called only by Organization owner.
+		/// Also creates a new collection to store claimed Battlepass NFTs.
+		/// 
+		/// Parameters:
+		/// - `org_id`: ID of the Organization for which to create a Battlepass.
+		/// - `name`: Battlepass name.
+		/// - `cid`: IPFS content identifier.
+		/// - `price`: Price for the Battlepass subscription.
 		#[pallet::call_index(0)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::create_battlepass())]
 		#[transactional]
@@ -356,6 +368,12 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Claims the Battlepass-NFT for user who joined the Battlepass.
+		/// This NFT may be used as a proof of a Battlepass membership.
+		/// 
+		/// Parameters:
+		/// - `battlepass_id`: ID of the Battlepass for which to claim NFT.
+		/// - `for_who`: Account for which to claim NFT.
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::claim_battlepass())]
 		#[transactional]
@@ -385,6 +403,12 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Activates the Battlepass.
+		/// Can activate only Battlepass in DRAFT state.
+		/// May be called only by Organization owner.
+		/// 
+		/// Parameters:
+		/// - `battlepass_id`: ID of the Battlepass to activate.
 		#[pallet::call_index(2)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::activate_battlepass())]
 		#[transactional]
@@ -409,6 +433,13 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Concludes the Battlepass.
+		/// Can conclude only Battlepass in ACTIVE state.
+		/// After calling this extrinsic Battlepass state can not be changed any more.
+		/// May be called only by Organization owner.
+		/// 
+		/// Parameters:
+		/// - `battlepass_id`: ID of the Battlepass to conclude.
 		#[pallet::call_index(3)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::conclude_battlepass())]
 		#[transactional]
@@ -431,6 +462,15 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Sets Battlepass Points for user.
+		/// So far no information about users' achievements is stored on chain. A separate trusted service (Bot)
+		/// should collect such info, process it, validate it and call this extrinsic if user's Points have been updated. 
+		/// May be called only by Organization owner or by a specially dedicated for this purpose account.
+		/// 
+		/// Parameters:
+		/// - `battlepass_id`: ID of the Battlepass.
+		/// - `account`: User's account for which to set Points.
+		/// - `amount`: Amount of Points to set.
 		#[pallet::call_index(4)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_points())]
 		pub fn set_points(
@@ -458,6 +498,17 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Creates a Reward Type for the Battlepass.
+		/// Also creates a new collection to store claimed Reward NFTs.
+		/// May be called only by Organization owner.
+		/// 
+		/// Parameters:
+		/// - `battlepass_id`: ID of the Battlepass to create a Reward for.
+		/// - `name`: Name of the Reward.
+		/// - `cid`: IPFS content identifier.
+		/// - `max`: Maximum number of claimed rewards this Reward Type may have. Unlimited if empty.
+		/// - `level`: Minimum Level user must reach to be able to claim this Reward Type.
+		/// - `transferable`: Specifies whether claimed Reward NFTs could be transferred (sold) to another account.
 		#[pallet::call_index(5)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::create_reward())]
 		#[transactional]
@@ -488,6 +539,12 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Disables the Reward Type.
+		/// After calling this extrinsic Reward Type state can not be changed any more.
+		/// May be called only by Organization owner.
+		/// 
+		/// Parameters:
+		/// - `reward_id`: ID of the Reward Type to be disabled.
 		#[pallet::call_index(6)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::disable_reward())]
 		pub fn disable_reward(
@@ -513,6 +570,15 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Claims a reward for caller.
+		/// Mints a Reward NFT which may be used as a proof of a Reward posession.
+		/// Caller must be eligible for the Reward Type to be able to claim it. Eligibility criteria are:
+		/// - must be an Organization member.
+		/// - must be a Battlepass member (posess a valid Battlepass NFT).
+		/// - required achievement Level must be reached.
+		/// 
+		/// Parameters:
+		/// - `reward_id`: ID of the Reward Type to claim.
 		#[pallet::call_index(7)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::claim_reward())]
 		#[transactional]
@@ -544,7 +610,7 @@ pub mod pallet {
 			// validate Battlepass NFT metadata
 			let metadata: String<T> = BoundedVec::truncate_from(reward.battlepass_id.encode());
 			ensure!(metadata == bp_nft.metadata, Error::<T>::BattlepassNftInvalid);
-			// check if user has enough Points
+			// check if user has reached the required Level
 			ensure!(Self::is_level_reached(&reward.battlepass_id, &claimer, reward.level), Error::<T>::LevelNotReached);
 
 			let nft_id = Self::do_claim_reward(claimer.clone(), reward_id, reward.collection_id, reward.transferable)?;
@@ -554,6 +620,13 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Adds a new achievement Level.
+		/// May be called only by Organization owner.
+		/// 
+		/// Parameters:
+		/// - `battlepass_id`: ID of the Battlepass to add a Level for.
+		/// - `level`: Achievement Level.
+		/// - `points`: Amount of Points needed to reach the Level.
 		#[pallet::call_index(8)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_level())]
 		pub fn add_level(
@@ -579,6 +652,12 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Removes achievement Level.
+		/// May be called only by Organization owner.
+		/// 
+		/// Parameters:
+		/// - `battlepass_id`: ID of the Battlepass to remove a Level for.
+		/// - `level`: Achievement Level.
 		#[pallet::call_index(9)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_level())]
 		pub fn remove_level(
@@ -605,6 +684,12 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Adds for a Battlepass a special trusted account (Bot) which will have a permission to update users' Points.
+		/// May be called only by Organization owner.
+		/// 
+		/// Parameters:
+		/// - `battlepass_id`: ID of the Battlepass to add a Bot for.
+		/// - `bot`: Trusted Account ID.
 		#[pallet::call_index(10)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_bot())]
 		pub fn add_bot(
