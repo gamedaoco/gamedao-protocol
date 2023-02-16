@@ -8,6 +8,7 @@
 // Copyright (C) 2018-2022 GameDAO AG.
 // SPDX-License-Identifier: Apache-2.0
 
+// SBP-M3 review: Please use cargo fmt in enitre project
 //! BATTLEPASS
 //! This pallet provides functionality to create, manage and participate in battlepasses.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -43,6 +44,7 @@ pub type Resource<T> = BoundedVec<
 	<T as Config>::MaxResourcesOnMint,
 >;
 
+// SBP-M3 review: Can we follow good naming convention here instead of having i or any other character?
 pub trait BattlepassHelper<CollectionId, ItemId> {
 	fn collection(i: u32) -> CollectionId;
 	fn item(i: u32) -> ItemId;
@@ -62,7 +64,7 @@ impl<CollectionId: From<u32>, ItemId: From<u32>> BattlepassHelper<CollectionId, 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	
+
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
@@ -140,7 +142,7 @@ pub mod pallet {
 			battlepass_id: T::Hash,
 			season: u32
 		},
-		
+
 		/// BattlePass claimed
 		BattlepassClaimed {
 			by_who: T::AccountId,
@@ -215,6 +217,7 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		AuthorizationError,
+		// SBP-M3 review: Please remove unused enum
 		CollectionUnknown,
 		BattlepassExists,
 		BattlepassClaimed,
@@ -238,6 +241,9 @@ pub mod pallet {
 		RewardStateUnknown,
 	  }
 
+	// SBP-M3 review: Too many storages, can we optimized
+	//
+	// For eg: Battlepasses can contain the state of battlepass(if state is not being used externally)
 	/// Battlepass by its id.
 	///
 	/// Battlepasses: map Hash => Battlepass
@@ -245,6 +251,7 @@ pub mod pallet {
 	#[pallet::getter(fn get_battlepass)]
 	pub(super) type Battlepasses<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Battlepass<T::Hash, T::AccountId, String<T>, T::CollectionId>, OptionQuery>;
 
+	// SBP-M3 review: Are we using this externally? If not, please mark it as super to follow the default approach.
 	/// Battlepass state.
 	///
 	/// BattlepassStates: map Hash => BattlepassState
@@ -289,6 +296,7 @@ pub mod pallet {
 	#[pallet::getter(fn get_reward)]
 	pub(super) type Rewards<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Reward<T::Hash, String<T>, T::CollectionId>, OptionQuery>;
 
+	// SBP-M3 review: RewardStates can be combined with Rewards
 	/// Reward state by its id.
 	///
 	/// RewardStates: map Hash => RewardState
@@ -320,10 +328,14 @@ pub mod pallet {
 		OptionQuery
 	>;
 
+	// SBP-M3 review: Are we using externally? If not, please mark it as super.
+	//
+	// Can we have a doc for this also?
 	#[pallet::storage]
 	#[pallet::getter(fn collection_index)]
 	pub type CollectionIndex<T: Config> = StorageValue<_, u32, ValueQuery>;
 
+	// SBP-M3 review: We should put documentation on each extrinsic
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 
@@ -409,6 +421,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		// SBP-M3 review: Don't we need to check org status here?
 		#[pallet::call_index(3)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::conclude_battlepass())]
 		#[transactional]
@@ -479,7 +492,10 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
 			ensure!(Self::is_prime(&battlepass.org_id, creator.clone())?, Error::<T>::AuthorizationError);
-			
+
+			// SBP-M3 review: Please remove this clone here as this is redundant.
+			//
+			// Do this for other cases as well and check it by running cargo clippy
 			let collection_id = Self::create_collection(creator.clone(), max)?;
 			let reward_id = Self::do_create_reward(battlepass_id, name, cid, level, transferable, collection_id)?;
 
@@ -501,9 +517,10 @@ pub mod pallet {
 			ensure!(Self::check_reward_state(reward_id, RewardState::ACTIVE)?, Error::<T>::RewardInactive);
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(reward.battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
+
 			// check permissions (prime)
 			ensure!(Self::is_prime(&battlepass.org_id, creator.clone())?, Error::<T>::AuthorizationError);
-			
+
 			let state = RewardState::INACTIVE;
 
 			RewardStates::<T>::insert(reward_id, state.clone());
@@ -527,6 +544,11 @@ pub mod pallet {
 			ensure!(Self::check_reward_state(reward_id, RewardState::ACTIVE)?, Error::<T>::RewardInactive);
 			// check if Reward has not been claimed yet
 			ensure!(!ClaimedRewards::<T>::contains_key(&reward_id, &claimer), Error::<T>::RewardClaimed);
+
+			// SBP-M3 review: We don't need to borrow the value here.
+			//
+			// Run cargo clippy to check and remove from other places as well
+
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(&reward.battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check if Battlepass in ACTIVE state
@@ -539,7 +561,7 @@ pub mod pallet {
 			let bp_nft_id = Self::get_claimed_battlepass(reward.battlepass_id, &claimer).ok_or(Error::<T>::BattlepassNotClaimed)?;
 			// check if Battlepass NFT exists
 			let bp_nft = pallet_rmrk_core::Pallet::<T>::nfts(&battlepass.collection_id, bp_nft_id).ok_or(Error::<T>::BattlepassNftUnknown)?;
-			// validate Battlepass NFT ownership			
+			// validate Battlepass NFT ownership
 			ensure!(AccountIdOrCollectionNftTuple::AccountId(claimer.clone()) == bp_nft.owner, Error::<T>::NotOwnNft);
 			// validate Battlepass NFT metadata
 			let metadata: String<T> = BoundedVec::truncate_from(reward.battlepass_id.encode());
@@ -682,13 +704,13 @@ impl<T: Config> Pallet<T> {
 
 	fn check_battlepass_state(battlepass_id: T::Hash, state: BattlepassState) -> Result<bool, DispatchError> {
 		let current_state = Self::get_battlepass_state(battlepass_id).ok_or(Error::<T>::BattlepassStateUnknown)?;
-		
+
 		Ok(current_state == state)
 	}
 
 	fn check_reward_state(reward_id: T::Hash, state: RewardState) -> Result<bool, DispatchError> {
 		let current_state = Self::get_reward_state(reward_id).ok_or(Error::<T>::RewardStateUnknown)?;
-		
+
 		Ok(current_state == state)
 	}
 
@@ -699,7 +721,9 @@ impl<T: Config> Pallet<T> {
 			return (0, None, None);
 		}
 	}
-	
+
+	// SBP-M3 review: can use session's name as session instead of having new_session as this functional always create
+	// battlepass with the provided values?
 	fn do_create_battlepass(creator: T::AccountId, org_id: T::Hash, name: String<T>, cid: String<T>, collection_id: T::CollectionId, price: u16, new_season:u32) -> Result<T::Hash, DispatchError> {
 		let battlepass: Battlepass<T::Hash, T::AccountId, String<T>, T::CollectionId> = Battlepass {
 			creator,
@@ -745,12 +769,16 @@ impl<T: Config> Pallet<T> {
 	fn change_battlepass_state(org_id: T::Hash, battlepass_id: T::Hash, state: BattlepassState) -> DispatchResult {
 		let active_battlepass = if state == BattlepassState::ACTIVE { Some(battlepass_id) } else { None };
 
-		BattlepassStates::<T>::insert(&battlepass_id, state); 
+		BattlepassStates::<T>::insert(&battlepass_id, state);
 		BattlepassInfoByOrg::<T>::try_mutate(org_id, |info| -> Result<(), DispatchError> {
 			if let Some(inf) = info {
 				inf.active = active_battlepass;
 				Ok(())
 			} else {
+
+				// SBP-M3 review: Unneeded `return` statement, please remove it.
+				//
+				// Please run cargo clippy to remove it from other places
 				return Err(Error::<T>::BattlepassInfoUnknown)?;
 			}
 		})?;

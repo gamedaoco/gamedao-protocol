@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use crate as gamedao_battlepass;
+// SBP-M3 review: Please review commented code
 // use frame_support::traits::{ConstU16, ConstU64};
 use frame_support::{construct_runtime, parameter_types, PalletId,
 	traits::{AsEnsureOriginWithArg, Nothing, GenesisBuild},
@@ -162,7 +163,7 @@ parameter_types! {
 	pub const ValueLimit: u32 = 64;	// Max 64 bytes per value
 	pub MetadataDepositBase: Balance = 0;
 	pub MetadataDepositPerByte: Balance = 0;
-	
+
 }
 
 impl pallet_uniques::Config for Test {
@@ -257,7 +258,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 			(ALICE, NATIVE_TOKEN_ID, INIT_BALANCE),
 			(ALICE, PROTOCOL_TOKEN_ID, INIT_BALANCE),
 			(ALICE, PAYMENT_TOKEN_ID, INIT_BALANCE),
-			
+
 			// Contributors
 			(BOB, PAYMENT_TOKEN_ID, INIT_BALANCE),
 			(EVA, PAYMENT_TOKEN_ID, INIT_BALANCE),

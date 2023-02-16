@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+// SBP-M3 review: Always try to use cargo fmt
+
 use frame_support::{assert_noop, assert_ok};
 use pallet_rmrk_core::Nfts;
 use rmrk_traits::AccountIdOrCollectionNftTuple;
@@ -7,9 +9,9 @@ use sp_core::H256;
 
 use crate::mock::{
     new_test_ext, RuntimeOrigin as Origin, Test,
-    //System, 
+    //System,
     Battlepass, Control, RmrkCore,
-    ALICE, BOB, EVA, TOM, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, DOLLARS, 
+    ALICE, BOB, EVA, TOM, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, DOLLARS,
     AccountId, StringLimit, //Event
 };
 use gamedao_control::types::{AccessModel, FeeModel, OrgType, Org};
@@ -47,7 +49,7 @@ fn get_battlepass_hash(creator: AccountId, org_id: H256, season: u32, price: u16
         price,
         collection_id
     };
-    
+
     <Test as frame_system::Config>::Hashing::hash_of(&battlepass)
 }
 
@@ -56,11 +58,11 @@ fn create_battlepass(org_id: H256) -> H256 {
     let season = Battlepass::get_battlepass_info(&org_id).0 + 1;
     let price = 10;
     let collection_id = CollectionIndex::<Test>::get();
-    
+
     assert_ok!(
         Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), price)
     );
-    
+
     get_battlepass_hash(creator, org_id, season, price, collection_id)
 }
 
@@ -73,7 +75,7 @@ fn get_reward_hash(battlepass_id: H256, level: u8, transferable: bool, collectio
         transferable,
         collection_id
     };
-    
+
     <Test as frame_system::Config>::Hashing::hash_of(&reward)
 }
 
@@ -140,7 +142,7 @@ fn create_battlepass_test(){
         assert_ok!(
             Control::enable_org(Origin::signed(creator), org_id)
         );
-        
+
         // Should not create if origin is not a Prime
         assert_ok!(
             Control::add_member(Origin::signed(not_creator), org_id, not_creator)
@@ -172,7 +174,7 @@ fn create_battlepass_test(){
         assert_eq!(bp_info.is_some(), true);
         assert_eq!(bp_info.clone().unwrap().count, 1);
         assert_eq!(bp_info.clone().unwrap().active, None);
-        
+
         // Should create another Battlepass (may be multiple in DRAFT state)
         assert_ok!(
             Battlepass::create_battlepass(Origin::signed(creator), org_id, bounded_str.clone(), bounded_str.clone(), 10)
@@ -191,6 +193,8 @@ fn create_battlepass_test(){
         assert_eq!(bp_info.is_some(), true);
         assert_eq!(bp_info.clone().unwrap().count, 2);
         assert_eq!(bp_info.clone().unwrap().active, None);
+
+		// SBP-M3 review: Please remove commented code
 
         // Check events (collection created, battlepass created)
         // println!("Events: {}", System::events().len());
@@ -266,6 +270,8 @@ fn activate_battlepass_test() {
             Error::<Test>::BattlepassExists
         );
 
+		// SBP-M3 review: Please remove commented code
+
         // Check events (battlepass activated)
         // println!("Events: {}", System::events().len());
         // System::assert_has_event(Event::Battlepass(crate::Event::BattlepassActivated { by_who: creator, org_id, battlepass_id } ));
@@ -334,8 +340,12 @@ fn deactivate_battlepass_test() {
             Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id),
             Error::<Test>::BattlepassStateWrong
         );
-     
-        // Check events 
+
+		// SBP-M3 review: Either add code for checking events or remove this commented instruction
+		//
+		// Do this for other test cases also
+
+		// Check events
 
     })
 }
@@ -364,7 +374,7 @@ fn claim_battlepass_test() {
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator),
             Error::<Test>::BattlepassStateWrong
         );
-     
+
         // Should not claim if Org is inactive
         assert_ok!(
             Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
@@ -395,7 +405,7 @@ fn claim_battlepass_test() {
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member),
             Error::<Test>::NotMember
         );
-        
+
         // Should claim for others if origin is a Prime
         assert_ok!(
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator)
@@ -432,7 +442,7 @@ fn claim_battlepass_test() {
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator),
             Error::<Test>::BattlepassStateWrong
         );
-        // Check events 
+        // Check events
 
     })
 }
@@ -493,7 +503,7 @@ fn set_points_test() {
             Battlepass::set_points(Origin::signed(bot), battlepass_id, creator, 10),
             Error::<Test>::AuthorizationError
         );
-        
+
         // Should not set for non members
         assert_noop!(
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_member, 10),
@@ -525,8 +535,8 @@ fn set_points_test() {
             Battlepass::set_points(Origin::signed(creator), battlepass_id, creator, 10),
             Error::<Test>::BattlepassStateWrong
         );
-    
-        // Check events 
+
+        // Check events
 
     })
 }
@@ -541,7 +551,7 @@ fn create_reward_test() {
         let creator = ALICE;
         let not_creator = BOB;
         let not_member = EVA;
-        
+
 
         // Should not create if Battlepass unknown
         assert_noop!(
@@ -615,8 +625,8 @@ fn create_reward_test() {
             Error::<Test>::BattlepassStateWrong
         );
 
-    
-        // Check events 
+
+        // Check events
 
     })
 }
@@ -675,9 +685,9 @@ fn disable_reward_test() {
             Battlepass::disable_reward(Origin::signed(creator), reward_id),
             Error::<Test>::RewardInactive
         );
-    
 
-        // Check events 
+
+        // Check events
 
     })
 }
@@ -855,8 +865,8 @@ fn claim_reward_test() {
             Battlepass::claim_reward(Origin::signed(not_creator_4), reward_id),
             Error::<Test>::BattlepassStateWrong
         );
-    
-        // Check events 
+
+        // Check events
 
     })
 }
@@ -925,8 +935,8 @@ fn add_level_test() {
             Battlepass::add_level(Origin::signed(creator), battlepass_id, 1, 10),
             Error::<Test>::BattlepassStateWrong
         );
-    
-        // Check events 
+
+        // Check events
 
     })
 }
@@ -1010,8 +1020,8 @@ fn remove_level_test() {
             Error::<Test>::BattlepassStateWrong
         );
 
-    
-        // Check events 
+
+        // Check events
 
     })
 }
@@ -1089,8 +1099,8 @@ fn add_bot_test() {
             Error::<Test>::BattlepassStateWrong
         );
 
-    
-        // Check events 
+
+        // Check events
 
     })
 }

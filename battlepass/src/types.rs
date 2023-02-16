@@ -1,6 +1,8 @@
 use frame_support::pallet_prelude::*;
 use codec::MaxEncodedLen;
 
+// SBP-M3 review: Always try to use cargo fmt
+
 #[derive(Encode, Decode, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub enum BattlepassState {
 	DRAFT,
