@@ -98,7 +98,7 @@ fn add_member(org_id: H256, account: AccountId) {
 }
 
 fn string() -> BoundedVec<u8, StringLimit>{
-    BoundedVec::truncate_from(vec![1,2])
+    BoundedVec::truncate_from(b"string".to_vec())
 }
 
 #[test]
@@ -116,7 +116,6 @@ fn create_battlepass_test(){
     new_test_ext().execute_with(|| {
         let org_id = create_org();
         let wrong_org_id = <Test as frame_system::Config>::Hashing::hash_of(&"123");
-        let bounded_str = BoundedVec::truncate_from(vec![1,2]);
         let creator = ALICE;
         let not_creator = BOB;
         let not_member = EVA;
@@ -125,7 +124,7 @@ fn create_battlepass_test(){
 
         // Should not create for non existing Org
         assert_noop!(
-            Battlepass::create_battlepass(Origin::signed(creator), wrong_org_id, bounded_str.clone(), bounded_str.clone(), 10),
+            Battlepass::create_battlepass(Origin::signed(creator), wrong_org_id, string(), string(), 10),
             Error::<Test>::OrgUnknownOrInactive
         );
 
@@ -134,7 +133,7 @@ fn create_battlepass_test(){
             Control::disable_org(Origin::signed(creator), org_id)
         );
         assert_noop!(
-            Battlepass::create_battlepass(Origin::signed(creator), org_id, bounded_str.clone(), bounded_str.clone(), 10),
+            Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), 10),
             Error::<Test>::OrgUnknownOrInactive
         );
         assert_ok!(
@@ -146,17 +145,17 @@ fn create_battlepass_test(){
             Control::add_member(Origin::signed(not_creator), org_id, not_creator)
         );
         assert_noop!(
-            Battlepass::create_battlepass(Origin::signed(not_creator), org_id, bounded_str.clone(), bounded_str.clone(), 10),
+            Battlepass::create_battlepass(Origin::signed(not_creator), org_id, string(), string(), 10),
             Error::<Test>::AuthorizationError
         );
         assert_noop!(
-            Battlepass::create_battlepass(Origin::signed(not_member), org_id, bounded_str.clone(), bounded_str.clone(), 10),
+            Battlepass::create_battlepass(Origin::signed(not_member), org_id, string(), string(), 10),
             Error::<Test>::AuthorizationError
         );
 
         // Should create new Battlepass
         assert_ok!(
-            Battlepass::create_battlepass(Origin::signed(creator), org_id, bounded_str.clone(), bounded_str.clone(), 10)
+            Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), 10)
         );
         // Check if NFT collection created
         assert_eq!(pallet_rmrk_core::Collections::<Test>::contains_key(0), true);
@@ -175,7 +174,7 @@ fn create_battlepass_test(){
         
         // Should create another Battlepass (may be multiple in DRAFT state)
         assert_ok!(
-            Battlepass::create_battlepass(Origin::signed(creator), org_id, bounded_str.clone(), bounded_str.clone(), 10)
+            Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), 10)
         );
         // Check if NFT collection created
         assert_eq!(pallet_rmrk_core::Collections::<Test>::contains_key(1), true);
@@ -200,6 +199,89 @@ fn create_battlepass_test(){
 }
 
 #[test]
+fn update_battlepass_test() {
+    new_test_ext().execute_with(|| {
+        let org_id = create_org();
+        let battlepass_id = create_battlepass(org_id);
+        let wrong_battlepass_id = <Test as frame_system::Config>::Hashing::hash_of(&"123");
+        let creator = ALICE;
+        let not_creator = BOB;
+        let not_member = EVA;
+        let new_name = BoundedVec::truncate_from(b"new name".to_vec());
+        let new_cid = BoundedVec::truncate_from(b"new cid".to_vec());
+        let new_price = 20;
+
+        // Should not update unknown Battlepass
+        assert_noop!(
+            Battlepass::update_battlepass(Origin::signed(creator), wrong_battlepass_id, Some(string()), Some(string()), Some(10)),
+            Error::<Test>::BattlepassUnknown
+        );
+
+        // Should not update if no arguments provided
+        assert_noop!(
+            Battlepass::update_battlepass(Origin::signed(creator), battlepass_id, None, None, None),
+            Error::<Test>::NoChangesProvided
+        );
+
+        // Should not update if values are the same
+        assert_noop!(
+            Battlepass::update_battlepass(Origin::signed(creator), battlepass_id, Some(string()), Some(string()), Some(10)),
+            Error::<Test>::NoChangesProvided
+        );
+
+        // Should not update if Org is inactive
+        assert_ok!(
+            Control::disable_org(Origin::signed(creator), org_id)
+        );
+        assert_noop!(
+            Battlepass::update_battlepass(Origin::signed(creator), battlepass_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_price.clone())),
+            Error::<Test>::OrgUnknownOrInactive
+        );
+        assert_ok!(
+            Control::enable_org(Origin::signed(creator), org_id)
+        );
+
+        // Should not update if origin is not a Prime
+        assert_ok!(
+            Control::add_member(Origin::signed(not_creator), org_id, not_creator)
+        );
+        assert_noop!(
+            Battlepass::update_battlepass(Origin::signed(not_creator), battlepass_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_price.clone())),
+            Error::<Test>::AuthorizationError
+        );
+        assert_noop!(
+            Battlepass::update_battlepass(Origin::signed(not_member), battlepass_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_price.clone())),
+            Error::<Test>::AuthorizationError
+        );
+
+        // Should update battlepass
+        assert_ok!(
+            Battlepass::update_battlepass(Origin::signed(creator), battlepass_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_price.clone())),
+        );
+        // Check if Battlepass updated
+        let updated = Battlepass::get_battlepass(battlepass_id).unwrap();
+        assert_eq!(updated.name, new_name.clone());
+        assert_eq!(updated.cid, new_cid.clone());
+        assert_eq!(updated.price, new_price.clone());
+
+
+        // Should not update if Battlepass state is ENDED
+        assert_ok!(
+            Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
+        );
+        assert_ok!(
+            Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id)
+        );
+        assert_noop!(
+            Battlepass::update_battlepass(Origin::signed(creator), battlepass_id, Some(new_name), Some(new_cid), Some(30)),
+            Error::<Test>::BattlepassStateWrong
+        );
+
+        // Check events (battlepass updated)
+    })
+}
+
+#[test]
 fn activate_battlepass_test() {
     new_test_ext().execute_with(|| {
         let org_id = create_org();
@@ -208,7 +290,6 @@ fn activate_battlepass_test() {
         let creator = ALICE;
         let not_creator = BOB;
         let not_member = EVA;
-        let bounded_str = BoundedVec::truncate_from(vec![1,2]);
 
         // Should not activate unknown Battlepass
         assert_noop!(
@@ -262,7 +343,7 @@ fn activate_battlepass_test() {
 
         // Should not create if Org has an active battlepass
         assert_noop!(
-            Battlepass::create_battlepass(Origin::signed(creator), org_id, bounded_str.clone(), bounded_str.clone(), 10),
+            Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), 10),
             Error::<Test>::BattlepassExists
         );
 
@@ -537,7 +618,6 @@ fn create_reward_test() {
         let org_id = create_org();
         let battlepass_id = create_battlepass(org_id);
         let wrong_battlepass_id = <Test as frame_system::Config>::Hashing::hash_of(&"123");
-        let bounded_str = BoundedVec::truncate_from(vec![1,2]);
         let creator = ALICE;
         let not_creator = BOB;
         let not_member = EVA;
@@ -545,7 +625,7 @@ fn create_reward_test() {
 
         // Should not create if Battlepass unknown
         assert_noop!(
-            Battlepass::create_reward(Origin::signed(creator), wrong_battlepass_id, bounded_str.clone(), bounded_str.clone(), Some(1), 1, true),
+            Battlepass::create_reward(Origin::signed(creator), wrong_battlepass_id, string(), string(), Some(1), 1, true),
             Error::<Test>::BattlepassUnknown
         );
 
@@ -554,7 +634,7 @@ fn create_reward_test() {
             Control::disable_org(Origin::signed(creator), org_id)
         );
         assert_noop!(
-            Battlepass::create_reward(Origin::signed(creator), battlepass_id, bounded_str.clone(), bounded_str.clone(), Some(1), 1, true),
+            Battlepass::create_reward(Origin::signed(creator), battlepass_id, string(), string(), Some(1), 1, true),
             Error::<Test>::OrgUnknownOrInactive
         );
         assert_ok!(
@@ -566,17 +646,17 @@ fn create_reward_test() {
             Control::add_member(Origin::signed(not_creator), org_id, not_creator)
         );
         assert_noop!(
-            Battlepass::create_reward(Origin::signed(not_creator), battlepass_id, bounded_str.clone(), bounded_str.clone(), Some(1), 1, true),
+            Battlepass::create_reward(Origin::signed(not_creator), battlepass_id, string(), string(), Some(1), 1, true),
             Error::<Test>::AuthorizationError
         );
         assert_noop!(
-            Battlepass::create_reward(Origin::signed(not_member), battlepass_id, bounded_str.clone(), bounded_str.clone(), Some(1), 1, true),
+            Battlepass::create_reward(Origin::signed(not_member), battlepass_id, string(), string(), Some(1), 1, true),
             Error::<Test>::AuthorizationError
         );
 
         // Should create Reward if Battlepass state is DRAFT
         assert_ok!(
-            Battlepass::create_reward(Origin::signed(creator), battlepass_id, bounded_str.clone(), bounded_str.clone(), Some(1), 1, true)
+            Battlepass::create_reward(Origin::signed(creator), battlepass_id, string(), string(), Some(1), 1, true)
         );
         // Check if NFT collection created
         assert_eq!(pallet_rmrk_core::Collections::<Test>::contains_key(1), true);
@@ -593,7 +673,7 @@ fn create_reward_test() {
             Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
         );
         assert_ok!(
-            Battlepass::create_reward(Origin::signed(creator), battlepass_id, bounded_str.clone(), bounded_str.clone(), Some(1), 1, true)
+            Battlepass::create_reward(Origin::signed(creator), battlepass_id, string(), string(), Some(1), 1, true)
         );
         // Check if NFT collection created
         assert_eq!(pallet_rmrk_core::Collections::<Test>::contains_key(2), true);
@@ -611,10 +691,115 @@ fn create_reward_test() {
             Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id)
         );
         assert_noop!(
-            Battlepass::create_reward(Origin::signed(creator), battlepass_id, bounded_str.clone(), bounded_str.clone(), Some(1), 1, true),
+            Battlepass::create_reward(Origin::signed(creator), battlepass_id, string(), string(), Some(1), 1, true),
             Error::<Test>::BattlepassStateWrong
         );
 
+    
+        // Check events 
+
+    })
+}
+
+#[test]
+fn update_reward_test() {
+    new_test_ext().execute_with(|| {
+        let org_id = create_org();
+        let battlepass_id = create_battlepass(org_id);
+        let reward_id = create_reward(battlepass_id);
+        let reward_id_2 = create_reward(battlepass_id);
+        let wrong_id = <Test as frame_system::Config>::Hashing::hash_of(&"123");
+        let creator = ALICE;
+        let not_creator = BOB;
+        let not_member = EVA;
+        let new_name = BoundedVec::truncate_from(b"new name".to_vec());
+        let new_cid = BoundedVec::truncate_from(b"new cid".to_vec());
+        let new_transferable = false;
+
+        // Should not update if Reward unknown
+        assert_noop!(
+            Battlepass::update_reward(Origin::signed(creator), wrong_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_transferable.clone())),
+            Error::<Test>::RewardUnknown
+        );
+
+        // Should not update if no arguments provided
+        assert_noop!(
+            Battlepass::update_reward(Origin::signed(creator), reward_id, None, None, None),
+            Error::<Test>::NoChangesProvided
+        );
+
+        // Should not update if values are the same
+        assert_noop!(
+            Battlepass::update_reward(Origin::signed(creator), reward_id, Some(string()), Some(string()), Some(true)),
+            Error::<Test>::NoChangesProvided
+        );
+
+        // Should not update if Battlepass unknown
+        Rewards::<Test>::mutate(reward_id_2, |reward| {
+            if let Some(r) = reward {
+                r.battlepass_id = wrong_id;
+            }
+        } );
+        assert_noop!(
+            Battlepass::update_reward(Origin::signed(creator), reward_id_2, Some(new_name.clone()), Some(new_cid.clone()), Some(new_transferable.clone())),
+            Error::<Test>::BattlepassUnknown
+        );
+
+        // Should not update if Org is inactive
+        assert_ok!(
+            Control::disable_org(Origin::signed(creator), org_id)
+        );
+        assert_noop!(
+            Battlepass::update_reward(Origin::signed(creator), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_transferable.clone())),
+            Error::<Test>::OrgUnknownOrInactive
+        );
+        assert_ok!(
+            Control::enable_org(Origin::signed(creator), org_id)
+        );
+
+        // Should not update if origin is not a Prime
+        assert_ok!(
+            Control::add_member(Origin::signed(not_creator), org_id, not_creator)
+        );
+        assert_noop!(
+            Battlepass::update_reward(Origin::signed(not_creator), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_transferable.clone())),
+            Error::<Test>::AuthorizationError
+        );
+        assert_noop!(
+            Battlepass::update_reward(Origin::signed(not_member), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_transferable.clone())),
+            Error::<Test>::AuthorizationError
+        );
+
+        // Should update Reward
+        assert_ok!(
+            Battlepass::update_reward(Origin::signed(creator), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_transferable.clone()))
+        );
+        // Check if Reward updated
+        let updated = Battlepass::get_reward(reward_id).unwrap();
+        assert_eq!(updated.name, new_name.clone());
+        assert_eq!(updated.cid, new_cid.clone());
+        assert_eq!(updated.transferable, new_transferable.clone());
+
+        // Should not update if Battlepass state is ENDED
+        assert_ok!(
+            Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
+        );
+        assert_ok!(
+            Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id)
+        );
+        assert_noop!(
+            Battlepass::update_reward(Origin::signed(creator), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(true)),
+            Error::<Test>::BattlepassStateWrong
+        );
+
+        // Should not update if Reward inactive
+        assert_ok!(
+            Battlepass::disable_reward(Origin::signed(creator), reward_id)
+        );
+        assert_noop!(
+            Battlepass::update_reward(Origin::signed(creator), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(true)),
+            Error::<Test>::RewardInactive
+        );
     
         // Check events 
 
