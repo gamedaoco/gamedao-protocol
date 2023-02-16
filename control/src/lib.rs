@@ -701,13 +701,13 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	fn ensure_root_or_governance(origin: T::RuntimeOrigin) -> Result<(), BadOrigin> {
-		match origin.into() {
-			Ok(RawOrigin::Root) => Ok(()),
-			// TODO: implement governance origin type
-			_ => Err(BadOrigin),
-		}
-	}
+	// fn ensure_root_or_governance(origin: T::RuntimeOrigin) -> Result<(), BadOrigin> {
+	// 	match origin.into() {
+	// 		Ok(RawOrigin::Root) => Ok(()),
+	// 		// TODO: implement governance origin type
+	// 		_ => Err(BadOrigin),
+	// 	}
+	// }
 
 	fn ensure_root_or_self(origin: T::RuntimeOrigin, who: T::AccountId) -> Result<(), BadOrigin> {
 		match origin.into() {
