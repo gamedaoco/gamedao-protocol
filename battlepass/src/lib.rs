@@ -140,6 +140,14 @@ pub mod pallet {
 			battlepass_id: T::Hash,
 			season: u32
 		},
+
+		/// BattlePass updated
+		BattlepassUpdated {
+			battlepass_id: T::Hash,
+			name: Option<String<T>>,
+			cid: Option<String<T>>,
+			price: Option<u16>
+		},
 		
 		/// BattlePass claimed
 		BattlepassClaimed {
@@ -177,6 +185,14 @@ pub mod pallet {
 			reward_id: T::Hash,
 			battlepass_id: T::Hash,
 			level: u8
+		},
+
+		/// Reward updated
+		RewardUpdated {
+			reward_id: T::Hash,
+			name: Option<String<T>>,
+			cid: Option<String<T>>,
+			transferable: Option<bool>
 		},
 
 		/// Reward claimed by user
@@ -228,6 +244,7 @@ pub mod pallet {
 		LevelNotReached,
 		LevelUnknown,
 		NoAvailableCollectionId,
+		NoChangesProvided,
 		NotMember,
 		NotOwnNft,
 		OrgPrimeUnknown,
@@ -368,13 +385,51 @@ pub mod pallet {
 			Ok(())
 		}
 
+		
+		#[pallet::call_index(1)]
+		#[pallet::weight(10_000_000)]
+		pub fn update_battlepass(
+			origin: OriginFor<T>,
+			battlepass_id: T::Hash,
+			name: Option<String<T>>,
+			cid: Option<String<T>>,
+			price: Option<u16>,
+		) -> DispatchResult {
+			let creator = ensure_signed(origin)?;
+			// check if Battlepass exists
+			let mut battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
+			// check if there is something to update
+			ensure!(
+				name.is_some() && name.clone().unwrap() != battlepass.name || 
+				cid.is_some() && cid.clone().unwrap() != battlepass.cid || 
+				price.is_some() && price.clone().unwrap() != battlepass.price, 
+				Error::<T>::NoChangesProvided
+			);
+			// check if Battlepass state is not ENDED
+			ensure!(!Self::check_battlepass_state(battlepass_id, BattlepassState::ENDED)?, Error::<T>::BattlepassStateWrong);
+			// check if Org is active
+			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
+			// check permissions (prime)
+			ensure!(Self::is_prime(&battlepass.org_id, creator.clone())?, Error::<T>::AuthorizationError);
+
+			battlepass.name = name.clone().unwrap();
+			battlepass.cid = cid.clone().unwrap();
+			battlepass.price = price.clone().unwrap();
+
+			Battlepasses::<T>::insert(battlepass_id, battlepass);
+
+			Self::deposit_event(Event::BattlepassUpdated { battlepass_id, name, cid, price });
+
+			Ok(())
+		}
+
 		/// Claims the Battlepass-NFT for user who joined the Battlepass.
 		/// This NFT may be used as a proof of a Battlepass membership.
 		/// 
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass for which to claim NFT.
 		/// - `for_who`: Account for which to claim NFT.
-		#[pallet::call_index(1)]
+		#[pallet::call_index(2)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::claim_battlepass())]
 		#[transactional]
 		pub fn claim_battlepass(
@@ -409,7 +464,7 @@ pub mod pallet {
 		/// 
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to activate.
-		#[pallet::call_index(2)]
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::activate_battlepass())]
 		#[transactional]
 		pub fn activate_battlepass(
@@ -440,7 +495,7 @@ pub mod pallet {
 		/// 
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to conclude.
-		#[pallet::call_index(3)]
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::conclude_battlepass())]
 		#[transactional]
 		pub fn conclude_battlepass(
@@ -471,7 +526,7 @@ pub mod pallet {
 		/// - `battlepass_id`: ID of the Battlepass.
 		/// - `account`: User's account for which to set Points.
 		/// - `amount`: Amount of Points to set.
-		#[pallet::call_index(4)]
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_points())]
 		pub fn set_points(
 			origin: OriginFor<T>,
@@ -509,7 +564,7 @@ pub mod pallet {
 		/// - `max`: Maximum number of claimed rewards this Reward Type may have. Unlimited if empty.
 		/// - `level`: Minimum Level user must reach to be able to claim this Reward Type.
 		/// - `transferable`: Specifies whether claimed Reward NFTs could be transferred (sold) to another account.
-		#[pallet::call_index(5)]
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::create_reward())]
 		#[transactional]
 		pub fn create_reward(
@@ -539,13 +594,55 @@ pub mod pallet {
 			Ok(())
 		}
 
+		
+		#[pallet::call_index(7)]
+		#[pallet::weight(10_000_000)]
+		pub fn update_reward(
+			origin: OriginFor<T>,
+			reward_id: T::Hash,
+			name: Option<String<T>>,
+			cid: Option<String<T>>,
+			transferable: Option<bool>,
+		) -> DispatchResult {
+			let caller = ensure_signed(origin)?;
+			// check if Reward exists
+			let mut reward = Self::get_reward(reward_id).ok_or(Error::<T>::RewardUnknown)?;
+			// check if there is something to update
+			ensure!(
+				name.is_some() && name.clone().unwrap() != reward.name || 
+				cid.is_some() && cid.clone().unwrap() != reward.cid || 
+				transferable.is_some() && transferable.clone().unwrap() != reward.transferable, 
+				Error::<T>::NoChangesProvided
+			);
+			// check if Reward is active
+			ensure!(Self::check_reward_state(reward_id, RewardState::ACTIVE)?, Error::<T>::RewardInactive);
+			// check if Battlepass exists
+			let battlepass = Self::get_battlepass(reward.battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
+			// check if Battlepass is not ended
+			ensure!(!Self::check_battlepass_state(reward.battlepass_id, BattlepassState::ENDED)?, Error::<T>::BattlepassStateWrong);
+			// check if Org is active
+			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
+			// check permissions (prime)
+			ensure!(Self::is_prime(&battlepass.org_id, caller.clone())?, Error::<T>::AuthorizationError);
+			
+			reward.name = name.clone().unwrap();
+			reward.cid = cid.clone().unwrap();
+			reward.transferable = transferable.clone().unwrap();
+
+			Rewards::<T>::insert(reward_id, reward);
+
+			Self::deposit_event(Event::RewardUpdated { reward_id, name, cid, transferable });
+
+			Ok(())
+		}
+
 		/// Disables the Reward Type.
 		/// After calling this extrinsic Reward Type state can not be changed any more.
 		/// May be called only by Organization owner.
 		/// 
 		/// Parameters:
 		/// - `reward_id`: ID of the Reward Type to be disabled.
-		#[pallet::call_index(6)]
+		#[pallet::call_index(8)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::disable_reward())]
 		pub fn disable_reward(
 			origin: OriginFor<T>,
@@ -579,7 +676,7 @@ pub mod pallet {
 		/// 
 		/// Parameters:
 		/// - `reward_id`: ID of the Reward Type to claim.
-		#[pallet::call_index(7)]
+		#[pallet::call_index(9)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::claim_reward())]
 		#[transactional]
 		pub fn claim_reward(
@@ -627,7 +724,7 @@ pub mod pallet {
 		/// - `battlepass_id`: ID of the Battlepass to add a Level for.
 		/// - `level`: Achievement Level.
 		/// - `points`: Amount of Points needed to reach the Level.
-		#[pallet::call_index(8)]
+		#[pallet::call_index(10)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_level())]
 		pub fn add_level(
 			origin: OriginFor<T>,
@@ -658,7 +755,7 @@ pub mod pallet {
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to remove a Level for.
 		/// - `level`: Achievement Level.
-		#[pallet::call_index(9)]
+		#[pallet::call_index(11)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_level())]
 		pub fn remove_level(
 			origin: OriginFor<T>,
@@ -690,7 +787,7 @@ pub mod pallet {
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to add a Bot for.
 		/// - `bot`: Trusted Account ID.
-		#[pallet::call_index(10)]
+		#[pallet::call_index(12)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_bot())]
 		pub fn add_bot(
 			origin: OriginFor<T>,
