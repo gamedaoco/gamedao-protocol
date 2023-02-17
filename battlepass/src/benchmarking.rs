@@ -96,6 +96,21 @@ benchmarks! {
 		assert!(BattlepassInfoByOrg::<T>::get(org_id).is_some());
 	}
 
+    update_battlepass {
+        let caller: T::AccountId = get_funded_caller::<T>()?;
+        let org_id = get_org::<T>(caller.clone());
+        let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
+        let new_name = BoundedVec::truncate_from(b"new name".to_vec());
+        let new_cid = BoundedVec::truncate_from(b"new cid".to_vec());
+        let new_price = 20;
+    }: _(RawOrigin::Signed(caller), battlepass_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_price.clone()))
+    verify {
+        let battlepass = Battlepasses::<T>::get(battlepass_id).unwrap();
+        assert!(battlepass.name == new_name);
+        assert!(battlepass.cid == new_cid);
+        assert!(battlepass.price == new_price);
+	}
+
     claim_battlepass {
         let caller: T::AccountId = get_funded_caller::<T>()?;
         let org_id = get_org::<T>(caller.clone());
@@ -144,6 +159,22 @@ benchmarks! {
     }: _(RawOrigin::Signed(caller), battlepass_id, str.clone(), str.clone(), Some(10), 1, false)
     verify {
 		assert!(Rewards::<T>::iter_keys().count() == 1);
+	}
+
+    update_reward {
+        let caller: T::AccountId = get_funded_caller::<T>()?;
+        let org_id = get_org::<T>(caller.clone());
+        let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
+        let reward_id = get_reward::<T>(caller.clone(), battlepass_id);
+        let new_name = BoundedVec::truncate_from(b"new name".to_vec());
+        let new_cid = BoundedVec::truncate_from(b"new cid".to_vec());
+        let new_transferable = false;
+    }: _(RawOrigin::Signed(caller), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_transferable.clone()))
+    verify {
+		let reward = Rewards::<T>::get(reward_id).unwrap();
+        assert!(reward.name == new_name);
+        assert!(reward.cid == new_cid);
+        assert!(reward.transferable == new_transferable);
 	}
 
     disable_reward {

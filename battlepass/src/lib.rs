@@ -387,7 +387,7 @@ pub mod pallet {
 
 		
 		#[pallet::call_index(1)]
-		#[pallet::weight(10_000_000)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_battlepass())]
 		pub fn update_battlepass(
 			origin: OriginFor<T>,
 			battlepass_id: T::Hash,
@@ -596,7 +596,7 @@ pub mod pallet {
 
 		
 		#[pallet::call_index(7)]
-		#[pallet::weight(10_000_000)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_reward())]
 		pub fn update_reward(
 			origin: OriginFor<T>,
 			reward_id: T::Hash,
