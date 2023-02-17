@@ -190,6 +190,8 @@ pub mod pallet {
 						};
 						let org_id = <T as frame_system::Config>::Hashing::hash_of(&org);
 
+						// SBP-M3 review: should it pass when some action fails during genesis block?
+						// IMHO it should panic -> not allow to proceed and start the chain
 						if Pallet::<T>::do_create_org(org_id.clone(), &org, treasury_id.clone(), *deposit).is_err() { log::error!("Error creating organization in genesis.") };
 						if Pallet::<T>::do_add_member(org_id, creator.clone(), MemberState::Active).is_err() { log::error!("Error adding member in genesis.") };
 						if Pallet::<T>::pay_membership_fee(&creator, &treasury_id, &org).is_err() { log::error!("Error paying membership fee in genesis.") };

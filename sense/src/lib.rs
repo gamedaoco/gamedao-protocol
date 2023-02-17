@@ -129,6 +129,9 @@ pub mod pallet {
 			account_id: T::AccountId,
 			cid: BoundedVec<u8, T::StringLimit>,
 		) -> DispatchResult {
+			// SBP-M3 review: usage of the Sudo pallet is not recommended
+			// You should introduce an entity like a council or sth similiar
+			// Instead of having full power & rights into single account
 			ensure_root(origin)?;
 			ensure!(cid.len() > 0, Error::<T>::InvalidParam);
 			ensure!(!Entities::<T>::contains_key(account_id.clone()), Error::<T>::EntityExists);
@@ -169,6 +172,7 @@ pub mod pallet {
 			property_type: PropertyType,
 			value: u8
 		) -> DispatchResult {
+			// SBP-M3 review: same as previously
 			ensure_root(origin)?;
 			ensure!(Entities::<T>::contains_key(account_id.clone()), Error::<T>::EntityUnknown);
 

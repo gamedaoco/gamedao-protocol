@@ -251,6 +251,8 @@ pub mod pallet {
 
 		#[pallet::weight(T::WeightInfo::proposal())]
 		#[transactional]
+		// SBP-M3 review: too long function
+		// Refactor needed
 		pub fn proposal(
 			origin: OriginFor<T>,
 			proposal_type: ProposalType,

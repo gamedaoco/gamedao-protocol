@@ -1,5 +1,11 @@
 #![cfg(test)]
 
+// SBP-M3 review:
+// I would split test into separate cases
+// It is much easier to handle failing tests and finding error
+// Once checked working scenario, other tests should assume that this part is working
+// It will reduce the whole amount of checks in tests
+
 // SBP-M3 review: Always try to use cargo fmt
 
 use frame_support::{assert_noop, assert_ok};

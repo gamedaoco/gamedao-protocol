@@ -112,7 +112,7 @@ pub mod pallet {
 			+ MultiReservableCurrency<Self::AccountId>;
 
 		type Control: ControlTrait<Self::AccountId, Self::Hash>;
-		
+
 		#[cfg(feature = "runtime-benchmarks")]
 		type ControlBenchmarkHelper: ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
 
@@ -330,6 +330,10 @@ pub mod pallet {
 			T::WeightInfo::on_initialize(processed, campaigns.len() as u32)
 		}
 
+		// SBP-M3 review: I would suggest to use pattern matching instead of
+		// - checking if Option is not empty
+		// - unwraping it then
+		// Pattern matching checks if you handle all possible situations and not unwraping `None` value
 		fn on_finalize(block_number: T::BlockNumber) {
 			// Prepare and validate data for campaign settlement
 			for campaign_id in &CampaignsByBlock::<T>::get(BlockType::Expiry, block_number) {
@@ -361,6 +365,7 @@ pub mod pallet {
 					);
 					continue
 				}
+				// SBP-M3 review: you need to be sure that it will not fail -> `unwrap`
 				let c = BoundedVec::try_from(contributors.clone()).unwrap();
 				CampaignFinalizationQueue::<T>::insert(campaign_id, (campaign, campaign_balance, state, treasury_id, c));
 			}
@@ -552,7 +557,7 @@ impl<T: Config> Pallet<T> {
 				let contribution = CampaignContribution::<T>::get(campaign_id, contributor.clone());
 				T::Currency::unreserve(T::PaymentTokenId::get(), &contributor, contribution);
 			},
-			
+
 			_ => {},
 		}
 	}
@@ -581,7 +586,7 @@ impl<T: Config> Pallet<T> {
 				CampaignStates::<T>::insert(&campaign_id, CampaignState::Succeeded);
 
 				Self::deposit_event(Event::Succeeded { campaign_id, campaign_balance: updated_balance, block_number });
-			}, 
+			},
 
 			&CampaignState::Failed => {
 				// Unreserve Initial deposit

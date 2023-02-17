@@ -1,5 +1,8 @@
 #![cfg(test)]
 
+// SBP-M3 review: I would split tests into separated test cases
+// Too many checks in a single test
+
 use frame_support::traits::Hooks;
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
@@ -301,6 +304,7 @@ fn flow_contribute_success() {
 }
 
 /// Tests queue when two campaigns created
+// SBP-M3 review: skipped test
 // #[test]
 fn flow_on_finalize_campaign_succeess() {
 	new_test_ext().execute_with(|| {
