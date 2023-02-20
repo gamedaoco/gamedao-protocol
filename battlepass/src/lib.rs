@@ -348,8 +348,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 
 		/// Creates a Battlepass.
-		/// May be called only by Organization owner.
 		/// Also creates a new collection to store claimed Battlepass NFTs.
+		/// May be called only by Organization owner.
 		/// 
 		/// Parameters:
 		/// - `org_id`: ID of the Organization for which to create a Battlepass.
@@ -385,7 +385,14 @@ pub mod pallet {
 			Ok(())
 		}
 
-		
+		/// Updates Battlepass.
+		/// May be called only by Organization owner.
+		/// 
+		/// Parameters:
+		/// - `battlepass_id`: ID of the Battlepass to update.
+		/// - `name`: Battlepass name.
+		/// - `cid`: IPFS content identifier.
+		/// - `price`: Price for the Battlepass subscription.
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_battlepass())]
 		pub fn update_battlepass(
@@ -425,6 +432,7 @@ pub mod pallet {
 
 		/// Claims the Battlepass-NFT for user who joined the Battlepass.
 		/// This NFT may be used as a proof of a Battlepass membership.
+		/// May be called by user or by Organization owner.
 		/// 
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass for which to claim NFT.
@@ -444,10 +452,10 @@ pub mod pallet {
 			ensure!(Self::check_battlepass_state(battlepass_id, BattlepassState::ACTIVE)?, Error::<T>::BattlepassStateWrong);
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
-			// check permissions (prime, bot, self - temp)
-			ensure!(by_who == for_who || Self::is_prime(&battlepass.org_id, by_who.clone())?, Error::<T>::AuthorizationError);
 			// check if user is a member of organization
 			ensure!(T::Control::is_org_member_active(&battlepass.org_id, &for_who), Error::<T>::NotMember);
+			// check permissions (self, prime)
+			ensure!(by_who == for_who || Self::is_prime(&battlepass.org_id, by_who.clone())?, Error::<T>::AuthorizationError);
 			// check if Battlepass already claimed
 			ensure!(!ClaimedBattlepasses::<T>::contains_key(battlepass_id, for_who.clone()), Error::<T>::BattlepassClaimed);
 
@@ -520,7 +528,7 @@ pub mod pallet {
 		/// Sets Battlepass Points for user.
 		/// So far no information about users' achievements is stored on chain. A separate trusted service (Bot)
 		/// should collect such info, process it, validate it and call this extrinsic if user's Points have been updated. 
-		/// May be called only by Organization owner or by a specially dedicated for this purpose account.
+		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
 		/// 
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass.
@@ -555,7 +563,7 @@ pub mod pallet {
 
 		/// Creates a Reward Type for the Battlepass.
 		/// Also creates a new collection to store claimed Reward NFTs.
-		/// May be called only by Organization owner.
+		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
 		/// 
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to create a Reward for.
@@ -576,7 +584,7 @@ pub mod pallet {
 			level: u8,
 			transferable: bool,
 		) -> DispatchResult {
-			let creator = ensure_signed(origin)?;
+			let caller = ensure_signed(origin)?;
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check if Battlepass is not ended
@@ -584,9 +592,10 @@ pub mod pallet {
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
-			ensure!(Self::is_prime(&battlepass.org_id, creator.clone())?, Error::<T>::AuthorizationError);
+			ensure!(Self::is_prime_or_bot(&battlepass.org_id, caller)?, Error::<T>::AuthorizationError);
 			
-			let collection_id = Self::create_collection(creator.clone(), max)?;
+			let prime = T::Control::org_prime_account(&battlepass.org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
+			let collection_id = Self::create_collection(prime, max)?;
 			let reward_id = Self::do_create_reward(battlepass_id, name, cid, level, transferable, collection_id)?;
 
 			Self::deposit_event(Event::RewardCreated { reward_id, battlepass_id, level });
@@ -594,7 +603,14 @@ pub mod pallet {
 			Ok(())
 		}
 
-		
+		/// Updates Reward type.
+		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
+		/// 
+		/// Parameters:
+		/// - `reward_id`: ID of the Reward Type to be updated.
+		/// - `name`: Name of the Reward.
+		/// - `cid`: IPFS content identifier.
+		/// - `transferable`: Specifies whether claimed Reward NFTs could be transferred (sold) to another account.
 		#[pallet::call_index(7)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_reward())]
 		pub fn update_reward(
@@ -623,7 +639,7 @@ pub mod pallet {
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
-			ensure!(Self::is_prime(&battlepass.org_id, caller.clone())?, Error::<T>::AuthorizationError);
+			ensure!(Self::is_prime_or_bot(&battlepass.org_id, caller)?, Error::<T>::AuthorizationError);
 			
 			reward.name = name.clone().unwrap();
 			reward.cid = cid.clone().unwrap();
@@ -638,7 +654,7 @@ pub mod pallet {
 
 		/// Disables the Reward Type.
 		/// After calling this extrinsic Reward Type state can not be changed any more.
-		/// May be called only by Organization owner.
+		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
 		/// 
 		/// Parameters:
 		/// - `reward_id`: ID of the Reward Type to be disabled.
@@ -648,7 +664,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			reward_id: T::Hash
 		) -> DispatchResult {
-			let creator = ensure_signed(origin)?;
+			let caller = ensure_signed(origin)?;
 			// check if Reward exists
 			let reward = Self::get_reward(reward_id).ok_or(Error::<T>::RewardUnknown)?;
 			// check if Reward is active
@@ -656,7 +672,7 @@ pub mod pallet {
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(reward.battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check permissions (prime)
-			ensure!(Self::is_prime(&battlepass.org_id, creator.clone())?, Error::<T>::AuthorizationError);
+			ensure!(Self::is_prime_or_bot(&battlepass.org_id, caller)?, Error::<T>::AuthorizationError);
 			
 			let state = RewardState::INACTIVE;
 
@@ -667,12 +683,13 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Claims a reward for caller.
+		/// Claims a reward for user.
 		/// Mints a Reward NFT which may be used as a proof of a Reward posession.
-		/// Caller must be eligible for the Reward Type to be able to claim it. Eligibility criteria are:
+		/// User must be eligible for the Reward Type to be able to claim it. Eligibility criteria are:
 		/// - must be an Organization member.
 		/// - must be a Battlepass member (posess a valid Battlepass NFT).
 		/// - required achievement Level must be reached.
+		/// May be called by user or by Organization owner or by a specially dedicated for this purpose account (Bot).
 		/// 
 		/// Parameters:
 		/// - `reward_id`: ID of the Reward Type to claim.
@@ -682,14 +699,15 @@ pub mod pallet {
 		pub fn claim_reward(
 			origin: OriginFor<T>,
 			reward_id: T::Hash,
+			for_who: T::AccountId,
 		) -> DispatchResult {
-			let claimer = ensure_signed(origin)?;
+			let by_who = ensure_signed(origin)?;
 			// check if Reward exists
 			let reward = Self::get_reward(reward_id).ok_or(Error::<T>::RewardUnknown)?;
 			// check if Reward is active
 			ensure!(Self::check_reward_state(reward_id, RewardState::ACTIVE)?, Error::<T>::RewardInactive);
 			// check if Reward has not been claimed yet
-			ensure!(!ClaimedRewards::<T>::contains_key(&reward_id, &claimer), Error::<T>::RewardClaimed);
+			ensure!(!ClaimedRewards::<T>::contains_key(&reward_id, &for_who), Error::<T>::RewardClaimed);
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(&reward.battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check if Battlepass in ACTIVE state
@@ -697,22 +715,24 @@ pub mod pallet {
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check if user is a member of organization
-			ensure!(T::Control::is_org_member_active(&battlepass.org_id, &claimer), Error::<T>::NotMember);
+			ensure!(T::Control::is_org_member_active(&battlepass.org_id, &for_who), Error::<T>::NotMember);
+			// check permissions (self, prime or bot)
+			ensure!(by_who == for_who || Self::is_prime_or_bot(&battlepass.org_id, by_who.clone())?, Error::<T>::AuthorizationError);
 			// check if user claimed Battlepass NFT
-			let bp_nft_id = Self::get_claimed_battlepass(reward.battlepass_id, &claimer).ok_or(Error::<T>::BattlepassNotClaimed)?;
+			let bp_nft_id = Self::get_claimed_battlepass(reward.battlepass_id, &for_who).ok_or(Error::<T>::BattlepassNotClaimed)?;
 			// check if Battlepass NFT exists
 			let bp_nft = pallet_rmrk_core::Pallet::<T>::nfts(&battlepass.collection_id, bp_nft_id).ok_or(Error::<T>::BattlepassNftUnknown)?;
 			// validate Battlepass NFT ownership			
-			ensure!(AccountIdOrCollectionNftTuple::AccountId(claimer.clone()) == bp_nft.owner, Error::<T>::NotOwnNft);
+			ensure!(AccountIdOrCollectionNftTuple::AccountId(for_who.clone()) == bp_nft.owner, Error::<T>::NotOwnNft);
 			// validate Battlepass NFT metadata
 			let metadata: String<T> = BoundedVec::truncate_from(reward.battlepass_id.encode());
 			ensure!(metadata == bp_nft.metadata, Error::<T>::BattlepassNftInvalid);
 			// check if user has reached the required Level
-			ensure!(Self::is_level_reached(&reward.battlepass_id, &claimer, reward.level), Error::<T>::LevelNotReached);
+			ensure!(Self::is_level_reached(&reward.battlepass_id, &for_who, reward.level), Error::<T>::LevelNotReached);
 
-			let nft_id = Self::do_claim_reward(claimer.clone(), reward_id, reward.collection_id, reward.transferable)?;
+			let nft_id = Self::do_claim_reward(for_who.clone(), reward_id, reward.collection_id, reward.transferable)?;
 
-			Self::deposit_event(Event::RewardClaimed {reward_id, claimer, collection_id: reward.collection_id, nft_id} );
+			Self::deposit_event(Event::RewardClaimed {reward_id, claimer: for_who, collection_id: reward.collection_id, nft_id} );
 
 			Ok(())
 		}

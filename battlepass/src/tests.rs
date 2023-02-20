@@ -9,7 +9,7 @@ use crate::mock::{
     new_test_ext, RuntimeOrigin as Origin, Test,
     //System, 
     Battlepass, Control, RmrkCore,
-    ALICE, BOB, EVA, TOM, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, DOLLARS, 
+    ALICE, BOB, EVA, TOM, BOT, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, DOLLARS, 
     AccountId, StringLimit, //Event
 };
 use gamedao_control::types::{AccessModel, FeeModel, OrgType, Org};
@@ -527,7 +527,6 @@ fn set_points_test() {
         let creator = ALICE;
         let not_creator = BOB;
         let not_member = EVA;
-        let bot = 333u32;
 
         // Should not set if Battlepass unknown
         assert_noop!(
@@ -571,7 +570,7 @@ fn set_points_test() {
 
         // Should not set by Bot if Bot is not authorized
         assert_noop!(
-            Battlepass::set_points(Origin::signed(bot), battlepass_id, creator, 10),
+            Battlepass::set_points(Origin::signed(BOT), battlepass_id, creator, 10),
             Error::<Test>::AuthorizationError
         );
         
@@ -590,10 +589,10 @@ fn set_points_test() {
 
         // Should set points by Bot
         assert_ok!(
-            Battlepass::add_bot(Origin::signed(creator), battlepass_id, bot)
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
         );
         assert_ok!(
-            Battlepass::set_points(Origin::signed(bot), battlepass_id, not_creator, 20)
+            Battlepass::set_points(Origin::signed(BOT), battlepass_id, not_creator, 20)
         );
         // Check if Points record updated
         assert_eq!(Points::<Test>::get(battlepass_id, not_creator) == 20, true);
@@ -621,7 +620,6 @@ fn create_reward_test() {
         let creator = ALICE;
         let not_creator = BOB;
         let not_member = EVA;
-        
 
         // Should not create if Battlepass unknown
         assert_noop!(
@@ -659,7 +657,10 @@ fn create_reward_test() {
             Battlepass::create_reward(Origin::signed(creator), battlepass_id, string(), string(), Some(1), 1, true)
         );
         // Check if NFT collection created
-        assert_eq!(pallet_rmrk_core::Collections::<Test>::contains_key(1), true);
+        let collection = pallet_rmrk_core::Collections::<Test>::get(1);
+        assert_eq!(collection.is_some(), true);
+        // Check if collection owner is a Prime
+        assert_eq!(collection.unwrap().issuer, creator);
         // Check if Reward created
         let reward_id = get_reward_hash(battlepass_id, 1, true, 1);
         let reward = Rewards::<Test>::get(reward_id);
@@ -676,12 +677,41 @@ fn create_reward_test() {
             Battlepass::create_reward(Origin::signed(creator), battlepass_id, string(), string(), Some(1), 1, true)
         );
         // Check if NFT collection created
-        assert_eq!(pallet_rmrk_core::Collections::<Test>::contains_key(2), true);
+        let collection = pallet_rmrk_core::Collections::<Test>::get(2);
+        assert_eq!(collection.is_some(), true);
+        // Check if collection owner is a Prime
+        assert_eq!(collection.unwrap().issuer, creator);
         // Check if Reward created
         let reward_id = get_reward_hash(battlepass_id, 1, true, 2);
         let reward = Rewards::<Test>::get(reward_id);
         assert_eq!(reward.is_some(), true);
         assert_eq!(reward.unwrap().collection_id, 2);
+        // Check if RewardState is ACTIVE
+        assert_eq!(RewardStates::<Test>::get(reward_id), Some(RewardState::ACTIVE));
+
+        // Should not create if Bot is not added
+        assert_noop!(
+            Battlepass::create_reward(Origin::signed(BOT), battlepass_id, string(), string(), Some(1), 1, true),
+            Error::<Test>::AuthorizationError
+        );
+
+        // Should create Reward by Bot
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
+        );
+        assert_ok!(
+            Battlepass::create_reward(Origin::signed(BOT), battlepass_id, string(), string(), Some(1), 1, true)
+        );
+        // Check if NFT collection created
+        let collection = pallet_rmrk_core::Collections::<Test>::get(3);
+        assert_eq!(collection.is_some(), true);
+        // Check if collection owner is a Prime
+        assert_eq!(collection.unwrap().issuer, creator);
+        // Check if Reward created
+        let reward_id = get_reward_hash(battlepass_id, 1, true, 3);
+        let reward = Rewards::<Test>::get(reward_id);
+        assert_eq!(reward.is_some(), true);
+        assert_eq!(reward.unwrap().collection_id, 3);
         // Check if RewardState is ACTIVE
         assert_eq!(RewardStates::<Test>::get(reward_id), Some(RewardState::ACTIVE));
 
@@ -780,6 +810,25 @@ fn update_reward_test() {
         assert_eq!(updated.cid, new_cid.clone());
         assert_eq!(updated.transferable, new_transferable.clone());
 
+        // Should not update if Bot is not added
+        assert_noop!(
+            Battlepass::update_reward(Origin::signed(BOT), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(true)),
+            Error::<Test>::AuthorizationError
+        );
+
+        // Should update Reward by Bot
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
+        );
+        assert_ok!(
+            Battlepass::update_reward(Origin::signed(BOT), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(true))
+        );
+        // Check if Reward updated
+        let updated = Battlepass::get_reward(reward_id).unwrap();
+        assert_eq!(updated.name, new_name.clone());
+        assert_eq!(updated.cid, new_cid.clone());
+        assert_eq!(updated.transferable, true);
+
         // Should not update if Battlepass state is ENDED
         assert_ok!(
             Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
@@ -788,7 +837,7 @@ fn update_reward_test() {
             Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id)
         );
         assert_noop!(
-            Battlepass::update_reward(Origin::signed(creator), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(true)),
+            Battlepass::update_reward(Origin::signed(creator), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(false)),
             Error::<Test>::BattlepassStateWrong
         );
 
@@ -797,7 +846,7 @@ fn update_reward_test() {
             Battlepass::disable_reward(Origin::signed(creator), reward_id)
         );
         assert_noop!(
-            Battlepass::update_reward(Origin::signed(creator), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(true)),
+            Battlepass::update_reward(Origin::signed(creator), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(false)),
             Error::<Test>::RewardInactive
         );
     
@@ -813,6 +862,7 @@ fn disable_reward_test() {
         let battlepass_id = create_battlepass(org_id);
         let reward_id = create_reward(battlepass_id);
         let reward_id_2 = create_reward(battlepass_id);
+        let reward_id_3 = create_reward(battlepass_id);
         let wrong_id = <Test as frame_system::Config>::Hashing::hash_of(&"123");
         let creator = ALICE;
         let not_creator = BOB;
@@ -861,6 +911,21 @@ fn disable_reward_test() {
             Error::<Test>::RewardInactive
         );
     
+        // Should not disable if Bot is not added
+        assert_noop!(
+            Battlepass::disable_reward(Origin::signed(BOT), reward_id_3),
+            Error::<Test>::AuthorizationError
+        );
+
+        // Should disable Reward by Bot
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
+        );
+        assert_ok!(
+            Battlepass::disable_reward(Origin::signed(BOT), reward_id_3)
+        );
+        // Check if RewardState is INACTIVE
+        assert_eq!(RewardStates::<Test>::get(reward_id_3), Some(RewardState::INACTIVE));
 
         // Check events 
 
@@ -886,7 +951,7 @@ fn claim_reward_test() {
 
         // Should not claim if Reward unknown
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), wrong_id),
+            Battlepass::claim_reward(Origin::signed(creator), wrong_id, creator),
             Error::<Test>::RewardUnknown
         );
 
@@ -896,7 +961,7 @@ fn claim_reward_test() {
             Battlepass::disable_reward(Origin::signed(creator), reward_id)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator),
             Error::<Test>::RewardInactive
         );
 
@@ -908,14 +973,14 @@ fn claim_reward_test() {
             }
         } );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator),
             Error::<Test>::BattlepassUnknown
         );
 
         // Should not claim if Battlepass state is DRAFT
         let reward_id = create_reward(battlepass_id);
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator),
             Error::<Test>::BattlepassStateWrong
         );
 
@@ -927,7 +992,7 @@ fn claim_reward_test() {
             Control::disable_org(Origin::signed(creator), org_id)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator),
             Error::<Test>::OrgUnknownOrInactive
         );
         assert_ok!(
@@ -936,13 +1001,29 @@ fn claim_reward_test() {
 
         // Should not claim for non members
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_member), reward_id),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_member),
             Error::<Test>::NotMember
+        );
+
+        // Should not claim by Bot if Bot account was not added
+        assert_noop!(
+            Battlepass::claim_battlepass(Origin::signed(BOT), battlepass_id, creator),
+            Error::<Test>::AuthorizationError
+        );
+
+        // Should not claim for others if origin is not a Prime or Bot
+        assert_noop!(
+            Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, creator),
+            Error::<Test>::AuthorizationError
+        );
+        assert_noop!(
+            Battlepass::claim_battlepass(Origin::signed(not_member), battlepass_id, creator),
+            Error::<Test>::AuthorizationError
         );
 
         // Should not claim Reward if user didn't claim Battlepass
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator), reward_id),
+            Battlepass::claim_reward(Origin::signed(not_creator), reward_id, not_creator),
             Error::<Test>::BattlepassNotClaimed
         );
 
@@ -954,7 +1035,7 @@ fn claim_reward_test() {
             RmrkCore::burn_nft(Origin::signed(not_creator), 0, 0)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator), reward_id),
+            Battlepass::claim_reward(Origin::signed(not_creator), reward_id, not_creator),
             Error::<Test>::BattlepassNftUnknown
         );
 
@@ -971,7 +1052,7 @@ fn claim_reward_test() {
             RmrkCore::send(Origin::signed(creator), 0, 1, AccountIdOrCollectionNftTuple::AccountId(not_member))
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator),
             Error::<Test>::NotOwnNft
         );
 
@@ -985,7 +1066,7 @@ fn claim_reward_test() {
             }
         });
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator_2), reward_id),
+            Battlepass::claim_reward(Origin::signed(not_creator_2), reward_id, not_creator_2),
             Error::<Test>::BattlepassNftInvalid
         );
 
@@ -994,7 +1075,7 @@ fn claim_reward_test() {
             Battlepass::claim_battlepass(Origin::signed(not_creator_3), battlepass_id, not_creator_3)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator_3), reward_id),
+            Battlepass::claim_reward(Origin::signed(not_creator_3), reward_id, not_creator_3),
             Error::<Test>::LevelNotReached
         );
 
@@ -1006,14 +1087,14 @@ fn claim_reward_test() {
             Battlepass::add_level(Origin::signed(creator), battlepass_id, 1, 10)
         );
         assert_ok!(
-            Battlepass::claim_reward(Origin::signed(not_creator_3), reward_id)
+            Battlepass::claim_reward(Origin::signed(not_creator_3), reward_id, not_creator_3)
         );
         // Check if Reward claimed
         assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_creator_3), true);
 
         // Should not claim if Reward already claimed
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator_3), reward_id),
+            Battlepass::claim_reward(Origin::signed(not_creator_3), reward_id, not_creator_3),
             Error::<Test>::RewardClaimed
         );
 
@@ -1028,8 +1109,17 @@ fn claim_reward_test() {
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_creator_4, 10)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator_4), reward_id),
+            Battlepass::claim_reward(Origin::signed(not_creator_4), reward_id, not_creator_4),
             pallet_rmrk_core::Error::<Test>::CollectionFullOrLocked
+        );
+
+        // Should claim Reward by Bot
+        let reward_id = create_reward(battlepass_id);
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
+        );
+        assert_ok!(
+            Battlepass::claim_reward(Origin::signed(BOT), reward_id, not_creator_4)
         );
 
         // Should not claim if Battlepass state is ENDED
@@ -1037,7 +1127,7 @@ fn claim_reward_test() {
             Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator_4), reward_id),
+            Battlepass::claim_reward(Origin::signed(not_creator_4), reward_id, not_creator_3),
             Error::<Test>::BattlepassStateWrong
         );
     
