@@ -196,7 +196,7 @@ benchmarks! {
         set_bpass_points::<T>(caller.clone(), battlepass_id);
         set_bpass_level::<T>(caller.clone(), battlepass_id);
         let reward_id = get_reward::<T>(caller.clone(), battlepass_id);
-    }: _(RawOrigin::Signed(caller.clone()), reward_id)
+    }: _(RawOrigin::Signed(caller.clone()), reward_id, caller.clone())
     verify {
 		assert!(ClaimedRewards::<T>::get(reward_id, caller).is_some());
 	}

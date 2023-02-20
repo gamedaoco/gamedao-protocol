@@ -37,6 +37,8 @@ pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
 // Org creator:
 pub const ALICE: AccountId = 11;
+// Bot
+pub const BOT: AccountId = 333;
 // Contributors:
 pub const BOB: AccountId = 12;
 pub const EVA: AccountId = 13;
