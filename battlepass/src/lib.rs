@@ -432,7 +432,7 @@ pub mod pallet {
 
 		/// Claims the Battlepass-NFT for user who joined the Battlepass.
 		/// This NFT may be used as a proof of a Battlepass membership.
-		/// May be called by user or by Organization owner.
+		/// May be called by user or by Organization owner or by a specially dedicated for this purpose account (Bot).
 		/// 
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass for which to claim NFT.
@@ -455,7 +455,7 @@ pub mod pallet {
 			// check if user is a member of organization
 			ensure!(T::Control::is_org_member_active(&battlepass.org_id, &for_who), Error::<T>::NotMember);
 			// check permissions (self, prime)
-			ensure!(by_who == for_who || Self::is_prime(&battlepass.org_id, by_who.clone())?, Error::<T>::AuthorizationError);
+			ensure!(by_who == for_who || Self::is_prime_or_bot(&battlepass.org_id, by_who.clone())?, Error::<T>::AuthorizationError);
 			// check if Battlepass already claimed
 			ensure!(!ClaimedBattlepasses::<T>::contains_key(battlepass_id, for_who.clone()), Error::<T>::BattlepassClaimed);
 
