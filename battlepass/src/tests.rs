@@ -430,9 +430,11 @@ fn claim_battlepass_test() {
         let creator = ALICE;
         let not_creator = BOB;
         let not_creator_2 = TOM;
+        let not_creator_3 = 22u32;
         let not_member = EVA;
         add_member(org_id, not_creator);
         add_member(org_id, not_creator_2);
+        add_member(org_id, not_creator_3);
 
         // Should not claim unknown Battlepass
         assert_noop!(
@@ -461,6 +463,12 @@ fn claim_battlepass_test() {
             Control::enable_org(Origin::signed(creator), org_id)
         );
 
+        // Should not claim by Bot if Bot account was not added
+        assert_noop!(
+            Battlepass::claim_battlepass(Origin::signed(BOT), battlepass_id, creator),
+            Error::<Test>::AuthorizationError
+        );
+
         // Should not claim for others if origin is not a Prime
         assert_noop!(
             Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, creator),
@@ -477,7 +485,7 @@ fn claim_battlepass_test() {
             Error::<Test>::NotMember
         );
         
-        // Should claim for others if origin is a Prime
+        // Should claim for others by Prime
         assert_ok!(
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator)
         );
@@ -504,6 +512,20 @@ fn claim_battlepass_test() {
             Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, not_creator),
             Error::<Test>::BattlepassClaimed
         );
+
+        // Should claim for others by Bot
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
+        );
+        assert_ok!(
+            Battlepass::claim_battlepass(Origin::signed(BOT), battlepass_id, not_creator_3)
+        );
+        // Check if ClaimedBattlepasses record created
+        let nft_id = ClaimedBattlepasses::<Test>::get(battlepass_id, not_creator_3);
+        assert_eq!(nft_id.is_some(), true);
+        assert_eq!(nft_id.unwrap(), 2);
+        // Check if NFT minted
+        assert_eq!(pallet_rmrk_core::Nfts::<Test>::contains_key(0, 2), true);
 
         // Should not claim Battlepass in ENDED state
         assert_ok!(
@@ -1007,17 +1029,17 @@ fn claim_reward_test() {
 
         // Should not claim by Bot if Bot account was not added
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(BOT), battlepass_id, creator),
+            Battlepass::claim_reward(Origin::signed(BOT), reward_id, creator),
             Error::<Test>::AuthorizationError
         );
 
         // Should not claim for others if origin is not a Prime or Bot
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, creator),
+            Battlepass::claim_reward(Origin::signed(not_creator), reward_id, creator),
             Error::<Test>::AuthorizationError
         );
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(not_member), battlepass_id, creator),
+            Battlepass::claim_reward(Origin::signed(not_member), reward_id, creator),
             Error::<Test>::AuthorizationError
         );
 
