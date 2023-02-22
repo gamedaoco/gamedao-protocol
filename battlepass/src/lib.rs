@@ -738,7 +738,7 @@ pub mod pallet {
 		}
 
 		/// Adds a new achievement Level.
-		/// May be called only by Organization owner.
+		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
 		/// 
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to add a Level for.
@@ -760,7 +760,7 @@ pub mod pallet {
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
-			ensure!(Self::is_prime(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
+			ensure!(Self::is_prime_or_bot(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
 
 			Levels::<T>::insert(battlepass_id, level, points);
 
@@ -770,7 +770,7 @@ pub mod pallet {
 		}
 
 		/// Removes achievement Level.
-		/// May be called only by Organization owner.
+		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
 		/// 
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to remove a Level for.
@@ -790,7 +790,7 @@ pub mod pallet {
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
-			ensure!(Self::is_prime(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
+			ensure!(Self::is_prime_or_bot(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
 			// check if Level exists
 			ensure!(Levels::<T>::contains_key(battlepass_id, level), Error::<T>::LevelUnknown);
 
