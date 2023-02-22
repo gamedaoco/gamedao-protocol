@@ -1214,6 +1214,22 @@ fn add_level_test() {
         // Check if Level added
         assert_eq!(Levels::<Test>::contains_key(battlepass_id, 2), true);
 
+        // Should not add Level by Bot if Bot account was not added
+        assert_noop!(
+            Battlepass::add_level(Origin::signed(BOT), battlepass_id, 3, 10),
+            Error::<Test>::AuthorizationError
+        );
+
+        // Should add Level by Bot
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
+        );
+        assert_ok!(
+            Battlepass::add_level(Origin::signed(BOT), battlepass_id, 3, 10)
+        );
+        // Check if Level added
+        assert_eq!(Levels::<Test>::contains_key(battlepass_id, 3), true);
+
         // Should not add if Battlepass in ENDED state
         assert_ok!(
             Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id)
@@ -1297,6 +1313,28 @@ fn remove_level_test() {
         );
         // Check if Level removed
         assert_eq!(Levels::<Test>::contains_key(battlepass_id, 2), false);
+
+
+        // Should not remove Level by Bot if Bot account was not added
+        assert_noop!(
+            Battlepass::remove_level(Origin::signed(BOT), battlepass_id, 3),
+            Error::<Test>::AuthorizationError
+        );
+
+        // Should remove Level by Bot
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
+        );
+        assert_ok!(
+            Battlepass::add_level(Origin::signed(creator), battlepass_id, 3, 10)
+        );
+        assert_eq!(Levels::<Test>::contains_key(battlepass_id, 3), true);
+        assert_ok!(
+            Battlepass::remove_level(Origin::signed(BOT), battlepass_id, 3)
+        );
+        // Check if Level added
+        assert_eq!(Levels::<Test>::contains_key(battlepass_id, 3), false);
+
 
         // Should not remove if Battlepass in ENDED state
         assert_ok!(
