@@ -3,7 +3,7 @@
 use super::*;
 use crate::Pallet as BPass;
 
-use frame_benchmarking::{benchmarks, impl_benchmark_test_suite, whitelisted_caller};
+use frame_benchmarking::{benchmarks, impl_benchmark_test_suite, whitelisted_caller, account};
 use frame_system::RawOrigin;
 use sp_runtime::{DispatchError, traits::SaturatedConversion};
 use sp_std::vec;
@@ -117,7 +117,7 @@ benchmarks! {
 
     claim_battlepass {
         let caller: T::AccountId = get_funded_caller::<T>()?;
-        let bot: T::AccountId = get_funded_caller::<T>()?;
+        let bot: T::AccountId = account("bot", 0, 0);
         let org_id = get_org::<T>(caller.clone());
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
         activate_bpass::<T>(caller.clone(), battlepass_id);
@@ -148,34 +148,40 @@ benchmarks! {
 
     set_points {
         let caller: T::AccountId = get_funded_caller::<T>()?;
+        let bot: T::AccountId = account("bot", 0, 0);
         let org_id = get_org::<T>(caller.clone());
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
         activate_bpass::<T>(caller.clone(), battlepass_id);
-    }: _(RawOrigin::Signed(caller.clone()), battlepass_id, caller.clone(), 10)
+        set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
+    }: _(RawOrigin::Signed(bot), battlepass_id, caller.clone(), 10)
     verify {
 		assert!(Points::<T>::get(battlepass_id, caller) == 10);
 	}
 
     create_reward {
         let caller: T::AccountId = get_funded_caller::<T>()?;
+        let bot: T::AccountId = account("bot", 0, 0);
         let org_id = get_org::<T>(caller.clone());
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
         let str = BoundedVec::truncate_from(vec![1,2]);
         activate_bpass::<T>(caller.clone(), battlepass_id);
-    }: _(RawOrigin::Signed(caller), battlepass_id, str.clone(), str.clone(), Some(10), 1, false)
+        set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
+    }: _(RawOrigin::Signed(bot), battlepass_id, str.clone(), str.clone(), Some(10), 1, false)
     verify {
 		assert!(Rewards::<T>::iter_keys().count() == 1);
 	}
 
     update_reward {
         let caller: T::AccountId = get_funded_caller::<T>()?;
+        let bot: T::AccountId = account("bot", 0, 0);
         let org_id = get_org::<T>(caller.clone());
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
         let reward_id = get_reward::<T>(caller.clone(), battlepass_id);
         let new_name = BoundedVec::truncate_from(b"new name".to_vec());
         let new_cid = BoundedVec::truncate_from(b"new cid".to_vec());
         let new_transferable = false;
-    }: _(RawOrigin::Signed(caller), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_transferable.clone()))
+        set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
+    }: _(RawOrigin::Signed(bot), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_transferable.clone()))
     verify {
 		let reward = Rewards::<T>::get(reward_id).unwrap();
         assert!(reward.name == new_name);
@@ -185,17 +191,19 @@ benchmarks! {
 
     disable_reward {
         let caller: T::AccountId = get_funded_caller::<T>()?;
+        let bot: T::AccountId = account("bot", 0, 0);
         let org_id = get_org::<T>(caller.clone());
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
         let reward_id = get_reward::<T>(caller.clone(), battlepass_id);
-    }: _(RawOrigin::Signed(caller), reward_id)
+        set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
+    }: _(RawOrigin::Signed(bot), reward_id)
     verify {
 		assert!(RewardStates::<T>::get(reward_id) == Some(RewardState::INACTIVE));
 	}
 
     claim_reward {
         let caller: T::AccountId = get_funded_caller::<T>()?;
-        let bot: T::AccountId = get_funded_caller::<T>()?;
+        let bot: T::AccountId = account("bot", 0, 0);
         let org_id = get_org::<T>(caller.clone());
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
         activate_bpass::<T>(caller.clone(), battlepass_id);
@@ -211,19 +219,23 @@ benchmarks! {
 
     add_level {
         let caller: T::AccountId = get_funded_caller::<T>()?;
+        let bot: T::AccountId = account("bot", 0, 0);
         let org_id = get_org::<T>(caller.clone());
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
-    }: _(RawOrigin::Signed(caller.clone()), battlepass_id, 1, 10)
+        set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
+    }: _(RawOrigin::Signed(bot), battlepass_id, 1, 10)
     verify {
 		assert!(Levels::<T>::get(battlepass_id, 1) == Some(10));
 	}
 
     remove_level {
         let caller: T::AccountId = get_funded_caller::<T>()?;
+        let bot: T::AccountId = account("bot", 0, 0);
         let org_id = get_org::<T>(caller.clone());
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
         set_bpass_level::<T>(caller.clone(), battlepass_id);
-    }: _(RawOrigin::Signed(caller.clone()), battlepass_id, 1)
+        set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
+    }: _(RawOrigin::Signed(bot), battlepass_id, 1)
     verify {
 		assert!(Levels::<T>::get(battlepass_id, 1) == None);
 	}
