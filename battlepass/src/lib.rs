@@ -246,7 +246,6 @@ pub mod pallet {
 		NoAvailableCollectionId,
 		NoAvailableNftId,
 		NoChangesProvided,
-		NotMember,
 		NotOwnNft,
 		OrgPrimeUnknown,
 		OrgUnknownOrInactive,
@@ -460,8 +459,6 @@ pub mod pallet {
 			ensure!(Self::check_battlepass_state(battlepass_id, BattlepassState::ACTIVE)?, Error::<T>::BattlepassStateWrong);
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
-			// check if user is a member of organization
-			ensure!(T::Control::is_org_member_active(&battlepass.org_id, &for_who), Error::<T>::NotMember);
 			// check permissions (prime, bot)
 			ensure!(Self::is_prime_or_bot(&battlepass.org_id, by_who.clone())?, Error::<T>::AuthorizationError);
 			// check if Battlepass already claimed
@@ -559,8 +556,8 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime, bot)
 			ensure!(Self::is_prime_or_bot(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
-			// check if user is a member of organization
-			ensure!(T::Control::is_org_member_active(&battlepass.org_id, &account), Error::<T>::NotMember);
+			// check if user has access to Battlepass
+			ensure!(ClaimedBattlepasses::<T>::contains_key(battlepass_id, account.clone()), Error::<T>::BattlepassNotClaimed);
 
 			Points::<T>::insert(battlepass_id, &account, amount);
 
@@ -722,8 +719,6 @@ pub mod pallet {
 			ensure!(Self::check_battlepass_state(reward.battlepass_id, BattlepassState::ACTIVE)?, Error::<T>::BattlepassStateWrong);
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
-			// check if user is a member of organization
-			ensure!(T::Control::is_org_member_active(&battlepass.org_id, &for_who), Error::<T>::NotMember);
 			// check permissions (self, prime or bot)
 			ensure!(by_who == for_who || Self::is_prime_or_bot(&battlepass.org_id, by_who.clone())?, Error::<T>::AuthorizationError);
 			// check if user claimed Battlepass NFT

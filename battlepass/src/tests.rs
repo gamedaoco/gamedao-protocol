@@ -483,12 +483,6 @@ fn claim_battlepass_test() {
             Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, not_creator),
             Error::<Test>::AuthorizationError
         );
-
-        // Should not claim for non members
-        assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member),
-            Error::<Test>::NotMember
-        );
         
         // Should claim for others by Prime
         assert_ok!(
@@ -520,6 +514,11 @@ fn claim_battlepass_test() {
         assert_eq!(nft_id.unwrap(), 1);
         // Check if NFT minted
         assert_eq!(pallet_rmrk_core::Nfts::<Test>::contains_key(0, 1), true);
+
+        // Should claim for accounts outside of org
+        assert_ok!(
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member),
+        );
 
         // Should not claim Battlepass in ENDED state
         assert_ok!(
@@ -593,7 +592,7 @@ fn set_points_test() {
         // Should not set for non members
         assert_noop!(
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_member, 10),
-            Error::<Test>::NotMember
+            Error::<Test>::BattlepassNotClaimed
         );
 
         // Should set points by Prime
@@ -1018,7 +1017,7 @@ fn claim_reward_test() {
         // Should not claim for non members
         assert_noop!(
             Battlepass::claim_reward(Origin::signed(creator), reward_id, not_member),
-            Error::<Test>::NotMember
+            Error::<Test>::BattlepassNotClaimed
         );
 
         // Should not claim by Bot if Bot account was not added
