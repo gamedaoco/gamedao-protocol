@@ -244,6 +244,7 @@ pub mod pallet {
 		LevelNotReached,
 		LevelUnknown,
 		NoAvailableCollectionId,
+		NoAvailableNftId,
 		NoChangesProvided,
 		NotMember,
 		NotOwnNft,
@@ -341,8 +342,15 @@ pub mod pallet {
 	///
 	/// CollectionIndex: u32
 	#[pallet::storage]
-	#[pallet::getter(fn collection_index)]
+	#[pallet::getter(fn get_collection_index)]
 	pub type CollectionIndex<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+	/// A counter for created NFTs
+	///
+	/// NftIndex: u32
+	#[pallet::storage]
+	#[pallet::getter(fn get_nft_index)]
+	pub type NftIndex<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -866,15 +874,28 @@ impl<T: Config> Pallet<T> {
 		levels.count() == 1
 	}
 
+	fn bump_collection_index() -> Result<u32, DispatchError> {
+		CollectionIndex::<T>::try_mutate(|n| -> Result<u32, DispatchError> {
+			let id = *n;
+			ensure!(id != u32::max_value(), Error::<T>::NoAvailableCollectionId);
+			*n += 1;
+			Ok(id)
+		})
+	}
+
+	fn bump_nft_index() -> Result<u32, DispatchError> {
+		NftIndex::<T>::try_mutate(|n| -> Result<u32, DispatchError> {
+			let id = *n;
+			ensure!(id != u32::max_value(), Error::<T>::NoAvailableNftId);
+			*n += 1;
+			Ok(id)
+		})
+	}
+
 	fn create_collection(owner: T::AccountId, max: Option<u32>) -> Result<T::CollectionId, DispatchError> {
 		let metadata = BoundedVec::truncate_from(b"meta".to_vec());		// TODO: what should be here?
 		let symbol = BoundedVec::truncate_from(b"symbol".to_vec());		// TODO: what should be here?
-		let collection_index = CollectionIndex::<T>::try_mutate(|n| -> Result<u32, DispatchError> {
-				let id = *n;
-				ensure!(id != u32::max_value(), Error::<T>::NoAvailableCollectionId);
-				*n += 1;
-				Ok(id)
-		})?;
+		let collection_index = Self::bump_collection_index()?;
 		let collection_id = T::BattlepassHelper::collection(collection_index);
 
 		T::Rmrk::collection_create(owner, collection_id, metadata, max, symbol)?;
@@ -922,8 +943,8 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn do_claim_battlepass(by_who: T::AccountId, for_who: T::AccountId, battlepass_id: T::Hash, collection_id: T::CollectionId) -> Result<T::ItemId, DispatchError> {
-		let nft_count = ClaimedBattlepasses::<T>::iter_key_prefix(battlepass_id).count() as u32;
-		let nft_id: T::ItemId = T::BattlepassHelper::item(nft_count);
+		let nft_index = Self::bump_nft_index()?;
+		let nft_id: T::ItemId = T::BattlepassHelper::item(nft_index);
 
 		// Create Battlepass NFT
 		let metadata = battlepass_id.encode();
@@ -978,8 +999,8 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn do_claim_reward(claimer: T::AccountId, reward_id: T::Hash, collection_id: T::CollectionId, transferable: bool) -> Result<T::ItemId, DispatchError> {
-		let nft_count = ClaimedRewards::<T>::iter_key_prefix(reward_id).count() as u32;
-		let nft_id = T::BattlepassHelper::item(nft_count);
+		let nft_index = Self::bump_nft_index()?;
+		let nft_id = T::BattlepassHelper::item(nft_index);
 
 		// Create Battlepass NFT
 		let metadata = reward_id.encode();
