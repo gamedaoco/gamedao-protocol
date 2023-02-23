@@ -478,6 +478,11 @@ fn claim_battlepass_test() {
             Battlepass::claim_battlepass(Origin::signed(not_member), battlepass_id, creator),
             Error::<Test>::AuthorizationError
         );
+        // Should not claim for self
+        assert_noop!(
+            Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, not_creator),
+            Error::<Test>::AuthorizationError
+        );
 
         // Should not claim for non members
         assert_noop!(
@@ -495,21 +500,10 @@ fn claim_battlepass_test() {
         assert_eq!(nft_id.unwrap(), 0);
         // Check if NFT minted
         assert_eq!(pallet_rmrk_core::Nfts::<Test>::contains_key(0, 0), true);
-
-        // Should claim for self
-        assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(not_creator_2), battlepass_id, not_creator_2)
-        );
-        // Check if ClaimedBattlepasses record created
-        let nft_id = ClaimedBattlepasses::<Test>::get(battlepass_id, not_creator_2);
-        assert_eq!(nft_id.is_some(), true);
-        assert_eq!(nft_id.unwrap(), 1);
-        // Check if NFT minted
-        assert_eq!(pallet_rmrk_core::Nfts::<Test>::contains_key(0, 1), true);
-
+        
         // Should not claim if it was already claimed
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, not_creator),
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator),
             Error::<Test>::BattlepassClaimed
         );
 
@@ -523,9 +517,9 @@ fn claim_battlepass_test() {
         // Check if ClaimedBattlepasses record created
         let nft_id = ClaimedBattlepasses::<Test>::get(battlepass_id, not_creator_3);
         assert_eq!(nft_id.is_some(), true);
-        assert_eq!(nft_id.unwrap(), 2);
+        assert_eq!(nft_id.unwrap(), 1);
         // Check if NFT minted
-        assert_eq!(pallet_rmrk_core::Nfts::<Test>::contains_key(0, 2), true);
+        assert_eq!(pallet_rmrk_core::Nfts::<Test>::contains_key(0, 1), true);
 
         // Should not claim Battlepass in ENDED state
         assert_ok!(
@@ -1051,7 +1045,7 @@ fn claim_reward_test() {
 
         // Should not claim Reward if no NFT for claimed Battlepass
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, not_creator)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator)
         );
         assert_ok!(
             RmrkCore::burn_nft(Origin::signed(not_creator), 0, 0)
@@ -1080,7 +1074,7 @@ fn claim_reward_test() {
 
         // Should not claim Reward if Battlepass NFT is not valid
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(not_creator_2), battlepass_id, not_creator_2)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator_2)
         );
         Nfts::<Test>::mutate(0, 2, |nft| {
             if let Some(n) = nft {
@@ -1094,7 +1088,7 @@ fn claim_reward_test() {
 
         // Should not claim if user's level is too low
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(not_creator_3), battlepass_id, not_creator_3)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator_3)
         );
         assert_noop!(
             Battlepass::claim_reward(Origin::signed(not_creator_3), reward_id, not_creator_3),
@@ -1125,7 +1119,7 @@ fn claim_reward_test() {
 
         // Should not claim if max limit reached
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(not_creator_4), battlepass_id, not_creator_4)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator_4)
         );
         assert_ok!(
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_creator_4, 10)
