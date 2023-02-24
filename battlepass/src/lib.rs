@@ -13,7 +13,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
-use frame_support::{pallet_prelude::*, transactional};
+use frame_support::{pallet_prelude::*, transactional, dispatch::{RawOrigin}};
 use frame_system::pallet_prelude::*;
 use sp_std::convert::TryInto;
 use sp_runtime::traits::{AtLeast32BitUnsigned, Hash};
@@ -811,15 +811,15 @@ pub mod pallet {
 			battlepass_id: T::Hash,
 			bot: T::AccountId
 		) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
+			ensure_signed(origin.clone())?;
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check if Battlepass is not ended
 			ensure!(!Self::check_battlepass_state(battlepass_id, BattlepassState::ENDED)?, Error::<T>::BattlepassStateWrong);
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
-			// check permissions (prime)
-			ensure!(Self::is_prime(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
+			// check permissions (prime or root)
+			ensure!(Self::is_prime_or_root(&battlepass.org_id, origin)?, Error::<T>::AuthorizationError);
 
 			BattlepassInfoByOrg::<T>::try_mutate(battlepass.org_id, |info| -> Result<(), DispatchError> {
 				if let Some(inf) = info {
@@ -851,6 +851,16 @@ impl<T: Config> Pallet<T> {
 
 	fn is_prime_or_bot(org_id: &T::Hash, who: T::AccountId) -> Result<bool, DispatchError> {
 		Ok(Self::is_prime(org_id, who.clone())? || Self::is_bot(org_id, who)?)
+	}
+
+	fn is_prime_or_root(org_id: &T::Hash, who: T::RuntimeOrigin) -> Result<bool, DispatchError> {
+		match who.into() {
+			Ok(RawOrigin::Root) => Ok(true),
+			Ok(RawOrigin::Signed(t)) => {
+				Self::is_prime(org_id, t)
+			},
+			_ => Ok(false)
+		}
 	}
 
 	fn is_level_reached(battlepass_id: &T::Hash, account: &T::AccountId, level: u8) -> bool {
