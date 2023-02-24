@@ -589,13 +589,16 @@ fn set_points_test() {
             Error::<Test>::AuthorizationError
         );
         
-        // Should not set for non members
+        // Should not set if user does not have access to Battlepass
         assert_noop!(
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_member, 10),
             Error::<Test>::BattlepassNotClaimed
         );
 
         // Should set points by Prime
+        assert_ok!(
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator)
+        );
         assert_ok!(
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_creator, 10)
         );
@@ -1014,12 +1017,6 @@ fn claim_reward_test() {
             Control::enable_org(Origin::signed(creator), org_id)
         );
 
-        // Should not claim for non members
-        assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_member),
-            Error::<Test>::BattlepassNotClaimed
-        );
-
         // Should not claim by Bot if Bot account was not added
         assert_noop!(
             Battlepass::claim_reward(Origin::signed(BOT), reward_id, creator),
@@ -1136,6 +1133,22 @@ fn claim_reward_test() {
         assert_ok!(
             Battlepass::claim_reward(Origin::signed(BOT), reward_id, not_creator_4)
         );
+        // Check if Reward claimed
+        assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_creator_4), true);
+
+        // Should claim Reward for non-member
+        let reward_id = create_reward(battlepass_id);
+        assert_ok!(
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member)
+        );
+        assert_ok!(
+            Battlepass::set_points(Origin::signed(creator), battlepass_id, not_member, 10)
+        );
+        assert_ok!(
+            Battlepass::claim_reward(Origin::signed(not_member), reward_id, not_member)
+        );
+        // Check if Reward claimed
+        assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_member), true);
 
         // Should not claim if Battlepass state is ENDED
         assert_ok!(

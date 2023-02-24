@@ -557,7 +557,7 @@ pub mod pallet {
 			// check permissions (prime, bot)
 			ensure!(Self::is_prime_or_bot(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
 			// check if user has access to Battlepass
-			ensure!(ClaimedBattlepasses::<T>::contains_key(battlepass_id, account.clone()), Error::<T>::BattlepassNotClaimed);
+			Self::validate_battlepass_ownership(account.clone(), battlepass_id, battlepass)?;
 
 			Points::<T>::insert(battlepass_id, &account, amount);
 
@@ -721,15 +721,9 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (self, prime or bot)
 			ensure!(by_who == for_who || Self::is_prime_or_bot(&battlepass.org_id, by_who.clone())?, Error::<T>::AuthorizationError);
-			// check if user claimed Battlepass NFT
-			let bp_nft_id = Self::get_claimed_battlepass(reward.battlepass_id, &for_who).ok_or(Error::<T>::BattlepassNotClaimed)?;
-			// check if Battlepass NFT exists
-			let bp_nft = pallet_rmrk_core::Pallet::<T>::nfts(&battlepass.collection_id, bp_nft_id).ok_or(Error::<T>::BattlepassNftUnknown)?;
-			// validate Battlepass NFT ownership			
-			ensure!(AccountIdOrCollectionNftTuple::AccountId(for_who.clone()) == bp_nft.owner, Error::<T>::NotOwnNft);
-			// validate Battlepass NFT metadata
-			let metadata: String<T> = BoundedVec::truncate_from(reward.battlepass_id.encode());
-			ensure!(metadata == bp_nft.metadata, Error::<T>::BattlepassNftInvalid);
+			// check if user has access to Battlepass
+			Self::validate_battlepass_ownership(for_who.clone(), reward.battlepass_id, battlepass)?;
+
 			// check if user has reached the required Level
 			ensure!(Self::is_level_reached(&reward.battlepass_id, &for_who, reward.level), Error::<T>::LevelNotReached);
 
@@ -1014,5 +1008,19 @@ impl<T: Config> Pallet<T> {
 		ClaimedRewards::<T>::insert(&reward_id, &claimer, nft_id);
 
 		Ok(nft_id)
+	}
+
+	fn validate_battlepass_ownership(account: T::AccountId, battlepass_id: T::Hash, battlepass: Battlepass<T::Hash, T::AccountId, String<T>, T::CollectionId>) -> DispatchResult {
+		// check if user claimed Battlepass NFT
+		let bp_nft_id = Self::get_claimed_battlepass(battlepass_id, &account).ok_or(Error::<T>::BattlepassNotClaimed)?;
+		// check if Battlepass NFT exists
+		let bp_nft = pallet_rmrk_core::Pallet::<T>::nfts(&battlepass.collection_id, bp_nft_id).ok_or(Error::<T>::BattlepassNftUnknown)?;
+		// validate Battlepass NFT ownership			
+		ensure!(AccountIdOrCollectionNftTuple::AccountId(account.clone()) == bp_nft.owner, Error::<T>::NotOwnNft);
+		// validate Battlepass NFT metadata
+		let metadata: String<T> = BoundedVec::truncate_from(battlepass_id.encode());
+		ensure!(metadata == bp_nft.metadata, Error::<T>::BattlepassNftInvalid);
+
+		Ok(())
 	}
 }
