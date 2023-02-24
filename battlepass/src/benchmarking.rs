@@ -152,6 +152,7 @@ benchmarks! {
         let org_id = get_org::<T>(caller.clone());
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
         activate_bpass::<T>(caller.clone(), battlepass_id);
+        claim_bpass::<T>(caller.clone(), battlepass_id);
         set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
     }: _(RawOrigin::Signed(bot), battlepass_id, caller.clone(), 10)
     verify {
