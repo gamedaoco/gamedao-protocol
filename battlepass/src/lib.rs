@@ -811,7 +811,6 @@ pub mod pallet {
 			battlepass_id: T::Hash,
 			bot: T::AccountId
 		) -> DispatchResult {
-			ensure_signed(origin.clone())?;
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check if Battlepass is not ended
