@@ -426,9 +426,9 @@ pub mod pallet {
 			// check permissions (prime)
 			ensure!(Self::is_prime(&battlepass.org_id, creator.clone())?, Error::<T>::AuthorizationError);
 
-			battlepass.name = name.clone().unwrap();
-			battlepass.cid = cid.clone().unwrap();
-			battlepass.price = price.clone().unwrap();
+			if name.is_some() { battlepass.name = name.clone().unwrap() };
+			if cid.is_some() { battlepass.cid = cid.clone().unwrap() };
+			if price.is_some() { battlepass.price = price.clone().unwrap() };
 
 			Battlepasses::<T>::insert(battlepass_id, battlepass);
 
