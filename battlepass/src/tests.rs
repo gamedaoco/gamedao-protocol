@@ -264,6 +264,15 @@ fn update_battlepass_test() {
         assert_eq!(updated.cid, new_cid.clone());
         assert_eq!(updated.price, new_price.clone());
 
+        // Should update some fields in battlepass
+        assert_ok!(
+            Battlepass::update_battlepass(Origin::signed(creator), battlepass_id, None, None, Some(100)),
+        );
+        // Check if Battlepass updated
+        let updated = Battlepass::get_battlepass(battlepass_id).unwrap();
+        assert_eq!(updated.name, new_name.clone());
+        assert_eq!(updated.cid, new_cid.clone());
+        assert_eq!(updated.price, 100);
 
         // Should not update if Battlepass state is ENDED
         assert_ok!(
