@@ -120,6 +120,7 @@ fn create_battlepass_test(){
         let not_member = EVA;
         let battlepass_id_1 = get_battlepass_hash(creator, org_id, 1, 10, 0);
         let battlepass_id_2 = get_battlepass_hash(creator, org_id, 2, 10, 1);
+        let battlepass_id_3 = get_battlepass_hash(creator, org_id, 3, 10, 2);
 
         // Should not create for non existing Org
         assert_noop!(
@@ -189,6 +190,28 @@ fn create_battlepass_test(){
         assert_eq!(bp_info.is_some(), true);
         assert_eq!(bp_info.clone().unwrap().count, 2);
         assert_eq!(bp_info.clone().unwrap().active, None);
+
+        // Should create another Battlepass (even if there is an ACTIVE one)
+        assert_ok!(
+            Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id_1)
+        );
+        assert_ok!(
+            Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), 10)
+        );
+        // Check if NFT collection created
+        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::collections().any(|x| x == 1), true);
+        // Check if Battlepass created
+        let battlepass = Battlepasses::<Test>::get(battlepass_id_3);
+        assert_eq!(battlepass.is_some(), true);
+        assert_eq!(battlepass.unwrap().season, 3);
+        assert_eq!(Battlepasses::<Test>::contains_key(battlepass_id_3), true);
+        // Check if BattlepassState is DRAFT
+        assert_eq!(Battlepass::get_battlepass_state(battlepass_id_3), Some(types::BattlepassState::DRAFT));
+        // Check if BattlepassInfo created (count = 3, active = battlepass_id_1)
+        let bp_info = BattlepassInfoByOrg::<Test>::get(org_id);
+        assert_eq!(bp_info.is_some(), true);
+        assert_eq!(bp_info.clone().unwrap().count, 3);
+        assert_eq!(bp_info.clone().unwrap().active, Some(battlepass_id_1));
     })
 }
 
@@ -289,6 +312,7 @@ fn activate_battlepass_test() {
     new_test_ext().execute_with(|| {
         let org_id = create_org();
         let battlepass_id = create_battlepass(org_id);
+        let battlepass_id_2 = create_battlepass(org_id);
         let wrong_battlepass_id = <Test as frame_system::Config>::Hashing::hash_of(&"123");
         let creator = ALICE;
         let not_creator = BOB;
@@ -334,7 +358,7 @@ fn activate_battlepass_test() {
         // Check if BattlepassInfo changed (count = 1, active = battlepass_id)
         let bp_info = BattlepassInfoByOrg::<Test>::get(org_id);
         assert_eq!(bp_info.is_some(), true);
-        assert_eq!(bp_info.clone().unwrap().count, 1);
+        assert_eq!(bp_info.clone().unwrap().count, 2);
         assert_eq!(bp_info.clone().unwrap().active, Some(battlepass_id));
 
 
@@ -344,15 +368,11 @@ fn activate_battlepass_test() {
             Error::<Test>::BattlepassStateWrong
         );
 
-        // Should not create if Org has an active battlepass
+        // Should not activate if Org has an active battlepass
         assert_noop!(
-            Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), 10),
+            Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id_2),
             Error::<Test>::BattlepassExists
         );
-
-        // Check events (battlepass activated)
-        // println!("Events: {}", System::events().len());
-        // System::assert_has_event(Event::Battlepass(crate::Event::BattlepassActivated { by_who: creator, org_id, battlepass_id } ));
 
     })
 }

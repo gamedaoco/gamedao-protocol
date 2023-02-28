@@ -357,9 +357,7 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
 			ensure!(Self::is_prime(&org_id, creator.clone())?, Error::<T>::AuthorizationError);
-			let (battlepass_count, maybe_active, _) = Self::get_battlepass_info(&org_id);
-			// check if there is no active battlepass for the Org
-			ensure!(maybe_active.is_none(), Error::<T>::BattlepassExists);
+			let (battlepass_count, _, _) = Self::get_battlepass_info(&org_id);
 			let new_season = battlepass_count + 1;
 
 			// Create a collection to store Battlepass NFTs
@@ -472,6 +470,9 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
 			ensure!(Self::is_prime(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
+			// check if there is no active battlepass for the Org
+			let (_, maybe_active, _) = Self::get_battlepass_info(&battlepass.org_id);
+			ensure!(maybe_active.is_none(), Error::<T>::BattlepassExists);
 
 			Self::change_battlepass_state(battlepass.org_id, battlepass_id, BattlepassState::ACTIVE)?;
 
@@ -942,7 +943,18 @@ impl<T: Config> Pallet<T> {
 
 		Battlepasses::<T>::insert(&battlepass_id, battlepass);
 		BattlepassStates::<T>::insert(&battlepass_id, BattlepassState::DRAFT);
-		BattlepassInfoByOrg::<T>::insert(org_id, BattlepassInfo{count: new_season, active: None, bot: None});
+		if new_season == 1 {
+			BattlepassInfoByOrg::<T>::insert(org_id, BattlepassInfo{count: new_season, active: None, bot: None});
+		} else {
+			BattlepassInfoByOrg::<T>::try_mutate(org_id, |info| -> Result<(), DispatchError> {
+				if let Some(inf) = info {
+					inf.count = new_season;
+				} else {
+					return Err(Error::<T>::BattlepassInfoUnknown)?;
+				}
+				Ok(())
+			})?;
+		}
 
 		Ok(battlepass_id)
 	}
