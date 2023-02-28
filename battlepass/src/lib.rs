@@ -13,7 +13,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
-use frame_support::{pallet_prelude::*, transactional, dispatch::{RawOrigin}};
+use frame_support::{pallet_prelude::*, transactional, dispatch::RawOrigin};
+use frame_support::traits::tokens::nonfungibles::Inspect;
 use frame_system::pallet_prelude::*;
 use sp_std::convert::TryInto;
 use sp_runtime::traits::{AtLeast32BitUnsigned, Hash};
@@ -21,7 +22,6 @@ use gamedao_traits::ControlTrait;
 #[cfg(feature = "runtime-benchmarks")]
 use gamedao_traits::ControlBenchmarkingTrait;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
-use rmrk_traits::{primitives::PartId, Collection, Nft, ResourceInfoMin, AccountIdOrCollectionNftTuple};
 
 pub mod types;
 pub use types::*;
@@ -34,14 +34,6 @@ pub mod weights;
 pub use weights::WeightInfo;
 
 pub type String<T> = BoundedVec<u8, <T as Config>::StringLimit>;
-pub type Symbol<T> = BoundedVec<u8, <T as Config>::SymbolLimit>;
-pub type Resource<T> = BoundedVec<
-	ResourceInfoMin<
-		BoundedVec<u8, <T as Config>::StringLimit>,
-		BoundedVec<PartId, <T as Config>::PartsLimit>,
-	>,
-	<T as Config>::MaxResourcesOnMint,
->;
 
 pub trait BattlepassHelper<CollectionId, ItemId> {
 	fn collection(i: u32) -> CollectionId;
@@ -68,7 +60,7 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_rmrk_core::Config {
+	pub trait Config: frame_system::Config + pallet_uniques::Config {
 		type RuntimeEvent: From<Event<Self>>
 			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
 			+ Into<<Self as frame_system::Config>::RuntimeEvent>;
@@ -100,24 +92,11 @@ pub mod pallet {
 		#[cfg(feature = "runtime-benchmarks")]
 		type ControlBenchmarkHelper: ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
 
-		type Rmrk: Collection<String<Self>, Symbol<Self>, Self::AccountId, Self::CollectionId>
-			+ Nft<Self::AccountId, String<Self>, Resource<Self>, Self::CollectionId, Self::ItemId>;
-
 		type BattlepassHelper: BattlepassHelper<Self::CollectionId, Self::ItemId>;
 
 		/// The maximum length of a name, cid or metadata strings stored on-chain.
 		#[pallet::constant]
 		type StringLimit: Get<u32>;
-
-		/// The maximum length of a Collection symbol.
-		#[pallet::constant]
-		type SymbolLimit: Get<u32>;
-
-		/// The maximum number of parts each resource may have
-		#[pallet::constant]
-		type PartsLimit: Get<u32>;
-
-		type MaxResourcesOnMint: Get<u32>;
 
 		/// The CurrencyId which is used as a native token.
 		#[pallet::constant]
@@ -452,7 +431,7 @@ pub mod pallet {
 			battlepass_id: T::Hash,
 			for_who: T::AccountId,
 		) -> DispatchResult {
-			let by_who = ensure_signed(origin)?;
+			let by_who = ensure_signed(origin.clone())?;
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check if Battlepass in ACTIVE state
@@ -464,7 +443,7 @@ pub mod pallet {
 			// check if Battlepass already claimed
 			ensure!(!ClaimedBattlepasses::<T>::contains_key(battlepass_id, for_who.clone()), Error::<T>::BattlepassClaimed);
 
-			let nft_id = Self::do_claim_battlepass(by_who.clone(), for_who.clone(), battlepass_id, battlepass.collection_id)?;
+			let nft_id = Self::do_claim_battlepass(battlepass.creator.clone(), for_who.clone(), battlepass_id, battlepass.collection_id)?;
 
 			Self::deposit_event(Event::BattlepassClaimed { by_who, for_who, org_id: battlepass.org_id, battlepass_id, nft_id });
 
@@ -706,7 +685,7 @@ pub mod pallet {
 			reward_id: T::Hash,
 			for_who: T::AccountId,
 		) -> DispatchResult {
-			let by_who = ensure_signed(origin)?;
+			let by_who = ensure_signed(origin.clone())?;
 			// check if Reward exists
 			let reward = Self::get_reward(reward_id).ok_or(Error::<T>::RewardUnknown)?;
 			// check if Reward is active
@@ -715,6 +694,7 @@ pub mod pallet {
 			ensure!(!ClaimedRewards::<T>::contains_key(&reward_id, &for_who), Error::<T>::RewardClaimed);
 			// check if Battlepass exists
 			let battlepass = Self::get_battlepass(&reward.battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
+			let creator = battlepass.creator.clone();
 			// check if Battlepass in ACTIVE state
 			ensure!(Self::check_battlepass_state(reward.battlepass_id, BattlepassState::ACTIVE)?, Error::<T>::BattlepassStateWrong);
 			// check if Org is active
@@ -727,7 +707,7 @@ pub mod pallet {
 			// check if user has reached the required Level
 			ensure!(Self::is_level_reached(&reward.battlepass_id, &for_who, reward.level), Error::<T>::LevelNotReached);
 
-			let nft_id = Self::do_claim_reward(for_who.clone(), reward_id, reward.collection_id, reward.transferable)?;
+			let nft_id = Self::do_claim_reward(creator, for_who.clone(), reward_id, reward.collection_id)?;
 
 			Self::deposit_event(Event::RewardClaimed {reward_id, claimer: for_who, collection_id: reward.collection_id, nft_id} );
 
@@ -892,15 +872,42 @@ impl<T: Config> Pallet<T> {
 
 	fn create_collection(owner: T::AccountId, max: Option<u32>) -> Result<T::CollectionId, DispatchError> {
 		let metadata = BoundedVec::truncate_from(b"meta".to_vec());		// TODO: what should be here?
-		let symbol = BoundedVec::truncate_from(b"symbol".to_vec());		// TODO: what should be here?
 		let collection_index = Self::bump_collection_index()?;
 		let collection_id = T::BattlepassHelper::collection(collection_index);
+		let origin = OriginFor::<T>::from(RawOrigin::Signed(owner.clone()));
 
-		T::Rmrk::collection_create(owner, collection_id, metadata, max, symbol)?;
+		pallet_uniques::Pallet::<T>::do_create_collection(
+			collection_id,
+			owner.clone(),
+			owner.clone(),
+			T::CollectionDeposit::get(),
+			false,
+			pallet_uniques::Event::Created {
+				collection: collection_id,
+				creator: owner.clone(),
+				owner: owner.clone(),
+			},
+		)?;
+		pallet_uniques::Pallet::<T>::set_collection_metadata(origin.clone(), collection_id, metadata, false)?;
+		pallet_uniques::Pallet::<T>::freeze_collection(origin.clone(), collection_id)?;
+		if max.is_some() {
+			pallet_uniques::Pallet::<T>::set_collection_max_supply(origin, collection_id, max.unwrap())?;
+		}
 
 		Ok(collection_id)
 	}
 
+	fn create_nft(creator: T::AccountId, for_who: T::AccountId, collection_id: T::CollectionId, nft_id: T::ItemId, metadata: BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>) -> DispatchResult {
+		let creator = OriginFor::<T>::from(RawOrigin::Signed(creator));
+
+		pallet_uniques::Pallet::<T>::do_mint(collection_id, nft_id, for_who, |_details| {
+			Ok(())
+		})?;
+		pallet_uniques::Pallet::<T>::set_metadata(creator, collection_id, nft_id, metadata, false)?;
+
+		Ok(())
+	}
+	
 	fn check_battlepass_state(battlepass_id: T::Hash, state: BattlepassState) -> Result<bool, DispatchError> {
 		let current_state = Self::get_battlepass_state(battlepass_id).ok_or(Error::<T>::BattlepassStateUnknown)?;
 		
@@ -940,24 +947,14 @@ impl<T: Config> Pallet<T> {
 		Ok(battlepass_id)
 	}
 
-	fn do_claim_battlepass(by_who: T::AccountId, for_who: T::AccountId, battlepass_id: T::Hash, collection_id: T::CollectionId) -> Result<T::ItemId, DispatchError> {
+	fn do_claim_battlepass(creator: T::AccountId, for_who: T::AccountId, battlepass_id: T::Hash, collection_id: T::CollectionId) -> Result<T::ItemId, DispatchError> {
 		let nft_index = Self::bump_nft_index()?;
 		let nft_id: T::ItemId = T::BattlepassHelper::item(nft_index);
-
+		let metadata = BoundedVec::truncate_from(battlepass_id.encode());
+		
 		// Create Battlepass NFT
-		let metadata = battlepass_id.encode();
-		let _ = T::Rmrk::nft_mint(
-			by_who.clone(),										// sender
-			for_who.clone(),										// owner
-			nft_id,														// nft_id
-			collection_id,												// collection_id
-			None,									// royalty_recipient
-			None,										// royalty_amount
-			BoundedVec::truncate_from(metadata),				// metadata 			TODO: what should be here?
-			false,										// transferable
-			None												// resources
-		)?;
-
+		Self::create_nft(creator, for_who.clone(), collection_id, nft_id, metadata)?;
+		
 		ClaimedBattlepasses::<T>::insert(battlepass_id, &for_who, nft_id);
 
 		Ok(nft_id)
@@ -996,25 +993,15 @@ impl<T: Config> Pallet<T> {
 		Ok(reward_id)
 	}
 
-	fn do_claim_reward(claimer: T::AccountId, reward_id: T::Hash, collection_id: T::CollectionId, transferable: bool) -> Result<T::ItemId, DispatchError> {
+	fn do_claim_reward(creator: T::AccountId, for_who: T::AccountId, reward_id: T::Hash, collection_id: T::CollectionId) -> Result<T::ItemId, DispatchError> {
 		let nft_index = Self::bump_nft_index()?;
 		let nft_id = T::BattlepassHelper::item(nft_index);
+		let metadata = BoundedVec::truncate_from(reward_id.encode());
 
-		// Create Battlepass NFT
-		let metadata = reward_id.encode();
-		let _ = T::Rmrk::nft_mint(
-			claimer.clone(),									// sender
-			claimer.clone(),										// owner
-			nft_id,														// nft_id
-			collection_id,												// collection_id
-			None,									// royalty_recipient
-			None,										// royalty_amount
-			BoundedVec::truncate_from(metadata),				// metadata 			TODO: what should be here?
-			transferable,												// transferable
-			None												// resources
-		)?;
+		// Create Reward NFT
+		Self::create_nft(creator, for_who.clone(), collection_id, nft_id, metadata)?;
 
-		ClaimedRewards::<T>::insert(&reward_id, &claimer, nft_id);
+		ClaimedRewards::<T>::insert(&reward_id, &for_who, nft_id);
 
 		Ok(nft_id)
 	}
@@ -1023,13 +1010,13 @@ impl<T: Config> Pallet<T> {
 		// check if user claimed Battlepass NFT
 		let bp_nft_id = Self::get_claimed_battlepass(battlepass_id, &account).ok_or(Error::<T>::BattlepassNotClaimed)?;
 		// check if Battlepass NFT exists
-		let bp_nft = pallet_rmrk_core::Pallet::<T>::nfts(&battlepass.collection_id, bp_nft_id).ok_or(Error::<T>::BattlepassNftUnknown)?;
+		let bp_nft_owner = pallet_uniques::Pallet::<T>::owner(battlepass.collection_id, bp_nft_id).ok_or(Error::<T>::BattlepassNftUnknown)?;
 		// validate Battlepass NFT ownership			
-		ensure!(AccountIdOrCollectionNftTuple::AccountId(account.clone()) == bp_nft.owner, Error::<T>::NotOwnNft);
+		ensure!(account.clone() == bp_nft_owner, Error::<T>::NotOwnNft);
 		// validate Battlepass NFT metadata
-		let metadata: String<T> = BoundedVec::truncate_from(battlepass_id.encode());
-		ensure!(metadata == bp_nft.metadata, Error::<T>::BattlepassNftInvalid);
-
+		let bp_nft_metadata = <pallet_uniques::Pallet<T> as Inspect<T::AccountId>>::attribute(&battlepass.collection_id, &bp_nft_id, &[]);
+		ensure!(Some(battlepass_id.encode()) == bp_nft_metadata, Error::<T>::BattlepassNftInvalid);
+	
 		Ok(())
 	}
 }
