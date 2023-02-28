@@ -54,8 +54,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Battlepass BattlepassStates (r:0 w:1)
 	// Storage: Battlepass Battlepasses (r:0 w:1)
 	fn create_battlepass() -> Weight {
-		// Minimum execution time: 95_000 nanoseconds.
-		Weight::from_ref_time(97_000_000)
+		// Minimum execution time: 93_000 nanoseconds.
+		Weight::from_ref_time(95_000_000)
 			.saturating_add(T::DbWeight::get().reads(6))
 			.saturating_add(T::DbWeight::get().writes(7))
 	}
@@ -64,8 +64,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Control OrgStates (r:1 w:0)
 	// Storage: Control Orgs (r:1 w:0)
 	fn update_battlepass() -> Weight {
-		// Minimum execution time: 37_000 nanoseconds.
-		Weight::from_ref_time(37_000_000)
+		// Minimum execution time: 35_000 nanoseconds.
+		Weight::from_ref_time(36_000_000)
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -82,8 +82,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Uniques InstanceMetadataOf (r:1 w:1)
 	// Storage: Uniques Account (r:0 w:1)
 	fn claim_battlepass() -> Weight {
-		// Minimum execution time: 102_000 nanoseconds.
-		Weight::from_ref_time(103_000_000)
+		// Minimum execution time: 101_000 nanoseconds.
+		Weight::from_ref_time(105_000_000)
 			.saturating_add(T::DbWeight::get().reads(11))
 			.saturating_add(T::DbWeight::get().writes(6))
 	}
@@ -93,8 +93,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Control Orgs (r:1 w:0)
 	// Storage: Battlepass BattlepassInfoByOrg (r:1 w:1)
 	fn activate_battlepass() -> Weight {
-		// Minimum execution time: 41_000 nanoseconds.
-		Weight::from_ref_time(42_000_000)
+		// Minimum execution time: 43_000 nanoseconds.
+		Weight::from_ref_time(44_000_000)
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -103,8 +103,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Control Orgs (r:1 w:0)
 	// Storage: Battlepass BattlepassInfoByOrg (r:1 w:1)
 	fn conclude_battlepass() -> Weight {
-		// Minimum execution time: 40_000 nanoseconds.
-		Weight::from_ref_time(41_000_000)
+		// Minimum execution time: 38_000 nanoseconds.
+		Weight::from_ref_time(40_000_000)
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -118,8 +118,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Uniques InstanceMetadataOf (r:1 w:0)
 	// Storage: Battlepass Points (r:0 w:1)
 	fn set_points() -> Weight {
-		// Minimum execution time: 50_000 nanoseconds.
-		Weight::from_ref_time(55_000_000)
+		// Minimum execution time: 51_000 nanoseconds.
+		Weight::from_ref_time(53_000_000)
 			.saturating_add(T::DbWeight::get().reads(8))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -136,8 +136,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Battlepass Rewards (r:0 w:1)
 	// Storage: Battlepass RewardStates (r:0 w:1)
 	fn create_reward() -> Weight {
-		// Minimum execution time: 118_000 nanoseconds.
-		Weight::from_ref_time(122_000_000)
+		// Minimum execution time: 116_000 nanoseconds.
+		Weight::from_ref_time(120_000_000)
 			.saturating_add(T::DbWeight::get().reads(9))
 			.saturating_add(T::DbWeight::get().writes(7))
 	}
@@ -149,7 +149,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Control Orgs (r:1 w:0)
 	// Storage: Battlepass BattlepassInfoByOrg (r:1 w:0)
 	fn update_reward() -> Weight {
-		// Minimum execution time: 45_000 nanoseconds.
+		// Minimum execution time: 46_000 nanoseconds.
 		Weight::from_ref_time(47_000_000)
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -183,8 +183,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Uniques CollectionMaxSupply (r:1 w:0)
 	// Storage: Uniques Account (r:0 w:1)
 	fn claim_reward() -> Weight {
-		// Minimum execution time: 141_000 nanoseconds.
-		Weight::from_ref_time(149_000_000)
+		// Minimum execution time: 137_000 nanoseconds.
+		Weight::from_ref_time(141_000_000)
 			.saturating_add(T::DbWeight::get().reads(19))
 			.saturating_add(T::DbWeight::get().writes(6))
 	}
@@ -195,8 +195,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Battlepass BattlepassInfoByOrg (r:1 w:0)
 	// Storage: Battlepass Levels (r:0 w:1)
 	fn add_level() -> Weight {
-		// Minimum execution time: 36_000 nanoseconds.
-		Weight::from_ref_time(37_000_000)
+		// Minimum execution time: 39_000 nanoseconds.
+		Weight::from_ref_time(41_000_000)
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -218,8 +218,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Control Orgs (r:1 w:0)
 	// Storage: Battlepass BattlepassInfoByOrg (r:1 w:1)
 	fn add_bot() -> Weight {
-		// Minimum execution time: 38_000 nanoseconds.
-		Weight::from_ref_time(40_000_000)
+		// Minimum execution time: 35_000 nanoseconds.
+		Weight::from_ref_time(35_000_000)
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -237,8 +237,8 @@ impl WeightInfo for () {
 	// Storage: Battlepass BattlepassStates (r:0 w:1)
 	// Storage: Battlepass Battlepasses (r:0 w:1)
 	fn create_battlepass() -> Weight {
-		// Minimum execution time: 95_000 nanoseconds.
-		Weight::from_ref_time(97_000_000)
+		// Minimum execution time: 93_000 nanoseconds.
+		Weight::from_ref_time(95_000_000)
 			.saturating_add(RocksDbWeight::get().reads(6))
 			.saturating_add(RocksDbWeight::get().writes(7))
 	}
@@ -247,8 +247,8 @@ impl WeightInfo for () {
 	// Storage: Control OrgStates (r:1 w:0)
 	// Storage: Control Orgs (r:1 w:0)
 	fn update_battlepass() -> Weight {
-		// Minimum execution time: 37_000 nanoseconds.
-		Weight::from_ref_time(37_000_000)
+		// Minimum execution time: 35_000 nanoseconds.
+		Weight::from_ref_time(36_000_000)
 			.saturating_add(RocksDbWeight::get().reads(4))
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
@@ -265,8 +265,8 @@ impl WeightInfo for () {
 	// Storage: Uniques InstanceMetadataOf (r:1 w:1)
 	// Storage: Uniques Account (r:0 w:1)
 	fn claim_battlepass() -> Weight {
-		// Minimum execution time: 102_000 nanoseconds.
-		Weight::from_ref_time(103_000_000)
+		// Minimum execution time: 101_000 nanoseconds.
+		Weight::from_ref_time(105_000_000)
 			.saturating_add(RocksDbWeight::get().reads(11))
 			.saturating_add(RocksDbWeight::get().writes(6))
 	}
@@ -276,8 +276,8 @@ impl WeightInfo for () {
 	// Storage: Control Orgs (r:1 w:0)
 	// Storage: Battlepass BattlepassInfoByOrg (r:1 w:1)
 	fn activate_battlepass() -> Weight {
-		// Minimum execution time: 41_000 nanoseconds.
-		Weight::from_ref_time(42_000_000)
+		// Minimum execution time: 43_000 nanoseconds.
+		Weight::from_ref_time(44_000_000)
 			.saturating_add(RocksDbWeight::get().reads(5))
 			.saturating_add(RocksDbWeight::get().writes(2))
 	}
@@ -286,8 +286,8 @@ impl WeightInfo for () {
 	// Storage: Control Orgs (r:1 w:0)
 	// Storage: Battlepass BattlepassInfoByOrg (r:1 w:1)
 	fn conclude_battlepass() -> Weight {
-		// Minimum execution time: 40_000 nanoseconds.
-		Weight::from_ref_time(41_000_000)
+		// Minimum execution time: 38_000 nanoseconds.
+		Weight::from_ref_time(40_000_000)
 			.saturating_add(RocksDbWeight::get().reads(4))
 			.saturating_add(RocksDbWeight::get().writes(2))
 	}
@@ -301,8 +301,8 @@ impl WeightInfo for () {
 	// Storage: Uniques InstanceMetadataOf (r:1 w:0)
 	// Storage: Battlepass Points (r:0 w:1)
 	fn set_points() -> Weight {
-		// Minimum execution time: 50_000 nanoseconds.
-		Weight::from_ref_time(55_000_000)
+		// Minimum execution time: 51_000 nanoseconds.
+		Weight::from_ref_time(53_000_000)
 			.saturating_add(RocksDbWeight::get().reads(8))
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
@@ -319,8 +319,8 @@ impl WeightInfo for () {
 	// Storage: Battlepass Rewards (r:0 w:1)
 	// Storage: Battlepass RewardStates (r:0 w:1)
 	fn create_reward() -> Weight {
-		// Minimum execution time: 118_000 nanoseconds.
-		Weight::from_ref_time(122_000_000)
+		// Minimum execution time: 116_000 nanoseconds.
+		Weight::from_ref_time(120_000_000)
 			.saturating_add(RocksDbWeight::get().reads(9))
 			.saturating_add(RocksDbWeight::get().writes(7))
 	}
@@ -332,7 +332,7 @@ impl WeightInfo for () {
 	// Storage: Control Orgs (r:1 w:0)
 	// Storage: Battlepass BattlepassInfoByOrg (r:1 w:0)
 	fn update_reward() -> Weight {
-		// Minimum execution time: 45_000 nanoseconds.
+		// Minimum execution time: 46_000 nanoseconds.
 		Weight::from_ref_time(47_000_000)
 			.saturating_add(RocksDbWeight::get().reads(7))
 			.saturating_add(RocksDbWeight::get().writes(1))
@@ -366,8 +366,8 @@ impl WeightInfo for () {
 	// Storage: Uniques CollectionMaxSupply (r:1 w:0)
 	// Storage: Uniques Account (r:0 w:1)
 	fn claim_reward() -> Weight {
-		// Minimum execution time: 141_000 nanoseconds.
-		Weight::from_ref_time(149_000_000)
+		// Minimum execution time: 137_000 nanoseconds.
+		Weight::from_ref_time(141_000_000)
 			.saturating_add(RocksDbWeight::get().reads(19))
 			.saturating_add(RocksDbWeight::get().writes(6))
 	}
@@ -378,8 +378,8 @@ impl WeightInfo for () {
 	// Storage: Battlepass BattlepassInfoByOrg (r:1 w:0)
 	// Storage: Battlepass Levels (r:0 w:1)
 	fn add_level() -> Weight {
-		// Minimum execution time: 36_000 nanoseconds.
-		Weight::from_ref_time(37_000_000)
+		// Minimum execution time: 39_000 nanoseconds.
+		Weight::from_ref_time(41_000_000)
 			.saturating_add(RocksDbWeight::get().reads(5))
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
@@ -401,8 +401,8 @@ impl WeightInfo for () {
 	// Storage: Control Orgs (r:1 w:0)
 	// Storage: Battlepass BattlepassInfoByOrg (r:1 w:1)
 	fn add_bot() -> Weight {
-		// Minimum execution time: 38_000 nanoseconds.
-		Weight::from_ref_time(40_000_000)
+		// Minimum execution time: 35_000 nanoseconds.
+		Weight::from_ref_time(35_000_000)
 			.saturating_add(RocksDbWeight::get().reads(5))
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
