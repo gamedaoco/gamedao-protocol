@@ -70,7 +70,6 @@ construct_runtime!(
 		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
 		Currencies: orml_currencies::{Pallet, Call},
         Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>},
-        RmrkCore: pallet_rmrk_core::{Pallet, Call, Event<T>, Storage},
         Control: gamedao_control,
 		Battlepass: gamedao_battlepass::{Pallet, Call, Event<T>, Storage},
 	}
@@ -164,7 +163,7 @@ parameter_types! {
 	pub const ValueLimit: u32 = 64;	// Max 64 bytes per value
 	pub MetadataDepositBase: Balance = 0;
 	pub MetadataDepositPerByte: Balance = 0;
-	
+	pub const StringLimit: u32 = 64;
 }
 
 impl pallet_uniques::Config for Test {
@@ -174,7 +173,7 @@ impl pallet_uniques::Config for Test {
 	type Currency = PalletBalances;
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
-	type Locker = pallet_rmrk_core::Pallet<Test>;
+	type Locker = ();
 	type CollectionDeposit = CollectionDeposit;
 	type ItemDeposit = ItemDeposit;
 	type MetadataDepositBase = MetadataDepositBase;
@@ -184,29 +183,6 @@ impl pallet_uniques::Config for Test {
 	type KeyLimit = KeyLimit;
 	type ValueLimit = ValueLimit;
 	type WeightInfo = ();
-}
-
-parameter_types! {
-	pub const ResourceSymbolLimit: u32 = 10;
-	pub const PartsLimit: u32 = 25;
-	pub const CollectionSymbolLimit: u32 = 100;
-	pub const MaxPriorities: u32 = 25;
-	pub const NestingBudget: u32 = 3;
-	pub const MaxResourcesOnMint: u32 = 100;
-    pub const StringLimit: u32 = 64;
-}
-
-impl pallet_rmrk_core::Config for Test {
-	type RuntimeEvent = RuntimeEvent;
-	type ProtocolOrigin = EnsureRoot<AccountId>;
-	type ResourceSymbolLimit = ResourceSymbolLimit;
-	type PartsLimit = PartsLimit;
-	type MaxPriorities = MaxPriorities;
-	type CollectionSymbolLimit = CollectionSymbolLimit;
-	type MaxResourcesOnMint = MaxResourcesOnMint;
-	type NestingBudget = NestingBudget;
-	type WeightInfo = pallet_rmrk_core::weights::SubstrateWeight<Test>;
-	type TransferHooks = ();
 }
 
 parameter_types! {
@@ -239,12 +215,8 @@ impl gamedao_battlepass::Config for Test {
 	type Control = Control;
 	#[cfg(feature = "runtime-benchmarks")]
 	type ControlBenchmarkHelper = Control;
-	type Rmrk = RmrkCore;
 	type BattlepassHelper = gamedao_battlepass::BpHelper;
 	type StringLimit = StringLimit;
-	type SymbolLimit = CollectionSymbolLimit;
-	type PartsLimit = PartsLimit;
-	type MaxResourcesOnMint = MaxResourcesOnMint;
 	type NativeTokenId = NativeTokenId;
 	type ProtocolTokenId = ProtocolTokenId;
 	type WeightInfo = ();

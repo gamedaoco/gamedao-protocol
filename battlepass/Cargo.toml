@@ -26,8 +26,6 @@ frame-system = { git = "https://github.com/paritytech/substrate", branch = "polk
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false, optional = true }
 
 pallet-uniques = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
-pallet-rmrk-core = { git = "https://github.com/rmrk-team/rmrk-substrate", default-features = false, tag = "0.3.0" }
-rmrk-traits = { git = "https://github.com/rmrk-team/rmrk-substrate", default-features = false, tag = "0.3.0" }
 
 orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.36", default-features = false }
 
@@ -69,8 +67,6 @@ std = [
 	"orml-currencies/std",
 
 	"pallet-uniques/std",
-	"pallet-rmrk-core/std",
-	"rmrk-traits/std",
 
 	"gamedao-control/std",
 	"gamedao-traits/std",
