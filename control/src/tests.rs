@@ -4,7 +4,7 @@ use frame_support::{assert_noop, assert_ok};
 use sp_runtime::traits::BadOrigin;
 use sp_core::H256;
 use super::*;
-use mock::{new_test_ext, System, Test, RuntimeEvent as Event, Control, RuntimeOrigin as Origin, Tokens, CurrencyId, Balance, AccountId,
+use mock::{new_test_ext, System, Test, RuntimeEvent as Event, Control, RuntimeOrigin as Origin, Tokens, CurrencyId, Balance, AccountId, StringLimit,
 	ALICE, BOB, CHARLIE, PAYMENT_TOKEN_ID, PROTOCOL_TOKEN_ID, DOLLARS};
 
 
@@ -92,9 +92,12 @@ fn control_create_org() {
 #[test]
 fn control_update_org() {
 	new_test_ext().execute_with(|| {
+
 		let current_block = 3;
 		System::set_block_number(current_block);
 		let org_id = create_org(AccessModel::Prime);
+        let new_name = BoundedVec::truncate_from(b"new name".to_vec());
+        let new_cid = BoundedVec::truncate_from(b"new cid".to_vec());
 
 		// Check if no changes were provided
 		// Error: NoChangesProvided
@@ -111,7 +114,7 @@ fn control_update_org() {
 		// Check if prime can be not a member
 		// Error: NotMember
 		assert_noop!(Control::update_org(
-			Origin::signed(ALICE), org_id, Some(BOB), None, None, None, None, None, None, None),
+			Origin::signed(ALICE), org_id, None, None, Some(BOB), None, None, None, None, None),
 			Error::<Test>::NotMember);
 
 		assert_ok!(Control::add_member(Origin::signed(ALICE), org_id, BOB));
@@ -119,7 +122,7 @@ fn control_update_org() {
 		// Check if only prime can perform update_org
 		// Error: BadOrigin
 		assert_noop!(Control::update_org(
-			Origin::signed(BOB), org_id, None, Some(OrgType::Dao), None, None, None, None, None, None),
+			Origin::signed(BOB), org_id, None, None, None, Some(OrgType::Dao), None, None, None, None),
 			BadOrigin);
 
 		// Check if root can update
@@ -127,6 +130,8 @@ fn control_update_org() {
 
 		// Check if update_org works as expected
 		let prime_id = Some(BOB);
+		let name: Option<BoundedVec<u8,StringLimit>> = Some(new_name);
+		let cid: Option<BoundedVec<u8,StringLimit>> = Some(new_cid);
 		let org_type = Some(OrgType::Dao);
 		let access_model = Some(AccessModel::Voting);
 		let member_limit = Some(100 as MemberLimit);
@@ -139,6 +144,8 @@ fn control_update_org() {
 
 		let org = Orgs::<Test>::get(org_id).unwrap();
 		assert_eq!(org.prime, prime_id.clone().unwrap());
+		assert_eq!(org.name, name.clone().unwrap());
+		assert_eq!(org.cid, cid.clone().unwrap());
 		assert_eq!(org.org_type, org_type.clone().unwrap());
 		assert_eq!(org.access_model, access_model.clone().unwrap());
 		assert_eq!(org.member_limit, member_limit.unwrap());

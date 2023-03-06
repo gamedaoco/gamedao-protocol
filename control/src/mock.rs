@@ -143,6 +143,7 @@ frame_support::parameter_types! {
 	pub const MinimumDeposit: Balance = 5 * DOLLARS;
 	pub const ControlPalletId: PalletId = PalletId(*b"gd/cntrl");
 	pub const MaxMembers: u32 = 10000;
+	pub const StringLimit: u32 = 64;
 }
 impl pallet_control::Config for Test {
 	type Balance = Balance;
