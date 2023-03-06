@@ -15,7 +15,7 @@ Every organization has a treasury attached, which is managed collectively by its
 
 ### Terminology
 
-* **Organizations ontroller:** Admin of the organization.
+* **Organizations controller:** Admin of the organization.
 * **Organizations access model:** How users may apply to the organization.
 	* `Open` - any user may join;
 	* `Voting` - user may join only if organization members allow it by voting;
