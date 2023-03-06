@@ -4,7 +4,7 @@ use frame_support::{assert_noop, assert_ok};
 use sp_runtime::traits::BadOrigin;
 use sp_core::{H256, ConstU32};
 use super::*;
-use mock::{new_test_ext, System, Test, RuntimeEvent as Event, Control, RuntimeOrigin as Origin, Tokens, CurrencyId, Balance, AccountId, StringLimit,
+use mock::{new_test_ext, System, Test, RuntimeEvent as Event, Control, RuntimeOrigin as Origin, Tokens, CurrencyId, Balance, AccountId,
 	ALICE, BOB, CHARLIE, PAYMENT_TOKEN_ID, PROTOCOL_TOKEN_ID, DOLLARS};
 
 
