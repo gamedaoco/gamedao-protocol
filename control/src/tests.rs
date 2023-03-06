@@ -99,19 +99,19 @@ fn control_update_org() {
 		// Check if no changes were provided
 		// Error: NoChangesProvided
 		assert_noop!(Control::update_org(
-			Origin::signed(ALICE), org_id, None, None, None, None, None, None),
+			Origin::signed(ALICE), org_id, None, None, None, None, None, None, None, None),
 			Error::<Test>::NoChangesProvided);
 
 		// FeeModel::Transfer and no membership_fee provided
 		// Error: NoChangesProvided
 		assert_noop!(Control::update_org(
-			Origin::signed(ALICE), org_id, None, None, None, None, Some(FeeModel::Transfer), None),
+			Origin::signed(ALICE), org_id, None, None, None, None, None, None, Some(FeeModel::Transfer), None),
 			Error::<Test>::MissingParameter);
 
 		// Check if prime can be not a member
 		// Error: NotMember
 		assert_noop!(Control::update_org(
-			Origin::signed(ALICE), org_id, Some(BOB), None, None, None, None, None),
+			Origin::signed(ALICE), org_id, Some(BOB), None, None, None, None, None, None, None),
 			Error::<Test>::NotMember);
 
 		assert_ok!(Control::add_member(Origin::signed(ALICE), org_id, BOB));
@@ -119,11 +119,11 @@ fn control_update_org() {
 		// Check if only prime can perform update_org
 		// Error: BadOrigin
 		assert_noop!(Control::update_org(
-			Origin::signed(BOB), org_id, None, Some(OrgType::Dao), None, None, None, None),
+			Origin::signed(BOB), org_id, None, Some(OrgType::Dao), None, None, None, None, None, None),
 			BadOrigin);
 
 		// Check if root can update
-		assert_ok!(Control::update_org(Origin::root(), org_id, None, None, None, None, None, Some(199 * DOLLARS)));
+		assert_ok!(Control::update_org(Origin::root(), org_id, None, None, None, None, None, None, None, Some(199 * DOLLARS)));
 
 		// Check if update_org works as expected
 		let prime_id = Some(BOB);
@@ -134,7 +134,7 @@ fn control_update_org() {
 		let membership_fee = Some(99 * DOLLARS);
 
 		assert_ok!(Control::update_org(
-			Origin::signed(ALICE), org_id, prime_id, org_type.clone(), access_model.clone(), member_limit,
+			Origin::signed(ALICE), org_id, name, cid, prime_id, org_type.clone(), access_model.clone(), member_limit,
 			fee_model.clone(), membership_fee));
 
 		let org = Orgs::<Test>::get(org_id).unwrap();
@@ -157,7 +157,7 @@ fn control_update_org() {
 }
 
 #[test]
-fn control_enable_deisable_org() {
+fn control_enable_disable_org() {
 	new_test_ext().execute_with(|| {
 		let current_block = 3;
 		System::set_block_number(current_block);
