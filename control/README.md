@@ -4,16 +4,18 @@ DAO core to create organizations with their segregated treasury and maintain mem
 
 ## Overview
 
-Control is a wrapper for organizationsal bodies in the chain.
+Control is a wrapper for organizations on chain.
 
-Organizations consist of members as individual users/accounts.
+Organizations consist of:
+	- members as individual users/accounts
+	- prime as the prime voter, allowed to call administrative extrinsics
+	- council as the organization's top voters and controllers
 
-Every organization has attached treasury, which is managed collectively by its members with help of related modules.
-
+Every organization has a treasury attached, which is managed collectively by its members.
 
 ### Terminology
 
-* **Organizations controller:** Admin of the organization.
+* **Organizations ontroller:** Admin of the organization.
 * **Organizations access model:** How users may apply to the organization.
 	* `Open` - any user may join;
 	* `Voting` - user may join only if organization members allow it by voting;
@@ -28,7 +30,7 @@ Control is designed to make the following possible:
 
 * Allow users to create organizations with specified options.
 * Provide organizations with individual treasury account.
-* Allow users to become a members of organizations.
+* Allow users to become members of organizations.
 
 ## Interface
 
@@ -56,6 +58,10 @@ The following example shows how to use the Control module in your runtime by exp
 * Use related module (flow) to raise funds via croudfunding.
 * Use related module (signal) to manage raised funds via proposals.
 
+## Development
+
+Run tests in development: `cargo test -p gamedao-control`
+Run benchmarking: `cargo test -p gamedao-control --features runtime-benchmarks`
 
 ## Related Modules
 
