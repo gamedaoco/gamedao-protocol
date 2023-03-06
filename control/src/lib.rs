@@ -372,6 +372,8 @@ pub mod pallet {
 		pub fn update_org(
 			origin: OriginFor<T>,
 			org_id: T::Hash,
+			name: Option<String<T>>,
+			cid: Option<String<T>>,
 			prime_id: Option<T::AccountId>,
 			org_type: Option<OrgType>,
 			access_model: Option<AccessModel>,
@@ -383,10 +385,12 @@ pub mod pallet {
 			// Create entity like a council
 			Self::ensure_root_or_prime(origin, org.prime.clone(), org.org_type.clone())?;
 
-			let args = [prime_id.is_some(), fee_model.is_some(), membership_fee.is_some(),
+			let args = [ name.is_some(), cid.is_some(), prime_id.is_some(), fee_model.is_some(), membership_fee.is_some(),
 						access_model.is_some(), member_limit.is_some(), org_type.is_some()];
 			ensure!(args.iter().any(|x| *x == true), Error::<T>::NoChangesProvided);
 
+			if name.is_some() { org.name = name.clone().unwrap(); };
+			if cid.is_some() { org.cid = cid.clone().unwrap(); };
 			if access_model.is_some() { org.access_model = access_model.clone().unwrap(); };
 			if org_type.is_some() { org.org_type = org_type.clone().unwrap(); };
 			if member_limit.is_some() { org.member_limit = member_limit.clone().unwrap(); };
