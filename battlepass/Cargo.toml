@@ -5,7 +5,7 @@
 # ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 [package]
 name = "gamedao-battlepass"
-version = "1.3.0"
+version = "1.2.0"
 authors = ["zero.io","gamedao.co"]
 repository = "https://github.com/gamedaoco/gamedao-protocol"
 edition = "2018"
@@ -14,33 +14,33 @@ description = "BattlePass pallet provides functionality to create, manage and pa
 
 [dependencies]
 serde = { version = "1.0.143", default-features = false }
-codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
-sp-core = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-sp-std = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-sp-storage = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38", default-features=false }
-frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
-frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false, optional = true }
+sp-core = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+sp-std = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+sp-storage = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36", default-features=false }
+frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36", default-features = false, optional = true }
 
-pallet-uniques = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
+pallet-uniques = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
 
-orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.38", default-features = false }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.36", default-features = false }
 
 gamedao-control = { package = "gamedao-control", path = "../control", default-features = false }
 gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 
 [dev-dependencies]
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.38" }
-codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.36" }
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 
-pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-pallet-uniques = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.38", default-features = false }
-orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.38", default-features = false }
-orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.38", default-features = false }
+pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+pallet-uniques = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.36" }
+orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.36", default-features = false }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.36", default-features = false }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.36", default-features = false }
 
 [features]
 default = ['std']

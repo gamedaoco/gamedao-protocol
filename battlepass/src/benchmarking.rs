@@ -124,9 +124,7 @@ benchmarks! {
         set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
     }: _(RawOrigin::Signed(bot), battlepass_id, caller.clone())
     verify {
-        let collection_id = T::BattlepassHelper::collection(0);
-        let item_id = T::BattlepassHelper::item(0);
-		assert!(<pallet_uniques::Pallet<T> as InspectEnumerable<T::AccountId>>::items(&collection_id).any(|x| x == item_id));
+		assert!(ClaimedBattlepasses::<T>::get(battlepass_id, caller).is_some());
 	}
 
     activate_battlepass {
