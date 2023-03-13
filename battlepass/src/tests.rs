@@ -860,6 +860,16 @@ fn update_reward_test() {
         assert_eq!(updated.cid, new_cid.clone());
         assert_eq!(updated.transferable, new_transferable.clone());
 
+        // Should update some fields in Reward
+        assert_ok!(
+            Battlepass::update_reward(Origin::signed(creator), reward_id, None, Some(new_name.clone()), None)
+        );
+        // Check if Reward updated
+        let updated = Battlepass::get_reward(reward_id).unwrap();
+        assert_eq!(updated.name, new_name.clone());
+        assert_eq!(updated.cid, new_name.clone());
+        assert_eq!(updated.transferable, new_transferable.clone());
+
         // Should not update if Bot is not added
         assert_noop!(
             Battlepass::update_reward(Origin::signed(BOT), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(true)),
