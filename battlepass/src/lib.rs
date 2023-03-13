@@ -613,9 +613,9 @@ pub mod pallet {
 			// check permissions (prime, bot)
 			ensure!(Self::is_prime_or_bot(&battlepass.org_id, caller)?, Error::<T>::AuthorizationError);
 			
-			reward.name = name.clone().unwrap();
-			reward.cid = cid.clone().unwrap();
-			reward.transferable = transferable.clone().unwrap();
+			if name.is_some() { reward.name = name.clone().unwrap() };
+			if cid.is_some() { reward.cid = cid.clone().unwrap() };
+			if transferable.is_some() { reward.transferable = transferable.clone().unwrap() };
 
 			Rewards::<T>::insert(reward_id, reward);
 
