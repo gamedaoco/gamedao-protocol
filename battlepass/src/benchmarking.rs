@@ -102,12 +102,14 @@ benchmarks! {
 
     update_battlepass {
         let caller: T::AccountId = get_funded_caller::<T>()?;
+        let bot: T::AccountId = account("bot", 0, 0);
         let org_id = get_org::<T>(caller.clone());
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
         let new_name = BoundedVec::truncate_from(b"new name".to_vec());
         let new_cid = BoundedVec::truncate_from(b"new cid".to_vec());
         let new_price = 20;
-    }: _(RawOrigin::Signed(caller), battlepass_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_price.clone()))
+        set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
+    }: _(RawOrigin::Signed(bot), battlepass_id, Some(new_name.clone()), Some(new_cid.clone()), Some(new_price.clone()))
     verify {
         let battlepass = Battlepasses::<T>::get(battlepass_id).unwrap();
         assert!(battlepass.name == new_name);

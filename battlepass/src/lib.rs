@@ -386,7 +386,7 @@ pub mod pallet {
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
-			ensure!(Self::is_prime(&battlepass.org_id, creator.clone())?, Error::<T>::AuthorizationError);
+			ensure!(Self::is_prime_or_bot(&battlepass.org_id, creator.clone())?, Error::<T>::AuthorizationError);
 
 			if name.is_some() { battlepass.name = name.clone().unwrap() };
 			if cid.is_some() { battlepass.cid = cid.clone().unwrap() };

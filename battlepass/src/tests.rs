@@ -291,6 +291,25 @@ fn update_battlepass_test() {
         assert_eq!(updated.cid, new_cid.clone());
         assert_eq!(updated.price, 100);
 
+        // Should not update if Bot is not added
+        assert_noop!(
+            Battlepass::update_battlepass(Origin::signed(BOT), battlepass_id, None, None, Some(200)),
+            Error::<Test>::AuthorizationError
+        );
+
+        // Should update Reward by Bot
+        assert_ok!(
+            Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
+        );
+        assert_ok!(
+            Battlepass::update_battlepass(Origin::signed(BOT), battlepass_id, None, None, Some(200)),
+        );
+        // Check if Battlepass updated
+        let updated = Battlepass::get_battlepass(battlepass_id).unwrap();
+        assert_eq!(updated.name, new_name.clone());
+        assert_eq!(updated.cid, new_cid.clone());
+        assert_eq!(updated.price, 200);
+
         // Should not update if Battlepass state is ENDED
         assert_ok!(
             Battlepass::activate_battlepass(Origin::signed(creator), battlepass_id)
