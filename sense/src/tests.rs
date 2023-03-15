@@ -1,6 +1,6 @@
 #![cfg(test)]
 use super::{Event as SenseEvent, Entity, EntityProperty, PropertyType, Error, Config, Entities, Properties};
-use crate::mock::*;
+use crate::mock::{RuntimeEvent as Event, Sense, System, Test, RuntimeOrigin as Origin, new_test_ext};
 use frame_support::{assert_noop, assert_ok, BoundedVec};
 use frame_system::RawOrigin;
 use sp_runtime::traits::BadOrigin;
@@ -61,6 +61,11 @@ fn should_update_properties() {
 		);
 
 		Entities::<Test>::insert(account, Entity::new(account, block_number, 0, cid));
+
+		assert_noop!(Sense::update_property(RawOrigin::Root.into(), account, PropertyType::Experience, 125), Error::<Test>::EntityPropertyUnknown);
+		assert_noop!(Sense::update_property(RawOrigin::Root.into(), account, PropertyType::Reputation, 234), Error::<Test>::EntityPropertyUnknown);
+		assert_noop!(Sense::update_property(RawOrigin::Root.into(), account, PropertyType::Trust, 250), Error::<Test>::EntityPropertyUnknown);
+		
 		Properties::<Test>::insert(PropertyType::Experience, account, EntityProperty::new(0, block_number));
 		Properties::<Test>::insert(PropertyType::Reputation, account, EntityProperty::new(0, block_number));
 		Properties::<Test>::insert(PropertyType::Trust, account, EntityProperty::new(0, block_number));

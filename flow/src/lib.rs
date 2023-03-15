@@ -41,24 +41,23 @@ pub use types::{FlowProtocol, CampaignState, FlowGovernance, BlockType};
 
 mod mock;
 mod tests;
-mod migration;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod weights;
 
 use frame_support::{
-	dispatch::{DispatchResult, DispatchError, DispatchResultWithPostInfo},
-	traits::{Get, BalanceStatus, Hooks, StorageVersion},
+	dispatch::{DispatchResult, DispatchError},
+	traits::{Get, BalanceStatus, Hooks},
 	weights::Weight, BoundedVec, log, transactional
 };
 
 use scale_info::TypeInfo;
 use sp_runtime::{traits::{AtLeast32BitUnsigned, Hash}, Permill, ArithmeticError::Overflow};
+use sp_std::{vec::Vec, convert::{TryFrom, TryInto}};
 
-use sp_std::{vec, vec::Vec, convert::{TryFrom, TryInto}};
-
-
-use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
+#[cfg(feature = "runtime-benchmarks")]
+use gamedao_traits::{ControlBenchmarkingTrait, FlowBenchmarkingTrait};
+use gamedao_traits::{ControlTrait, FlowTrait};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 
 pub use pallet::*;
@@ -77,19 +76,15 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
-	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
-
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
-	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Event: From<Event<Self>>
-			+ IsType<<Self as frame_system::Config>::Event>
-			+ Into<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
+			+ Into<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The units in which we record balances.
 		type Balance: Member
@@ -100,7 +95,7 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
-		
+
 		/// The currency ID type
 		type CurrencyId: Member
 			+ Parameter
@@ -108,7 +103,7 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen
 			+ TypeInfo;
-		
+
 		/// Weight information for extrinsics in this module.
 		type WeightInfo: WeightInfo;
 
@@ -116,8 +111,10 @@ pub mod pallet {
 		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
 
-		type Control: ControlTrait<Self::AccountId, Self::Hash>
-			+ ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
+		type Control: ControlTrait<Self::AccountId, Self::Hash>;
+		
+		#[cfg(feature = "runtime-benchmarks")]
+		type ControlBenchmarkHelper: ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
 
 		/// The GameDAO Treasury AccountId.
 		#[pallet::constant]
@@ -126,7 +123,7 @@ pub mod pallet {
 		/// The min length of a campaign name.
 		#[pallet::constant]
 		type MinNameLength: Get<u32>;
-		
+
 		/// The max number of campaigns per one block.
 		#[pallet::constant]
 		type MaxCampaignsPerBlock: Get<u32>;
@@ -151,12 +148,12 @@ pub mod pallet {
 		/// The CurrencyId which is used as a protokol token.
 		#[pallet::constant]
 		type ProtocolTokenId: Get<Self::CurrencyId>;
-		
+
 		/// The CurrencyId which is used as a payment token.
 		#[pallet::constant]
 		type PaymentTokenId: Get<Self::CurrencyId>;
 
-		/// The amount of comission to be paid from the Org treasury to GameDAO treasury 
+		/// The amount of comission to be paid from the Org treasury to GameDAO treasury
 		/// after successfull Campaign finalization
 		#[pallet::constant]
 		type CampaignFee: Get<Permill>;
@@ -171,27 +168,27 @@ pub mod pallet {
 	}
 
 	/// Campaign by its id.
-	/// 
+	///
 	/// CampaignOf: map Hash => Campaign
 	#[pallet::storage]
 	pub(super) type CampaignOf<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Campaign<T>, OptionQuery>;
 
 	/// Total number of campaigns.
-	/// 
+	///
 	/// CampaignCount: u32
 	#[pallet::storage]
 	#[pallet::getter(fn campaign_count)]
 	pub type CampaignCount<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// Total contributions balance per campaign.
-	/// 
+	///
 	/// CampaignBalance: map Hash => Balance
 	#[pallet::storage]
 	pub(super) type CampaignBalance<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, T::Balance, ValueQuery>;
 
 	/// Total contribution made by account id for particular campaign.
 	/// campaign id, account id -> contribution.
-	/// 
+	///
 	/// CampaignContribution: double map Hash, AccountId => Balance
 	#[pallet::storage]
 	pub(super) type CampaignContribution<T: Config> =
@@ -199,14 +196,14 @@ pub mod pallet {
 
 	/// Campaign state by campaign id.
 	/// 0 created, 1 activated, 2 paused, ...
-	/// 
+	///
 	/// CampaignStates: map Hash => CampaignState
 	#[pallet::storage]
 	pub(super) type CampaignStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, CampaignState, ValueQuery, GetDefault>;
 
 	/// Campaigns starting/ending in block x.
-	/// 
+	///
 	/// CampaignsByBlock: double map BlockType, BlockNumber => BoundedVec<Hash>
 	#[pallet::storage]
 	pub(super) type CampaignsByBlock<T: Config> =
@@ -219,14 +216,14 @@ pub mod pallet {
 	/// Offset value - number of processed and sucessfully finalized contributions.
 	/// Used during campaign finalization for processing contributors in batches.
 	/// When MaxContributorsProcessing is achieved, set this offset to save the progress.
-	/// 
+	///
 	/// ProcessingOffset: map Hash => u32
 	#[pallet::storage]
 	pub(super) type ProcessingOffset<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u32, ValueQuery>;
 
 	/// Total number of contributors for particular campaign. This is needed for voting
 	/// in order do determine eligible voters for Withdrawal proposal.
-	/// 
+	///
 	/// CampaignContributors: map Hash => u64
 	#[pallet::storage]
 	pub(super) type CampaignContributorsCount<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, u64, ValueQuery>;
@@ -358,7 +355,7 @@ pub mod pallet {
 				}
 				if contributors.len() as u32 > T::MaxCampaignContributors::get() {
 					log::error!(
-						target: "runtime::gamedao_flow", "MaxCampaignContributors exceeds limits {}, 
+						target: "runtime::gamedao_flow", "MaxCampaignContributors exceeds limits {},
 						campaign '{:?}' haven't been scheduled for settlement",
 						T::MaxCampaignContributors::get(), campaign_id,
 					);
@@ -366,11 +363,7 @@ pub mod pallet {
 				}
 				let c = BoundedVec::try_from(contributors.clone()).unwrap();
 				CampaignFinalizationQueue::<T>::insert(campaign_id, (campaign, campaign_balance, state, treasury_id, c));
-		}
-		}
-
-		fn on_runtime_upgrade() -> Weight {
-			migration::migrate::<T, Self>()
+			}
 		}
 	}
 
@@ -391,9 +384,9 @@ pub mod pallet {
 		/// - `token_symbol`: a new custom token symbol
 		/// - `token_name`: a new custom token name
 		/// - `start`:
-		/// 
-		/// The two params `token_symbol` and `token_name` are meant for setting up a new custom token if creator wants to 
-		/// conduct a token generation event. Therefore these two are optionals and would result in a TGE dropping 
+		///
+		/// The two params `token_symbol` and `token_name` are meant for setting up a new custom token if creator wants to
+		/// conduct a token generation event. Therefore these two are optionals and would result in a TGE dropping
 		/// fungible token with a new currency id to contributors.
 		///
 		/// Emits `CampaignCreated` event when successful.
@@ -425,7 +418,7 @@ pub mod pallet {
 			let min_deposit = T::MinCampaignDeposit::get().mul_floor(target);
 			ensure!(deposit >= min_deposit, Error::<T>::DepositInsufficient);
 			ensure!(deposit <= target, Error::<T>::DepositTooHigh);
-			
+
 			// Campaign start/expiry validation:
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			let starts = start.unwrap_or(current_block);
@@ -438,7 +431,7 @@ pub mod pallet {
 			let index = CampaignCount::<T>::get();
 			let campaign = types::Campaign {
 				index, org_id, name: name.clone(), owner: creator.clone(),
-				admin: admin_id.clone(), deposit, start: starts, expiry, cap: target, 
+				admin: admin_id.clone(), deposit, start: starts, expiry, cap: target,
 				protocol, governance, cid, token_symbol, token_name, created: current_block,
 			};
 
@@ -472,7 +465,7 @@ pub mod pallet {
 				Error::<T>::NoContributionsAllowed
 			);
 			ensure!(contribution >= T::MinContribution::get(), Error::<T>::ContributionInsufficient);
-			
+
 			Self::create_contribution(sender.clone(), campaign_id, contribution)?;
 			Self::deposit_event(Event::Contributed {
 				campaign_id, sender,
@@ -543,18 +536,24 @@ impl<T: Config> Pallet<T> {
 		campaign_id: T::Hash,
 		org_treasury: &T::AccountId,
 	) {
-		if campaign_state == &CampaignState::Succeeded {
-			let contributor_balance = CampaignContribution::<T>::get(campaign_id, &contributor);
-			let _transfer_amount = T::Currency::repatriate_reserved(
-				T::PaymentTokenId::get(),
-				&contributor,
-				&org_treasury,
-				contributor_balance.clone(),
-				BalanceStatus::Reserved
-			);
-		} else if campaign_state == &CampaignState::Failed {
-			let contribution = CampaignContribution::<T>::get(campaign_id, contributor.clone());
-			T::Currency::unreserve(T::PaymentTokenId::get(), &contributor, contribution);
+		match campaign_state {
+			&CampaignState::Succeeded => {
+				let contributor_balance = CampaignContribution::<T>::get(campaign_id, &contributor);
+				let _transfer_amount = T::Currency::repatriate_reserved(
+					T::PaymentTokenId::get(),
+					&contributor,
+					&org_treasury,
+					contributor_balance.clone(),
+					BalanceStatus::Reserved
+				);
+			},
+
+			&CampaignState::Failed => {
+				let contribution = CampaignContribution::<T>::get(campaign_id, contributor.clone());
+				T::Currency::unreserve(T::PaymentTokenId::get(), &contributor, contribution);
+			},
+			
+			_ => {},
 		}
 	}
 
@@ -566,30 +565,34 @@ impl<T: Config> Pallet<T> {
 		org_treasury: T::AccountId,
 		block_number: T::BlockNumber,
 	) {
-		if campaign_state == &CampaignState::Succeeded {
-			let commission = T::CampaignFee::get().mul_floor(campaign_balance.clone());
-			let _transfer_commission = T::Currency::repatriate_reserved(
-				T::PaymentTokenId::get(),
-				&org_treasury,
-				&T::GameDAOTreasury::get(),
-				commission,
-				BalanceStatus::Free
-			);
-			// Update campaign balance
-			let updated_balance = campaign_balance - commission;
-			CampaignBalance::<T>::insert(campaign_id, updated_balance);
-			CampaignStates::<T>::insert(&campaign_id, CampaignState::Succeeded);
+		match campaign_state {
+			&CampaignState::Succeeded => {
+				let commission = T::CampaignFee::get().mul_floor(campaign_balance.clone());
+				let _transfer_commission = T::Currency::repatriate_reserved(
+					T::PaymentTokenId::get(),
+					&org_treasury,
+					&T::GameDAOTreasury::get(),
+					commission,
+					BalanceStatus::Free
+				);
+				// Update campaign balance
+				let updated_balance = campaign_balance - commission;
+				CampaignBalance::<T>::insert(campaign_id, updated_balance);
+				CampaignStates::<T>::insert(&campaign_id, CampaignState::Succeeded);
 
-			Self::deposit_event(Event::Succeeded { campaign_id, campaign_balance: updated_balance, block_number });
+				Self::deposit_event(Event::Succeeded { campaign_id, campaign_balance: updated_balance, block_number });
+			}, 
 
-		} else if campaign_state == &CampaignState::Failed {
-			// Unreserve Initial deposit
-			T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, campaign.deposit);
-			CampaignStates::<T>::insert(campaign_id, CampaignState::Failed);
+			&CampaignState::Failed => {
+				// Unreserve Initial deposit
+				T::Currency::unreserve(T::ProtocolTokenId::get(), &org_treasury, campaign.deposit);
+				CampaignStates::<T>::insert(campaign_id, CampaignState::Failed);
 
-			Self::deposit_event(Event::Failed { campaign_id, campaign_balance, block_number });
+				Self::deposit_event(Event::Failed { campaign_id, campaign_balance, block_number });
+			},
+
+			_ => {},
 		}
-
 	}
 
 }
@@ -616,12 +619,12 @@ impl<T: Config> FlowTrait<T::AccountId, T::Balance, T::Hash> for Pallet<T> {
 	}
 }
 
+#[cfg(feature = "runtime-benchmarks")]
 impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for Pallet<T> {
 
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn create_campaign(caller: &T::AccountId, org_id: &T::Hash, start: T::BlockNumber) -> Result<T::Hash, &'static str> {
 		use sp_runtime::traits::Saturating;
+		use sp_std::vec;
 		let bounded_str: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
 		let now = frame_system::Pallet::<T>::block_number();
 		let index = CampaignCount::<T>::get();
@@ -635,7 +638,7 @@ impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for
 			deposit: T::MinContribution::get(),
 			start,
 			expiry: start + 57_600_u32.into(), // 60/3*60*24*2 (2 days with 3 sec block time)
-			cap: target, 
+			cap: target,
 			protocol: FlowProtocol::default(),
 			governance: FlowGovernance::default(),
 			cid: bounded_str.clone(),
@@ -654,8 +657,6 @@ impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for
 		Ok(campaign_id)
 	}
 
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn create_contributions(campaign_id: &T::Hash, contributors: Vec<T::AccountId>) -> Result<(), DispatchError> {
 		for account_id in BoundedVec::<T::AccountId, T::MaxCampaignContributors>::truncate_from(contributors) {
 			Pallet::<T>::contribute(
@@ -667,8 +668,6 @@ impl<T: Config> FlowBenchmarkingTrait<T::AccountId, T::BlockNumber, T::Hash> for
 		Ok(())
 	}
 
-	/// ** Should be used for benchmarking only!!! **
-	#[cfg(feature = "runtime-benchmarks")]
 	fn finalize_campaigns_by_block(block_number: T::BlockNumber) {
 		use sp_runtime::traits::Saturating;
 		frame_system::Pallet::<T>::set_block_number(block_number);

@@ -14,7 +14,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(deprecated)] // TODO: clean transactional
 pub mod types;
-pub mod migration;
 
 #[cfg(test)]
 pub mod mock;
@@ -26,9 +25,10 @@ pub mod weights;
 
 use frame_support::{
 	BoundedVec,
-	traits::{StorageVersion, BalanceStatus},
+	traits::BalanceStatus,
 	dispatch::DispatchResult,
 	weights::Weight,
+	log,
 	transactional
 };
 use frame_system::ensure_signed;
@@ -39,7 +39,9 @@ use sp_runtime::{
 };
 use sp_std::vec;
 
-use gamedao_traits::{ControlTrait, ControlBenchmarkingTrait, FlowTrait, FlowBenchmarkingTrait};
+#[cfg(feature = "runtime-benchmarks")]
+use gamedao_traits::{ControlBenchmarkingTrait, FlowBenchmarkingTrait};
+use gamedao_traits::{ControlTrait, FlowTrait};
 
 use types::{
 	ProposalIndex, ProposalType, ProposalState, SlashingRule,
@@ -50,8 +52,8 @@ pub use pallet::*;
 pub use weights::WeightInfo;
 
 type Proposal<T> = types::Proposal<
-	<T as frame_system::Config>::Hash, <T as frame_system::Config>::BlockNumber, 
-	<T as frame_system::Config>::AccountId, <T as pallet::Config>::Balance, 
+	<T as frame_system::Config>::Hash, <T as frame_system::Config>::BlockNumber,
+	<T as frame_system::Config>::AccountId, <T as pallet::Config>::Balance,
 	<T as pallet::Config>::CurrencyId, BoundedVec<u8, <T as pallet::Config>::StringLimit>
 >;
 
@@ -67,19 +69,15 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
-	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
-
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
-	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Event: From<Event<Self>>
-			+ IsType<<Self as frame_system::Config>::Event>
-			+ Into<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
+			+ Into<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The units in which we record balances.
 		type Balance: Member
@@ -107,16 +105,20 @@ pub mod pallet {
 			+ MultiReservableCurrency<Self::AccountId>;
 
 		/// Control pallet's public interface.
-		type Control: ControlTrait<Self::AccountId, Self::Hash>
-			+ ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
+		type Control: ControlTrait<Self::AccountId, Self::Hash>;
 
 		/// Flow pallet's public interface.
-		type Flow: FlowTrait<Self::AccountId, Self::Balance, Self::Hash>
-			+ FlowBenchmarkingTrait<Self::AccountId, Self::BlockNumber, Self::Hash>;
+		type Flow: FlowTrait<Self::AccountId, Self::Balance, Self::Hash>;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type ControlBenchmarkHelper: ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type FlowBenchmarkHelper: FlowBenchmarkingTrait<Self::AccountId, Self::BlockNumber, Self::Hash>;
 
 		/// Weight information for extrinsics in this module.
 		type WeightInfo: WeightInfo;
-		
+
 		/// The CurrencyId which is used as a payment token.
 		#[pallet::constant]
 		type PaymentTokenId: Get<Self::CurrencyId>;
@@ -163,7 +165,7 @@ pub mod pallet {
 	///
 	/// Proposals: map Hash => Proposal
 	#[pallet::storage]
-	pub(super) type ProposalOf<T: Config> = 
+	pub(super) type ProposalOf<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash,
 		Proposal<T>, OptionQuery>;
 
@@ -171,7 +173,7 @@ pub mod pallet {
 	///
 	/// ProposalStates: map Hash => ProposalState
 	#[pallet::storage]
-	pub(super) type ProposalStates<T: Config> = 
+	pub(super) type ProposalStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::Hash, ProposalState, ValueQuery, GetDefault>;
 
 	/// Proposals ending in a block.
@@ -180,7 +182,7 @@ pub mod pallet {
 	#[pallet::storage]
 	pub(super) type ProposalsByBlock<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, BlockType, Blake2_128Concat, T::BlockNumber, BoundedVec<T::Hash, T::MaxProposalsPerBlock>, ValueQuery>;
-	
+
 	#[pallet::storage]
 	pub type ProposalCount<T: Config> = StorageValue<_, ProposalIndex, ValueQuery>;
 
@@ -233,12 +235,14 @@ pub mod pallet {
 		OrgInactive,
 		OutOfBounds,
 		ProposalExists,
+		ProposalInvalid,
 		ProposalNotActive,
 		ProposalUnknown,
 		TooManyProposals,
 		TreasuryBalanceLow,
 		TreasuryUnknown,
 		VoteLimitReached,
+		VotingInvalid,
 		WrongParameter,
 	}
 
@@ -293,7 +297,7 @@ pub mod pallet {
 					ensure!(scale != Scale::Quadratic, Error::<T>::WrongParameter);
 				}
 				Unit::Token => {
-					// Since it's not possible to calculate eligible voting power, 
+					// Since it's not possible to calculate eligible voting power,
 					// 	Absolute majority and quorum doesn't work for Unit::Token
 					ensure!(majority != Majority::Absolute, Error::<T>::WrongParameter);
 					ensure!(quorum.is_none(), Error::<T>::WrongParameter);
@@ -311,7 +315,7 @@ pub mod pallet {
 					let campaign_owner = T::Flow::campaign_owner(&c_id).ok_or(Error::<T>::AuthorizationError)?;
 					ensure!(proposer == campaign_owner, Error::<T>::AuthorizationError);
 					ensure!(T::Flow::is_campaign_succeeded(&c_id), Error::<T>::CampaignUnsucceeded);
-					
+
 					let used_balance = CampaignBalanceUsed::<T>::get(&c_id);
 					let total_balance = T::Flow::campaign_balance(&c_id);
 					let remaining_balance = total_balance
@@ -380,6 +384,7 @@ pub mod pallet {
 					);
 				},
 				ProposalType::Withdrawal => {
+					ensure!(proposal.campaign_id.is_some(), Error::<T>::ProposalInvalid);
 					ensure!(
 						T::Flow::is_campaign_contributor(&proposal.campaign_id.unwrap(), &who),
 						Error::<T>::AuthorizationError
@@ -401,9 +406,6 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 
-		fn on_runtime_upgrade() -> Weight {
-			migration::migrate::<T>()
-		}
 
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
 			let proposals = ProposalsByBlock::<T>::get(BlockType::Start, &block_number);
@@ -415,6 +417,7 @@ pub mod pallet {
 				ProposalStates::<T>::insert(proposal_id, ProposalState::Active);
 				Self::deposit_event(Event::<T>::Activated { proposal_id: *proposal_id });
 			}
+
 			T::WeightInfo::on_initialize(proposals.len().saturated_into())
 		}
 
@@ -425,51 +428,53 @@ pub mod pallet {
 				if proposal_state != ProposalState::Active {
 					continue;
 				};
-				let voting_exists = ProposalVoting::<T>::contains_key(&proposal_id);
+				let maybe_voting = ProposalVoting::<T>::get(&proposal_id);
 				let proposal_exists = ProposalOf::<T>::contains_key(&proposal_id);
 
-				if !voting_exists || !proposal_exists {
+				if maybe_voting.is_none() || !proposal_exists {
+					log::error!(target: "runtime::gamedao_signal", "Proposal [{:?}] or voting [{:?}] is missing for proposal id: {:?}.", proposal_exists, maybe_voting.is_some(), proposal_id);
 					continue;	// should never happen
 				}
-				let voting =  ProposalVoting::<T>::get(&proposal_id).unwrap();
+				let voting =  maybe_voting.unwrap();
 
 				// Get the final state based on Voting participation, quorum, majority
 				proposal_state = Self::get_final_proposal_state(&voting);
-				
-				Self::finalize_proposal(&proposal_id, proposal_state, &voting);
+
+				if Self::finalize_proposal(&proposal_id, proposal_state, &voting).is_err() {
+					log::error!(target: "runtime::gamedao_signal", "Failed to finalize a proposal {:?}.", proposal_id);
+				};
 			}
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
 
-		pub fn get_voting_power(voting: &Voting<T>, deposit: &Option<T::Balance>) -> VotingPower {
+		pub fn get_voting_power(voting: &Voting<T>, deposit: &Option<T::Balance>) -> Result<VotingPower, DispatchError> {
 			let mut power: VotingPower = 1;
 			match voting.unit {
 				Unit::Account => {
 					match voting.scale {
-						Scale::Linear => { 
+						Scale::Linear => {
 							power = 1;
 						}
-						Scale::Quadratic => { 
+						Scale::Quadratic => {
 							// So far not possible, maybe in case of delegation
 						}
 					}
 				}
 				Unit::Token => {
-					let linear_power: VotingPower = deposit.unwrap().saturated_into();
+					let linear_power: VotingPower = deposit.ok_or(Error::<T>::MissingParameter)?.saturated_into();
 					match voting.scale {
-						Scale::Linear => { 
+						Scale::Linear => {
 							power = linear_power;
 						}
-						Scale::Quadratic => { 
-							let linear_power: VotingPower = deposit.unwrap().saturated_into();
+						Scale::Quadratic => {
 							power = linear_power.integer_sqrt();
 						}
 					}
 				}
 			}
-			power
+			Ok(power)
 		}
 
 		pub fn process_voting_deposits(
@@ -518,7 +523,7 @@ pub mod pallet {
 		) -> Result<u32, DispatchError> {
 			let position_yes = voting.ayes.iter().position(|a| a.0 == who);
 			let position_no = voting.nays.iter().position(|a| a.0 == who);
-			let power = Self::get_voting_power(&voting, &deposit);
+			let power = Self::get_voting_power(&voting, &deposit)?;
 			let mut old_deposit: Option<T::Balance> = None;
 
 			if approve {
@@ -562,7 +567,7 @@ pub mod pallet {
 
 			// For Absolute majority if more then 50% of members vote for one option, the proposal period ends earlier.
 			if let Some(final_proposal_state) = Self::try_finalize_proposal(&voting) {
-				Self::finalize_proposal(&proposal_id, final_proposal_state, &voting);
+				Self::finalize_proposal(&proposal_id, final_proposal_state, &voting)?;
 			}
 
 			Ok(voting.participating as u32)
@@ -681,34 +686,37 @@ pub mod pallet {
 			}
 		}
 
-		fn apply_proposal_actions(proposal: &Proposal<T>, proposal_state: ProposalState) -> ProposalState {
+		fn apply_proposal_actions(proposal: &Proposal<T>, proposal_state: ProposalState) -> Result<ProposalState, DispatchError> {
 			match proposal.proposal_type {
 				ProposalType::Withdrawal => {
-					let campaign_id = proposal.campaign_id.unwrap();
-					let amount = proposal.amount.unwrap();
-					T::Currency::unreserve(
-						proposal.currency_id.unwrap(),
-						&T::Control::org_treasury_account(&proposal.org_id).unwrap(), amount);
+					let campaign_id = proposal.campaign_id.ok_or(Error::<T>::ProposalInvalid)?;
+					let amount = proposal.amount.ok_or(Error::<T>::ProposalInvalid)?;
+					let currency_id = proposal.currency_id.ok_or(Error::<T>::ProposalInvalid)?;
+					let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
+					T::Currency::unreserve(currency_id, &treasury, amount);
 					let used_balance = CampaignBalanceUsed::<T>::get(&campaign_id);
 					CampaignBalanceUsed::<T>::insert(&campaign_id, used_balance + amount);
-					return ProposalState::Finalized;
+					return Ok(ProposalState::Finalized);
 				}
 				ProposalType::Spending => {
-					let res = T::Currency::repatriate_reserved(
-						proposal.currency_id.unwrap(),
-						&T::Control::org_treasury_account(&proposal.org_id).unwrap(),
-						&proposal.beneficiary.as_ref().unwrap(),
-						proposal.amount.unwrap(),
-						BalanceStatus::Free);
-					debug_assert!(res.is_ok());
-					return ProposalState::Finalized;
+					let amount = proposal.amount.ok_or(Error::<T>::ProposalInvalid)?;
+					let currency_id = proposal.currency_id.ok_or(Error::<T>::ProposalInvalid)?;
+					let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
+					let beneficiary = proposal.beneficiary.as_ref().ok_or(Error::<T>::ProposalInvalid)?;
+					T::Currency::repatriate_reserved(
+						currency_id,
+						&treasury,
+						&beneficiary,
+						amount,
+						BalanceStatus::Free)?;
+					return Ok(ProposalState::Finalized);
 				}
-				_ => { return proposal_state }
+				_ => { return Ok(proposal_state) }
 			}
 
 		}
 
-		fn process_proposal_deposit(proposal: &Proposal<T>, voting: &Voting<T>, proposal_state: &ProposalState) {
+		fn process_proposal_deposit(proposal: &Proposal<T>, voting: &Voting<T>, proposal_state: &ProposalState) -> DispatchResult {
 			let currency_id = T::ProtocolTokenId::get();
 			match proposal_state {
 				ProposalState::Rejected => {
@@ -721,12 +729,9 @@ pub mod pallet {
 								let gamedao_share = T::GameDAOGetsFromSlashing::get().mul_floor(proposal.deposit);
 								let org_share = proposal.deposit - gamedao_share;
 								let gamedo_trsry = T::GameDAOTreasury::get();
-								let org_trsry = T::Control::org_treasury_account(&proposal.org_id).unwrap();
-								
-								let res = T::Currency::transfer(currency_id, &proposal.owner, &gamedo_trsry, gamedao_share);
-								debug_assert!(res.is_ok());
-								let res = T::Currency::transfer(currency_id, &proposal.owner, &org_trsry, org_share);
-								debug_assert!(res.is_ok());
+								let org_trsry = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
+								T::Currency::transfer(currency_id, &proposal.owner, &gamedo_trsry, gamedao_share)?;
+								T::Currency::transfer(currency_id, &proposal.owner, &org_trsry, org_share)?;
 							}
 						}
 						SlashingRule::Tribunal => {
@@ -736,7 +741,7 @@ pub mod pallet {
 				}
 				_ => { T::Currency::unreserve(currency_id, &proposal.owner, proposal.deposit); }
 			}
-
+			Ok(())
 		}
 
 		fn emit_event(proposal_state: &ProposalState, proposal_id: &T::Hash) {
@@ -757,19 +762,22 @@ pub mod pallet {
 			}
 		}
 
-		fn finalize_proposal(proposal_id: &T::Hash, mut proposal_state: ProposalState, voting: &Voting<T>) {
-			let proposal = ProposalOf::<T>::get(&proposal_id).unwrap();  // should not fail, checked before
+		fn finalize_proposal(proposal_id: &T::Hash, mut proposal_state: ProposalState, voting: &Voting<T>) -> DispatchResult {
+			let proposal = ProposalOf::<T>::get(&proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
 
 			match proposal_state {
 				ProposalState::Accepted => {
-					proposal_state = Self::apply_proposal_actions(&proposal, proposal_state);
+					proposal_state = Self::apply_proposal_actions(&proposal, proposal_state)?;
 				}
 				_ => {
 					if proposal.proposal_type == ProposalType::Spending {
+						let amount = proposal.amount.ok_or(Error::<T>::ProposalInvalid)?;
+						let currency_id = proposal.currency_id.ok_or(Error::<T>::ProposalInvalid)?;
+						let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
 						T::Currency::unreserve(
-							proposal.currency_id.unwrap(),
-							& T::Control::org_treasury_account(&proposal.org_id).unwrap(),
-							proposal.amount.unwrap());
+							currency_id,
+							&treasury,
+							amount);
 					};
 				}
 			}
@@ -778,17 +786,19 @@ pub mod pallet {
 				let currency_id = T::ProtocolTokenId::get();
 				// TODO: chain -  &voting.ayes.iter().chain(&voting.nays.iter())
 				for (who, _, deposit) in &voting.ayes {
-					let _ = T::Currency::unreserve(currency_id, &who, deposit.unwrap());
+					let _ = T::Currency::unreserve(currency_id, &who, deposit.ok_or(Error::<T>::VotingInvalid)?);
 				};
 				for (who, _, deposit) in &voting.nays {
-					let _ = T::Currency::unreserve(currency_id, &who, deposit.unwrap());
+					let _ = T::Currency::unreserve(currency_id, &who, deposit.ok_or(Error::<T>::VotingInvalid)?);
 				};
 			}
 			// Refund or slash proposal's deposit based on proposal state and majority of rejection
-			Self::process_proposal_deposit(&proposal, &voting, &proposal_state);
+			Self::process_proposal_deposit(&proposal, &voting, &proposal_state)?;
 
 			Self::emit_event(&proposal_state, &proposal_id);
 			ProposalStates::<T>::insert(proposal_id, proposal_state);
+
+			Ok(())
 		}
 	}
 }

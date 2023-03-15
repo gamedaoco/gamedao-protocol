@@ -4,14 +4,14 @@ use frame_support::traits::Hooks;
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_core::H256;
-use sp_runtime::traits::{Hash, AccountIdConversion};
+use sp_runtime::traits::Hash;
 
 use gamedao_control::types::{AccessModel, FeeModel, OrgType, Org};
 use super::{
 	types::{FlowProtocol, FlowGovernance},
 	mock::{
-		BlockNumber, AccountId, Balance, Control, Event, Tokens, INIT_BALANCE,
-		Flow, Origin, System, Test, ALICE, BOB, DOLLARS, DAYS, new_test_ext,
+		BlockNumber, AccountId, Balance, Control, RuntimeEvent as Event, Tokens, INIT_BALANCE,
+		Flow, RuntimeOrigin as Origin, System, Test, ALICE, BOB, DOLLARS, DAYS, new_test_ext,
 		PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, CampaignDurationLimits, MaxContributorsProcessing,
 	},
 	*
@@ -53,7 +53,7 @@ pub fn create_campaign(
 		deposit,
 		start,
 		expiry,
-		cap: target, 
+		cap: target,
 		protocol: FlowProtocol::default(),
 		governance: FlowGovernance::default(),
 		cid: bounded_str.clone(),
@@ -152,7 +152,7 @@ fn flow_create_errors() {
 		);
 		// Ensure campaign expires before expiration limit
 		// Error: OutOfBounds
-		let (min_duration, max_duration) = CampaignDurationLimits::get();
+		let (_min_duration, max_duration) = CampaignDurationLimits::get();
 		let expiration_block = max_duration + now + 1;
 		assert_noop!(
 			Flow::create_campaign(
@@ -324,7 +324,7 @@ fn flow_on_finalize_campaign_succeess() {
 			campaign_rev.deposit, campaign_rev.expiry, campaign_rev.protocol.clone(), campaign_rev.governance.clone(),
 			campaign_rev.cid.clone(), None, None, None
 		));
-		
+
 		// Contribute (10/500)
 		assert_ok!(Flow::contribute(Origin::signed(1), campaign_id_rev, 10 * DOLLARS));
 
@@ -483,7 +483,7 @@ fn flow_on_finalize_campaign_failed() {
 		System::set_block_number(expiry + 1);
 		Flow::on_initialize(expiry + 1);
 
-		// Account's balance from the first batch was unlocked		
+		// Account's balance from the first batch was unlocked
 		assert_eq!(<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &c[0]), INIT_BALANCE);
 		assert_eq!(<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &c[1]), INIT_BALANCE);
 		assert_eq!(<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &c[2]), INIT_BALANCE);
