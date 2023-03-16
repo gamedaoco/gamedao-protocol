@@ -280,6 +280,8 @@ fn update_battlepass_test() {
         assert_eq!(updated.name, new_name.clone());
         assert_eq!(updated.cid, new_cid.clone());
         assert_eq!(updated.price, new_price.clone());
+        // Check if Collection metadata updated
+        assert_eq!(<Uniques as Inspect<AccountId>>::collection_attribute(&0, &[]), Some(new_cid.clone().into()));
 
         // Should update some fields in battlepass
         assert_ok!(
@@ -469,6 +471,7 @@ fn claim_battlepass_test() {
         let org_id = create_org();
         let battlepass_id = create_battlepass(org_id);
         let wrong_battlepass_id = <Test as frame_system::Config>::Hashing::hash_of(&"123");
+        let cid = BoundedVec::truncate_from(b"new cid".to_vec());
         let creator = ALICE;
         let not_creator = BOB;
         let not_creator_2 = TOM;
@@ -481,13 +484,13 @@ fn claim_battlepass_test() {
 
         // Should not claim unknown Battlepass
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(creator), wrong_battlepass_id, creator),
+            Battlepass::claim_battlepass(Origin::signed(creator), wrong_battlepass_id, creator, None),
             Error::<Test>::BattlepassUnknown
         );
 
         // Should not claim Battlepass in DRAFT state
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator),
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator, None),
             Error::<Test>::BattlepassStateWrong
         );
      
@@ -499,7 +502,7 @@ fn claim_battlepass_test() {
             Control::disable_org(Origin::signed(creator), org_id)
         );
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator),
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator, None),
             Error::<Test>::OrgUnknownOrInactive
         );
         assert_ok!(
@@ -508,35 +511,37 @@ fn claim_battlepass_test() {
 
         // Should not claim by Bot if Bot account was not added
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(BOT), battlepass_id, creator),
+            Battlepass::claim_battlepass(Origin::signed(BOT), battlepass_id, creator, None),
             Error::<Test>::AuthorizationError
         );
 
         // Should not claim for others if origin is not a Prime
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, creator),
+            Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, creator, None),
             Error::<Test>::AuthorizationError
         );
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(not_member), battlepass_id, creator),
+            Battlepass::claim_battlepass(Origin::signed(not_member), battlepass_id, creator, None),
             Error::<Test>::AuthorizationError
         );
         // Should not claim for self
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, not_creator),
+            Battlepass::claim_battlepass(Origin::signed(not_creator), battlepass_id, not_creator, None),
             Error::<Test>::AuthorizationError
         );
         
         // Should claim for others by Prime
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator, None)
         );
         // Check if NFT minted
         assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 0) , true);
+        // Check NFT metadata
+        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&0, &0, &[]), Some(string().into()));
         
         // Should not claim if it was already claimed
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator),
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator, None),
             Error::<Test>::BattlepassOwnershipExists
         );
 
@@ -548,14 +553,14 @@ fn claim_battlepass_test() {
             <Uniques as Transfer<AccountId>>::transfer(&0, &0, &not_member_2)
         );
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator, None)
         );
         // Check if NFT minted
         assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 1) , true);
 
         // Should not claim if user received Battlepass NFT from someone else
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member_2),
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member_2, None),
             Error::<Test>::BattlepassOwnershipExists
         );
 
@@ -564,22 +569,26 @@ fn claim_battlepass_test() {
             Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
         );
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(BOT), battlepass_id, not_creator_3)
+            Battlepass::claim_battlepass(Origin::signed(BOT), battlepass_id, not_creator_3, None)
         );
         // Check if NFT minted
         assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 2) , true);
 
         // Should claim for accounts outside of org
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member),
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member, Some(cid.clone())),
         );
+        // Check if NFT minted
+        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 3) , true);
+        // Check NFT metadata
+        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&0, &3, &[]), Some(cid.into()));
 
         // Should not claim Battlepass in ENDED state
         assert_ok!(
             Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id)
         );
         assert_noop!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator),
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator, None),
             Error::<Test>::BattlepassStateWrong
         );
         // Check events 
@@ -651,7 +660,7 @@ fn set_points_test() {
 
         // Should set points by Prime
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator, None)
         );
         assert_ok!(
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_creator, 10)
@@ -878,6 +887,8 @@ fn update_reward_test() {
         assert_eq!(updated.name, new_name.clone());
         assert_eq!(updated.cid, new_cid.clone());
         assert_eq!(updated.transferable, new_transferable.clone());
+        // Check if Collection metadata updated
+        assert_eq!(<Uniques as Inspect<AccountId>>::collection_attribute(&1, &[]), Some(new_cid.clone().into()));
 
         // Should update some fields in Reward
         assert_ok!(
@@ -1017,6 +1028,7 @@ fn claim_reward_test() {
         let org_id = create_org();
         let battlepass_id = create_battlepass(org_id);
         let wrong_id = <Test as frame_system::Config>::Hashing::hash_of(&"123");
+        let cid = BoundedVec::truncate_from(b"new cid".to_vec());
         let creator = ALICE;
         let not_creator = BOB;
         let not_creator_2 = TOM;
@@ -1031,7 +1043,7 @@ fn claim_reward_test() {
 
         // Should not claim if Reward unknown
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), wrong_id, creator),
+            Battlepass::claim_reward(Origin::signed(creator), wrong_id, creator, None),
             Error::<Test>::RewardUnknown
         );
 
@@ -1041,7 +1053,7 @@ fn claim_reward_test() {
             Battlepass::disable_reward(Origin::signed(creator), reward_id)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator, None),
             Error::<Test>::RewardInactive
         );
 
@@ -1053,14 +1065,14 @@ fn claim_reward_test() {
             }
         } );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator, None),
             Error::<Test>::BattlepassUnknown
         );
 
         // Should not claim if Battlepass state is DRAFT
         let reward_id = create_reward(battlepass_id);
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator, None),
             Error::<Test>::BattlepassStateWrong
         );
 
@@ -1072,7 +1084,7 @@ fn claim_reward_test() {
             Control::disable_org(Origin::signed(creator), org_id)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator, None),
             Error::<Test>::OrgUnknownOrInactive
         );
         assert_ok!(
@@ -1081,41 +1093,46 @@ fn claim_reward_test() {
 
         // Should not claim by Bot if Bot account was not added
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(BOT), reward_id, creator),
+            Battlepass::claim_reward(Origin::signed(BOT), reward_id, creator, None),
             Error::<Test>::AuthorizationError
         );
 
         // Should not claim for others if origin is not a Prime or Bot
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator), reward_id, creator),
+            Battlepass::claim_reward(Origin::signed(not_creator), reward_id, creator, None),
             Error::<Test>::AuthorizationError
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_member), reward_id, creator),
+            Battlepass::claim_reward(Origin::signed(not_member), reward_id, creator, None),
+            Error::<Test>::AuthorizationError
+        );
+        // Should not claim for self
+        assert_noop!(
+            Battlepass::claim_reward(Origin::signed(not_member), reward_id, not_member, None),
             Error::<Test>::AuthorizationError
         );
 
         // Should not claim Reward if user didn't claim Battlepass
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator), reward_id, not_creator),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_creator, None),
             Error::<Test>::BattlepassOwnershipDoesntExist
         );
 
         // Should not claim Reward if no NFT for claimed Battlepass
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator, None)
         );
         assert_ok!(
             <Uniques as Mutate<AccountId>>::burn(&0, &0, None)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator), reward_id, not_creator),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_creator, None),
             Error::<Test>::BattlepassOwnershipDoesntExist
         );
 
         // Should not claim Reward if user lost ownership of Battlepass NFT
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator, None)
         );
         assert_ok!(
             Uniques::thaw_collection(Origin::signed(creator), 0)
@@ -1124,16 +1141,16 @@ fn claim_reward_test() {
             <Uniques as Transfer<AccountId>>::transfer(&0, &1, &not_member_2)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, creator, None),
             Error::<Test>::BattlepassOwnershipDoesntExist
         );
 
         // Should not claim if user's level is too low
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator_3)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator_3, None)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator_3), reward_id, not_creator_3),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_creator_3, None),
             Error::<Test>::LevelNotReached
         );
 
@@ -1145,26 +1162,30 @@ fn claim_reward_test() {
             Battlepass::add_level(Origin::signed(creator), battlepass_id, 1, 10)
         );
         assert_ok!(
-            Battlepass::claim_reward(Origin::signed(not_creator_3), reward_id, not_creator_3)
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_creator_3, None)
         );
         // Check if Reward claimed
         assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_creator_3), true);
+        // Check if NFT minted
+        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&3).any(|x| x == 3) , true);
+        // Check NFT metadata
+        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&3, &3, &[]), Some(string().into()));
 
         // Should not claim if Reward already claimed
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator_3), reward_id, not_creator_3),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_creator_3, None),
             Error::<Test>::RewardClaimed
         );
 
         // Should not claim if max limit reached
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator_4)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator_4, None)
         );
         assert_ok!(
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_creator_4, 10)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator_4), reward_id, not_creator_4),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_creator_4, None),
             pallet_uniques::Error::<Test>::MaxSupplyReached
         );
 
@@ -1174,24 +1195,32 @@ fn claim_reward_test() {
             Battlepass::add_bot(Origin::signed(creator), battlepass_id, BOT)
         );
         assert_ok!(
-            Battlepass::claim_reward(Origin::signed(BOT), reward_id, not_creator_4)
+            Battlepass::claim_reward(Origin::signed(BOT), reward_id, not_creator_4, None)
         );
         // Check if Reward claimed
         assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_creator_4), true);
+        // Check if NFT minted
+        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&4).any(|x| x == 5) , true);
+        // Check NFT metadata
+        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&4, &5, &[]), Some(string().into()));
 
         // Should claim Reward for non-member
         let reward_id = create_reward(battlepass_id);
         assert_ok!(
-            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member)
+            Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member, None)
         );
         assert_ok!(
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_member, 10)
         );
         assert_ok!(
-            Battlepass::claim_reward(Origin::signed(not_member), reward_id, not_member)
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_member, Some(cid.clone()))
         );
         // Check if Reward claimed
         assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_member), true);
+        // Check if NFT minted
+        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&5).any(|x| x == 7) , true);
+        // Check NFT metadata
+        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&5, &7, &[]), Some(cid.into()));
 
         // Should claim Reward after receiving Battlepass NFT from elsewhere
         let reward_id = create_reward(battlepass_id);
@@ -1199,17 +1228,21 @@ fn claim_reward_test() {
             Battlepass::set_points(Origin::signed(creator), battlepass_id, not_member_2, 10)
         );
         assert_ok!(
-            Battlepass::claim_reward(Origin::signed(not_member_2), reward_id, not_member_2)
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_member_2, None)
         );
         // Check if Reward claimed
         assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_member_2), true);
+        // Check if NFT minted
+        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&6).any(|x| x == 8) , true);
+        // Check NFT metadata
+        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&6, &8, &[]), Some(string().into()));
 
         // Should not claim if Battlepass state is ENDED
         assert_ok!(
             Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id)
         );
         assert_noop!(
-            Battlepass::claim_reward(Origin::signed(not_creator_4), reward_id, not_creator_3),
+            Battlepass::claim_reward(Origin::signed(creator), reward_id, not_creator_3, None),
             Error::<Test>::BattlepassStateWrong
         );
     

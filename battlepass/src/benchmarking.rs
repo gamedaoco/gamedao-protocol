@@ -57,7 +57,7 @@ fn activate_bpass<T: Config>(caller: T::AccountId, battlepass_id: T::Hash) {
 }
 
 fn claim_bpass<T: Config>(caller: T::AccountId, battlepass_id: T::Hash) {
-    let _ = BPass::<T>::claim_battlepass(RawOrigin::Signed(caller.clone()).into(), battlepass_id, caller);
+    let _ = BPass::<T>::claim_battlepass(RawOrigin::Signed(caller.clone()).into(), battlepass_id, caller, None);
 }
 
 fn set_bpass_points<T: Config>(caller: T::AccountId, battlepass_id: T::Hash) {
@@ -124,7 +124,7 @@ benchmarks! {
         let battlepass_id = get_battlepass::<T>(caller.clone(), org_id);
         activate_bpass::<T>(caller.clone(), battlepass_id);
         set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
-    }: _(RawOrigin::Signed(bot), battlepass_id, caller.clone())
+    }: _(RawOrigin::Signed(bot), battlepass_id, caller.clone(), None)
     verify {
         let collection_id = T::BattlepassHelper::collection(0);
         let item_id = T::BattlepassHelper::item(0);
@@ -217,7 +217,7 @@ benchmarks! {
         set_bpass_level::<T>(caller.clone(), battlepass_id);
         set_bot::<T>(caller.clone(), battlepass_id, bot.clone());
         let reward_id = get_reward::<T>(caller.clone(), battlepass_id);
-    }: _(RawOrigin::Signed(bot), reward_id, caller.clone())
+    }: _(RawOrigin::Signed(bot), reward_id, caller.clone(), None)
     verify {
 		assert!(ClaimedRewards::<T>::get(reward_id, caller).is_some());
 	}
