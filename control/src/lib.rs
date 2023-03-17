@@ -316,7 +316,7 @@ pub mod pallet {
 			pay_currency: Option<T::CurrencyId>,
 			deposit: Option<T::Balance>,
 		) -> DispatchResult {
-			let sender = ensure_signed(origin.clone())?;
+			let sender = ensure_signed(origin)?;
 
 			// Provide default values for optional parameters:
 			let member_limit = member_limit.unwrap_or(T::MaxMembers::get());
