@@ -301,7 +301,7 @@ fn flow_contribute_success() {
 }
 
 /// Tests queue when two campaigns created
-// #[test]
+#[test]
 fn flow_on_finalize_campaign_succeess() {
 	new_test_ext().execute_with(|| {
 		let (org_id, treasury_id, tbalance) = create_org_treasury();
@@ -362,40 +362,41 @@ fn flow_on_finalize_campaign_succeess() {
 		let batch_size: u128 = 4;
 		assert_eq!(MaxContributorsProcessing::get(), batch_size as u32);
 
-		// --------- Block 1: process first 4 contributors ---------
+		// --------- Block 1: process 1 contributor from Campaign1 and revert Campaign1, process 3 contributors from Campaign2 ---------
 		System::set_block_number(expiry + 1);
 		Flow::on_initialize(expiry + 1);
 
+		// Campaign1 failed with 1 contributor, so we don't count his contribution
 		assert_eq!(
 			<Test as Config>::Currency::total_balance(PAYMENT_TOKEN_ID, &treasury_id),
-			batch_size * contribution
+			batch_size * contribution - contribution
 		);
 		assert_eq!(
 			<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &treasury_id),
 			0
 		);
 
-		// --------- Block 2: process next 4 contributors ---------
+		// --------- Block 2: process next 4 contributors from Campaign2 ---------
 		System::set_block_number(expiry + 2);
 		Flow::on_initialize(expiry + 2);
 
 		assert_eq!(
 			<Test as Config>::Currency::total_balance(PAYMENT_TOKEN_ID, &treasury_id),
-			2 * batch_size * contribution
+			2 * batch_size * contribution - contribution
 		);
 		assert_eq!(
 			<Test as Config>::Currency::free_balance(PAYMENT_TOKEN_ID, &treasury_id),
 			0
 		);
 		assert_eq!(CampaignStates::<Test>::get(&campaign_id), CampaignState::Active);
-		assert_eq!(CampaignStates::<Test>::get(&campaign_id_rev), CampaignState::Active);
+		assert_eq!(CampaignStates::<Test>::get(&campaign_id_rev), CampaignState::Failed);
 
-		// --------- Block 3: process last 2 contributors and finalize Campaign1, process 1 contributor and revert Campaign2 ---------
+		// --------- Block 3: process last 3 contributors from Campaign2 and finalize Campaign2 ---------
 		System::set_block_number(expiry + 3);
 		Flow::on_initialize(expiry + 3);
 
 		// Campaign finalized:
-		let commission = <Test as Config>::CampaignFee::get().mul_floor(contribution * 10);
+		let commission = <Test as Config>::CampaignFee::get().mul_floor(contribution * total_contributors);
 		// The balance was transfered and locked in the org treasury
 		assert_eq!(
 			<Test as Config>::Currency::total_balance(PAYMENT_TOKEN_ID, &treasury_id),
@@ -420,22 +421,27 @@ fn flow_on_finalize_campaign_succeess() {
 		assert_eq!(CampaignStates::<Test>::get(&campaign_id_rev), CampaignState::Failed);
 
 		// Last event:
-		let events = System::events().into_iter().map(|evt| evt.event).collect::<Vec<_>>();
+		let events = System::events()
+			.into_iter()
+			.map(|evt| evt.event)
+			.filter_map(|e| if let Event::Flow(inner) = e { Some(inner) } else { None })
+			.collect::<Vec<_>>();
+
 		assert_eq!(
-			events[events.len() - 4],
-			Event::Flow(crate::Event::Succeeded {
-				campaign_id,
-				campaign_balance: CampaignBalance::<Test>::get(campaign_id),
-				block_number: expiry + 3,
-			})
+			events[events.len() - 2],
+			crate::Event::Failed {
+				campaign_id: campaign_id_rev,
+				campaign_balance: CampaignBalance::<Test>::get(campaign_id_rev),
+				block_number: expiry + 1,
+			}
 		);
 		assert_eq!(
 			events[events.len() - 1],
-			Event::Flow(crate::Event::Failed {
-				campaign_id: campaign_id_rev,
-				campaign_balance: CampaignBalance::<Test>::get(campaign_id_rev),
+			crate::Event::Succeeded {
+				campaign_id,
+				campaign_balance: CampaignBalance::<Test>::get(campaign_id),
 				block_number: expiry + 3,
-			})
+			}
 		);
 
 	});

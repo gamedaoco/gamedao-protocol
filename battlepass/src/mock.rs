@@ -1,7 +1,6 @@
 #![cfg(test)]
 
 use crate as gamedao_battlepass;
-// use frame_support::traits::{ConstU16, ConstU64};
 use frame_support::{construct_runtime, parameter_types, PalletId,
 	traits::{AsEnsureOriginWithArg, Nothing, GenesisBuild},
 	pallet_prelude::*,

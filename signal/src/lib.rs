@@ -316,7 +316,7 @@ pub mod pallet {
 					ensure!(proposer == campaign_owner, Error::<T>::AuthorizationError);
 					ensure!(T::Flow::is_campaign_succeeded(&c_id), Error::<T>::CampaignUnsucceeded);
 
-					let used_balance = CampaignBalanceUsed::<T>::get(&c_id);
+					let used_balance = CampaignBalanceUsed::<T>::get(c_id);
 					let total_balance = T::Flow::campaign_balance(&c_id);
 					let remaining_balance = total_balance
 						.checked_sub(&used_balance)
@@ -334,12 +334,12 @@ pub mod pallet {
 			// Create Proposal
 			let index = ProposalCount::<T>::get();
 			let proposal = types::Proposal {
-				index: index.clone(), title, cid, org_id, campaign_id, amount, deposit: proposal_deposit,
+				index, title, cid, org_id, campaign_id, amount, deposit: proposal_deposit,
 				currency_id, beneficiary, proposal_type: proposal_type.clone(), start: starts, expiry,
 				owner: proposer.clone(), slashing_rule: SlashingRule::Automated
 			};
 			let proposal_hash = T::Hashing::hash_of(&proposal);
-			ensure!(!ProposalOf::<T>::contains_key(&proposal_hash), Error::<T>::ProposalExists);
+			ensure!(!ProposalOf::<T>::contains_key(proposal_hash), Error::<T>::ProposalExists);
 
 			Self::create_proposal(&proposal_hash, proposal)?;
 			Self::create_voting(&proposal_hash, &proposal_type, &index, &org_id, &campaign_id, quorum, majority, unit, scale);
@@ -365,7 +365,7 @@ pub mod pallet {
 			deposit: Option<T::Balance>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
-			let voting = ProposalVoting::<T>::get(&proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
+			let voting = ProposalVoting::<T>::get(proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
 
 			// Deposit is required for token weighted voting only
 			if voting.unit == Unit::Token && deposit.is_none() {
@@ -374,7 +374,7 @@ pub mod pallet {
 				return Err(Error::<T>::WrongParameter)?;
 			}
 
-			let proposal = ProposalOf::<T>::get(&proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
+			let proposal = ProposalOf::<T>::get(proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
 			match proposal.proposal_type {
 				ProposalType::General | ProposalType::Spending => {
 					ensure!(
@@ -394,7 +394,7 @@ pub mod pallet {
 
 			// Ensure the Proposal is Active
 			ensure!(
-				ProposalStates::<T>::get(&proposal_id) == ProposalState::Active,
+				ProposalStates::<T>::get(proposal_id) == ProposalState::Active,
 				Error::<T>::ProposalNotActive
 			);
 
@@ -408,9 +408,9 @@ pub mod pallet {
 
 
 		fn on_initialize(block_number: T::BlockNumber) -> Weight {
-			let proposals = ProposalsByBlock::<T>::get(BlockType::Start, &block_number);
+			let proposals = ProposalsByBlock::<T>::get(BlockType::Start, block_number);
 			for proposal_id in &proposals {
-				let proposal_state = ProposalStates::<T>::get(&proposal_id);
+				let proposal_state = ProposalStates::<T>::get(proposal_id);
 				if proposal_state != ProposalState::Created {
 					continue; // Just a safety check, never should happen
 				};
@@ -422,14 +422,14 @@ pub mod pallet {
 		}
 
 		fn on_finalize(block_number: T::BlockNumber) {
-			for proposal_id in &ProposalsByBlock::<T>::get(BlockType::Expiry, &block_number) {
+			for proposal_id in &ProposalsByBlock::<T>::get(BlockType::Expiry, block_number) {
 				// Skip already finalized proposals (ex. if absolute majority was achieved)
-				let mut proposal_state = ProposalStates::<T>::get(&proposal_id);
+				let mut proposal_state = ProposalStates::<T>::get(proposal_id);
 				if proposal_state != ProposalState::Active {
 					continue;
 				};
-				let maybe_voting = ProposalVoting::<T>::get(&proposal_id);
-				let proposal_exists = ProposalOf::<T>::contains_key(&proposal_id);
+				let maybe_voting = ProposalVoting::<T>::get(proposal_id);
+				let proposal_exists = ProposalOf::<T>::contains_key(proposal_id);
 
 				if maybe_voting.is_none() || !proposal_exists {
 					log::error!(target: "runtime::gamedao_signal", "Proposal [{:?}] or voting [{:?}] is missing for proposal id: {:?}.", proposal_exists, maybe_voting.is_some(), proposal_id);
@@ -440,7 +440,7 @@ pub mod pallet {
 				// Get the final state based on Voting participation, quorum, majority
 				proposal_state = Self::get_final_proposal_state(&voting);
 
-				if Self::finalize_proposal(&proposal_id, proposal_state, &voting).is_err() {
+				if Self::finalize_proposal(proposal_id, proposal_state, &voting).is_err() {
 					log::error!(target: "runtime::gamedao_signal", "Failed to finalize a proposal {:?}.", proposal_id);
 				};
 			}
@@ -486,12 +486,12 @@ pub mod pallet {
 				return Ok(());
 			};
 			if let Some(amount) = old_deposit {
-				let _ = T::Currency::unreserve(T::ProtocolTokenId::get(), &who, *amount);
+				let _ = T::Currency::unreserve(T::ProtocolTokenId::get(), who, *amount);
 			}
 			if let Some(amount) = deposit {
-				T::Currency::reserve(T::ProtocolTokenId::get(), &who, *amount).map_err(|_| Error::<T>::BalanceLow)?;
+				T::Currency::reserve(T::ProtocolTokenId::get(), who, *amount).map_err(|_| Error::<T>::BalanceLow)?;
 			}
-			return Ok(());
+			Ok(())
 		}
 
 		pub fn try_finalize_proposal(voting: &Voting<T>) -> Option<ProposalState> {
@@ -509,9 +509,9 @@ pub mod pallet {
 			}
 			// Everyone voted
 			if voting.eligible == voting.participating {
-				return Some(Self::get_final_proposal_state(&voting));
+				return Some(Self::get_final_proposal_state(voting));
 			}
-			return None;
+			None
 		}
 
 		pub fn do_vote(
@@ -532,7 +532,7 @@ pub mod pallet {
 					voting.nays.swap_remove(pos);
 				}
 				if position_yes.is_none() {
-					voting.ayes.try_push((who.clone(), power.clone(), deposit.clone())).map_err(|_| Error::<T>::VoteLimitReached)?;
+					voting.ayes.try_push((who.clone(), power, deposit)).map_err(|_| Error::<T>::VoteLimitReached)?;
 				} else {
 					return Err(Error::<T>::DuplicateVote.into())
 				}
@@ -542,7 +542,7 @@ pub mod pallet {
 					voting.ayes.swap_remove(pos);
 				}
 				if position_no.is_none() {
-					voting.nays.try_push((who.clone(), power.clone(), deposit.clone())).map_err(|_| Error::<T>::VoteLimitReached)?;
+					voting.nays.try_push((who.clone(), power, deposit)).map_err(|_| Error::<T>::VoteLimitReached)?;
 				} else {
 					return Err(Error::<T>::DuplicateVote.into())
 				}
@@ -563,7 +563,7 @@ pub mod pallet {
 				no: voting.no,
 			});
 
-			ProposalVoting::<T>::insert(&proposal_id, &voting);
+			ProposalVoting::<T>::insert(proposal_id, &voting);
 
 			// For Absolute majority if more then 50% of members vote for one option, the proposal period ends earlier.
 			if let Some(final_proposal_state) = Self::try_finalize_proposal(&voting) {
@@ -577,12 +577,12 @@ pub mod pallet {
 			proposal_id: &T::Hash,
 			proposal: Proposal<T>
 		) -> Result<(), DispatchError> {
-			let proposal_state;
-			if proposal.start > <frame_system::Pallet<T>>::block_number() {
-				proposal_state = ProposalState::Created;
-			} else {
-				proposal_state = ProposalState::Active;
-			}
+			let proposal_state =
+				if proposal.start > <frame_system::Pallet<T>>::block_number() {
+					ProposalState::Created
+				} else {
+					ProposalState::Active
+				};
 			T::Currency::reserve(
 				T::ProtocolTokenId::get(), &proposal.owner, proposal.deposit
 			).map_err(|_| Error::<T>::BalanceLow)?;
@@ -596,13 +596,13 @@ pub mod pallet {
 
 			ProposalsByBlock::<T>::try_mutate(
 				BlockType::Start, proposal.start, |proposals| -> Result<(), DispatchError> {
-					proposals.try_push(proposal_id.clone()).map_err(|_| Error::<T>::TooManyProposals)?;
+					proposals.try_push(*proposal_id).map_err(|_| Error::<T>::TooManyProposals)?;
 					Ok(())
 				}
 			)?;
 			ProposalsByBlock::<T>::try_mutate(
 				BlockType::Expiry, proposal.expiry, |proposals| -> Result<(), DispatchError> {
-					proposals.try_push(proposal_id.clone()).map_err(|_| Error::<T>::TooManyProposals)?;
+					proposals.try_push(*proposal_id).map_err(|_| Error::<T>::TooManyProposals)?;
 					Ok(())
 				}
 			)?;
@@ -634,7 +634,7 @@ pub mod pallet {
 							eligible = T::Flow::campaign_contributors_count(&campaign_id.unwrap()).into();
 						}
 						_ => {
-							eligible = T::Control::org_member_count(&org_id).into();
+							eligible = T::Control::org_member_count(org_id).into();
 						}
 					}
 				}
@@ -670,17 +670,17 @@ pub mod pallet {
 				// Simple majority should be implemented for multiple options voting
 				Majority::Relative | Majority::Simple => {
 					if voting.yes > voting.no {
-						return ProposalState::Accepted;
+						ProposalState::Accepted
 					} else {
-						return ProposalState::Rejected;
+						ProposalState::Rejected
 					}
 				}
 				Majority::Absolute => {
 					let majority_quorum = Permill::from_rational(1u32, 2u32);
 					if voting.yes >= majority_quorum.mul_floor(voting.eligible) {
-						return ProposalState::Accepted;
+						ProposalState::Accepted
 					} else {
-						return ProposalState::Rejected;
+						ProposalState::Rejected
 					}
 				}
 			}
@@ -694,9 +694,9 @@ pub mod pallet {
 					let currency_id = proposal.currency_id.ok_or(Error::<T>::ProposalInvalid)?;
 					let treasury = T::Control::org_treasury_account(&proposal.org_id).ok_or(Error::<T>::TreasuryUnknown)?;
 					T::Currency::unreserve(currency_id, &treasury, amount);
-					let used_balance = CampaignBalanceUsed::<T>::get(&campaign_id);
-					CampaignBalanceUsed::<T>::insert(&campaign_id, used_balance + amount);
-					return Ok(ProposalState::Finalized);
+					let used_balance = CampaignBalanceUsed::<T>::get(campaign_id);
+					CampaignBalanceUsed::<T>::insert(campaign_id, used_balance + amount);
+					Ok(ProposalState::Finalized)
 				}
 				ProposalType::Spending => {
 					let amount = proposal.amount.ok_or(Error::<T>::ProposalInvalid)?;
@@ -706,12 +706,12 @@ pub mod pallet {
 					T::Currency::repatriate_reserved(
 						currency_id,
 						&treasury,
-						&beneficiary,
+						beneficiary,
 						amount,
 						BalanceStatus::Free)?;
-					return Ok(ProposalState::Finalized);
+					Ok(ProposalState::Finalized)
 				}
-				_ => { return Ok(proposal_state) }
+				_ => { Ok(proposal_state) }
 			}
 
 		}
@@ -747,23 +747,23 @@ pub mod pallet {
 		fn emit_event(proposal_state: &ProposalState, proposal_id: &T::Hash) {
 			match proposal_state {
 				ProposalState::Accepted => {
-					Self::deposit_event(Event::<T>::Accepted { proposal_id: proposal_id.clone() });
+					Self::deposit_event(Event::<T>::Accepted { proposal_id: *proposal_id });
 				}
 				ProposalState::Rejected => {
-					Self::deposit_event(Event::<T>::Rejected { proposal_id: proposal_id.clone() });
+					Self::deposit_event(Event::<T>::Rejected { proposal_id: *proposal_id });
 				}
 				ProposalState::Expired => {
-					Self::deposit_event(Event::<T>::Expired { proposal_id: proposal_id.clone() });
+					Self::deposit_event(Event::<T>::Expired { proposal_id: *proposal_id });
 				}
 				ProposalState::Finalized => {
-					Self::deposit_event(Event::<T>::Finalized { proposal_id: proposal_id.clone() });
+					Self::deposit_event(Event::<T>::Finalized { proposal_id: *proposal_id });
 				}
 				_ => { }
 			}
 		}
 
 		fn finalize_proposal(proposal_id: &T::Hash, mut proposal_state: ProposalState, voting: &Voting<T>) -> DispatchResult {
-			let proposal = ProposalOf::<T>::get(&proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
+			let proposal = ProposalOf::<T>::get(proposal_id).ok_or(Error::<T>::ProposalUnknown)?;
 
 			match proposal_state {
 				ProposalState::Accepted => {
@@ -786,16 +786,16 @@ pub mod pallet {
 				let currency_id = T::ProtocolTokenId::get();
 				// TODO: chain -  &voting.ayes.iter().chain(&voting.nays.iter())
 				for (who, _, deposit) in &voting.ayes {
-					let _ = T::Currency::unreserve(currency_id, &who, deposit.ok_or(Error::<T>::VotingInvalid)?);
+					let _ = T::Currency::unreserve(currency_id, who, deposit.ok_or(Error::<T>::VotingInvalid)?);
 				};
 				for (who, _, deposit) in &voting.nays {
-					let _ = T::Currency::unreserve(currency_id, &who, deposit.ok_or(Error::<T>::VotingInvalid)?);
+					let _ = T::Currency::unreserve(currency_id, who, deposit.ok_or(Error::<T>::VotingInvalid)?);
 				};
 			}
 			// Refund or slash proposal's deposit based on proposal state and majority of rejection
-			Self::process_proposal_deposit(&proposal, &voting, &proposal_state)?;
+			Self::process_proposal_deposit(&proposal, voting, &proposal_state)?;
 
-			Self::emit_event(&proposal_state, &proposal_id);
+			Self::emit_event(&proposal_state, proposal_id);
 			ProposalStates::<T>::insert(proposal_id, proposal_state);
 
 			Ok(())

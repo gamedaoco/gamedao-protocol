@@ -6,10 +6,9 @@ use sp_core::H256;
 
 use crate::mock::{
     new_test_ext, RuntimeOrigin as Origin, Test,
-    //System, 
     Battlepass, Control, Uniques,
     ALICE, BOB, EVA, TOM, BOT, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, DOLLARS, 
-    AccountId, StringLimit, //Event
+    AccountId, StringLimit,
 };
 use gamedao_control::types::{AccessModel, FeeModel, OrgType, Org};
 
@@ -323,8 +322,6 @@ fn update_battlepass_test() {
             Battlepass::update_battlepass(Origin::signed(creator), battlepass_id, Some(new_name), Some(new_cid), Some(30)),
             Error::<Test>::BattlepassStateWrong
         );
-
-        // Check events (battlepass updated)
     })
 }
 
@@ -459,8 +456,6 @@ fn deactivate_battlepass_test() {
             Battlepass::conclude_battlepass(Origin::signed(creator), battlepass_id),
             Error::<Test>::BattlepassStateWrong
         );
-     
-        // Check events 
 
     })
 }
@@ -591,7 +586,6 @@ fn claim_battlepass_test() {
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator, None),
             Error::<Test>::BattlepassStateWrong
         );
-        // Check events 
 
     })
 }
@@ -686,8 +680,6 @@ fn set_points_test() {
             Battlepass::set_points(Origin::signed(creator), battlepass_id, creator, 10),
             Error::<Test>::BattlepassStateWrong
         );
-    
-        // Check events 
 
     })
 }
@@ -802,9 +794,6 @@ fn create_reward_test() {
             Battlepass::create_reward(Origin::signed(creator), battlepass_id, string(), string(), Some(1), 1, true),
             Error::<Test>::BattlepassStateWrong
         );
-
-    
-        // Check events 
 
     })
 }
@@ -939,8 +928,6 @@ fn update_reward_test() {
             Battlepass::update_reward(Origin::signed(creator), reward_id, Some(new_name.clone()), Some(new_cid.clone()), Some(false)),
             Error::<Test>::RewardInactive
         );
-    
-        // Check events 
 
     })
 }
@@ -1016,8 +1003,6 @@ fn disable_reward_test() {
         );
         // Check if RewardState is INACTIVE
         assert_eq!(RewardStates::<Test>::get(reward_id_3), Some(RewardState::INACTIVE));
-
-        // Check events 
 
     })
 }
@@ -1245,8 +1230,6 @@ fn claim_reward_test() {
             Battlepass::claim_reward(Origin::signed(creator), reward_id, not_creator_3, None),
             Error::<Test>::BattlepassStateWrong
         );
-    
-        // Check events 
 
     })
 }
@@ -1331,8 +1314,6 @@ fn add_level_test() {
             Battlepass::add_level(Origin::signed(creator), battlepass_id, 1, 10),
             Error::<Test>::BattlepassStateWrong
         );
-    
-        // Check events 
 
     })
 }
@@ -1438,9 +1419,6 @@ fn remove_level_test() {
             Error::<Test>::BattlepassStateWrong
         );
 
-    
-        // Check events 
-
     })
 }
 
@@ -1516,9 +1494,6 @@ fn add_bot_test() {
             Battlepass::add_bot(Origin::signed(creator), battlepass_id, 1),
             Error::<Test>::BattlepassStateWrong
         );
-
-    
-        // Check events 
 
     })
 }
