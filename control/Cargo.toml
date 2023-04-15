@@ -20,29 +20,29 @@ serde = { version = "1.0.143", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 
-sp-core = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-sp-std = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-sp-storage = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
+sp-core = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+sp-std = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+sp-storage = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 
-frame-support = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-frame-system = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false, optional = true }
-sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38", default-features=false }
+frame-support = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+frame-system = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false, optional = true }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40", default-features=false }
 
-pallet-balances = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
+pallet-balances = {  default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 
-orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.38", default-features = false }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.40", default-features = false }
 gamedao-traits = { package = "gamedao-traits", path = "../traits", default-features = false }
 
 # tangram = { package = "module-tangram", path = "../../zero/tangram", default-features = false }
 
 [dev-dependencies]
-sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.38" }
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.38" }
-pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.38", default-features = false }
-orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.38", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.40" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.40" }
+pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.40", default-features = false }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.40", default-features = false }
 
 [features]
 default = ["std"]
