@@ -163,7 +163,7 @@ parameter_types! {
 	pub const MaxCampaignsPerBlock: u32 = 2;
 	pub const MaxContributorsProcessing: u32 = 4;
 	pub const MinContribution: Balance = 1 * DOLLARS;
-	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
+	pub CampaignFee: Permill = Permill::from_rational(1u32, 15u32); // 15%
 	pub const GameDAOTreasury: AccountId = GAMEDAO_TREASURY;
 	pub const CampaignDurationLimits: (BlockNumber, BlockNumber) = (1 * DAYS, 100 * DAYS);
 	pub MinCampaignDeposit: Permill = Permill::from_rational(1u32, 10u32); // 10%
