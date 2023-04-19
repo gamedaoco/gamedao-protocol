@@ -39,12 +39,10 @@ pub const PAYMENT_TOKEN_ID: CurrencyId = 2;
 
 // Accounts:
 pub const TREASURY: AccountId = 1;
-pub const GAME3_TREASURY: AccountId = 2;
 pub const GAMEDAO_TREASURY: AccountId = 3;
 pub const ALICE: AccountId = 4;
 pub const BOB: AccountId = 5;
 pub const CHARLIE: AccountId = 6;
-pub const DAVE: AccountId = 7;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(

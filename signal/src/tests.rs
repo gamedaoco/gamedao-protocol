@@ -352,17 +352,23 @@ fn signal_0_1() {
 
 		// CampaignUnsucceeded
 		let now = campaign_expiry + 1;
-		let campaign_id = create_finalize_campaign(now, org_id, &(51..52).collect(), 50 * DOLLARS, now + 2 * DAYS, false);
-		// TODO: fix this test
-		// assert_ok!(Flow::update_state(Origin::signed(ALICE), campaign_id, CampaignStates::Failed));
-		// assert_noop!(
-		// 	Signal::proposal(
-		// 		Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
-		// 		proposal.title.clone(), proposal.cid.clone(), proposal.expiry,
-		// 		Majority::Relative, Unit::Account, Scale::Linear, None, None, None,
-		// 		Some(campaign_id), proposal.amount, proposal.beneficiary, proposal.currency_id),
-		// 	Error::<Test>::CampaignUnsucceeded
-		// );
+		System::set_block_number(now);
+		let campaign_expiry = now + 2 * DAYS;
+		let proposal_expiry = campaign_expiry + 1 + ProposalDurationLimits::get().0;
+		let campaign_id = create_finalize_campaign(now, org_id, &(51..52).collect(), 5 * DOLLARS, campaign_expiry, false);
+		System::set_block_number(campaign_expiry);
+		Flow::on_finalize(campaign_expiry);
+		System::set_block_number(campaign_expiry + 1);
+		Flow::on_initialize(campaign_expiry + 1);
+		assert_eq!(Flow::is_campaign_succeeded(&campaign_id), false);
+		assert_noop!(
+			Signal::proposal(
+				Origin::signed(ALICE), proposal.proposal_type.clone(), proposal.org_id,
+				proposal.title.clone(), proposal.cid.clone(), proposal_expiry,
+				Majority::Relative, Unit::Account, Scale::Linear, None, None, None,
+				Some(campaign_id), proposal.amount, proposal.beneficiary, proposal.currency_id),
+			Error::<Test>::CampaignUnsucceeded
+		);
 	});
 }
 

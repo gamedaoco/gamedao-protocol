@@ -1,12 +1,12 @@
 #![cfg(test)]
 
 use frame_support::{assert_noop, assert_ok};
-use frame_support::traits::tokens::nonfungibles::{Inspect, InspectEnumerable, Mutate, Transfer};
+use frame_support::traits::tokens::nonfungibles_v2::{Inspect, InspectEnumerable, Transfer};
 use sp_core::H256;
 
 use crate::mock::{
     new_test_ext, RuntimeOrigin as Origin, Test,
-    Battlepass, Control, Uniques,
+    Battlepass, Control, Nfts,
     ALICE, BOB, EVA, TOM, BOT, PROTOCOL_TOKEN_ID, PAYMENT_TOKEN_ID, DOLLARS, 
     AccountId, StringLimit,
 };
@@ -53,7 +53,7 @@ fn create_battlepass(org_id: H256) -> H256 {
     let creator = ALICE;
     let season = Battlepass::get_battlepass_info(&org_id).0 + 1;
     let price = 10;
-    let collection_id = CollectionIndex::<Test>::get();
+    let collection_id = NextCollectionId::<Test>::get().unwrap_or(<Test as pallet_nfts::Config>::CollectionId::initial_value());
     
     assert_ok!(
         Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), price)
@@ -157,7 +157,7 @@ fn create_battlepass_test(){
             Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), 10)
         );
         // Check if NFT collection created
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::collections().any(|x| x == 0), true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::collections().any(|x| x == 0), true);
         // Check if Battlepass created
         let battlepass = Battlepasses::<Test>::get(battlepass_id_1);
         assert_eq!(battlepass.is_some(), true);
@@ -176,7 +176,7 @@ fn create_battlepass_test(){
             Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), 10)
         );
         // Check if NFT collection created
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::collections().any(|x| x == 1), true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::collections().any(|x| x == 1), true);
         // Check if Battlepass created
         let battlepass = Battlepasses::<Test>::get(battlepass_id_2);
         assert_eq!(battlepass.is_some(), true);
@@ -198,7 +198,7 @@ fn create_battlepass_test(){
             Battlepass::create_battlepass(Origin::signed(creator), org_id, string(), string(), 10)
         );
         // Check if NFT collection created
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::collections().any(|x| x == 1), true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::collections().any(|x| x == 1), true);
         // Check if Battlepass created
         let battlepass = Battlepasses::<Test>::get(battlepass_id_3);
         assert_eq!(battlepass.is_some(), true);
@@ -280,7 +280,7 @@ fn update_battlepass_test() {
         assert_eq!(updated.cid, new_cid.clone());
         assert_eq!(updated.price, new_price.clone());
         // Check if Collection metadata updated
-        assert_eq!(<Uniques as Inspect<AccountId>>::collection_attribute(&0, &[]), Some(new_cid.clone().into()));
+        assert_eq!(<Nfts as Inspect<AccountId>>::collection_attribute(&0, &[]), Some(new_cid.clone().into()));
 
         // Should update some fields in battlepass
         assert_ok!(
@@ -470,7 +470,7 @@ fn claim_battlepass_test() {
         let creator = ALICE;
         let not_creator = BOB;
         let not_creator_2 = TOM;
-        let not_creator_3 = 22u32;
+        let not_creator_3 = 22u64;
         let not_member = EVA;
         let not_member_2 = 40;
         add_member(org_id, not_creator);
@@ -530,9 +530,9 @@ fn claim_battlepass_test() {
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator, None)
         );
         // Check if NFT minted
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 0) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 0) , true);
         // Check NFT metadata
-        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&0, &0, &[]), Some(string().into()));
+        assert_eq!(<Nfts as Inspect<AccountId>>::attribute(&0, &0, &[]), Some(string().into()));
         
         // Should not claim if it was already claimed
         assert_noop!(
@@ -542,16 +542,13 @@ fn claim_battlepass_test() {
 
         // Should claim again after transferring Battlepass NFT to someone else
         assert_ok!(
-            Uniques::thaw_collection(Origin::signed(creator), 0)
-        );
-        assert_ok!(
-            <Uniques as Transfer<AccountId>>::transfer(&0, &0, &not_member_2)
+            <Nfts as Transfer<AccountId>>::transfer(&0, &0, &not_member_2)
         );
         assert_ok!(
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator, None)
         );
         // Check if NFT minted
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 1) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 1) , true);
 
         // Should not claim if user received Battlepass NFT from someone else
         assert_noop!(
@@ -567,16 +564,16 @@ fn claim_battlepass_test() {
             Battlepass::claim_battlepass(Origin::signed(BOT), battlepass_id, not_creator_3, None)
         );
         // Check if NFT minted
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 2) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 2) , true);
 
         // Should claim for accounts outside of org
         assert_ok!(
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_member, Some(cid.clone())),
         );
         // Check if NFT minted
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 3) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::items(&0).any(|x| x == 3) , true);
         // Check NFT metadata
-        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&0, &3, &[]), Some(cid.into()));
+        assert_eq!(<Nfts as Inspect<AccountId>>::attribute(&0, &3, &[]), Some(cid.into()));
 
         // Should not claim Battlepass in ENDED state
         assert_ok!(
@@ -730,9 +727,9 @@ fn create_reward_test() {
             Battlepass::create_reward(Origin::signed(creator), battlepass_id, string(), string(), Some(1), 1, true)
         );
         // Check if NFT collection created
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::collections().any(|x| x == 1) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::collections().any(|x| x == 1) , true);
         // Check if collection owner is a Prime
-        assert_eq!(<Uniques as Inspect<AccountId>>::collection_owner(&1).unwrap(), creator);
+        assert_eq!(<Nfts as Inspect<AccountId>>::collection_owner(&1).unwrap(), creator);
         // Check if Reward created
         let reward_id = get_reward_hash(battlepass_id, 1, true, 1);
         let reward = Rewards::<Test>::get(reward_id);
@@ -749,9 +746,9 @@ fn create_reward_test() {
             Battlepass::create_reward(Origin::signed(creator), battlepass_id, string(), string(), Some(1), 1, true)
         );
         // Check if NFT collection created
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::collections().any(|x| x == 2) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::collections().any(|x| x == 2) , true);
         // Check if collection owner is a Prime
-        assert_eq!(<Uniques as Inspect<AccountId>>::collection_owner(&2).unwrap(), creator);
+        assert_eq!(<Nfts as Inspect<AccountId>>::collection_owner(&2).unwrap(), creator);
         // Check if Reward created
         let reward_id = get_reward_hash(battlepass_id, 1, true, 2);
         let reward = Rewards::<Test>::get(reward_id);
@@ -774,9 +771,9 @@ fn create_reward_test() {
             Battlepass::create_reward(Origin::signed(BOT), battlepass_id, string(), string(), Some(1), 1, true)
         );
         // Check if NFT collection created
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::collections().any(|x| x == 3) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::collections().any(|x| x == 3) , true);
         // Check if collection owner is a Prime
-        assert_eq!(<Uniques as Inspect<AccountId>>::collection_owner(&3).unwrap(), creator);
+        assert_eq!(<Nfts as Inspect<AccountId>>::collection_owner(&3).unwrap(), creator);
         // Check if Reward created
         let reward_id = get_reward_hash(battlepass_id, 1, true, 3);
         let reward = Rewards::<Test>::get(reward_id);
@@ -877,7 +874,7 @@ fn update_reward_test() {
         assert_eq!(updated.cid, new_cid.clone());
         assert_eq!(updated.transferable, new_transferable.clone());
         // Check if Collection metadata updated
-        assert_eq!(<Uniques as Inspect<AccountId>>::collection_attribute(&1, &[]), Some(new_cid.clone().into()));
+        assert_eq!(<Nfts as Inspect<AccountId>>::collection_attribute(&1, &[]), Some(new_cid.clone().into()));
 
         // Should update some fields in Reward
         assert_ok!(
@@ -1108,7 +1105,7 @@ fn claim_reward_test() {
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, not_creator, None)
         );
         assert_ok!(
-            <Uniques as Mutate<AccountId>>::burn(&0, &0, None)
+            Nfts::do_burn(0, 0, |_details| { Ok(()) })
         );
         assert_noop!(
             Battlepass::claim_reward(Origin::signed(creator), reward_id, not_creator, None),
@@ -1120,10 +1117,7 @@ fn claim_reward_test() {
             Battlepass::claim_battlepass(Origin::signed(creator), battlepass_id, creator, None)
         );
         assert_ok!(
-            Uniques::thaw_collection(Origin::signed(creator), 0)
-        );
-        assert_ok!(
-            <Uniques as Transfer<AccountId>>::transfer(&0, &1, &not_member_2)
+            <Nfts as Transfer<AccountId>>::transfer(&0, &1, &not_member_2)
         );
         assert_noop!(
             Battlepass::claim_reward(Origin::signed(creator), reward_id, creator, None),
@@ -1152,9 +1146,9 @@ fn claim_reward_test() {
         // Check if Reward claimed
         assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_creator_3), true);
         // Check if NFT minted
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&3).any(|x| x == 3) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::items(&3).any(|x| x == 3) , true);
         // Check NFT metadata
-        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&3, &3, &[]), Some(string().into()));
+        assert_eq!(<Nfts as Inspect<AccountId>>::attribute(&3, &3, &[]), Some(string().into()));
 
         // Should not claim if Reward already claimed
         assert_noop!(
@@ -1171,7 +1165,7 @@ fn claim_reward_test() {
         );
         assert_noop!(
             Battlepass::claim_reward(Origin::signed(creator), reward_id, not_creator_4, None),
-            pallet_uniques::Error::<Test>::MaxSupplyReached
+            pallet_nfts::Error::<Test>::MaxSupplyReached
         );
 
         // Should claim Reward by Bot
@@ -1185,9 +1179,9 @@ fn claim_reward_test() {
         // Check if Reward claimed
         assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_creator_4), true);
         // Check if NFT minted
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&4).any(|x| x == 5) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::items(&4).any(|x| x == 5) , true);
         // Check NFT metadata
-        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&4, &5, &[]), Some(string().into()));
+        assert_eq!(<Nfts as Inspect<AccountId>>::attribute(&4, &5, &[]), Some(string().into()));
 
         // Should claim Reward for non-member
         let reward_id = create_reward(battlepass_id);
@@ -1203,9 +1197,9 @@ fn claim_reward_test() {
         // Check if Reward claimed
         assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_member), true);
         // Check if NFT minted
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&5).any(|x| x == 7) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::items(&5).any(|x| x == 7) , true);
         // Check NFT metadata
-        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&5, &7, &[]), Some(cid.into()));
+        assert_eq!(<Nfts as Inspect<AccountId>>::attribute(&5, &7, &[]), Some(cid.into()));
 
         // Should claim Reward after receiving Battlepass NFT from elsewhere
         let reward_id = create_reward(battlepass_id);
@@ -1218,9 +1212,9 @@ fn claim_reward_test() {
         // Check if Reward claimed
         assert_eq!(ClaimedRewards::<Test>::contains_key(reward_id, not_member_2), true);
         // Check if NFT minted
-        assert_eq!(<Uniques as InspectEnumerable<AccountId>>::items(&6).any(|x| x == 8) , true);
+        assert_eq!(<Nfts as InspectEnumerable<AccountId>>::items(&6).any(|x| x == 8) , true);
         // Check NFT metadata
-        assert_eq!(<Uniques as Inspect<AccountId>>::attribute(&6, &8, &[]), Some(string().into()));
+        assert_eq!(<Nfts as Inspect<AccountId>>::attribute(&6, &8, &[]), Some(string().into()));
 
         // Should not claim if Battlepass state is ENDED
         assert_ok!(

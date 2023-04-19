@@ -52,7 +52,6 @@ pub const ALICE: AccountId = 11;
 pub const BOB: AccountId = 12;
 
 pub const GAMEDAO_TREASURY: AccountId = 13;
-pub const GAME3_TREASURY: AccountId = 14;
 
 pub const INIT_BALANCE: Balance = 100 * DOLLARS;
 
