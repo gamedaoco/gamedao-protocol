@@ -6,12 +6,12 @@ use frame_support::{construct_runtime, parameter_types, PalletId,
 	pallet_prelude::*,
 };
 use frame_system;
-use frame_system::{EnsureRoot, EnsureSigned};
+use pallet_nfts::PalletFeatures;
 use sp_std::convert::{TryFrom, TryInto};
 use sp_core::H256;
 use sp_runtime::{
-	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	testing::{Header, TestSignature},
+	traits::{BlakeTwo256, IdentityLookup, Verify, IdentifyAccount},
 };
 use orml_traits::parameter_type_with_key;
 
@@ -22,9 +22,11 @@ type Block = frame_system::mocking::MockBlock<Test>;
 pub type Hash = H256;
 pub type Balance = u128;
 pub type BlockNumber = u64;
-pub type AccountId = u32;
 pub type CurrencyId = u32;
 pub type Amount = i128;
+pub type Signature = TestSignature;
+pub type AccountPublic = <Signature as Verify>::Signer;
+pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
 /// Constants:
 pub const MILLICENTS: Balance = 1_000_000_000;
@@ -68,7 +70,7 @@ construct_runtime!(
 		PalletBalances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
 		Currencies: orml_currencies::{Pallet, Call},
-        Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>},
+        Nfts: pallet_nfts::{Pallet, Call, Storage, Event<T>},
         Control: gamedao_control,
 		Battlepass: gamedao_battlepass::{Pallet, Call, Event<T>, Storage},
 	}
@@ -156,6 +158,12 @@ impl orml_currencies::Config for Test {
 }
 
 parameter_types! {
+	pub Features: PalletFeatures = PalletFeatures::all_enabled();
+	pub const MaxAttributesPerCall: u32 = 10;
+	pub const ApprovalsLimit: u32 = 20;
+	pub const ItemAttributesApprovalsLimit: u32 = 20;
+	pub const MaxTips: u32 = 10;
+	pub const MaxDeadlineDuration: BlockNumber = 10000;
 	pub CollectionDeposit: Balance = 0;
 	pub ItemDeposit: Balance = 0;
 	pub const KeyLimit: u32 = 32;	// Max 32 bytes per key
@@ -165,14 +173,12 @@ parameter_types! {
 	pub const StringLimit: u32 = 64;
 }
 
-impl pallet_uniques::Config for Test {
+impl pallet_nfts::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type CollectionId = u32;
 	type ItemId = u32;
 	type Currency = PalletBalances;
-	type ForceOrigin = EnsureRoot<AccountId>;
-	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
-	type Locker = ();
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type CollectionDeposit = CollectionDeposit;
 	type ItemDeposit = ItemDeposit;
 	type MetadataDepositBase = MetadataDepositBase;
@@ -181,7 +187,19 @@ impl pallet_uniques::Config for Test {
 	type StringLimit = StringLimit;
 	type KeyLimit = KeyLimit;
 	type ValueLimit = ValueLimit;
+	type ApprovalsLimit = ApprovalsLimit;
+	type ItemAttributesApprovalsLimit = ItemAttributesApprovalsLimit;
+	type MaxTips = MaxTips;
+	type MaxDeadlineDuration = MaxDeadlineDuration;
+	type MaxAttributesPerCall = MaxAttributesPerCall;
+	type Features = Features;
+	type OffchainSignature = Signature;
+	type OffchainPublic = AccountPublic;
 	type WeightInfo = ();
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = ();
+	type CreateOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<AccountId>>;
+	type Locker = ();
 }
 
 parameter_types! {

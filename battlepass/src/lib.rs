@@ -14,10 +14,11 @@
 
 pub use pallet::*;
 use frame_support::{pallet_prelude::*, transactional, dispatch::RawOrigin};
-use frame_support::traits::tokens::nonfungibles::InspectEnumerable;
+use frame_support::traits::tokens::nonfungibles_v2::InspectEnumerable;
 use frame_system::pallet_prelude::*;
+use pallet_nfts::{CollectionConfig, CollectionSettings, MintSettings, NextCollectionId, Incrementable};
 use sp_std::convert::TryInto;
-use sp_runtime::traits::{AtLeast32BitUnsigned, Hash};
+use sp_runtime::traits::{AtLeast32BitUnsigned, Hash, StaticLookup};
 use gamedao_traits::ControlTrait;
 #[cfg(feature = "runtime-benchmarks")]
 use gamedao_traits::ControlBenchmarkingTrait;
@@ -59,7 +60,7 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_uniques::Config {
+	pub trait Config: frame_system::Config + pallet_nfts::Config {
 		type RuntimeEvent: From<Event<Self>>
 			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
 			+ Into<<Self as frame_system::Config>::RuntimeEvent>;
@@ -298,13 +299,6 @@ pub mod pallet {
 		u32,
 		OptionQuery
 	>;
-
-	/// A counter for created collections
-	///
-	/// CollectionIndex: u32
-	#[pallet::storage]
-	#[pallet::getter(fn get_collection_index)]
-	pub(super) type CollectionIndex<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// A counter for created NFTs
 	///
@@ -857,15 +851,6 @@ impl<T: Config> Pallet<T> {
 		levels.count() == 1
 	}
 
-	fn bump_collection_index() -> Result<u32, DispatchError> {
-		CollectionIndex::<T>::try_mutate(|n| -> Result<u32, DispatchError> {
-			let id = *n;
-			ensure!(id != u32::max_value(), Error::<T>::NoAvailableCollectionId);
-			*n += 1;
-			Ok(id)
-		})
-	}
-
 	fn bump_nft_index() -> Result<u32, DispatchError> {
 		NftIndex::<T>::try_mutate(|n| -> Result<u32, DispatchError> {
 			let id = *n;
@@ -877,38 +862,34 @@ impl<T: Config> Pallet<T> {
 
 	fn create_collection(owner: T::AccountId, max: Option<u32>, cid: String<T>) -> Result<T::CollectionId, DispatchError> {
 		let metadata = BoundedVec::truncate_from(cid.into());
-		let collection_index = Self::bump_collection_index()?;
-		let collection_id = T::BattlepassHelper::collection(collection_index);
+		let collection = NextCollectionId::<T>::get().unwrap_or(T::CollectionId::initial_value());
 		let origin = OriginFor::<T>::from(RawOrigin::Signed(owner.clone()));
+		let config = CollectionConfig {
+			settings: CollectionSettings::all_enabled(),
+			max_supply: max,
+			mint_settings: MintSettings::default(),
+		};
 
-		pallet_uniques::Pallet::<T>::do_create_collection(
-			collection_id,
+		pallet_nfts::Pallet::<T>::do_create_collection(
+			collection,
 			owner.clone(),
 			owner.clone(),
+			config,
 			T::CollectionDeposit::get(),
-			false,
-			pallet_uniques::Event::Created {
-				collection: collection_id,
-				creator: owner.clone(),
-				owner,
-			},
+			pallet_nfts::Event::Created { collection, creator: owner.clone(), owner },
 		)?;
-		pallet_uniques::Pallet::<T>::set_collection_metadata(origin.clone(), collection_id, metadata, false)?;
-		pallet_uniques::Pallet::<T>::freeze_collection(origin.clone(), collection_id)?;
-		if max.is_some() {
-			pallet_uniques::Pallet::<T>::set_collection_max_supply(origin, collection_id, max.unwrap())?;
-		}
 
-		Ok(collection_id)
+		pallet_nfts::Pallet::<T>::set_collection_metadata(origin, collection, metadata)?;
+
+		Ok(collection)
 	}
 
-	fn create_nft(creator: T::AccountId, for_who: T::AccountId, collection_id: T::CollectionId, nft_id: T::ItemId, metadata: BoundedVec<u8, <T as pallet_uniques::Config>::StringLimit>) -> DispatchResult {
+	fn create_nft(creator: T::AccountId, for_who: T::AccountId, collection_id: T::CollectionId, nft_id: T::ItemId, metadata: BoundedVec<u8, <T as pallet_nfts::Config>::StringLimit>) -> DispatchResult {
 		let creator = OriginFor::<T>::from(RawOrigin::Signed(creator));
+		let for_who = T::Lookup::unlookup(for_who);
 
-		pallet_uniques::Pallet::<T>::do_mint(collection_id, nft_id, for_who, |_details| {
-			Ok(())
-		})?;
-		pallet_uniques::Pallet::<T>::set_metadata(creator, collection_id, nft_id, metadata, false)?;
+		pallet_nfts::Pallet::<T>::mint(creator.clone(), collection_id, nft_id, for_who, None)?;
+		pallet_nfts::Pallet::<T>::set_metadata(creator, collection_id, nft_id, metadata)?;
 
 		Ok(())
 	}
@@ -917,7 +898,7 @@ impl<T: Config> Pallet<T> {
 		let origin = OriginFor::<T>::from(RawOrigin::Signed(owner));
 		let metadata = BoundedVec::truncate_from(cid.into());
 
-		pallet_uniques::Pallet::<T>::set_collection_metadata(origin, collection_id, metadata, false)?;
+		pallet_nfts::Pallet::<T>::set_collection_metadata(origin, collection_id, metadata)?;
 
 		Ok(())
 	}
@@ -1030,7 +1011,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn is_battlepass_member(account: T::AccountId, bp_collection_id: T::CollectionId) -> bool {
-		let bp_owned_count = <pallet_uniques::Pallet<T> as InspectEnumerable<T::AccountId>>::owned_in_collection(&bp_collection_id, &account).count();
+		let bp_owned_count = <pallet_nfts::Pallet<T> as InspectEnumerable<T::AccountId>>::owned_in_collection(&bp_collection_id, &account).count();
 		bp_owned_count > 0
 	}
 }

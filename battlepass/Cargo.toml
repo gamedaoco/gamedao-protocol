@@ -25,7 +25,7 @@ frame-support = { git = "https://github.com/paritytech/substrate", branch = "pol
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false, optional = true }
 
-pallet-uniques = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+pallet-nfts = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 
 orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.40", default-features = false }
 
@@ -37,7 +37,6 @@ sp-core = { git = "https://github.com/paritytech/substrate", default-features = 
 codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
 
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
-pallet-uniques = { default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.40", default-features = false }
 orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.40", default-features = false }
 orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch= "polkadot-v0.9.40", default-features = false }
@@ -47,7 +46,8 @@ default = ['std']
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"gamedao-traits/runtime-benchmarks",
-	"gamedao-control/runtime-benchmarks"
+	"gamedao-control/runtime-benchmarks",
+	"pallet-nfts/runtime-benchmarks"
 ]
 std = [
     "serde/std",
@@ -66,7 +66,7 @@ std = [
 	"orml-tokens/std",
 	"orml-currencies/std",
 
-	"pallet-uniques/std",
+	"pallet-nfts/std",
 
 	"gamedao-control/std",
 	"gamedao-traits/std",

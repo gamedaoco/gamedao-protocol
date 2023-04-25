@@ -470,7 +470,7 @@ fn flow_on_finalize_campaign_failed() {
 			campaign.cid.clone(), None, None, None
 		));
 
-		let mut contributors: Vec<AccountId> = (1..11).collect();
+		let contributors: Vec<AccountId> = (1..11).collect();
 		// Contribute (600/1000)
 		for c in &contributors {
 			assert_ok!(Flow::contribute(Origin::signed(*c), campaign_id, contribution));
