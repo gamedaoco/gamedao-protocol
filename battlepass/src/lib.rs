@@ -54,7 +54,7 @@ impl<CollectionId: From<u32>, ItemId: From<u32>> BattlepassHelper<CollectionId, 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	
+
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
 
@@ -126,7 +126,7 @@ pub mod pallet {
 			cid: Option<String<T>>,
 			price: Option<u16>
 		},
-		
+
 		/// BattlePass claimed
 		BattlepassClaimed {
 			by_who: T::AccountId,
@@ -319,7 +319,7 @@ pub mod pallet {
 		/// Creates a Battlepass.
 		/// Also creates a new collection to store claimed Battlepass NFTs.
 		/// May be called only by Organization owner.
-		/// 
+		///
 		/// Parameters:
 		/// - `org_id`: ID of the Organization for which to create a Battlepass.
 		/// - `name`: Battlepass name.
@@ -355,7 +355,7 @@ pub mod pallet {
 		/// Updates Battlepass.
 		/// Also updates Collection's metadata if Battlepass CID has changed.
 		/// May be called only by Organization owner.
-		/// 
+		///
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to update.
 		/// - `name`: Battlepass name.
@@ -379,7 +379,7 @@ pub mod pallet {
 			let cid_changed = cid.is_some() && cid.clone().unwrap() != battlepass.cid;
 			let price_changed = price.is_some() && price.unwrap() != battlepass.price;
 			ensure!(
-				name_changed || cid_changed || price_changed, 
+				name_changed || cid_changed || price_changed,
 				Error::<T>::NoChangesProvided
 			);
 			// check if Battlepass state is not ENDED
@@ -408,7 +408,7 @@ pub mod pallet {
 		/// Claims the Battlepass-NFT for user who joined the Battlepass.
 		/// This NFT may be used as a proof of a Battlepass membership.
 		/// May be called by Organization owner or by a specially dedicated for this purpose account (Bot).
-		/// 
+		///
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass for which to claim NFT.
 		/// - `claimer`: Account for which to claim NFT.
@@ -434,7 +434,7 @@ pub mod pallet {
 			ensure!(Self::is_prime_or_bot(&org_id, caller.clone())?, Error::<T>::AuthorizationError);
 			// check if user has access to Battlepass
 			ensure!(!Self::is_battlepass_member(claimer.clone(), battlepass.collection_id), Error::<T>::BattlepassOwnershipExists);
-			
+
 			let nft_id = Self::do_claim_battlepass(battlepass.creator.clone(), claimer.clone(), battlepass.collection_id, cid.unwrap_or(battlepass.cid))?;
 
 			Self::deposit_event(Event::BattlepassClaimed { by_who: caller, for_who: claimer, org_id, battlepass_id, nft_id });
@@ -445,7 +445,7 @@ pub mod pallet {
 		/// Activates the Battlepass.
 		/// Can activate only Battlepass in DRAFT state.
 		/// May be called only by Organization owner.
-		/// 
+		///
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to activate.
 		#[pallet::call_index(3)]
@@ -462,8 +462,8 @@ pub mod pallet {
 			ensure!(Self::check_battlepass_state(battlepass_id, BattlepassState::DRAFT)?, Error::<T>::BattlepassStateWrong);
 			// check if Org is active
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
-			// check permissions (prime)
-			ensure!(Self::is_prime(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
+			// check permissions (is_prime_or_bot)
+			ensure!(Self::is_prime_or_bot(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
 			// check if there is no active battlepass for the Org
 			let (_, maybe_active, _) = Self::get_battlepass_info(&battlepass.org_id);
 			ensure!(maybe_active.is_none(), Error::<T>::BattlepassExists);
@@ -479,7 +479,7 @@ pub mod pallet {
 		/// Can conclude only Battlepass in ACTIVE state.
 		/// After calling this extrinsic Battlepass state can not be changed any more.
 		/// May be called only by Organization owner.
-		/// 
+		///
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to conclude.
 		#[pallet::call_index(4)]
@@ -494,8 +494,8 @@ pub mod pallet {
 			let battlepass = Self::get_battlepass(battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check if Battlepass in ACTIVE state
 			ensure!(Self::check_battlepass_state(battlepass_id, BattlepassState::ACTIVE)?, Error::<T>::BattlepassStateWrong);
-			// check permissions (prime)
-			ensure!(Self::is_prime(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
+			// check permissions (is_prime_or_bot)
+			ensure!(Self::is_prime_or_bot(&battlepass.org_id, sender.clone())?, Error::<T>::AuthorizationError);
 
 			Self::change_battlepass_state(battlepass.org_id, battlepass_id, BattlepassState::ENDED)?;
 
@@ -506,9 +506,9 @@ pub mod pallet {
 
 		/// Sets Battlepass Points for user.
 		/// So far no information about users' achievements is stored on chain. A separate trusted service (Bot)
-		/// should collect such info, process it, validate it and call this extrinsic if user's Points have been updated. 
+		/// should collect such info, process it, validate it and call this extrinsic if user's Points have been updated.
 		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
-		/// 
+		///
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass.
 		/// - `account`: User's account for which to set Points.
@@ -543,7 +543,7 @@ pub mod pallet {
 		/// Creates a Reward Type for the Battlepass.
 		/// Also creates a new collection to store claimed Reward NFTs.
 		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
-		/// 
+		///
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to create a Reward for.
 		/// - `name`: Name of the Reward.
@@ -572,7 +572,7 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime, bot)
 			ensure!(Self::is_prime_or_bot(&battlepass.org_id, caller)?, Error::<T>::AuthorizationError);
-			
+
 			let prime = T::Control::org_prime_account(&battlepass.org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
 			let collection_id = Self::create_collection(prime, max, cid.clone())?;
 			let reward_id = Self::do_create_reward(battlepass_id, name, cid, level, transferable, collection_id)?;
@@ -585,7 +585,7 @@ pub mod pallet {
 		/// Updates Reward type.
 		/// Also updates Collection's metadata if Reward's CID has changed.
 		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
-		/// 
+		///
 		/// Parameters:
 		/// - `reward_id`: ID of the Reward Type to be updated.
 		/// - `name`: Name of the Reward.
@@ -608,7 +608,7 @@ pub mod pallet {
 			let cid_changed = cid.is_some() && cid.clone().unwrap() != reward.cid;
 			let transferable_changed = transferable.is_some() && transferable.unwrap() != reward.transferable;
 			ensure!(
-				name_changed || cid_changed || transferable_changed, 
+				name_changed || cid_changed || transferable_changed,
 				Error::<T>::NoChangesProvided
 			);
 			// check if Reward is active
@@ -621,10 +621,10 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime, bot)
 			ensure!(Self::is_prime_or_bot(&battlepass.org_id, caller)?, Error::<T>::AuthorizationError);
-			
+
 			if name_changed { reward.name = name.clone().unwrap() };
 			if transferable_changed { reward.transferable = transferable.unwrap() };
-			if cid_changed { 
+			if cid_changed {
 				reward.cid = cid.clone().unwrap();
 
 				let prime = T::Control::org_prime_account(&battlepass.org_id).ok_or(Error::<T>::OrgPrimeUnknown)?;
@@ -641,7 +641,7 @@ pub mod pallet {
 		/// Disables the Reward Type.
 		/// After calling this extrinsic Reward Type state can not be changed any more.
 		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
-		/// 
+		///
 		/// Parameters:
 		/// - `reward_id`: ID of the Reward Type to be disabled.
 		#[pallet::call_index(8)]
@@ -659,7 +659,7 @@ pub mod pallet {
 			let battlepass = Self::get_battlepass(reward.battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check permissions (prime, bot)
 			ensure!(Self::is_prime_or_bot(&battlepass.org_id, caller)?, Error::<T>::AuthorizationError);
-			
+
 			let state = RewardState::INACTIVE;
 
 			RewardStates::<T>::insert(reward_id, state.clone());
@@ -676,7 +676,7 @@ pub mod pallet {
 		/// - must be a Battlepass member (posess a valid Battlepass NFT).
 		/// - required achievement Level must be reached.
 		/// May be called by Organization owner or by a specially dedicated for this purpose account (Bot).
-		/// 
+		///
 		/// Parameters:
 		/// - `reward_id`: ID of the Reward Type to claim.
 		/// - `claimer`: User account for who to claim the reward.
@@ -721,7 +721,7 @@ pub mod pallet {
 
 		/// Adds a new achievement Level.
 		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
-		/// 
+		///
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to add a Level for.
 		/// - `level`: Achievement Level.
@@ -753,7 +753,7 @@ pub mod pallet {
 
 		/// Removes achievement Level.
 		/// May be called only by Organization owner or by a specially dedicated for this purpose account (Bot).
-		/// 
+		///
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to remove a Level for.
 		/// - `level`: Achievement Level.
@@ -785,7 +785,7 @@ pub mod pallet {
 
 		/// Adds for a Battlepass a special trusted account (Bot) which will have a permission to update users' Points.
 		/// May be called only by Organization owner.
-		/// 
+		///
 		/// Parameters:
 		/// - `battlepass_id`: ID of the Battlepass to add a Bot for.
 		/// - `bot`: Trusted Account ID.
@@ -921,16 +921,16 @@ impl<T: Config> Pallet<T> {
 
 		Ok(())
 	}
-	
+
 	fn check_battlepass_state(battlepass_id: T::Hash, state: BattlepassState) -> Result<bool, DispatchError> {
 		let current_state = Self::get_battlepass_state(battlepass_id).ok_or(Error::<T>::BattlepassStateUnknown)?;
-		
+
 		Ok(current_state == state)
 	}
 
 	fn check_reward_state(reward_id: T::Hash, state: RewardState) -> Result<bool, DispatchError> {
 		let current_state = Self::get_reward_state(reward_id).ok_or(Error::<T>::RewardStateUnknown)?;
-		
+
 		Ok(current_state == state)
 	}
 
@@ -941,7 +941,7 @@ impl<T: Config> Pallet<T> {
 			(0, None, None)
 		}
 	}
-	
+
 	fn do_create_battlepass(creator: T::AccountId, org_id: T::Hash, name: String<T>, cid: String<T>, collection_id: T::CollectionId, price: u16, season:u32) -> Result<T::Hash, DispatchError> {
 		let battlepass: Battlepass<T::Hash, T::AccountId, String<T>, T::CollectionId> = Battlepass {
 			creator,
@@ -976,7 +976,7 @@ impl<T: Config> Pallet<T> {
 		let nft_index = Self::bump_nft_index()?;
 		let nft_id: T::ItemId = T::BattlepassHelper::item(nft_index);
 		let metadata = BoundedVec::truncate_from(cid.into());
-		
+
 		// Create Battlepass NFT
 		Self::create_nft(creator, for_who, collection_id, nft_id, metadata)?;
 
@@ -986,7 +986,7 @@ impl<T: Config> Pallet<T> {
 	fn change_battlepass_state(org_id: T::Hash, battlepass_id: T::Hash, state: BattlepassState) -> DispatchResult {
 		let active_battlepass = if state == BattlepassState::ACTIVE { Some(battlepass_id) } else { None };
 
-		BattlepassStates::<T>::insert(battlepass_id, state); 
+		BattlepassStates::<T>::insert(battlepass_id, state);
 		BattlepassInfoByOrg::<T>::try_mutate(org_id, |info| -> Result<(), DispatchError> {
 			if let Some(inf) = info {
 				inf.active = active_battlepass;
