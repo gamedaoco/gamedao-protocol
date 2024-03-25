@@ -1,8 +1,12 @@
-# ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-# ███░▄▄▄█░▄▄▀█░▄▀▄░█░▄▄█░▄▀█░▄▄▀█▀▄▄▀██
-# ███░█▄▀█░▀▀░█░█▄█░█░▄▄█░█░█░▀▀░█░██░██
-# ███▄▄▄▄█▄██▄█▄███▄█▄▄▄█▄▄██▄██▄██▄▄███
-# ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+#      _______  ________  ________  ________   ______   _______   _______
+#    ╱╱       ╲╱        ╲╱        ╲╱        ╲_╱      ╲╲╱       ╲╲╱       ╲╲
+#   ╱╱      __╱         ╱         ╱         ╱        ╱╱        ╱╱        ╱╱
+#  ╱       ╱ ╱         ╱         ╱        _╱         ╱         ╱         ╱
+#  ╲________╱╲___╱____╱╲__╱__╱__╱╲________╱╲________╱╲___╱____╱╲________╱
+#
+# This file is part of GameDAO Protocol.
+# Copyright (C) 2018-2023 GameDAO AG.
+# SPDX-License-Identifier: Apache-2.0
 
 [package]
 name = "gamedao-sense"
@@ -10,7 +14,7 @@ version = "1.3.0"
 authors = ["zero.io","gamedao.co"]
 edition = "2018"
 license = "GPL-3.0-or-later"
-description = "Pallet Sense aggregates datapoints to reflect user experience and behaviour"
+description = "SENSE aggregates datapoints to reflect user experience and behaviour"
 repository = "https://github.com/gamedaoco/gamedao-protocol"
 
 [package.metadata.substrate]
@@ -22,17 +26,17 @@ categories = [
 [dependencies]
 serde = { version = "1.0.143", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
-scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
-sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
-frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
-frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false, optional = true }
+scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
+sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.1.0", default-features = false }
+sp-std = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.1.0", default-features = false }
+frame-support = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.1.0", default-features = false }
+frame-system = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.1.0", default-features = false }
+frame-benchmarking = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.1.0", default-features = false, optional = true }
 
 [dev-dependencies]
-sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.40" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.40" }
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.40" }
+sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, tag = "polkadot-v1.1.0" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, tag = "polkadot-v1.1.0" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, tag = "polkadot-v1.1.0" }
 
 [features]
 default = ["std"]
