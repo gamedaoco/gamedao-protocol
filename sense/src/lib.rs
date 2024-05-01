@@ -33,9 +33,9 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Event: From<Event<Self>>
-			+ IsType<<Self as frame_system::Config>::Event>
-			+ Into<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
+			+ Into<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
 
 		/// The maximum length of a name or symbol stored on-chain.
@@ -44,37 +44,36 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
 	/// Sense Entity of the account.
-	/// 
+	///
 	/// Entities: map AccountId => Entity
 	#[pallet::storage]
 	#[pallet::getter(fn get_entity)]
-	pub(super) type Entities<T: Config> = StorageMap<_, 
-		Blake2_128Concat, 
+	pub(super) type Entities<T: Config> = StorageMap<_,
+		Blake2_128Concat,
 		T::AccountId,
-		Entity<T::AccountId, T::BlockNumber, BoundedVec<u8, T::StringLimit>>, 
+		Entity<T::AccountId, T::BlockNumber, BoundedVec<u8, T::StringLimit>>,
 		OptionQuery
 	>;
 
 	/// EntityCount. Increase per each entity creation.
-	/// 
+	///
 	/// EntityCount: u128
 	#[pallet::storage]
 	#[pallet::getter(fn get_entity_count)]
 	pub type EntityCount<T: Config> = StorageValue<_, u128, ValueQuery>;
 
 	/// All properties of the account.
-	/// 
+	///
 	/// Properties: map (PropertyType, AccountId) => EntityProperty
 	#[pallet::storage]
 	#[pallet::getter(fn get_property)]
-	pub(super) type Properties<T: Config> = StorageDoubleMap<_, 
+	pub(super) type Properties<T: Config> = StorageDoubleMap<_,
 		Blake2_128Concat, PropertyType,
-		Blake2_128Concat, T::AccountId, 
-		EntityProperty<T::BlockNumber>, 
+		Blake2_128Concat, T::AccountId,
+		EntityProperty<T::BlockNumber>,
 		OptionQuery
 	>;
 
@@ -83,13 +82,13 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// New Sense Entity was created.
 		EntityCreated{
-			account_id: T::AccountId, 
+			account_id: T::AccountId,
 			block_number: T::BlockNumber
 		},
 		/// Property was updated.
 		PropertyUpdated{
 			property_type: PropertyType,
-			account_id: T::AccountId, 
+			account_id: T::AccountId,
 			block_number: T::BlockNumber
 		},
 	}
@@ -104,6 +103,8 @@ pub mod pallet {
 		InvalidParam,
 		/// Overflow adding a value to the entity property
 		EntityPropertyOverflow,
+		/// No EntityProperty found for account.
+		EntityPropertyUnknown,
 		/// Overflow adding a value to the entity count
 		EntityCountOverflow,
 	}
@@ -112,7 +113,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 
 		/// Create a Sense Entity for the account.
-		/// 
+		///
 		/// Parameters:
 		/// - `account_id`: account id.
 		/// - `cid`: IPFS content identifier.
@@ -120,6 +121,7 @@ pub mod pallet {
 		/// Emits `EntityCreated` event when successful.
 		///
 		/// Weight: `O(1)`
+		#[pallet::call_index(0)]
 		#[pallet::weight(<T as Config>::WeightInfo::create_entity())]
 		pub fn create_entity(
 			origin: OriginFor<T>,
@@ -142,23 +144,14 @@ pub mod pallet {
 			Self::save_entity(account_id.clone(), entity, count, experience, reputation, trust);
 
 			Self::deposit_event(Event::EntityCreated{
-				account_id, 
+				account_id,
 				block_number: current_block
 			});
 			Ok(())
 		}
 
-		// TODO:
-		// mutation of values should be restricted
-		// certain roles are allowed to mutate values
-		// xp:    realm
-		// rep:   social
-		// trust: id
-		// all:   governance
-		//        sudo ( until its removal )
-
 		/// Modifies a property of the account.
-		/// 
+		///
 		/// Parameters:
 		/// - `account_id`: account id.
 		/// - `property_type`: property type (Experience, Reputation, Trust).
@@ -167,11 +160,12 @@ pub mod pallet {
 		/// Emits `PropertyUpdated` event when successful.
 		///
 		/// Weight: `O(1)`
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::update_property())]
 		pub fn update_property(
-			origin: OriginFor<T>, 
-			account_id: T::AccountId, 
-			property_type: PropertyType, 
+			origin: OriginFor<T>,
+			account_id: T::AccountId,
+			property_type: PropertyType,
 			value: u8
 		) -> DispatchResult {
 			ensure_root(origin)?;
@@ -179,7 +173,7 @@ pub mod pallet {
 
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			let v = u64::from(value);
-			let current = Self::get_property(property_type.clone(), account_id.clone()).unwrap();
+			let current = Self::get_property(property_type.clone(), account_id.clone()).ok_or(Error::<T>::EntityPropertyUnknown)?;
 			let updated = EntityProperty::new(
 				current.get_value().checked_add(v).ok_or(Error::<T>::EntityPropertyOverflow)?,
 				current_block
@@ -189,7 +183,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::PropertyUpdated{
 				property_type,
-				account_id, 
+				account_id,
 				block_number: current_block
 			});
 			Ok(())
@@ -198,11 +192,11 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		fn save_entity(
-			account_id: T::AccountId, 
-			entity: Entity<T::AccountId, T::BlockNumber, BoundedVec<u8, T::StringLimit>>, 
-			count: u128, 
-			experience: EntityProperty<T::BlockNumber>, 
-			reputation: EntityProperty<T::BlockNumber>, 
+			account_id: T::AccountId,
+			entity: Entity<T::AccountId, T::BlockNumber, BoundedVec<u8, T::StringLimit>>,
+			count: u128,
+			experience: EntityProperty<T::BlockNumber>,
+			reputation: EntityProperty<T::BlockNumber>,
 			trust: EntityProperty<T::BlockNumber>
 		) {
 			Entities::<T>::insert(account_id.clone(), entity);
