@@ -1,9 +1,3 @@
-# ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-# ███░▄▄▄█░▄▄▀█░▄▀▄░█░▄▄█░▄▀█░▄▄▀█▀▄▄▀██
-# ███░█▄▀█░▀▀░█░█▄█░█░▄▄█░█░█░▀▀░█░██░██
-# ███▄▄▄▄█▄██▄█▄███▄█▄▄▄█▄▄██▄██▄██▄▄███
-# ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
-
 [package]
 name = "gamedao-traits"
 version = "1.3.0"
@@ -18,9 +12,9 @@ repository = "https://github.com/gamedaoco/gamedao-protocol"
 serde = { version = "1.0.143", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
-frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false, optional = true }
-sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
+frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43", default-features = false }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43", default-features = false, optional = true }
+sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.43", default-features = false }
 
 [features]
 default = ["std"]
