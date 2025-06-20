@@ -6,4 +6,5 @@ export type { IFlow } from "./IFlow";
 export type { IGameDAOModule } from "./IGameDAOModule";
 export type { IGameDAORegistry } from "./IGameDAORegistry";
 export type { IGameToken } from "./IGameToken";
+export type { ISense } from "./ISense";
 export type { ISignal } from "./ISignal";
