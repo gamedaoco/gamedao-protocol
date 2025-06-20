@@ -1,0 +1,53 @@
+# ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+# ███░▄▄▄█░▄▄▀█░▄▀▄░█░▄▄█░▄▀█░▄▄▀█▀▄▄▀██
+# ███░█▄▀█░▀▀░█░█▄█░█░▄▄█░█░█░▀▀░█░██░██
+# ███▄▄▄▄█▄██▄█▄███▄█▄▄▄█▄▄██▄██▄██▄▄███
+# ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+
+[package]
+name = "gamedao-sense"
+version = "1.2.0"
+authors = ["zero.io","gamedao.co"]
+edition = "2018"
+license = "GPL-3.0-or-later"
+description = "Pallet Sense aggregates datapoints to reflect user experience and behaviour"
+repository = "https://github.com/gamedaoco/gamedao-protocol"
+
+[package.metadata.substrate]
+categories = [
+	"zero",
+	"core"
+]
+
+[dependencies]
+serde = { version = "1.0.143", optional = true }
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
+scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false }
+frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28", default-features = false, optional = true }
+
+[dev-dependencies]
+sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28" }
+
+[features]
+default = ["std"]
+runtime-benchmarks = ["frame-benchmarking"]
+std = [
+	"codec/std",
+	"serde/std",
+	"scale-info/std",
+
+	"frame-support/std",
+	"frame-system/std",
+	"frame-benchmarking/std",
+
+	"sp-core/std",
+	"sp-std/std",
+	"sp-runtime/std",
+]
+try-runtime = ["frame-support/try-runtime"]
