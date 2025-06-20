@@ -57,20 +57,18 @@ dataSources:
       eventHandlers:
         - event: OrganizationCreated(indexed bytes32,indexed address,indexed address,string,uint8,uint256)
           handler: handleOrganizationCreated
-        - event: OrganizationUpdated(indexed bytes32,string,uint8)
+        - event: OrganizationUpdated(indexed bytes32,indexed address,uint8,uint8,uint32,uint256)
           handler: handleOrganizationUpdated
-        - event: OrganizationStateChanged(indexed bytes32,uint8,uint8)
+        - event: OrganizationStateChanged(indexed bytes32,uint8,uint8,uint256)
           handler: handleOrganizationStateChanged
-        - event: MemberAdded(indexed bytes32,indexed address,uint8,uint256)
+        - event: MemberAdded(indexed bytes32,indexed address,uint8,uint256,uint256)
           handler: handleMemberAdded
-        - event: MemberRemoved(indexed bytes32,indexed address,uint8)
+        - event: MemberRemoved(indexed bytes32,indexed address,uint256)
           handler: handleMemberRemoved
-        - event: MemberStateChanged(indexed bytes32,indexed address,uint8,uint8)
+        - event: MemberStateChanged(indexed bytes32,indexed address,uint8,uint8,uint256)
           handler: handleMemberStateChanged
-        - event: StakeRequired(indexed bytes32,uint256,uint256)
-          handler: handleStakeRequired
-        - event: StakeSlashed(indexed bytes32,indexed address,uint256,string)
-          handler: handleStakeSlashed
+        - event: MembershipFeeUpdated(indexed bytes32,uint256,uint256,uint256)
+          handler: handleMembershipFeeUpdated
       file: ./src/control.ts
 
   # Flow Module - Crowdfunding & Campaigns
@@ -94,21 +92,21 @@ dataSources:
         - name: Flow
           file: ./abis/Flow.json
       eventHandlers:
-        - event: CampaignCreated(indexed bytes32,indexed bytes32,indexed address,uint8,uint256,uint256,uint256,uint256)
+        - event: CampaignCreated(indexed bytes32,indexed bytes32,indexed address,string,uint8,uint256,uint256,uint256,uint256)
           handler: handleCampaignCreated
-        - event: CampaignUpdated(indexed bytes32,string,string,uint256,uint256)
+        - event: CampaignUpdated(indexed bytes32,string,string,uint256,uint256,uint256,uint256,uint256)
           handler: handleCampaignUpdated
-        - event: CampaignStateChanged(indexed bytes32,uint8,uint8)
+        - event: CampaignStateChanged(indexed bytes32,uint8,uint8,uint256)
           handler: handleCampaignStateChanged
-        - event: ContributionMade(indexed bytes32,indexed address,indexed address,uint256,uint256)
+        - event: ContributionMade(indexed bytes32,indexed address,uint256,uint256,uint256)
           handler: handleContributionMade
-        - event: CampaignFinalized(indexed bytes32,bool,uint256,uint256)
+        - event: CampaignFinalized(indexed bytes32,uint8,uint256,uint256,uint256)
           handler: handleCampaignFinalized
-        - event: RewardDistributed(indexed bytes32,indexed address,indexed address,uint256)
-          handler: handleRewardDistributed
-        - event: RefundIssued(indexed bytes32,indexed address,indexed address,uint256)
-          handler: handleRefundIssued
-        - event: ProtocolFeeCollected(indexed bytes32,uint256)
+        - event: RewardsDistributed(indexed bytes32,indexed address,uint256,uint256,uint256)
+          handler: handleRewardsDistributed
+        - event: ContributionRefunded(indexed bytes32,indexed address,uint256,uint256)
+          handler: handleContributionRefunded
+        - event: ProtocolFeeCollected(indexed bytes32,indexed address,uint256,uint256)
           handler: handleProtocolFeeCollected
       file: ./src/flow.ts
 

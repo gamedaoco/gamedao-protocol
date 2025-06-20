@@ -1,6 +1,6 @@
 import { http, createConfig } from 'wagmi'
 import { mainnet, sepolia, hardhat } from 'wagmi/chains'
-import { injected, metaMask, walletConnect } from 'wagmi/connectors'
+import { injected, metaMask } from 'wagmi/connectors'
 
 // GameDAO Protocol Contract Addresses
 export const CONTRACTS = {
@@ -20,22 +20,19 @@ export const supportedChains = [
   mainnet, // Production (when ready)
 ] as const
 
-// WalletConnect project ID (you'll need to get this from WalletConnect Cloud)
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'your-project-id'
-
-// Web3 configuration
+// Web3 configuration - simplified for SSR compatibility
 export const config = createConfig({
   chains: supportedChains,
   connectors: [
     injected(),
     metaMask(),
-    walletConnect({ projectId }),
   ],
   transports: {
     [mainnet.id]: http(),
     [sepolia.id]: http(),
     [hardhat.id]: http('http://127.0.0.1:8545'),
   },
+  ssr: true,
 })
 
 // Chain-specific configuration

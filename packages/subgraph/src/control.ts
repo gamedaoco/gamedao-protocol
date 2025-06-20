@@ -6,8 +6,7 @@ import {
   MemberAdded,
   MemberRemoved,
   MemberStateChanged,
-  StakeRequired,
-  StakeSlashed
+  MembershipFeeUpdated
 } from "../generated/Control/Control"
 import {
   Organization,
@@ -190,19 +189,15 @@ export function handleStakeRequired(event: StakeRequired): void {
   stakeEvent.save()
 }
 
-export function handleStakeSlashed(event: StakeSlashed): void {
+export function handleMembershipFeeUpdated(event: MembershipFeeUpdated): void {
   let orgId = event.params.organizationId.toHex()
-  let stakeId = event.transaction.hash.toHex() + "-" + event.logIndex.toString()
+  let organization = Organization.load(orgId)
 
-  let stakeEvent = new StakeEvent(stakeId)
-  stakeEvent.organization = orgId
-  stakeEvent.member = event.params.member
-  stakeEvent.amount = event.params.amount.toBigDecimal()
-  stakeEvent.reason = event.params.reason
-  stakeEvent.timestamp = event.block.timestamp
-  stakeEvent.blockNumber = event.block.number
-  stakeEvent.transactionHash = event.transaction.hash
-  stakeEvent.save()
+  if (organization != null) {
+    // Update organization with new fee information
+    organization.updatedAt = event.block.timestamp
+    organization.save()
+  }
 }
 
 // Helper functions

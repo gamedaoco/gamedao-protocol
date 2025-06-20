@@ -1,17 +1,29 @@
 'use client'
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useState, useEffect } from 'react'
+import { useConnect, useDisconnect } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { useGameDAO } from '@/hooks/useGameDAO'
+import { useUserRegistration } from '@/hooks/useUserRegistration'
+import { UserRegistrationModal } from '@/components/user/user-registration-modal'
 import { formatAddress } from '@/lib/utils'
-import { CONTRACTS } from '@/lib/web3'
 
 export default function HomePage() {
-  const { address, isConnected, chain } = useAccount()
+  const { address, isConnected, chainId, networkName, contracts } = useGameDAO()
+  const { userProfile, needsRegistration } = useUserRegistration()
   const { connectors, connect } = useConnect()
   const { disconnect } = useDisconnect()
+  const [showRegistration, setShowRegistration] = useState(false)
+
+  // Show registration modal when user needs registration
+  useEffect(() => {
+    if (needsRegistration) {
+      setShowRegistration(true)
+    }
+  }, [needsRegistration])
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -47,9 +59,39 @@ export default function HomePage() {
                   </p>
                 </div>
                 <Badge variant="secondary">
-                  {chain?.name || 'Unknown Network'}
+                  {networkName}
                 </Badge>
               </div>
+
+              {/* User Profile Status */}
+              {userProfile && (
+                <div className="bg-muted p-3 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Profile Status</p>
+                      <p className="text-sm text-muted-foreground">
+                        {userProfile.isRegistered ?
+                          `Welcome back, ${userProfile.profile?.name}!` :
+                          'Profile not created yet'
+                        }
+                      </p>
+                    </div>
+                    <Badge variant={userProfile.isRegistered ? "default" : "outline"}>
+                      {userProfile.isRegistered ? "Registered" : "Not Registered"}
+                    </Badge>
+                  </div>
+                  {!userProfile.isRegistered && (
+                    <Button
+                      onClick={() => setShowRegistration(true)}
+                      className="mt-2 w-full"
+                      size="sm"
+                    >
+                      Create Profile
+                    </Button>
+                  )}
+                </div>
+              )}
+
               <Button onClick={() => disconnect()} variant="outline">
                 Disconnect
               </Button>
@@ -87,7 +129,7 @@ export default function HomePage() {
               Organization creation, member management, and treasury integration
             </p>
             <Badge variant="secondary" className="text-xs">
-              {formatAddress(CONTRACTS.CONTROL)}
+              {formatAddress(contracts.CONTROL)}
             </Badge>
           </CardContent>
         </Card>
@@ -102,7 +144,7 @@ export default function HomePage() {
               Campaign creation, contributions, and reward distribution
             </p>
             <Badge variant="secondary" className="text-xs">
-              {formatAddress(CONTRACTS.FLOW)}
+              {formatAddress(contracts.FLOW)}
             </Badge>
           </CardContent>
         </Card>
@@ -193,10 +235,16 @@ export default function HomePage() {
       <div className="text-center text-sm text-muted-foreground">
         <p>GameDAO Protocol - Built for Gaming Communities</p>
         <p className="mt-1">
-          Registry: {formatAddress(CONTRACTS.REGISTRY)} |
-          Chain: {chain?.name || 'Not Connected'}
+          Registry: {formatAddress(contracts.REGISTRY)} |
+          Chain: {networkName}
         </p>
       </div>
+
+      {/* User Registration Modal */}
+      <UserRegistrationModal
+        isOpen={showRegistration}
+        onClose={() => setShowRegistration(false)}
+      />
     </div>
   )
 }
