@@ -22,13 +22,13 @@ dataSources:
         - name: GameDAORegistry
           file: ./abis/GameDAORegistry.json
       eventHandlers:
-        - event: ModuleRegistered(indexed string,indexed address,indexed address)
+        - event: ModuleRegistered(indexed bytes32,indexed address,string)
           handler: handleModuleRegistered
-        - event: ModuleEnabled(indexed string,indexed address)
+        - event: ModuleEnabled(indexed bytes32)
           handler: handleModuleEnabled
-        - event: ModuleDisabled(indexed string,indexed address)
+        - event: ModuleDisabled(indexed bytes32)
           handler: handleModuleDisabled
-        - event: ModuleUpgraded(indexed string,indexed address,indexed address)
+        - event: ModuleUpgraded(indexed bytes32,indexed address,indexed address,string)
           handler: handleModuleUpgraded
       file: ./src/registry.ts
 
