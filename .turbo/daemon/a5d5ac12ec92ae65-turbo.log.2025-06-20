@@ -539,3 +539,81 @@
 2025-06-20T22:08:34.314934Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
 2025-06-20T22:09:39.415557Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/008-sense-module.md")}
 2025-06-20T22:09:39.415565Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:09:46.615601Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/008-sense-module.md")}
+2025-06-20T22:09:46.615617Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:25.118923Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:25.118934Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:25.315912Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:25.315921Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:29.315467Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:29.315484Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:29.415649Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:29.415658Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:33.816091Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:33.816101Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:33.916060Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:33.916077Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:44.216440Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:44.216450Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:44.315450Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:44.315469Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:51.016277Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:51.016288Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:51.115128Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:51.115137Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:56.715213Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:56.715226Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:10:56.816606Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/004-milestone-plan.md")}
+2025-06-20T22:10:56.816620Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:11:41.216840Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/cache/solidity-files-cache.json"), AnchoredSystemPathBuf("packages/contracts-solidity/cache/.hardhat_contract_sizer_output.json")}
+2025-06-20T22:11:41.216857Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:13:54.617564Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/cache/solidity-files-cache.json"), AnchoredSystemPathBuf("packages/contracts-solidity/cache/.hardhat_contract_sizer_output.json")}
+2025-06-20T22:13:54.617574Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:14:19.717681Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/test/Sense.test.ts")}
+2025-06-20T22:14:19.717692Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:14:41.118471Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/test/Sense.test.ts")}
+2025-06-20T22:14:41.118483Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:14:41.218844Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/test/Sense.test.ts")}
+2025-06-20T22:14:41.218855Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:14:48.318020Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/cache/.hardhat_contract_sizer_output.json"), AnchoredSystemPathBuf("packages/contracts-solidity/cache/solidity-files-cache.json")}
+2025-06-20T22:14:48.318030Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:15:09.417880Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/test/Sense.test.ts")}
+2025-06-20T22:15:09.417965Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:15:09.619114Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/test/Sense.test.ts")}
+2025-06-20T22:15:09.619125Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:15:15.618610Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/cache/solidity-files-cache.json"), AnchoredSystemPathBuf("packages/contracts-solidity/cache/.hardhat_contract_sizer_output.json")}
+2025-06-20T22:15:15.618624Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:15:23.719017Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/cache/solidity-files-cache.json"), AnchoredSystemPathBuf("packages/contracts-solidity/cache/.hardhat_contract_sizer_output.json")}
+2025-06-20T22:15:23.719027Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:15:45.818731Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/36.cookie")}
+2025-06-20T22:15:45.818752Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:15:46.318662Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/37.cookie"), AnchoredSystemPathBuf("packages/contracts-solidity/.turbo/turbo-test.log")}
+2025-06-20T22:15:46.318678Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }, WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:15:47.118628Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/cache/.hardhat_contract_sizer_output.json"), AnchoredSystemPathBuf("packages/contracts-solidity/cache/solidity-files-cache.json")}
+2025-06-20T22:15:47.118638Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:15:51.718046Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/.turbo/turbo-test.log"), AnchoredSystemPathBuf(".turbo/cookies/38.cookie")}
+2025-06-20T22:15:51.718054Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }, WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:16:16.618239Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/cache/solidity-files-cache.json"), AnchoredSystemPathBuf("packages/contracts-solidity/cache/.hardhat_contract_sizer_output.json")}
+2025-06-20T22:16:16.618248Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:16:17.319239Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/39.cookie")}
+2025-06-20T22:16:17.319257Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:16:17.518489Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/40.cookie")}
+2025-06-20T22:16:17.518498Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:16:17.619095Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/.turbo/turbo-build.log")}
+2025-06-20T22:16:17.619104Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:16:18.418769Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/cache/.hardhat_contract_sizer_output.json"), AnchoredSystemPathBuf("packages/contracts-solidity/cache/solidity-files-cache.json")}
+2025-06-20T22:16:18.418778Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:16:18.518597Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/.turbo/turbo-build.log"), AnchoredSystemPathBuf(".turbo/cookies/41.cookie")}
+2025-06-20T22:16:18.518606Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }, WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:16:19.419028Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/42.cookie")}
+2025-06-20T22:16:19.419035Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:16:19.619667Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/.turbo/turbo-build.log"), AnchoredSystemPathBuf(".turbo/cookies/43.cookie")}
+2025-06-20T22:16:19.619677Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }, WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:16:20.418628Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/cache/.hardhat_contract_sizer_output.json"), AnchoredSystemPathBuf("packages/contracts-solidity/cache/solidity-files-cache.json")}
+2025-06-20T22:16:20.418636Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:16:20.619420Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/44.cookie"), AnchoredSystemPathBuf("packages/contracts-solidity/.turbo/turbo-build.log")}
+2025-06-20T22:16:20.619431Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }, WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
+2025-06-20T22:16:22.618810Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("logs/008-sense-module.md")}
+2025-06-20T22:16:22.618820Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-06-20T22:16:27.919278Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/contracts-solidity/cache/solidity-files-cache.json"), AnchoredSystemPathBuf("packages/contracts-solidity/cache/.hardhat_contract_sizer_output.json")}
+2025-06-20T22:16:27.919288Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@gamedao/contracts-solidity"), path: AnchoredSystemPathBuf("packages/contracts-solidity") }}))
