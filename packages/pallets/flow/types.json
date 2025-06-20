@@ -1,0 +1,44 @@
+{
+  "Campaign": {
+    "id": "Hash",
+    "org": "Hash",
+    "name": "Vec<u8>",
+    "owner": "AccountId",
+    "admin": "AccountId",
+    "deposit": "Balance",
+    "expiry": "BlockNumber",
+    "cap": "Balance",
+    "protocol": "FlowProtocol",
+    "governance": "FlowGovernance",
+    "cid": "Vec<u8>",
+    "token_symbol": "Vec<u8>",
+    "token_name": "Vec<u8>",
+    "created": "Moment"
+  },
+  "FlowProtocol": {
+    "_enum": [
+      "Grant",
+      "Raise",
+      "Lend",
+      "Loan",
+      "Share",
+      "Pool"
+    ]
+  },
+  "FlowGovernance": {
+    "_enum": [
+      "No",
+      "Yes"
+    ]
+  },
+  "FlowState": {
+    "_enum": [
+      "Init",
+      "Active",
+      "Paused",
+      "Success",
+      "Failed",
+      "Locked"
+    ]
+  }
+}
