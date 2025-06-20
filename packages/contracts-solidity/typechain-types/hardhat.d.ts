@@ -77,6 +77,10 @@ declare module "hardhat/types/runtime" {
       name: "Control",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Control__factory>;
+    getContractFactory(
+      name: "Flow",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Flow__factory>;
 
     getContractAt(
       name: "AccessControl",
@@ -158,6 +162,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.Control>;
+    getContractAt(
+      name: "Flow",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Flow>;
 
     deployContract(
       name: "AccessControl",
@@ -223,6 +232,10 @@ declare module "hardhat/types/runtime" {
       name: "Control",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Control>;
+    deployContract(
+      name: "Flow",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Flow>;
 
     deployContract(
       name: "AccessControl",
@@ -304,6 +317,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Control>;
+    deployContract(
+      name: "Flow",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Flow>;
 
     // default types
     getContractFactory(

@@ -410,7 +410,7 @@ const _abi = [
     ],
     name: "contribute",
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "function",
   },
   {

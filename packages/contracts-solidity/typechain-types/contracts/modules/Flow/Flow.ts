@@ -21,7 +21,7 @@ import type {
   TypedLogDescription,
   TypedListener,
   TypedContractMethod,
-} from "../../common";
+} from "../../../common";
 
 export declare namespace IFlow {
   export type CampaignStruct = {
@@ -117,15 +117,25 @@ export declare namespace IFlow {
   };
 }
 
-export interface IFlowInterface extends Interface {
+export interface FlowInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "ADMIN_ROLE"
+      | "BASIS_POINTS"
+      | "CAMPAIGN_CREATOR_ROLE"
+      | "DEFAULT_ADMIN_ROLE"
+      | "FLOW_ADMIN_ROLE"
+      | "MAX_PROTOCOL_FEE"
+      | "OPERATOR_ROLE"
       | "calculateProtocolFee"
       | "canContribute"
       | "claimRewards"
       | "contribute"
       | "createCampaign"
       | "distributeRewards"
+      | "emergencyPause"
+      | "emergencyUnpause"
+      | "emergencyWithdraw"
       | "finalizeCampaign"
       | "getCampaign"
       | "getCampaignContributors"
@@ -136,11 +146,29 @@ export interface IFlowInterface extends Interface {
       | "getContribution"
       | "getProtocolFeeRate"
       | "getRewardDistribution"
+      | "getRoleAdmin"
       | "getTimeRemaining"
+      | "grantRole"
+      | "hasRole"
+      | "initialize"
       | "isCampaignActive"
+      | "isInitialized"
+      | "moduleId"
+      | "onModuleDisabled"
+      | "onModuleEnabled"
+      | "pause"
+      | "paused"
       | "refundContribution"
+      | "registry"
+      | "renounceRole"
+      | "revokeRole"
       | "setCampaignState"
+      | "setProtocolFeeRate"
+      | "setProtocolFeeRecipient"
+      | "supportsInterface"
+      | "unpause"
       | "updateCampaign"
+      | "version"
       | "withdrawFunds"
   ): FunctionFragment;
 
@@ -152,10 +180,46 @@ export interface IFlowInterface extends Interface {
       | "CampaignUpdated"
       | "ContributionMade"
       | "ContributionRefunded"
+      | "ModuleDisabled"
+      | "ModuleEnabled"
+      | "ModuleInitialized"
+      | "Paused"
       | "ProtocolFeeCollected"
       | "RewardsDistributed"
+      | "RoleAdminChanged"
+      | "RoleGranted"
+      | "RoleRevoked"
+      | "Unpaused"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "ADMIN_ROLE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "BASIS_POINTS",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "CAMPAIGN_CREATOR_ROLE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "DEFAULT_ADMIN_ROLE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "FLOW_ADMIN_ROLE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "MAX_PROTOCOL_FEE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "OPERATOR_ROLE",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "calculateProtocolFee",
     values: [BigNumberish]
@@ -191,6 +255,18 @@ export interface IFlowInterface extends Interface {
   encodeFunctionData(
     functionFragment: "distributeRewards",
     values: [BytesLike, AddressLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "emergencyPause",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "emergencyUnpause",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "emergencyWithdraw",
+    values: [AddressLike, AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "finalizeCampaign",
@@ -233,21 +309,74 @@ export interface IFlowInterface extends Interface {
     values: [BytesLike, AddressLike, AddressLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "getRoleAdmin",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getTimeRemaining",
     values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "grantRole",
+    values: [BytesLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "hasRole",
+    values: [BytesLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "initialize",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "isCampaignActive",
     values: [BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "isInitialized",
+    values?: undefined
+  ): string;
+  encodeFunctionData(functionFragment: "moduleId", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "onModuleDisabled",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "onModuleEnabled",
+    values?: undefined
+  ): string;
+  encodeFunctionData(functionFragment: "pause", values?: undefined): string;
+  encodeFunctionData(functionFragment: "paused", values?: undefined): string;
+  encodeFunctionData(
     functionFragment: "refundContribution",
+    values: [BytesLike, AddressLike]
+  ): string;
+  encodeFunctionData(functionFragment: "registry", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "renounceRole",
+    values: [BytesLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "revokeRole",
     values: [BytesLike, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "setCampaignState",
     values: [BytesLike, BigNumberish]
   ): string;
+  encodeFunctionData(
+    functionFragment: "setProtocolFeeRate",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setProtocolFeeRecipient",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "supportsInterface",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(functionFragment: "unpause", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "updateCampaign",
     values: [
@@ -260,11 +389,37 @@ export interface IFlowInterface extends Interface {
       BigNumberish
     ]
   ): string;
+  encodeFunctionData(functionFragment: "version", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "withdrawFunds",
     values: [BytesLike, AddressLike, BigNumberish]
   ): string;
 
+  decodeFunctionResult(functionFragment: "ADMIN_ROLE", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "BASIS_POINTS",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "CAMPAIGN_CREATOR_ROLE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "DEFAULT_ADMIN_ROLE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "FLOW_ADMIN_ROLE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "MAX_PROTOCOL_FEE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "OPERATOR_ROLE",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "calculateProtocolFee",
     data: BytesLike
@@ -284,6 +439,18 @@ export interface IFlowInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "distributeRewards",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "emergencyPause",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "emergencyUnpause",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "emergencyWithdraw",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -327,25 +494,67 @@ export interface IFlowInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getRoleAdmin",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getTimeRemaining",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "grantRole", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "hasRole", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "isCampaignActive",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "isInitialized",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "moduleId", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "onModuleDisabled",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "onModuleEnabled",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "pause", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
+  decodeFunctionResult(
     functionFragment: "refundContribution",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "registry", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "renounceRole",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "revokeRole", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "setCampaignState",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "setProtocolFeeRate",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setProtocolFeeRecipient",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "supportsInterface",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "unpause", data: BytesLike): Result;
+  decodeFunctionResult(
     functionFragment: "updateCampaign",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "version", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "withdrawFunds",
     data: BytesLike
@@ -535,6 +744,50 @@ export namespace ContributionRefundedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace ModuleDisabledEvent {
+  export type InputTuple = [];
+  export type OutputTuple = [];
+  export interface OutputObject {}
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace ModuleEnabledEvent {
+  export type InputTuple = [];
+  export type OutputTuple = [];
+  export interface OutputObject {}
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace ModuleInitializedEvent {
+  export type InputTuple = [registry: AddressLike];
+  export type OutputTuple = [registry: string];
+  export interface OutputObject {
+    registry: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace PausedEvent {
+  export type InputTuple = [account: AddressLike];
+  export type OutputTuple = [account: string];
+  export interface OutputObject {
+    account: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace ProtocolFeeCollectedEvent {
   export type InputTuple = [
     campaignId: BytesLike,
@@ -588,13 +841,83 @@ export namespace RewardsDistributedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export interface IFlow extends BaseContract {
-  contractName: "IFlow";
+export namespace RoleAdminChangedEvent {
+  export type InputTuple = [
+    role: BytesLike,
+    previousAdminRole: BytesLike,
+    newAdminRole: BytesLike
+  ];
+  export type OutputTuple = [
+    role: string,
+    previousAdminRole: string,
+    newAdminRole: string
+  ];
+  export interface OutputObject {
+    role: string;
+    previousAdminRole: string;
+    newAdminRole: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
 
-  connect(runner?: ContractRunner | null): IFlow;
+export namespace RoleGrantedEvent {
+  export type InputTuple = [
+    role: BytesLike,
+    account: AddressLike,
+    sender: AddressLike
+  ];
+  export type OutputTuple = [role: string, account: string, sender: string];
+  export interface OutputObject {
+    role: string;
+    account: string;
+    sender: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace RoleRevokedEvent {
+  export type InputTuple = [
+    role: BytesLike,
+    account: AddressLike,
+    sender: AddressLike
+  ];
+  export type OutputTuple = [role: string, account: string, sender: string];
+  export interface OutputObject {
+    role: string;
+    account: string;
+    sender: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace UnpausedEvent {
+  export type InputTuple = [account: AddressLike];
+  export type OutputTuple = [account: string];
+  export interface OutputObject {
+    account: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export interface Flow extends BaseContract {
+  contractName: "Flow";
+
+  connect(runner?: ContractRunner | null): Flow;
   waitForDeployment(): Promise<this>;
 
-  interface: IFlowInterface;
+  interface: FlowInterface;
 
   queryFilter<TCEvent extends TypedContractEvent>(
     event: TCEvent,
@@ -633,6 +956,20 @@ export interface IFlow extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  ADMIN_ROLE: TypedContractMethod<[], [string], "view">;
+
+  BASIS_POINTS: TypedContractMethod<[], [bigint], "view">;
+
+  CAMPAIGN_CREATOR_ROLE: TypedContractMethod<[], [string], "view">;
+
+  DEFAULT_ADMIN_ROLE: TypedContractMethod<[], [string], "view">;
+
+  FLOW_ADMIN_ROLE: TypedContractMethod<[], [string], "view">;
+
+  MAX_PROTOCOL_FEE: TypedContractMethod<[], [bigint], "view">;
+
+  OPERATOR_ROLE: TypedContractMethod<[], [string], "view">;
+
   calculateProtocolFee: TypedContractMethod<
     [amount: BigNumberish],
     [bigint],
@@ -640,7 +977,7 @@ export interface IFlow extends BaseContract {
   >;
 
   canContribute: TypedContractMethod<
-    [campaignId: BytesLike, contributor: AddressLike],
+    [campaignId: BytesLike, arg1: AddressLike],
     [boolean],
     "view"
   >;
@@ -681,6 +1018,16 @@ export interface IFlow extends BaseContract {
       rewardToken: AddressLike,
       totalRewardAmount: BigNumberish
     ],
+    [void],
+    "nonpayable"
+  >;
+
+  emergencyPause: TypedContractMethod<[], [void], "nonpayable">;
+
+  emergencyUnpause: TypedContractMethod<[], [void], "nonpayable">;
+
+  emergencyWithdraw: TypedContractMethod<
+    [token: AddressLike, to: AddressLike, amount: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -749,10 +1096,30 @@ export interface IFlow extends BaseContract {
     "view"
   >;
 
+  getRoleAdmin: TypedContractMethod<[role: BytesLike], [string], "view">;
+
   getTimeRemaining: TypedContractMethod<
     [campaignId: BytesLike],
     [bigint],
     "view"
+  >;
+
+  grantRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  hasRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [boolean],
+    "view"
+  >;
+
+  initialize: TypedContractMethod<
+    [registryAddress: AddressLike],
+    [void],
+    "nonpayable"
   >;
 
   isCampaignActive: TypedContractMethod<
@@ -761,8 +1128,34 @@ export interface IFlow extends BaseContract {
     "view"
   >;
 
+  isInitialized: TypedContractMethod<[], [boolean], "view">;
+
+  moduleId: TypedContractMethod<[], [string], "view">;
+
+  onModuleDisabled: TypedContractMethod<[], [void], "nonpayable">;
+
+  onModuleEnabled: TypedContractMethod<[], [void], "nonpayable">;
+
+  pause: TypedContractMethod<[], [void], "nonpayable">;
+
+  paused: TypedContractMethod<[], [boolean], "view">;
+
   refundContribution: TypedContractMethod<
     [campaignId: BytesLike, contributor: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  registry: TypedContractMethod<[], [string], "view">;
+
+  renounceRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  revokeRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -772,6 +1165,26 @@ export interface IFlow extends BaseContract {
     [void],
     "nonpayable"
   >;
+
+  setProtocolFeeRate: TypedContractMethod<
+    [newRate: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
+  setProtocolFeeRecipient: TypedContractMethod<
+    [newRecipient: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  supportsInterface: TypedContractMethod<
+    [interfaceId: BytesLike],
+    [boolean],
+    "view"
+  >;
+
+  unpause: TypedContractMethod<[], [void], "nonpayable">;
 
   updateCampaign: TypedContractMethod<
     [
@@ -787,6 +1200,8 @@ export interface IFlow extends BaseContract {
     "nonpayable"
   >;
 
+  version: TypedContractMethod<[], [string], "view">;
+
   withdrawFunds: TypedContractMethod<
     [campaignId: BytesLike, to: AddressLike, amount: BigNumberish],
     [void],
@@ -798,12 +1213,33 @@ export interface IFlow extends BaseContract {
   ): T;
 
   getFunction(
+    nameOrSignature: "ADMIN_ROLE"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "BASIS_POINTS"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "CAMPAIGN_CREATOR_ROLE"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "DEFAULT_ADMIN_ROLE"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "FLOW_ADMIN_ROLE"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "MAX_PROTOCOL_FEE"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "OPERATOR_ROLE"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "calculateProtocolFee"
   ): TypedContractMethod<[amount: BigNumberish], [bigint], "view">;
   getFunction(
     nameOrSignature: "canContribute"
   ): TypedContractMethod<
-    [campaignId: BytesLike, contributor: AddressLike],
+    [campaignId: BytesLike, arg1: AddressLike],
     [boolean],
     "view"
   >;
@@ -848,6 +1284,19 @@ export interface IFlow extends BaseContract {
       rewardToken: AddressLike,
       totalRewardAmount: BigNumberish
     ],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "emergencyPause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "emergencyUnpause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "emergencyWithdraw"
+  ): TypedContractMethod<
+    [token: AddressLike, to: AddressLike, amount: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -910,15 +1359,70 @@ export interface IFlow extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "getRoleAdmin"
+  ): TypedContractMethod<[role: BytesLike], [string], "view">;
+  getFunction(
     nameOrSignature: "getTimeRemaining"
   ): TypedContractMethod<[campaignId: BytesLike], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "grantRole"
+  ): TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "hasRole"
+  ): TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [boolean],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "initialize"
+  ): TypedContractMethod<[registryAddress: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "isCampaignActive"
   ): TypedContractMethod<[campaignId: BytesLike], [boolean], "view">;
   getFunction(
+    nameOrSignature: "isInitialized"
+  ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "moduleId"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "onModuleDisabled"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "onModuleEnabled"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "pause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "paused"
+  ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
     nameOrSignature: "refundContribution"
   ): TypedContractMethod<
     [campaignId: BytesLike, contributor: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "registry"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "renounceRole"
+  ): TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "revokeRole"
+  ): TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -929,6 +1433,18 @@ export interface IFlow extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "setProtocolFeeRate"
+  ): TypedContractMethod<[newRate: BigNumberish], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "setProtocolFeeRecipient"
+  ): TypedContractMethod<[newRecipient: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "supportsInterface"
+  ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "unpause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "updateCampaign"
   ): TypedContractMethod<
@@ -944,6 +1460,9 @@ export interface IFlow extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "version"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "withdrawFunds"
   ): TypedContractMethod<
@@ -995,6 +1514,34 @@ export interface IFlow extends BaseContract {
     ContributionRefundedEvent.OutputObject
   >;
   getEvent(
+    key: "ModuleDisabled"
+  ): TypedContractEvent<
+    ModuleDisabledEvent.InputTuple,
+    ModuleDisabledEvent.OutputTuple,
+    ModuleDisabledEvent.OutputObject
+  >;
+  getEvent(
+    key: "ModuleEnabled"
+  ): TypedContractEvent<
+    ModuleEnabledEvent.InputTuple,
+    ModuleEnabledEvent.OutputTuple,
+    ModuleEnabledEvent.OutputObject
+  >;
+  getEvent(
+    key: "ModuleInitialized"
+  ): TypedContractEvent<
+    ModuleInitializedEvent.InputTuple,
+    ModuleInitializedEvent.OutputTuple,
+    ModuleInitializedEvent.OutputObject
+  >;
+  getEvent(
+    key: "Paused"
+  ): TypedContractEvent<
+    PausedEvent.InputTuple,
+    PausedEvent.OutputTuple,
+    PausedEvent.OutputObject
+  >;
+  getEvent(
     key: "ProtocolFeeCollected"
   ): TypedContractEvent<
     ProtocolFeeCollectedEvent.InputTuple,
@@ -1007,6 +1554,34 @@ export interface IFlow extends BaseContract {
     RewardsDistributedEvent.InputTuple,
     RewardsDistributedEvent.OutputTuple,
     RewardsDistributedEvent.OutputObject
+  >;
+  getEvent(
+    key: "RoleAdminChanged"
+  ): TypedContractEvent<
+    RoleAdminChangedEvent.InputTuple,
+    RoleAdminChangedEvent.OutputTuple,
+    RoleAdminChangedEvent.OutputObject
+  >;
+  getEvent(
+    key: "RoleGranted"
+  ): TypedContractEvent<
+    RoleGrantedEvent.InputTuple,
+    RoleGrantedEvent.OutputTuple,
+    RoleGrantedEvent.OutputObject
+  >;
+  getEvent(
+    key: "RoleRevoked"
+  ): TypedContractEvent<
+    RoleRevokedEvent.InputTuple,
+    RoleRevokedEvent.OutputTuple,
+    RoleRevokedEvent.OutputObject
+  >;
+  getEvent(
+    key: "Unpaused"
+  ): TypedContractEvent<
+    UnpausedEvent.InputTuple,
+    UnpausedEvent.OutputTuple,
+    UnpausedEvent.OutputObject
   >;
 
   filters: {
@@ -1076,6 +1651,50 @@ export interface IFlow extends BaseContract {
       ContributionRefundedEvent.OutputObject
     >;
 
+    "ModuleDisabled()": TypedContractEvent<
+      ModuleDisabledEvent.InputTuple,
+      ModuleDisabledEvent.OutputTuple,
+      ModuleDisabledEvent.OutputObject
+    >;
+    ModuleDisabled: TypedContractEvent<
+      ModuleDisabledEvent.InputTuple,
+      ModuleDisabledEvent.OutputTuple,
+      ModuleDisabledEvent.OutputObject
+    >;
+
+    "ModuleEnabled()": TypedContractEvent<
+      ModuleEnabledEvent.InputTuple,
+      ModuleEnabledEvent.OutputTuple,
+      ModuleEnabledEvent.OutputObject
+    >;
+    ModuleEnabled: TypedContractEvent<
+      ModuleEnabledEvent.InputTuple,
+      ModuleEnabledEvent.OutputTuple,
+      ModuleEnabledEvent.OutputObject
+    >;
+
+    "ModuleInitialized(address)": TypedContractEvent<
+      ModuleInitializedEvent.InputTuple,
+      ModuleInitializedEvent.OutputTuple,
+      ModuleInitializedEvent.OutputObject
+    >;
+    ModuleInitialized: TypedContractEvent<
+      ModuleInitializedEvent.InputTuple,
+      ModuleInitializedEvent.OutputTuple,
+      ModuleInitializedEvent.OutputObject
+    >;
+
+    "Paused(address)": TypedContractEvent<
+      PausedEvent.InputTuple,
+      PausedEvent.OutputTuple,
+      PausedEvent.OutputObject
+    >;
+    Paused: TypedContractEvent<
+      PausedEvent.InputTuple,
+      PausedEvent.OutputTuple,
+      PausedEvent.OutputObject
+    >;
+
     "ProtocolFeeCollected(bytes32,address,uint256,uint256)": TypedContractEvent<
       ProtocolFeeCollectedEvent.InputTuple,
       ProtocolFeeCollectedEvent.OutputTuple,
@@ -1096,6 +1715,50 @@ export interface IFlow extends BaseContract {
       RewardsDistributedEvent.InputTuple,
       RewardsDistributedEvent.OutputTuple,
       RewardsDistributedEvent.OutputObject
+    >;
+
+    "RoleAdminChanged(bytes32,bytes32,bytes32)": TypedContractEvent<
+      RoleAdminChangedEvent.InputTuple,
+      RoleAdminChangedEvent.OutputTuple,
+      RoleAdminChangedEvent.OutputObject
+    >;
+    RoleAdminChanged: TypedContractEvent<
+      RoleAdminChangedEvent.InputTuple,
+      RoleAdminChangedEvent.OutputTuple,
+      RoleAdminChangedEvent.OutputObject
+    >;
+
+    "RoleGranted(bytes32,address,address)": TypedContractEvent<
+      RoleGrantedEvent.InputTuple,
+      RoleGrantedEvent.OutputTuple,
+      RoleGrantedEvent.OutputObject
+    >;
+    RoleGranted: TypedContractEvent<
+      RoleGrantedEvent.InputTuple,
+      RoleGrantedEvent.OutputTuple,
+      RoleGrantedEvent.OutputObject
+    >;
+
+    "RoleRevoked(bytes32,address,address)": TypedContractEvent<
+      RoleRevokedEvent.InputTuple,
+      RoleRevokedEvent.OutputTuple,
+      RoleRevokedEvent.OutputObject
+    >;
+    RoleRevoked: TypedContractEvent<
+      RoleRevokedEvent.InputTuple,
+      RoleRevokedEvent.OutputTuple,
+      RoleRevokedEvent.OutputObject
+    >;
+
+    "Unpaused(address)": TypedContractEvent<
+      UnpausedEvent.InputTuple,
+      UnpausedEvent.OutputTuple,
+      UnpausedEvent.OutputObject
+    >;
+    Unpaused: TypedContractEvent<
+      UnpausedEvent.InputTuple,
+      UnpausedEvent.OutputTuple,
+      UnpausedEvent.OutputObject
     >;
   };
 }
