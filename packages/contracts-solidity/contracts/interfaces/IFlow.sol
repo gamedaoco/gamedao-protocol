@@ -174,7 +174,7 @@ interface IFlow {
         bytes32 campaignId,
         uint256 amount,
         string memory metadata
-    ) external;
+    ) external payable;
 
     function finalizeCampaign(bytes32 campaignId) external;
 

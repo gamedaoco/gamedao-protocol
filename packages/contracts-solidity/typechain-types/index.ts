@@ -38,3 +38,5 @@ export type { IGameToken } from "./contracts/interfaces/IGameToken";
 export { IGameToken__factory } from "./factories/contracts/interfaces/IGameToken__factory";
 export type { Control } from "./contracts/modules/Control/Control";
 export { Control__factory } from "./factories/contracts/modules/Control/Control__factory";
+export type { Flow } from "./contracts/modules/Flow/Flow";
+export { Flow__factory } from "./factories/contracts/modules/Flow/Flow__factory";

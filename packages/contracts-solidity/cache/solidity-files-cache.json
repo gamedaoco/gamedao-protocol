@@ -936,8 +936,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IFlow.sol": {
-      "lastModificationDate": 1750448457505,
-      "contentHash": "47a18ed52d11647f524844a6c9d6475b",
+      "lastModificationDate": 1750449986584,
+      "contentHash": "6b660787fd483a8fa5eb8ca6571176e2",
       "sourceName": "contracts/interfaces/IFlow.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -970,6 +970,50 @@
       ],
       "artifacts": [
         "IFlow"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Flow/Flow.sol": {
+      "lastModificationDate": 1750449970250,
+      "contentHash": "fdef44110940659c22942de7dbe4ea7e",
+      "sourceName": "contracts/modules/Flow/Flow.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../core/GameDAOModule.sol",
+        "../../interfaces/IFlow.sol",
+        "../../interfaces/IControl.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
+        "@openzeppelin/contracts/utils/structs/EnumerableSet.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Flow"
       ]
     }
   }
