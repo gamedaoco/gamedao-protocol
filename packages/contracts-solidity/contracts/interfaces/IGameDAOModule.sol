@@ -17,7 +17,7 @@ interface IGameDAOModule {
      * @dev Returns the version of this module
      * @return string The version string
      */
-    function version() external pure returns (string memory);
+    function version() external view returns (string memory);
 
     /**
      * @dev Initializes the module with the registry address

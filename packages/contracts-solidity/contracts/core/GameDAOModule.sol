@@ -78,23 +78,23 @@ abstract contract GameDAOModule is IGameDAOModule, AccessControl, Pausable, Reen
 
     /**
      * @dev Initializes the module with the registry address
-     * @param registry The address of the GameDAO registry
+     * @param registryAddress The address of the GameDAO registry
      */
-    function initialize(address registry) external {
+    function initialize(address registryAddress) external {
         if (_initialized) revert ModuleAlreadyInitialized();
-        if (registry == address(0)) revert InvalidRegistryAddress();
+        if (registryAddress == address(0)) revert InvalidRegistryAddress();
 
-        _registry = registry;
+        _registry = registryAddress;
         _initialized = true;
 
         // Grant registry admin permissions
-        _grantRole(ADMIN_ROLE, registry);
-        _grantRole(OPERATOR_ROLE, registry);
+        _grantRole(ADMIN_ROLE, registryAddress);
+        _grantRole(OPERATOR_ROLE, registryAddress);
 
         // Call internal initialization hook
         _onInitialize();
 
-        emit ModuleInitialized(registry);
+        emit ModuleInitialized(registryAddress);
     }
 
     /**
@@ -139,20 +139,20 @@ abstract contract GameDAOModule is IGameDAOModule, AccessControl, Pausable, Reen
 
     /**
      * @dev Checks if another module is enabled
-     * @param moduleId The module ID to check
+     * @param targetModuleId The module ID to check
      * @return bool True if the module is enabled
      */
-    function isModuleEnabled(bytes32 moduleId) internal view onlyInitialized returns (bool) {
-        return getRegistry().isModuleEnabled(moduleId);
+    function isModuleEnabled(bytes32 targetModuleId) internal view onlyInitialized returns (bool) {
+        return getRegistry().isModuleEnabled(targetModuleId);
     }
 
     /**
      * @dev Gets the address of another module
-     * @param moduleId The module ID to get
+     * @param targetModuleId The module ID to get
      * @return address The module address
      */
-    function getModule(bytes32 moduleId) internal view onlyInitialized returns (address) {
-        return getRegistry().getModule(moduleId);
+    function getModule(bytes32 targetModuleId) internal view onlyInitialized returns (address) {
+        return getRegistry().getModule(targetModuleId);
     }
 
     /**

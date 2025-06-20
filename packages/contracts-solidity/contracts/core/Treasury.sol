@@ -332,7 +332,8 @@ contract Treasury is AccessControl, ReentrancyGuard, Pausable {
 
     /**
      * @dev Get total value in treasury (requires price oracle for meaningful calculation)
-     * @return Array of token addresses and corresponding balances
+     * @return tokens Array of token addresses
+     * @return balances Array of corresponding balances
      */
     function getTotalValue()
         external
