@@ -44,6 +44,15 @@ async function main() {
   console.log("✅ Signal Module deployed to:", signalAddress);
   console.log("");
 
+  // 5. Deploy Sense Module
+  console.log("👤 Deploying Sense Module...");
+  const SenseFactory = await ethers.getContractFactory("Sense");
+  const sense = await SenseFactory.deploy();
+  await sense.waitForDeployment();
+  const senseAddress = await sense.getAddress();
+  console.log("✅ Sense Module deployed to:", senseAddress);
+  console.log("");
+
   // 5. Register and Enable Modules
   console.log("🔗 Registering Control Module with Registry...");
   const CONTROL_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("CONTROL"));
@@ -73,6 +82,16 @@ async function main() {
 
   await registry.enableModule(SIGNAL_MODULE_ID);
   console.log("⚡ Signal Module enabled");
+  console.log("");
+
+  console.log("🔗 Registering Sense Module with Registry...");
+  const SENSE_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("SENSE"));
+
+  await registry.registerModule(senseAddress);
+  console.log("📝 Sense Module registered and initialized");
+
+  await registry.enableModule(SENSE_MODULE_ID);
+  console.log("⚡ Sense Module enabled");
   console.log("");
 
   // 5. Create a Test Organization
@@ -233,6 +252,116 @@ async function main() {
         console.log("   Org Proposals:", (await signal.getProposalsByOrganization(orgId)).length);
         console.log("");
 
+        // 10. Test Sense Module - Create user profiles and reputation
+        console.log("👤 Testing Sense Module - Creating user profiles...");
+        const createProfileTx = await sense.connect(testMember).createProfile(
+          orgId,
+          "ipfs://QmTestProfileMetadata"
+        );
+
+        const profileReceipt = await createProfileTx.wait();
+        const profileEvent = profileReceipt?.logs.find(log =>
+          sense.interface.parseLog(log as any)?.name === "ProfileCreated"
+        );
+
+        if (profileEvent) {
+          const parsedProfileEvent = sense.interface.parseLog(profileEvent as any);
+          const profileId = parsedProfileEvent?.args[0];
+
+          console.log("🎉 Test profile created!");
+          console.log("🆔 Profile ID:", profileId);
+
+          // Get profile details
+          const profile = await sense.getProfile(profileId);
+          console.log("📊 Profile Details:");
+          console.log("   Owner:", profile.owner);
+          console.log("   Organization:", profile.organizationId);
+          console.log("   Active:", profile.active);
+          console.log("   Verified:", profile.verified);
+          console.log("");
+
+          // Test reputation system
+          console.log("⭐ Testing Reputation System...");
+          const experienceReason = ethers.keccak256(ethers.toUtf8Bytes("Campaign contribution"));
+          await sense.updateReputation(profileId, 0, 100, experienceReason); // EXPERIENCE
+
+          const reputationReason = ethers.keccak256(ethers.toUtf8Bytes("Good governance participation"));
+          await sense.updateReputation(profileId, 1, 50, reputationReason); // REPUTATION
+
+          const reputation = await sense.getReputation(profileId);
+          console.log("✅ Reputation updated!");
+          console.log("   Experience:", reputation.experience.toString());
+          console.log("   Reputation:", reputation.reputation.toString());
+          console.log("   Trust:", reputation.trust.toString());
+          console.log("");
+
+          // Test achievement system
+          console.log("🏆 Testing Achievement System...");
+          const achievementId = ethers.keccak256(ethers.toUtf8Bytes("FIRST_CAMPAIGN_CONTRIBUTION"));
+          await sense.grantAchievement(
+            profileId,
+            achievementId,
+            "First Campaign Contribution",
+            "Made your first contribution to a campaign",
+            "FUNDING",
+            50,
+            "0x"
+          );
+
+          const achievements = await sense.getAchievements(profileId);
+          console.log("✅ Achievement granted!");
+          console.log("   Total Achievements:", achievements.length);
+          if (achievements.length > 0) {
+            console.log("   First Achievement:", achievements[0].name);
+            console.log("   Points Awarded:", achievements[0].points.toString());
+          }
+          console.log("");
+
+          // Test social features
+          console.log("💬 Testing Social Features...");
+          const [, , anotherMember] = await ethers.getSigners();
+
+          // Create another profile for feedback testing
+          const anotherProfileTx = await sense.connect(anotherMember).createProfile(
+            orgId,
+            "ipfs://QmAnotherProfileMetadata"
+          );
+          await anotherProfileTx.wait();
+
+          // Submit feedback
+          await sense.connect(anotherMember).submitFeedback(
+            profileId,
+            0, // POSITIVE
+            5, // Rating
+            "Great contributor to the DAO!"
+          );
+
+          const feedbackSummary = await sense.getFeedbackSummary(profileId);
+          console.log("✅ Feedback submitted!");
+          console.log("   Total Feedbacks:", feedbackSummary.totalFeedbacks.toString());
+          console.log("   Positive Feedbacks:", feedbackSummary.positiveFeedbacks.toString());
+          console.log("   Average Rating:", (Number(feedbackSummary.averageRating) / 100).toFixed(2));
+          console.log("");
+
+          // Test integration features
+          console.log("🔗 Testing Integration Features...");
+          const votingWeight = await sense.calculateVotingWeight(profileId, 1000);
+          const trustScore = await sense.calculateTrustScore(profileId);
+
+          console.log("✅ Integration calculations:");
+          console.log("   Base Voting Weight: 1000");
+          console.log("   Reputation-adjusted Weight:", votingWeight.toString());
+          console.log("   Trust Score:", trustScore.toString());
+          console.log("");
+
+          console.log("✅ Sense Module integration successful!");
+          console.log("   Total Profiles:", await sense.getProfileCount());
+          console.log("   Org Profiles:", (await sense.getProfilesByOrganization(orgId)).length);
+          console.log("");
+        } else {
+          throw new Error("Profile creation event not found");
+        }
+
         // 10. Summary
          console.log("🎯 DEPLOYMENT SUMMARY");
          console.log("====================");
@@ -240,6 +369,7 @@ async function main() {
          console.log("Control Address:     ", controlAddress);
          console.log("Flow Address:        ", flowAddress);
          console.log("Signal Address:      ", signalAddress);
+         console.log("Sense Address:       ", senseAddress);
          console.log("Test Org ID:         ", orgId);
          console.log("Test Treasury:       ", org.treasury);
          console.log("Test Campaign ID:    ", campaignId);
@@ -247,6 +377,7 @@ async function main() {
          console.log("Total Organizations: ", await control.getOrganizationCount());
          console.log("Total Campaigns:     ", await flow.getCampaignCount());
          console.log("Total Proposals:     ", await signal.getProposalCount());
+         console.log("Total Profiles:      ", await sense.getProfileCount());
          console.log("");
          console.log("🚀 GameDAO Protocol successfully deployed and tested!");
 
@@ -255,6 +386,7 @@ async function main() {
            control: controlAddress,
            flow: flowAddress,
            signal: signalAddress,
+           sense: senseAddress,
            testOrgId: orgId,
            testTreasury: org.treasury,
            testCampaignId: campaignId,

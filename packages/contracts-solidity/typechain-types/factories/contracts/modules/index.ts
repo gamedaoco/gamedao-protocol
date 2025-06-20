@@ -3,4 +3,5 @@
 /* eslint-disable */
 export * as control from "./Control";
 export * as flow from "./Flow";
+export * as sense from "./Sense";
 export * as signal from "./Signal";

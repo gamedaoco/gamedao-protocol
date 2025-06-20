@@ -1,0 +1,154 @@
+
+> @gamedao/contracts-solidity@0.1.0 test /Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity
+> hardhat test
+
+ ·------------------------|--------------------------------|--------------------------------·
+ |  [90mSolc version: 0.8.20[39m  ·  [90mOptimizer enabled: true[39m       ·  [90mRuns: 200[39m                     │
+ ·························|································|·································
+ |  [1mContract Name[22m         ·  [1mDeployed size (KiB) (change)[22m  ·  [1mInitcode size (KiB) (change)[22m  │
+ ·························|································|·································
+ |  Address               ·                 0.057 ([90m0.000[39m)  ·                 0.085 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  Control               ·                21.045 ([90m0.000[39m)  ·                21.535 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  Counters              ·                 0.057 ([90m0.000[39m)  ·                 0.085 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  EnumerableSet         ·                 0.057 ([90m0.000[39m)  ·                 0.085 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  Flow                  ·                16.383 ([90m0.000[39m)  ·                17.145 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  GameDAORegistry       ·                 7.659 ([90m0.000[39m)  ·                 8.262 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  Math                  ·                 0.057 ([90m0.000[39m)  ·                 0.085 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  SafeERC20             ·                 0.057 ([90m0.000[39m)  ·                 0.085 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  Signal                ·                [33m[1m22.113[22m[39m ([90m0.000[39m)  ·                23.073 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  SignedMath            ·                 0.057 ([90m0.000[39m)  ·                 0.085 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  Strings               ·                 0.057 ([90m0.000[39m)  ·                 0.085 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  Treasury              ·                 7.173 ([90m0.000[39m)  ·                 7.979 ([90m0.000[39m)  │
+ ·------------------------|--------------------------------|--------------------------------·
+
+[0m[0m
+[0m  Control Module[0m
+[0m    Organization Management[0m
+    [32m  [32m✔[39m[0m[90m Should create organization successfully[0m
+    [32m  [32m✔[39m[0m[90m Should have treasury created for organization[0m
+    [32m  [32m✔[39m[0m[90m Should update organization settings[0m
+    [32m  [32m✔[39m[0m[90m Should prevent non-prime from updating organization[0m
+[0m    Member Management[0m
+    [32m  [32m✔[39m[0m[90m Should add member to open access organization[0m
+    [32m  [32m✔[39m[0m[90m Should handle voting access model correctly[0m
+    [32m  [32m✔[39m[0m[90m Should enforce member limits[0m
+    [32m  [32m✔[39m[0m[90m Should remove member successfully[0m
+    [32m  [32m✔[39m[0m[90m Should allow member to remove themselves[0m
+    [32m  [32m✔[39m[0m[90m Should prevent unauthorized member removal[0m
+[0m    View Functions[0m
+    [32m  [32m✔[39m[0m[90m Should return correct organization count[0m
+    [32m  [32m✔[39m[0m[90m Should check join eligibility correctly[0m
+    [32m  [32m✔[39m[0m[90m Should return organization members list[0m
+[0m    Access Control[0m
+    [32m  [32m✔[39m[0m[90m Should set organization state with admin role[0m
+    [32m  [32m✔[39m[0m[90m Should prevent non-admin from changing organization state[0m
+[0m    Edge Cases[0m
+    [32m  [32m✔[39m[0m[90m Should handle empty organization name[0m
+    [32m  [32m✔[39m[0m[90m Should handle non-existent organization queries[0m
+
+[0m  Flow Module[0m
+[0m    Campaign Creation[0m
+    [32m  [32m✔[39m[0m[90m Should create campaign successfully[0m
+    [32m  [32m✔[39m[0m[90m Should reject campaign with invalid parameters[0m
+    [32m  [32m✔[39m[0m[90m Should reject campaign for non-existent organization[0m
+[0m    Campaign Management[0m
+    [32m  [32m✔[39m[0m[90m Should update campaign successfully[0m
+    [32m  [32m✔[39m[0m[90m Should prevent non-creator from updating campaign[0m
+    [32m  [32m✔[39m[0m[90m Should allow admin to change campaign state[0m
+    [32m  [32m✔[39m[0m[90m Should prevent non-admin from changing campaign state[0m
+[0m    Contributions[0m
+    [32m  [32m✔[39m[0m[90m Should accept ETH contributions[0m
+    [32m  [32m✔[39m[0m[90m Should handle multiple contributions from same contributor[0m
+    [32m  [32m✔[39m[0m[90m Should handle multiple contributors[0m
+    [32m  [32m✔[39m[0m[90m Should reject contributions exceeding maximum[0m
+    [32m  [32m✔[39m[0m[90m Should reject zero contributions[0m
+    [32m  [32m✔[39m[0m[90m Should reject contributions with mismatched ETH value[0m
+[0m    Campaign Finalization[0m
+    [32m  [32m✔[39m[0m[90m Should finalize successful campaign[0m
+    [32m  [32m✔[39m[0m[90m Should finalize failed campaign[0m
+    [32m  [32m✔[39m[0m[90m Should auto-finalize when target reached[0m
+    [32m  [32m✔[39m[0m[90m Should prevent unauthorized finalization[0m
+[0m    Protocol Fees[0m
+    [32m  [32m✔[39m[0m[90m Should calculate protocol fee correctly[0m
+    [32m  [32m✔[39m[0m[90m Should collect protocol fee on successful campaign[0m
+    [32m  [32m✔[39m[0m[90m Should allow admin to update protocol fee rate[0m
+    [32m  [32m✔[39m[0m[90m Should reject invalid protocol fee rate[0m
+[0m    View Functions[0m
+    [32m  [32m✔[39m[0m[90m Should return correct campaign progress[0m
+    [32m  [32m✔[39m[0m[90m Should return campaigns by organization[0m
+    [32m  [32m✔[39m[0m[90m Should return campaigns by state[0m
+    [32m  [32m✔[39m[0m[90m Should check if campaign is active[0m
+    [32m  [32m✔[39m[0m[90m Should check contribution eligibility[0m
+    [32m  [32m✔[39m[0m[90m Should return correct campaign count[0m
+[0m    Edge Cases[0m
+    [32m  [32m✔[39m[0m[90m Should handle non-existent campaign queries[0m
+    [32m  [32m✔[39m[0m[90m Should handle campaign with zero max (unlimited)[0m
+
+[0m  Signal Module[0m
+[0m    Deployment and Initialization[0m
+    [32m  [32m✔[39m[0m[90m Should deploy Signal module correctly[0m
+    [32m  [32m✔[39m[0m[90m Should initialize with default voting parameters[0m
+    [32m  [32m✔[39m[0m[90m Should have correct role assignments[0m
+[0m    Proposal Creation[0m
+    [32m  [32m✔[39m[0m[90m Should create a simple proposal successfully[0m
+    [32m  [32m✔[39m[0m[90m Should reject proposal with empty title[0m
+    [32m  [32m✔[39m[0m[90m Should reject proposal with invalid voting period[0m
+    [32m  [32m✔[39m[0m[90m Should reject proposal from non-member when membership required[0m
+    [32m  [32m✔[39m[0m[90m Should create proposal with execution data[0m
+[0m    Proposal Management[0m
+    [32m  [32m✔[39m[0m[90m Should allow proposer to update proposal[0m
+    [32m  [32m✔[39m[0m[90m Should prevent non-proposer from updating proposal[0m
+    [32m  [32m✔[39m[0m[90m Should allow proposer to cancel proposal[0m
+    [32m  [32m✔[39m[0m[90m Should allow admin to emergency cancel proposal[0m
+[0m    Voting Mechanisms[0m
+    [32m  [32m✔[39m[0m[90m Should allow members to cast votes[0m
+    [32m  [32m✔[39m[0m[90m Should prevent double voting[0m
+    [32m  [32m✔[39m[0m[90m Should prevent voting from non-members[0m
+    [32m  [32m✔[39m[0m[90m Should support conviction voting[0m
+    [32m  [32m✔[39m[0m[90m Should calculate voting power correctly for democratic voting[0m
+    [32m  [32m✔[39m[0m[90m Should track proposal vote counts[0m
+[0m    Proposal Results and Execution[0m
+    [32m  [32m✔[39m[0m[90m Should calculate proposal results correctly[0m
+    [32m  [32m✔[39m[0m[90m Should queue passed proposals[0m
+    [32m  [32m✔[39m[0m[90m Should execute queued proposals[0m
+    [32m  [32m✔[39m[0m[90m Should not queue failed proposals[0m
+[0m    Voting Types[0m
+    [32m  [32m✔[39m[0m[90m Should handle relative majority voting[0m
+    [32m  [32m✔[39m[0m[90m Should handle supermajority voting[0m
+[0m    Voting Parameters[0m
+    [32m  [32m✔[39m[0m[90m Should allow admin to set custom voting parameters[0m
+    [32m  [32m✔[39m[0m[90m Should reject invalid voting parameters[0m
+[0m    View Functions[0m
+    [32m  [32m✔[39m[0m[90m Should return proposals by organization[0m
+    [32m  [32m✔[39m[0m[90m Should return proposals by state[0m
+    [32m  [32m✔[39m[0m[90m Should return correct proposal count[0m
+    [32m  [32m✔[39m[0m[90m Should check if user can vote[0m
+    [32m  [32m✔[39m[0m[90m Should validate proposal parameters[0m
+[0m    Delegation[0m
+    [32m  [32m✔[39m[0m[90m Should allow voting power delegation[0m
+    [32m  [32m✔[39m[0m[90m Should allow undelegation of voting power[0m
+    [32m  [32m✔[39m[0m[90m Should reject invalid delegations[0m
+[0m    Conviction Voting[0m
+    [32m  [32m✔[39m[0m[90m Should calculate conviction multiplier correctly[0m
+    [32m  [32m✔[39m[0m[90m Should apply conviction decay[0m
+[0m    Gas Estimation and Preview[0m
+    [32m  [32m✔[39m[0m[90m Should estimate gas for execution[0m
+    [32m  [32m✔[39m[0m[90m Should preview proposal execution[0m
+[0m    Error Handling[0m
+    [32m  [32m✔[39m[0m[90m Should handle non-existent proposals[0m
+    [32m  [32m✔[39m[0m[90m Should handle voting outside of voting period[0m
+
+
+[92m [0m[32m 86 passing[0m[90m (3s)[0m
+
