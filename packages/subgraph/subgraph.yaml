@@ -1,0 +1,116 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  # GameDAO Registry - Central module management
+  - kind: ethereum
+    name: GameDAORegistry
+    network: localhost
+    source:
+      address: "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d"
+      abi: GameDAORegistry
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Module
+        - ModuleRegistration
+        - ModuleUpgrade
+      abis:
+        - name: GameDAORegistry
+          file: ./abis/GameDAORegistry.json
+      eventHandlers:
+        - event: ModuleRegistered(indexed string,indexed address,indexed address)
+          handler: handleModuleRegistered
+        - event: ModuleEnabled(indexed string,indexed address)
+          handler: handleModuleEnabled
+        - event: ModuleDisabled(indexed string,indexed address)
+          handler: handleModuleDisabled
+        - event: ModuleUpgraded(indexed string,indexed address,indexed address)
+          handler: handleModuleUpgraded
+      file: ./src/registry.ts
+
+  # Control Module - DAO Management
+  - kind: ethereum
+    name: Control
+    network: localhost
+    source:
+      address: "0x59b670e9fA9D0A427751Af201D676719a970857b"
+      abi: Control
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Organization
+        - Member
+        - Treasury
+        - Stake
+      abis:
+        - name: Control
+          file: ./abis/Control.json
+        - name: Treasury
+          file: ./abis/Treasury.json
+      eventHandlers:
+        - event: OrganizationCreated(indexed bytes32,indexed address,indexed address,string,uint8,uint256)
+          handler: handleOrganizationCreated
+        - event: OrganizationUpdated(indexed bytes32,string,uint8)
+          handler: handleOrganizationUpdated
+        - event: OrganizationStateChanged(indexed bytes32,uint8,uint8)
+          handler: handleOrganizationStateChanged
+        - event: MemberAdded(indexed bytes32,indexed address,uint8,uint256)
+          handler: handleMemberAdded
+        - event: MemberRemoved(indexed bytes32,indexed address,uint8)
+          handler: handleMemberRemoved
+        - event: MemberStateChanged(indexed bytes32,indexed address,uint8,uint8)
+          handler: handleMemberStateChanged
+        - event: StakeRequired(indexed bytes32,uint256,uint256)
+          handler: handleStakeRequired
+        - event: StakeSlashed(indexed bytes32,indexed address,uint256,string)
+          handler: handleStakeSlashed
+      file: ./src/control.ts
+
+  # Flow Module - Crowdfunding & Campaigns
+  - kind: ethereum
+    name: Flow
+    network: localhost
+    source:
+      address: "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1"
+      abi: Flow
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Campaign
+        - Contribution
+        - Reward
+        - ProtocolFee
+      abis:
+        - name: Flow
+          file: ./abis/Flow.json
+      eventHandlers:
+        - event: CampaignCreated(indexed bytes32,indexed bytes32,indexed address,uint8,uint256,uint256,uint256,uint256)
+          handler: handleCampaignCreated
+        - event: CampaignUpdated(indexed bytes32,string,string,uint256,uint256)
+          handler: handleCampaignUpdated
+        - event: CampaignStateChanged(indexed bytes32,uint8,uint8)
+          handler: handleCampaignStateChanged
+        - event: ContributionMade(indexed bytes32,indexed address,indexed address,uint256,uint256)
+          handler: handleContributionMade
+        - event: CampaignFinalized(indexed bytes32,bool,uint256,uint256)
+          handler: handleCampaignFinalized
+        - event: RewardDistributed(indexed bytes32,indexed address,indexed address,uint256)
+          handler: handleRewardDistributed
+        - event: RefundIssued(indexed bytes32,indexed address,indexed address,uint256)
+          handler: handleRefundIssued
+        - event: ProtocolFeeCollected(indexed bytes32,uint256)
+          handler: handleProtocolFeeCollected
+      file: ./src/flow.ts
+
+# Signal and Sense modules will be added later
+# Currently focusing on core functionality: Registry, Control, and Flow
