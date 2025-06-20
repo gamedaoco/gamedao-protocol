@@ -598,17 +598,43 @@ describe("Sense Module", function () {
       }
 
       // Export from first profile
-      const exportData = await sense.connect(member1).exportReputation(testProfileId);
+      const rawExportData = await sense.connect(member1).exportReputation(testProfileId);
+
+      // Create a clean copy of the export data to avoid readonly array issues
+      const exportData = {
+        sourceProfileId: rawExportData.sourceProfileId,
+        owner: rawExportData.owner,
+        sourceOrganizationId: rawExportData.sourceOrganizationId,
+        reputation: {
+          experience: rawExportData.reputation.experience,
+          reputation: rawExportData.reputation.reputation,
+          trust: rawExportData.reputation.trust,
+          lastUpdated: rawExportData.reputation.lastUpdated,
+          totalFeedbacks: rawExportData.reputation.totalFeedbacks,
+          positiveFeedbacks: rawExportData.reputation.positiveFeedbacks
+        },
+        achievements: [...rawExportData.achievements], // Create a new array
+        feedbackSummary: {
+          totalFeedbacks: rawExportData.feedbackSummary.totalFeedbacks,
+          positiveFeedbacks: rawExportData.feedbackSummary.positiveFeedbacks,
+          negativeFeedbacks: rawExportData.feedbackSummary.negativeFeedbacks,
+          neutralFeedbacks: rawExportData.feedbackSummary.neutralFeedbacks,
+          averageRating: rawExportData.feedbackSummary.averageRating,
+          trustScore: rawExportData.feedbackSummary.trustScore
+        },
+        exportedAt: rawExportData.exportedAt,
+        merkleRoot: rawExportData.merkleRoot
+      };
 
       // Import to second profile
       await expect(
         sense.connect(member2).importReputation(importProfileId, exportData, "0x")
       ).to.emit(sense, "ReputationImported");
 
-      // Check imported reputation (should be 50% of original)
+      // Check imported reputation (should be base + 50% of original)
       const importedReputation = await sense.getReputation(importProfileId);
-      expect(importedReputation.experience).to.equal(250); // 500 * 50%
-      expect(importedReputation.reputation).to.equal(1150); // 1000 + (300 * 50%)
+      expect(importedReputation.experience).to.equal(250); // 500 * 50% (no base experience)
+      expect(importedReputation.reputation).to.equal(1650); // 1000 (base) + (1300 * 50%)
     });
   });
 

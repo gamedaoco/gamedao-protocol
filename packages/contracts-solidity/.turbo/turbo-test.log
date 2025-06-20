@@ -21,7 +21,11 @@
  ·························|································|·································
  |  Math                  ·                 0.057 ([90m0.000[39m)  ·                 0.085 ([90m0.000[39m)  │
  ·························|································|·································
+ |  MerkleProof           ·                 0.057 ([90m0.000[39m)  ·                 0.085 ([90m0.000[39m)  │
+ ·························|································|·································
  |  SafeERC20             ·                 0.057 ([90m0.000[39m)  ·                 0.085 ([90m0.000[39m)  │
+ ·························|································|·································
+ |  Sense                 ·                20.146 ([90m0.000[39m)  ·                21.133 ([90m0.000[39m)  │
  ·························|································|·································
  |  Signal                ·                [33m[1m22.113[22m[39m ([90m0.000[39m)  ·                23.073 ([90m0.000[39m)  │
  ·························|································|·································
@@ -95,6 +99,56 @@
     [32m  [32m✔[39m[0m[90m Should handle non-existent campaign queries[0m
     [32m  [32m✔[39m[0m[90m Should handle campaign with zero max (unlimited)[0m
 
+[0m  Sense Module[0m
+[0m    Deployment and Initialization[0m
+    [32m  [32m✔[39m[0m[90m Should deploy Sense module correctly[0m
+    [32m  [32m✔[39m[0m[90m Should initialize with correct roles[0m
+    [32m  [32m✔[39m[0m[90m Should have correct module configuration[0m
+[0m    Profile Management[0m
+    [32m  [32m✔[39m[0m[90m Should create profile successfully[0m
+    [32m  [32m✔[39m[0m[90m Should prevent duplicate profiles for same owner and organization[0m
+    [32m  [32m✔[39m[0m[90m Should update profile successfully[0m
+    [32m  [32m✔[39m[0m[90m Should prevent unauthorized profile updates[0m
+    [32m  [32m✔[39m[0m[90m Should get profile by owner and organization[0m
+    [32m  [32m✔[39m[0m[90m Should check profile existence[0m
+    [32m  [32m✔[39m[0m[90m Should verify profile with different levels[0m
+[0m    Reputation System[0m
+    [32m  [32m✔[39m[0m[90m Should initialize reputation correctly[0m
+    [32m  [32m✔[39m[0m[90m Should update experience reputation[0m
+    [32m  [32m✔[39m[0m[90m Should update reputation score[0m
+    [32m  [32m✔[39m[0m[90m Should update trust score[0m
+    [32m  [32m✔[39m[0m[90m Should handle negative reputation deltas[0m
+    [32m  [32m✔[39m[0m[90m Should prevent reputation from going below zero[0m
+    [32m  [32m✔[39m[0m[90m Should track reputation history[0m
+    [32m  [32m✔[39m[0m[90m Should update category-specific reputation[0m
+    [32m  [32m✔[39m[0m[90m Should reject invalid reputation deltas[0m
+[0m    Achievement System[0m
+    [32m  [32m✔[39m[0m[90m Should grant achievement successfully[0m
+    [32m  [32m✔[39m[0m[90m Should prevent duplicate achievements[0m
+    [32m  [32m✔[39m[0m[90m Should get achievements by category[0m
+    [32m  [32m✔[39m[0m[90m Should check if profile has achievement[0m
+[0m    Social Features[0m
+    [32m  [32m✔[39m[0m[90m Should submit feedback successfully[0m
+    [32m  [32m✔[39m[0m[90m Should prevent self-feedback[0m
+    [32m  [32m✔[39m[0m[90m Should reject invalid ratings[0m
+    [32m  [32m✔[39m[0m[90m Should update existing feedback instead of creating duplicate[0m
+    [32m  [32m✔[39m[0m[90m Should calculate feedback summary correctly[0m
+    [32m  [32m✔[39m[0m[90m Should get individual feedbacks with pagination[0m
+[0m    Cross-DAO Features[0m
+    [32m  [32m✔[39m[0m[90m Should export reputation successfully[0m
+    [32m  [32m✔[39m[0m[90m Should prevent unauthorized reputation export[0m
+    [32m  [32m✔[39m[0m[90m Should import reputation with verification[0m
+[0m    View Functions[0m
+    [32m  [32m✔[39m[0m[90m Should return profiles by organization[0m
+    [32m  [32m✔[39m[0m[90m Should return correct profile count[0m
+    [32m  [32m✔[39m[0m[90m Should return top profiles by reputation[0m
+    [32m  [32m✔[39m[0m[90m Should calculate voting weight based on reputation[0m
+    [32m  [32m✔[39m[0m[90m Should calculate trust score correctly[0m
+[0m    Error Handling[0m
+    [32m  [32m✔[39m[0m[90m Should handle non-existent profiles[0m
+    [32m  [32m✔[39m[0m[90m Should handle non-existent organizations[0m
+    [32m  [32m✔[39m[0m[90m Should require proper permissions for admin functions[0m
+
 [0m  Signal Module[0m
 [0m    Deployment and Initialization[0m
     [32m  [32m✔[39m[0m[90m Should deploy Signal module correctly[0m
@@ -150,5 +204,5 @@
     [32m  [32m✔[39m[0m[90m Should handle voting outside of voting period[0m
 
 
-[92m [0m[32m 86 passing[0m[90m (3s)[0m
+[92m [0m[32m 126 passing[0m[90m (4s)[0m
 
