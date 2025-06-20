@@ -34,17 +34,8 @@ contract GameDAORegistry is IGameDAORegistry, AccessControl, Pausable, Reentranc
     EnumerableSet.Bytes32Set private _allModules;
     EnumerableSet.Bytes32Set private _enabledModules;
 
-    // Events
+    // Events (others inherited from IGameDAORegistry)
     event RegistryInitialized(address indexed admin);
-    event ModuleRegistered(bytes32 indexed moduleId, address indexed moduleAddress, string version);
-    event ModuleEnabled(bytes32 indexed moduleId);
-    event ModuleDisabled(bytes32 indexed moduleId);
-    event ModuleUpgraded(
-        bytes32 indexed moduleId,
-        address indexed oldAddress,
-        address indexed newAddress,
-        string newVersion
-    );
 
     // Errors
     error ModuleNotRegistered(bytes32 moduleId);

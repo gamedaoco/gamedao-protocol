@@ -26,13 +26,26 @@
     "@openzeppelin/contracts-upgradeable": "^4.9.3"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
+    "@nomicfoundation/hardhat-ethers": "^3.0.4",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@nomicfoundation/hardhat-verify": "^1.1.1",
+    "@typechain/ethers-v6": "^0.4.3",
+    "@typechain/hardhat": "^8.0.3",
     "@types/chai": "^4.3.6",
     "@types/mocha": "^10.0.1",
+    "@types/node": "^20.5.0",
     "chai": "^4.3.8",
     "dotenv": "^16.3.1",
     "ethers": "^6.7.1",
     "hardhat": "^2.17.2",
+    "hardhat-contract-sizer": "^2.10.0",
+    "hardhat-gas-reporter": "^1.0.9",
+    "solidity-coverage": "^0.8.4",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
+    "typechain": "^8.3.1",
     "typescript": "^5.2.2"
   },
   "keywords": [
