@@ -31,16 +31,10 @@ async function main() {
   const MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("CONTROL"));
 
   await registry.registerModule(controlAddress);
-  console.log("📝 Control Module registered");
+  console.log("📝 Control Module registered and initialized");
 
   await registry.enableModule(MODULE_ID);
   console.log("⚡ Control Module enabled");
-  console.log("");
-
-  // 4. Initialize Control Module
-  console.log("🔧 Initializing Control Module...");
-  await control.initialize(registryAddress);
-  console.log("✅ Control Module initialized");
   console.log("");
 
   // 5. Create a Test Organization
@@ -81,7 +75,7 @@ async function main() {
     // 6. Test Treasury Integration
     console.log("💰 Testing Treasury Integration...");
     const Treasury = await ethers.getContractFactory("Treasury");
-    const treasury = Treasury.attach(org.treasury);
+    const treasury = Treasury.attach(org.treasury) as any; // Type assertion for treasury methods
 
     console.log("🏦 Treasury Details:");
     console.log("   Address:", org.treasury);
