@@ -444,7 +444,7 @@ contract Signal is GameDAOModule, ISignal {
         delegation.timestamp = block.timestamp;
         delegation.active = true;
 
-        _delegators[delegatee].add(_msgSender());
+        _delegators[_msgSender()].add(delegatee);
         _delegatedPower[_msgSender()] += amount;
 
         emit VotingPowerDelegated(_msgSender(), delegatee, amount, block.timestamp);
@@ -469,7 +469,7 @@ contract Signal is GameDAOModule, ISignal {
 
         if (delegation.amount == 0) {
             delegation.active = false;
-            _delegators[delegatee].remove(_msgSender());
+            _delegators[_msgSender()].remove(delegatee);
         }
 
         emit VotingPowerUndelegated(_msgSender(), delegatee, amount, block.timestamp);

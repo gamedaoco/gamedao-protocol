@@ -206,6 +206,10 @@ describe("Signal Module", function () {
         [ethers.parseEther("1.0")]
       );
 
+      // Get the treasury address from the organization
+      const org = await control.getOrganization(testOrgId);
+      const treasuryAddress = org.treasury;
+
       const tx = await signal.connect(member1).createProposal(
         testOrgId,
         "Treasury Proposal",
@@ -216,7 +220,7 @@ describe("Signal Module", function () {
         0, // Democratic voting power
         7 * 24 * 60 * 60,
         executionData,
-        await treasury.getAddress()
+        treasuryAddress
       );
 
       await expect(tx).to.emit(signal, "ProposalCreated");
@@ -545,6 +549,18 @@ describe("Signal Module", function () {
     });
 
     it("Should handle supermajority voting", async function () {
+      // First set a lower quorum threshold for this test
+      const customParams = {
+        votingDelay: 1 * 24 * 60 * 60, // 1 day
+        votingPeriod: 7 * 24 * 60 * 60, // 7 days
+        executionDelay: 2 * 24 * 60 * 60, // 2 days
+        quorumThreshold: 500, // 5% - lower threshold for testing
+        proposalThreshold: 100, // 1%
+        requireMembership: true
+      };
+
+      await signal.setVotingParameters(testOrgId, customParams);
+
       const tx = await signal.connect(member1).createProposal(
         testOrgId,
         "Supermajority Test",
@@ -575,10 +591,11 @@ describe("Signal Module", function () {
       await ethers.provider.send("evm_increaseTime", [24 * 60 * 60 + 1]);
       await ethers.provider.send("evm_mine", []);
 
-      // 2 for, 1 against = 66.7% for = passed
+      // 3 for, 1 against = 75% for = passed (need >66.7% for supermajority)
       await signal.connect(member1).castVote(proposalId, 1, "For");
       await signal.connect(member2).castVote(proposalId, 1, "For");
-      await signal.connect(member3).castVote(proposalId, 0, "Against");
+      await signal.connect(member3).castVote(proposalId, 1, "For");
+      await signal.connect(owner).castVote(proposalId, 0, "Against");
 
       const result = await signal.getProposalResult(proposalId);
       expect(result.passed).to.be.true;

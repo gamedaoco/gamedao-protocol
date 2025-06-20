@@ -1017,8 +1017,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Signal/Signal.sol": {
-      "lastModificationDate": 1750451462105,
-      "contentHash": "ac1cb4ac48cbb23d9809ecdb5c2e160a",
+      "lastModificationDate": 1750452271905,
+      "contentHash": "7b48e9dfc60d735cc1f2d8de07d9dc1e",
       "sourceName": "contracts/modules/Signal/Signal.sol",
       "solcConfig": {
         "version": "0.8.20",
