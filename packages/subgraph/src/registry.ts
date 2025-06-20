@@ -13,7 +13,7 @@ import {
 } from "../generated/schema"
 
 export function handleModuleRegistered(event: ModuleRegistered): void {
-  let moduleId = event.params.name
+  let moduleId = event.params.moduleId.toHex()
   let module = Module.load(moduleId)
 
   if (module == null) {
@@ -22,8 +22,8 @@ export function handleModuleRegistered(event: ModuleRegistered): void {
     module.registeredAt = event.block.timestamp
   }
 
-  module.address = event.params.implementation
-  module.admin = event.params.admin
+  module.address = event.params.moduleAddress
+  module.admin = event.params.moduleAddress // Admin will be the module address for now
   module.enabled = true
   module.updatedAt = event.block.timestamp
 
@@ -33,8 +33,8 @@ export function handleModuleRegistered(event: ModuleRegistered): void {
   let registrationId = event.transaction.hash.toHex() + "-" + event.logIndex.toString()
   let registration = new ModuleRegistration(registrationId)
   registration.module = moduleId
-  registration.address = event.params.implementation
-  registration.admin = event.params.admin
+  registration.address = event.params.moduleAddress
+  registration.admin = event.params.moduleAddress
   registration.timestamp = event.block.timestamp
   registration.blockNumber = event.block.number
   registration.transactionHash = event.transaction.hash
@@ -46,7 +46,7 @@ export function handleModuleRegistered(event: ModuleRegistered): void {
 }
 
 export function handleModuleEnabled(event: ModuleEnabled): void {
-  let moduleId = event.params.name
+  let moduleId = event.params.moduleId.toHex()
   let module = Module.load(moduleId)
 
   if (module != null) {
@@ -59,7 +59,7 @@ export function handleModuleEnabled(event: ModuleEnabled): void {
 }
 
 export function handleModuleDisabled(event: ModuleDisabled): void {
-  let moduleId = event.params.name
+  let moduleId = event.params.moduleId.toHex()
   let module = Module.load(moduleId)
 
   if (module != null) {
@@ -72,12 +72,12 @@ export function handleModuleDisabled(event: ModuleDisabled): void {
 }
 
 export function handleModuleUpgraded(event: ModuleUpgraded): void {
-  let moduleId = event.params.name
+  let moduleId = event.params.moduleId.toHex()
   let module = Module.load(moduleId)
 
   if (module != null) {
     let oldAddress = module.address
-    module.address = event.params.newImplementation
+    module.address = event.params.newAddress
     module.version = module.version.plus(BigInt.fromI32(1))
     module.updatedAt = event.block.timestamp
     module.save()
@@ -87,7 +87,7 @@ export function handleModuleUpgraded(event: ModuleUpgraded): void {
     let upgrade = new ModuleUpgrade(upgradeId)
     upgrade.module = moduleId
     upgrade.oldAddress = oldAddress
-    upgrade.newAddress = event.params.newImplementation
+    upgrade.newAddress = event.params.newAddress
     upgrade.timestamp = event.block.timestamp
     upgrade.blockNumber = event.block.number
     upgrade.transactionHash = event.transaction.hash
