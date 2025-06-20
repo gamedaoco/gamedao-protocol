@@ -35,7 +35,16 @@ async function main() {
   console.log("✅ Flow Module deployed to:", flowAddress);
   console.log("");
 
-  // 4. Register and Enable Modules
+  // 4. Deploy Signal Module
+  console.log("🗳️ Deploying Signal Module...");
+  const SignalFactory = await ethers.getContractFactory("Signal");
+  const signal = await SignalFactory.deploy();
+  await signal.waitForDeployment();
+  const signalAddress = await signal.getAddress();
+  console.log("✅ Signal Module deployed to:", signalAddress);
+  console.log("");
+
+  // 5. Register and Enable Modules
   console.log("🔗 Registering Control Module with Registry...");
   const CONTROL_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("CONTROL"));
 
@@ -54,6 +63,16 @@ async function main() {
 
   await registry.enableModule(FLOW_MODULE_ID);
   console.log("⚡ Flow Module enabled");
+  console.log("");
+
+  console.log("🔗 Registering Signal Module with Registry...");
+  const SIGNAL_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("SIGNAL"));
+
+  await registry.registerModule(signalAddress);
+  console.log("📝 Signal Module registered and initialized");
+
+  await registry.enableModule(SIGNAL_MODULE_ID);
+  console.log("⚡ Signal Module enabled");
   console.log("");
 
   // 5. Create a Test Organization
@@ -169,28 +188,81 @@ async function main() {
       console.log("   State:", updatedCampaign.state); // Should be 1 = Active
       console.log("");
 
-             // 9. Summary
-       console.log("🎯 DEPLOYMENT SUMMARY");
-       console.log("====================");
-       console.log("Registry Address:    ", registryAddress);
-       console.log("Control Address:     ", controlAddress);
-       console.log("Flow Address:        ", flowAddress);
-       console.log("Test Org ID:         ", orgId);
-       console.log("Test Treasury:       ", org.treasury);
-       console.log("Test Campaign ID:    ", campaignId);
-       console.log("Total Organizations: ", await control.getOrganizationCount());
-       console.log("Total Campaigns:     ", await flow.getCampaignCount());
-       console.log("");
-       console.log("🚀 GameDAO Protocol successfully deployed and tested!");
+      // 9. Test Signal Module - Create a governance proposal
+      console.log("🗳️ Testing Signal Module - Creating governance proposal...");
+      const createProposalTx = await signal.connect(testMember).createProposal(
+        orgId,
+        "Test Governance Proposal",
+        "A test proposal to demonstrate governance functionality",
+        "ipfs://QmTestProposalMetadata",
+        0, // Simple proposal
+        0, // Relative voting
+        0, // Democratic voting power
+        7 * 24 * 60 * 60, // 7 days voting period
+        "0x", // No execution data
+        ethers.ZeroAddress // No target contract
+      );
 
-       return {
-         registry: registryAddress,
-         control: controlAddress,
-         flow: flowAddress,
-         testOrgId: orgId,
-         testTreasury: org.treasury,
-         testCampaignId: campaignId
-       };
+      const proposalReceipt = await createProposalTx.wait();
+      const proposalEvent = proposalReceipt?.logs.find(log =>
+        signal.interface.parseLog(log as any)?.name === "ProposalCreated"
+      );
+
+      if (proposalEvent) {
+        const parsedProposalEvent = signal.interface.parseLog(proposalEvent as any);
+        const proposalId = parsedProposalEvent?.args[0];
+
+        console.log("🎉 Test proposal created!");
+        console.log("🆔 Proposal ID:", proposalId);
+
+        // Get proposal details
+        const proposal = await signal.getProposal(proposalId);
+        console.log("📊 Proposal Details:");
+        console.log("   Title:", proposal.title);
+        console.log("   Proposer:", proposal.proposer);
+        console.log("   State:", proposal.state); // 0 = Pending
+        console.log("   Voting Type:", proposal.votingType); // 0 = Relative
+        console.log("   Voting Power:", proposal.votingPower); // 0 = Democratic
+        console.log("   Start Time:", new Date(Number(proposal.startTime) * 1000).toISOString());
+        console.log("   End Time:", new Date(Number(proposal.endTime) * 1000).toISOString());
+        console.log("");
+
+        console.log("✅ Signal Module integration successful!");
+        console.log("   Total Proposals:", await signal.getProposalCount());
+        console.log("   Active Proposals:", (await signal.getActiveProposals()).length);
+        console.log("   Org Proposals:", (await signal.getProposalsByOrganization(orgId)).length);
+        console.log("");
+
+        // 10. Summary
+         console.log("🎯 DEPLOYMENT SUMMARY");
+         console.log("====================");
+         console.log("Registry Address:    ", registryAddress);
+         console.log("Control Address:     ", controlAddress);
+         console.log("Flow Address:        ", flowAddress);
+         console.log("Signal Address:      ", signalAddress);
+         console.log("Test Org ID:         ", orgId);
+         console.log("Test Treasury:       ", org.treasury);
+         console.log("Test Campaign ID:    ", campaignId);
+         console.log("Test Proposal ID:    ", proposalId);
+         console.log("Total Organizations: ", await control.getOrganizationCount());
+         console.log("Total Campaigns:     ", await flow.getCampaignCount());
+         console.log("Total Proposals:     ", await signal.getProposalCount());
+         console.log("");
+         console.log("🚀 GameDAO Protocol successfully deployed and tested!");
+
+         return {
+           registry: registryAddress,
+           control: controlAddress,
+           flow: flowAddress,
+           signal: signalAddress,
+           testOrgId: orgId,
+           testTreasury: org.treasury,
+           testCampaignId: campaignId,
+           testProposalId: proposalId
+         };
+       } else {
+         throw new Error("Proposal creation event not found");
+       }
      } else {
        throw new Error("Campaign creation event not found");
      }

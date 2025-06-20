@@ -74,6 +74,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IGameToken__factory>;
     getContractFactory(
+      name: "ISignal",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ISignal__factory>;
+    getContractFactory(
       name: "Control",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Control__factory>;
@@ -81,6 +85,10 @@ declare module "hardhat/types/runtime" {
       name: "Flow",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Flow__factory>;
+    getContractFactory(
+      name: "Signal",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Signal__factory>;
 
     getContractAt(
       name: "AccessControl",
@@ -158,6 +166,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IGameToken>;
     getContractAt(
+      name: "ISignal",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ISignal>;
+    getContractAt(
       name: "Control",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -167,6 +180,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.Flow>;
+    getContractAt(
+      name: "Signal",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Signal>;
 
     deployContract(
       name: "AccessControl",
@@ -229,6 +247,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IGameToken>;
     deployContract(
+      name: "ISignal",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ISignal>;
+    deployContract(
       name: "Control",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Control>;
@@ -236,6 +258,10 @@ declare module "hardhat/types/runtime" {
       name: "Flow",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Flow>;
+    deployContract(
+      name: "Signal",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Signal>;
 
     deployContract(
       name: "AccessControl",
@@ -313,6 +339,11 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IGameToken>;
     deployContract(
+      name: "ISignal",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ISignal>;
+    deployContract(
       name: "Control",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -322,6 +353,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Flow>;
+    deployContract(
+      name: "Signal",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Signal>;
 
     // default types
     getContractFactory(

@@ -5,3 +5,5 @@ import type * as control from "./Control";
 export type { control };
 import type * as flow from "./Flow";
 export type { flow };
+import type * as signal from "./Signal";
+export type { signal };
