@@ -61,16 +61,21 @@ enum MemberState {
 
 type Organization @entity {
   id: ID! # organization ID (bytes32)
+  creator: Bytes! # creator address
   prime: Bytes! # prime member address
   treasury: Treasury! # treasury contract
   name: String! # organization name
+  orgType: String! # organization type (INDIVIDUAL, COMPANY, etc.)
   accessModel: AccessModel! # access control model
   state: OrganizationState! # current state
-  feeModel: BigInt! # fee model identifier
+  memberLimit: BigInt! # maximum number of members
+  membershipFee: BigInt! # fee to join organization
 
   # Timestamps
   createdAt: BigInt!
   updatedAt: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
 
   # Relationships
   members: [Member!]! @derivedFrom(field: "organization")
@@ -80,7 +85,6 @@ type Organization @entity {
 
   # Statistics
   memberCount: BigInt!
-  activeMembers: BigInt!
   totalCampaigns: BigInt!
   totalProposals: BigInt!
 
@@ -93,13 +97,12 @@ type Member @entity {
   organization: Organization!
   address: Bytes!
   state: MemberState!
+  role: String! # PRIME, MEMBER, etc.
+  fee: BigInt! # fee paid to join
   joinedAt: BigInt!
-  updatedAt: BigInt!
-
-  # Activity tracking
-  contributionsCount: BigInt!
-  proposalsCount: BigInt!
-  votesCount: BigInt!
+  removedAt: BigInt # timestamp when removed (optional)
+  blockNumber: BigInt!
+  transactionHash: Bytes!
 
   # Relationships
   contributions: [Contribution!]! @derivedFrom(field: "contributor")
@@ -109,19 +112,14 @@ type Member @entity {
 }
 
 type Treasury @entity {
-  id: ID! # treasury contract address
+  id: ID! # treasury identifier
   organization: Organization!
   address: Bytes!
-
-  # Balances (we'll track major tokens)
-  ethBalance: BigDecimal!
-  totalDeposits: BigDecimal!
-  totalWithdrawals: BigDecimal!
-
-  # Spending controls
-  dailyLimit: BigDecimal!
-  lastSpendingReset: BigInt!
-  todaySpent: BigDecimal!
+  balance: BigDecimal!
+  createdAt: BigInt!
+  updatedAt: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
 
   # Events
   deposits: [TreasuryDeposit!]! @derivedFrom(field: "treasury")

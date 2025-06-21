@@ -5,8 +5,8 @@ import {
   CampaignStateChanged,
   ContributionMade,
   CampaignFinalized,
-  RewardDistributed,
-  RefundIssued,
+  RewardsDistributed,
+  ContributionRefunded,
   ProtocolFeeCollected
 } from "../generated/Flow/Flow"
 import {
@@ -30,8 +30,8 @@ export function handleCampaignCreated(event: CampaignCreated): void {
   campaign.title = ""
   campaign.description = ""
   campaign.target = event.params.target.toBigDecimal()
-  campaign.deposit = event.params.deposit.toBigDecimal()
-  campaign.expiry = event.params.expiry
+  // campaign.deposit = event.params.deposit.toBigDecimal() // Not available in ABI
+  // campaign.expiry = event.params.expiry // Not available in ABI
   campaign.state = "CREATED"
 
   // Initialize financial tracking
@@ -65,7 +65,7 @@ export function handleCampaignUpdated(event: CampaignUpdated): void {
     campaign.title = event.params.title
     campaign.description = event.params.description
     campaign.target = event.params.target.toBigDecimal()
-    campaign.expiry = event.params.expiry
+    // campaign.expiry = event.params.expiry // Not available in ABI
     campaign.updatedAt = event.block.timestamp
     campaign.save()
   }
@@ -91,7 +91,7 @@ export function handleContributionMade(event: ContributionMade): void {
 
   let contribution = new Contribution(contributionId)
   contribution.campaign = campaignId
-  contribution.token = event.params.token
+  // contribution.token = event.params.token // Not available in ABI
   contribution.amount = event.params.amount.toBigDecimal()
   contribution.timestamp = event.block.timestamp
   contribution.blockNumber = event.block.number
