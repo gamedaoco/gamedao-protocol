@@ -7,7 +7,7 @@ import {
   Entity,
   Bytes,
   Address,
-  BigInt,
+  BigInt
 } from "@graphprotocol/graph-ts";
 
 export class FundsDeposited extends ethereum.Event {
@@ -319,7 +319,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.call(
       "DEFAULT_ADMIN_ROLE",
       "DEFAULT_ADMIN_ROLE():(bytes32)",
-      [],
+      []
     );
 
     return result[0].toBytes();
@@ -329,7 +329,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.tryCall(
       "DEFAULT_ADMIN_ROLE",
       "DEFAULT_ADMIN_ROLE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -348,7 +348,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.tryCall(
       "DEPOSITOR_ROLE",
       "DEPOSITOR_ROLE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -382,7 +382,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.tryCall(
       "controlModule",
       "controlModule():(address)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -393,7 +393,7 @@ export class Treasury extends ethereum.SmartContract {
 
   getBalance(token: Address): BigInt {
     let result = super.call("getBalance", "getBalance(address):(uint256)", [
-      ethereum.Value.fromAddress(token),
+      ethereum.Value.fromAddress(token)
     ]);
 
     return result[0].toBigInt();
@@ -401,7 +401,7 @@ export class Treasury extends ethereum.SmartContract {
 
   try_getBalance(token: Address): ethereum.CallResult<BigInt> {
     let result = super.tryCall("getBalance", "getBalance(address):(uint256)", [
-      ethereum.Value.fromAddress(token),
+      ethereum.Value.fromAddress(token)
     ]);
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -414,7 +414,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.call(
       "getDailySpent",
       "getDailySpent(address,address):(uint256)",
-      [ethereum.Value.fromAddress(spender), ethereum.Value.fromAddress(token)],
+      [ethereum.Value.fromAddress(spender), ethereum.Value.fromAddress(token)]
     );
 
     return result[0].toBigInt();
@@ -422,12 +422,12 @@ export class Treasury extends ethereum.SmartContract {
 
   try_getDailySpent(
     spender: Address,
-    token: Address,
+    token: Address
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "getDailySpent",
       "getDailySpent(address,address):(uint256)",
-      [ethereum.Value.fromAddress(spender), ethereum.Value.fromAddress(token)],
+      [ethereum.Value.fromAddress(spender), ethereum.Value.fromAddress(token)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -438,7 +438,7 @@ export class Treasury extends ethereum.SmartContract {
 
   getRoleAdmin(role: Bytes): Bytes {
     let result = super.call("getRoleAdmin", "getRoleAdmin(bytes32):(bytes32)", [
-      ethereum.Value.fromFixedBytes(role),
+      ethereum.Value.fromFixedBytes(role)
     ]);
 
     return result[0].toBytes();
@@ -448,7 +448,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.tryCall(
       "getRoleAdmin",
       "getRoleAdmin(bytes32):(bytes32)",
-      [ethereum.Value.fromFixedBytes(role)],
+      [ethereum.Value.fromFixedBytes(role)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -461,7 +461,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.call(
       "getSpendingLimit",
       "getSpendingLimit(address):(uint256)",
-      [ethereum.Value.fromAddress(token)],
+      [ethereum.Value.fromAddress(token)]
     );
 
     return result[0].toBigInt();
@@ -471,7 +471,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.tryCall(
       "getSpendingLimit",
       "getSpendingLimit(address):(uint256)",
-      [ethereum.Value.fromAddress(token)],
+      [ethereum.Value.fromAddress(token)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -484,7 +484,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.call(
       "getSupportedTokens",
       "getSupportedTokens():(address[])",
-      [],
+      []
     );
 
     return result[0].toAddressArray();
@@ -494,7 +494,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.tryCall(
       "getSupportedTokens",
       "getSupportedTokens():(address[])",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -507,12 +507,12 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.call(
       "getTotalValue",
       "getTotalValue():(address[],uint256[])",
-      [],
+      []
     );
 
     return new Treasury__getTotalValueResult(
       result[0].toAddressArray(),
-      result[1].toBigIntArray(),
+      result[1].toBigIntArray()
     );
   }
 
@@ -520,7 +520,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.tryCall(
       "getTotalValue",
       "getTotalValue():(address[],uint256[])",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -529,15 +529,15 @@ export class Treasury extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(
       new Treasury__getTotalValueResult(
         value[0].toAddressArray(),
-        value[1].toBigIntArray(),
-      ),
+        value[1].toBigIntArray()
+      )
     );
   }
 
   hasRole(role: Bytes, account: Address): boolean {
     let result = super.call("hasRole", "hasRole(bytes32,address):(bool)", [
       ethereum.Value.fromFixedBytes(role),
-      ethereum.Value.fromAddress(account),
+      ethereum.Value.fromAddress(account)
     ]);
 
     return result[0].toBoolean();
@@ -546,7 +546,7 @@ export class Treasury extends ethereum.SmartContract {
   try_hasRole(role: Bytes, account: Address): ethereum.CallResult<boolean> {
     let result = super.tryCall("hasRole", "hasRole(bytes32,address):(bool)", [
       ethereum.Value.fromFixedBytes(role),
-      ethereum.Value.fromAddress(account),
+      ethereum.Value.fromAddress(account)
     ]);
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -559,7 +559,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.call(
       "isTokenSupported",
       "isTokenSupported(address):(bool)",
-      [ethereum.Value.fromAddress(token)],
+      [ethereum.Value.fromAddress(token)]
     );
 
     return result[0].toBoolean();
@@ -569,7 +569,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.tryCall(
       "isTokenSupported",
       "isTokenSupported(address):(bool)",
-      [ethereum.Value.fromAddress(token)],
+      [ethereum.Value.fromAddress(token)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -588,7 +588,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.tryCall(
       "organizationId",
       "organizationId():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -616,7 +616,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.call(
       "supportsInterface",
       "supportsInterface(bytes4):(bool)",
-      [ethereum.Value.fromFixedBytes(interfaceId)],
+      [ethereum.Value.fromFixedBytes(interfaceId)]
     );
 
     return result[0].toBoolean();
@@ -626,7 +626,7 @@ export class Treasury extends ethereum.SmartContract {
     let result = super.tryCall(
       "supportsInterface",
       "supportsInterface(bytes4):(bool)",
-      [ethereum.Value.fromFixedBytes(interfaceId)],
+      [ethereum.Value.fromFixedBytes(interfaceId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();

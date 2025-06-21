@@ -127,15 +127,8 @@ export function getPreferredNetwork() {
   return mainnet
 }
 
-// Contract ABI imports - these should be imported from the contracts package
-// For now, we'll use empty arrays as placeholders
-export const ABIS = {
-  REGISTRY: [], // Will be populated with actual ABI
-  CONTROL: [], // Will be populated with actual ABI
-  FLOW: [], // Will be populated with actual ABI
-  SIGNAL: [], // Will be populated with actual ABI
-  SENSE: [], // Will be populated with actual ABI
-} as const
+// Contract ABI imports
+export { ABIS } from './abis'
 
 declare module 'wagmi' {
   interface Register {

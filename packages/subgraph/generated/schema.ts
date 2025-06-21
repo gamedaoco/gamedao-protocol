@@ -8,7 +8,7 @@ import {
   store,
   Bytes,
   BigInt,
-  BigDecimal,
+  BigDecimal
 } from "@graphprotocol/graph-ts";
 
 export class Module extends Entity {
@@ -23,7 +23,7 @@ export class Module extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Module must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Module must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Module", id.toString(), this);
     }
@@ -132,7 +132,7 @@ export class Module extends Entity {
     return new ModuleRegistrationLoader(
       "Module",
       this.get("id")!.toString(),
-      "registrations",
+      "registrations"
     );
   }
 
@@ -140,7 +140,7 @@ export class Module extends Entity {
     return new ModuleUpgradeLoader(
       "Module",
       this.get("id")!.toString(),
-      "upgrades",
+      "upgrades"
     );
   }
 }
@@ -157,7 +157,7 @@ export class ModuleRegistration extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type ModuleRegistration must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type ModuleRegistration must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("ModuleRegistration", id.toString(), this);
     }
@@ -165,13 +165,13 @@ export class ModuleRegistration extends Entity {
 
   static loadInBlock(id: string): ModuleRegistration | null {
     return changetype<ModuleRegistration | null>(
-      store.get_in_block("ModuleRegistration", id),
+      store.get_in_block("ModuleRegistration", id)
     );
   }
 
   static load(id: string): ModuleRegistration | null {
     return changetype<ModuleRegistration | null>(
-      store.get("ModuleRegistration", id),
+      store.get("ModuleRegistration", id)
     );
   }
 
@@ -279,7 +279,7 @@ export class ModuleUpgrade extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type ModuleUpgrade must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type ModuleUpgrade must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("ModuleUpgrade", id.toString(), this);
     }
@@ -287,7 +287,7 @@ export class ModuleUpgrade extends Entity {
 
   static loadInBlock(id: string): ModuleUpgrade | null {
     return changetype<ModuleUpgrade | null>(
-      store.get_in_block("ModuleUpgrade", id),
+      store.get_in_block("ModuleUpgrade", id)
     );
   }
 
@@ -399,7 +399,7 @@ export class Organization extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Organization must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Organization must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Organization", id.toString(), this);
     }
@@ -407,7 +407,7 @@ export class Organization extends Entity {
 
   static loadInBlock(id: string): Organization | null {
     return changetype<Organization | null>(
-      store.get_in_block("Organization", id),
+      store.get_in_block("Organization", id)
     );
   }
 
@@ -536,7 +536,7 @@ export class Organization extends Entity {
     return new MemberLoader(
       "Organization",
       this.get("id")!.toString(),
-      "members",
+      "members"
     );
   }
 
@@ -544,7 +544,7 @@ export class Organization extends Entity {
     return new CampaignLoader(
       "Organization",
       this.get("id")!.toString(),
-      "campaigns",
+      "campaigns"
     );
   }
 
@@ -552,7 +552,7 @@ export class Organization extends Entity {
     return new ProposalLoader(
       "Organization",
       this.get("id")!.toString(),
-      "proposals",
+      "proposals"
     );
   }
 
@@ -560,7 +560,7 @@ export class Organization extends Entity {
     return new ProfileLoader(
       "Organization",
       this.get("id")!.toString(),
-      "profiles",
+      "profiles"
     );
   }
 
@@ -620,7 +620,7 @@ export class Organization extends Entity {
     return new StakeEventLoader(
       "Organization",
       this.get("id")!.toString(),
-      "stakeEvents",
+      "stakeEvents"
     );
   }
 }
@@ -637,7 +637,7 @@ export class Member extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Member must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Member must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Member", id.toString(), this);
     }
@@ -772,7 +772,7 @@ export class Member extends Entity {
     return new ContributionLoader(
       "Member",
       this.get("id")!.toString(),
-      "contributions",
+      "contributions"
     );
   }
 
@@ -780,7 +780,7 @@ export class Member extends Entity {
     return new ProposalLoader(
       "Member",
       this.get("id")!.toString(),
-      "proposals",
+      "proposals"
     );
   }
 
@@ -805,7 +805,7 @@ export class Treasury extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Treasury must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Treasury must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Treasury", id.toString(), this);
     }
@@ -940,7 +940,7 @@ export class Treasury extends Entity {
     return new TreasuryDepositLoader(
       "Treasury",
       this.get("id")!.toString(),
-      "deposits",
+      "deposits"
     );
   }
 
@@ -948,7 +948,7 @@ export class Treasury extends Entity {
     return new TreasuryWithdrawalLoader(
       "Treasury",
       this.get("id")!.toString(),
-      "withdrawals",
+      "withdrawals"
     );
   }
 }
@@ -965,7 +965,7 @@ export class TreasuryDeposit extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type TreasuryDeposit must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type TreasuryDeposit must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("TreasuryDeposit", id.toString(), this);
     }
@@ -973,7 +973,7 @@ export class TreasuryDeposit extends Entity {
 
   static loadInBlock(id: string): TreasuryDeposit | null {
     return changetype<TreasuryDeposit | null>(
-      store.get_in_block("TreasuryDeposit", id),
+      store.get_in_block("TreasuryDeposit", id)
     );
   }
 
@@ -1098,7 +1098,7 @@ export class TreasuryWithdrawal extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type TreasuryWithdrawal must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type TreasuryWithdrawal must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("TreasuryWithdrawal", id.toString(), this);
     }
@@ -1106,13 +1106,13 @@ export class TreasuryWithdrawal extends Entity {
 
   static loadInBlock(id: string): TreasuryWithdrawal | null {
     return changetype<TreasuryWithdrawal | null>(
-      store.get_in_block("TreasuryWithdrawal", id),
+      store.get_in_block("TreasuryWithdrawal", id)
     );
   }
 
   static load(id: string): TreasuryWithdrawal | null {
     return changetype<TreasuryWithdrawal | null>(
-      store.get("TreasuryWithdrawal", id),
+      store.get("TreasuryWithdrawal", id)
     );
   }
 
@@ -1233,7 +1233,7 @@ export class StakeEvent extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type StakeEvent must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type StakeEvent must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("StakeEvent", id.toString(), this);
     }
@@ -1364,7 +1364,7 @@ export class Campaign extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Campaign must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Campaign must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Campaign", id.toString(), this);
     }
@@ -1637,7 +1637,7 @@ export class Campaign extends Entity {
     return new ContributionLoader(
       "Campaign",
       this.get("id")!.toString(),
-      "contributions",
+      "contributions"
     );
   }
 
@@ -1662,7 +1662,7 @@ export class Contribution extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Contribution must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Contribution must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Contribution", id.toString(), this);
     }
@@ -1670,7 +1670,7 @@ export class Contribution extends Entity {
 
   static loadInBlock(id: string): Contribution | null {
     return changetype<Contribution | null>(
-      store.get_in_block("Contribution", id),
+      store.get_in_block("Contribution", id)
     );
   }
 
@@ -1821,7 +1821,7 @@ export class Reward extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Reward must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Reward must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Reward", id.toString(), this);
     }
@@ -1952,7 +1952,7 @@ export class Refund extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Refund must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Refund must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Refund", id.toString(), this);
     }
@@ -2083,7 +2083,7 @@ export class ProtocolFee extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type ProtocolFee must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type ProtocolFee must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("ProtocolFee", id.toString(), this);
     }
@@ -2091,7 +2091,7 @@ export class ProtocolFee extends Entity {
 
   static loadInBlock(id: string): ProtocolFee | null {
     return changetype<ProtocolFee | null>(
-      store.get_in_block("ProtocolFee", id),
+      store.get_in_block("ProtocolFee", id)
     );
   }
 
@@ -2190,7 +2190,7 @@ export class Proposal extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Proposal must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Proposal must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Proposal", id.toString(), this);
     }
@@ -2498,7 +2498,7 @@ export class Vote extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Vote must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Vote must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Vote", id.toString(), this);
     }
@@ -2642,7 +2642,7 @@ export class Delegation extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Delegation must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Delegation must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Delegation", id.toString(), this);
     }
@@ -2760,7 +2760,7 @@ export class Profile extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Profile must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Profile must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Profile", id.toString(), this);
     }
@@ -3012,7 +3012,7 @@ export class Profile extends Entity {
     return new AchievementLoader(
       "Profile",
       this.get("id")!.toString(),
-      "achievements",
+      "achievements"
     );
   }
 
@@ -3020,7 +3020,7 @@ export class Profile extends Entity {
     return new FeedbackLoader(
       "Profile",
       this.get("id")!.toString(),
-      "feedbacksReceived",
+      "feedbacksReceived"
     );
   }
 
@@ -3028,7 +3028,7 @@ export class Profile extends Entity {
     return new FeedbackLoader(
       "Profile",
       this.get("id")!.toString(),
-      "feedbacksGiven",
+      "feedbacksGiven"
     );
   }
 
@@ -3036,7 +3036,7 @@ export class Profile extends Entity {
     return new ReputationImportLoader(
       "Profile",
       this.get("id")!.toString(),
-      "reputationImports",
+      "reputationImports"
     );
   }
 }
@@ -3053,7 +3053,7 @@ export class Achievement extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Achievement must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Achievement must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Achievement", id.toString(), this);
     }
@@ -3061,7 +3061,7 @@ export class Achievement extends Entity {
 
   static loadInBlock(id: string): Achievement | null {
     return changetype<Achievement | null>(
-      store.get_in_block("Achievement", id),
+      store.get_in_block("Achievement", id)
     );
   }
 
@@ -3212,7 +3212,7 @@ export class Feedback extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type Feedback must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type Feedback must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("Feedback", id.toString(), this);
     }
@@ -3356,7 +3356,7 @@ export class ReputationImport extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type ReputationImport must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type ReputationImport must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("ReputationImport", id.toString(), this);
     }
@@ -3364,13 +3364,13 @@ export class ReputationImport extends Entity {
 
   static loadInBlock(id: string): ReputationImport | null {
     return changetype<ReputationImport | null>(
-      store.get_in_block("ReputationImport", id),
+      store.get_in_block("ReputationImport", id)
     );
   }
 
   static load(id: string): ReputationImport | null {
     return changetype<ReputationImport | null>(
-      store.get("ReputationImport", id),
+      store.get("ReputationImport", id)
     );
   }
 
@@ -3504,7 +3504,7 @@ export class GlobalStats extends Entity {
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type GlobalStats must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`,
+        `Entities of type GlobalStats must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
       store.set("GlobalStats", id.toString(), this);
     }
@@ -3512,7 +3512,7 @@ export class GlobalStats extends Entity {
 
   static loadInBlock(id: string): GlobalStats | null {
     return changetype<GlobalStats | null>(
-      store.get_in_block("GlobalStats", id),
+      store.get_in_block("GlobalStats", id)
     );
   }
 

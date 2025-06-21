@@ -88,7 +88,17 @@ export function validateContractAddresses(addresses: ContractAddresses): boolean
  * Get the root GameDAO organization ID
  * This would typically be stored in the Registry contract
  */
-export const GAMEDAO_ROOT_ORG_ID = '0x17bc1d94a4a33ae8a4aa4d018fad2c32e07f7c9e6cf655cfbef783b7a910a55c' as const
+export const GAMEDAO_ROOT_ORG_ID = '0xbe38856b378563a672fdbc9de3df0f8406006fc438a8fdf91c00f0925ec99d6d' as const
+
+/**
+ * Test data from deployment
+ */
+export const TEST_DATA = {
+  organizationId: '0xbe38856b378563a672fdbc9de3df0f8406006fc438a8fdf91c00f0925ec99d6d',
+  treasuryAddress: '0xCafac3dD18aC6c6e92c921884f9E4176737C052c',
+  campaignId: '0xdd07e835dd7aaa026d3694f9da0b52bf3dc28ece121c50642042fe42cf283b3b',
+  proposalId: '0xb224dd479fcaa620f924106f8c1be276fb8bcc61ecd9321cb522055a5da8b44a',
+} as const
 
 /**
  * Contract deployment block numbers for event filtering

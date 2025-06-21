@@ -169,13 +169,13 @@ dataSources:
       eventHandlers:
         - event: ProfileCreated(indexed bytes32,indexed address,indexed bytes32,string,uint256)
           handler: handleProfileCreated
-        - event: ProfileUpdated(indexed bytes32,string,string,uint256)
+        - event: ProfileUpdated(indexed bytes32,string,uint256)
           handler: handleProfileUpdated
-        - event: ReputationUpdated(indexed address,indexed bytes32,uint256,uint256,uint256,uint256)
+        - event: ReputationUpdated(indexed bytes32,indexed uint8,int256,indexed bytes32,address,uint256,uint256)
           handler: handleReputationUpdated
-        - event: AchievementGranted(indexed address,indexed bytes32,string,string,uint256,uint256)
+        - event: AchievementGranted(indexed bytes32,indexed bytes32,string,uint256,address,uint256)
           handler: handleAchievementGranted
-        - event: FeedbackSubmitted(indexed address,indexed address,indexed bytes32,uint8,string,uint256)
+        - event: FeedbackSubmitted(indexed bytes32,indexed bytes32,indexed address,uint8,uint8,uint256)
           handler: handleFeedbackSubmitted
       file: ./src/sense.ts
 
