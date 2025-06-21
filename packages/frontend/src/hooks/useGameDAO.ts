@@ -1,28 +1,51 @@
 'use client'
 
 import { useAccount, useChainId } from 'wagmi'
-import { CONTRACTS, getChainConfig } from '@/lib/web3'
+import { getChainConfig, getContracts, isSupportedNetwork } from '@/lib/web3'
+import { validateContractAddresses, GAMEDAO_ROOT_ORG_ID } from '@/lib/contracts'
 
 export function useGameDAO() {
-  const { address, isConnected, isConnecting } = useAccount()
+  const { address, isConnected } = useAccount()
   const chainId = useChainId()
+
+  // Get chain configuration
   const chainConfig = getChainConfig(chainId)
 
+  // Get contract addresses for current chain
+  const contracts = getContracts(chainId)
+
+  // Validate that contracts are properly deployed
+  const contractsValid = validateContractAddresses(contracts)
+
+  // Check if we're on a supported network
+  const isSupported = isSupportedNetwork(chainId)
+
   return {
-    // Connection state
+    // Account info
     address,
-    isConnected,
-    isConnecting,
+    isConnected: isConnected && isSupported,
+
+    // Network info
     chainId,
-    chainConfig,
-
-    // Contract addresses
-    contracts: CONTRACTS,
-
-    // Helper functions
-    isValidNetwork: chainId === 31337 || chainId === 11155111 || chainId === 1, // hardhat, sepolia, mainnet
     networkName: chainConfig.name,
     blockExplorer: chainConfig.blockExplorer,
     subgraphUrl: chainConfig.subgraphUrl,
+    rpcUrl: chainConfig.rpcUrl,
+    isSupported,
+
+    // Contract info
+    contracts,
+    contractsValid,
+
+    // GameDAO specific
+    rootOrgId: GAMEDAO_ROOT_ORG_ID,
+
+    // Helper functions
+    formatAddress: (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`,
+
+    // Network status
+    isLocal: chainId === 31337,
+    isTestnet: chainId === 11155111,
+    isMainnet: chainId === 1,
   }
 }
