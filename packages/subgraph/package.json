@@ -1,0 +1,33 @@
+{
+  "name": "@gamedao/subgraph",
+  "version": "0.1.0",
+  "description": "GameDAO Protocol Subgraph for The Graph Network",
+  "main": "index.js",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy",
+    "create-local": "graph create --node http://localhost:8020/ gamedao/protocol",
+    "remove-local": "graph remove --node http://localhost:8020/ gamedao/protocol",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 gamedao/protocol",
+    "test": "graph test",
+    "prepare": "npm run codegen && npm run build"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.56.0",
+    "@graphprotocol/graph-ts": "^0.31.0"
+  },
+  "devDependencies": {
+    "matchstick-as": "^0.5.0"
+  },
+  "keywords": [
+    "gamedao",
+    "dao",
+    "governance",
+    "gaming",
+    "subgraph",
+    "the-graph"
+  ],
+  "author": "GameDAO Team",
+  "license": "MIT"
+}

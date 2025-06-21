@@ -1,0 +1,477 @@
+# GameDAO Protocol Schema
+# This schema defines all entities for the GameDAO ecosystem
+
+# ===== REGISTRY ENTITIES =====
+
+type Module @entity {
+  id: ID! # module name
+  address: Bytes! # current implementation address
+  admin: Bytes! # admin address
+  enabled: Boolean! # whether module is enabled
+  version: BigInt! # current version number
+  registeredAt: BigInt! # timestamp when registered
+  updatedAt: BigInt! # timestamp of last update
+
+  # History tracking
+  registrations: [ModuleRegistration!]! @derivedFrom(field: "module")
+  upgrades: [ModuleUpgrade!]! @derivedFrom(field: "module")
+}
+
+type ModuleRegistration @entity {
+  id: ID! # tx hash + log index
+  module: Module!
+  address: Bytes!
+  admin: Bytes!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type ModuleUpgrade @entity {
+  id: ID! # tx hash + log index
+  module: Module!
+  oldAddress: Bytes!
+  newAddress: Bytes!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== CONTROL MODULE ENTITIES =====
+
+enum OrganizationState {
+  INACTIVE
+  ACTIVE
+  LOCKED
+}
+
+enum AccessModel {
+  OPEN
+  VOTING
+  INVITE
+}
+
+enum MemberState {
+  NONE
+  PENDING
+  ACTIVE
+  INACTIVE
+  KICKED
+}
+
+type Organization @entity {
+  id: ID! # organization ID (bytes32)
+  prime: Bytes! # prime member address
+  treasury: Treasury! # treasury contract
+  name: String! # organization name
+  accessModel: AccessModel! # access control model
+  state: OrganizationState! # current state
+  feeModel: BigInt! # fee model identifier
+
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+
+  # Relationships
+  members: [Member!]! @derivedFrom(field: "organization")
+  campaigns: [Campaign!]! @derivedFrom(field: "organization")
+  proposals: [Proposal!]! @derivedFrom(field: "organization")
+  profiles: [Profile!]! @derivedFrom(field: "organization")
+
+  # Statistics
+  memberCount: BigInt!
+  activeMembers: BigInt!
+  totalCampaigns: BigInt!
+  totalProposals: BigInt!
+
+  # Events
+  stakeEvents: [StakeEvent!]! @derivedFrom(field: "organization")
+}
+
+type Member @entity {
+  id: ID! # organization ID + member address
+  organization: Organization!
+  address: Bytes!
+  state: MemberState!
+  joinedAt: BigInt!
+  updatedAt: BigInt!
+
+  # Activity tracking
+  contributionsCount: BigInt!
+  proposalsCount: BigInt!
+  votesCount: BigInt!
+
+  # Relationships
+  contributions: [Contribution!]! @derivedFrom(field: "contributor")
+  proposals: [Proposal!]! @derivedFrom(field: "proposer")
+  votes: [Vote!]! @derivedFrom(field: "voter")
+  profiles: [Profile!]! @derivedFrom(field: "owner")
+}
+
+type Treasury @entity {
+  id: ID! # treasury contract address
+  organization: Organization!
+  address: Bytes!
+
+  # Balances (we'll track major tokens)
+  ethBalance: BigDecimal!
+  totalDeposits: BigDecimal!
+  totalWithdrawals: BigDecimal!
+
+  # Spending controls
+  dailyLimit: BigDecimal!
+  lastSpendingReset: BigInt!
+  todaySpent: BigDecimal!
+
+  # Events
+  deposits: [TreasuryDeposit!]! @derivedFrom(field: "treasury")
+  withdrawals: [TreasuryWithdrawal!]! @derivedFrom(field: "treasury")
+}
+
+type TreasuryDeposit @entity {
+  id: ID! # tx hash + log index
+  treasury: Treasury!
+  token: Bytes! # token address (0x0 for ETH)
+  amount: BigDecimal!
+  depositor: Bytes!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type TreasuryWithdrawal @entity {
+  id: ID! # tx hash + log index
+  treasury: Treasury!
+  token: Bytes! # token address (0x0 for ETH)
+  amount: BigDecimal!
+  recipient: Bytes!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type StakeEvent @entity {
+  id: ID! # tx hash + log index
+  organization: Organization!
+  member: Bytes!
+  amount: BigDecimal!
+  reason: String!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== FLOW MODULE ENTITIES =====
+
+enum FlowType {
+  GRANT
+  RAISE
+  LEND
+  LOAN
+  SHARE
+  POOL
+}
+
+enum CampaignState {
+  CREATED
+  ACTIVE
+  PAUSED
+  SUCCEEDED
+  FAILED
+  FINALIZED
+  CANCELLED
+}
+
+type Campaign @entity {
+  id: ID! # campaign ID (bytes32)
+  organization: Organization!
+  creator: Bytes!
+  flowType: FlowType!
+
+  # Campaign details
+  title: String!
+  description: String!
+  target: BigDecimal!
+  deposit: BigDecimal!
+  expiry: BigInt!
+  state: CampaignState!
+
+  # Financial tracking
+  raised: BigDecimal!
+  contributorCount: BigInt!
+  protocolFee: BigDecimal!
+
+  # Reward system
+  rewardToken: Bytes # reward token address
+  totalRewards: BigDecimal!
+  rewardsDistributed: BigDecimal!
+
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+  finalizedAt: BigInt
+
+  # Relationships
+  contributions: [Contribution!]! @derivedFrom(field: "campaign")
+  rewards: [Reward!]! @derivedFrom(field: "campaign")
+  refunds: [Refund!]! @derivedFrom(field: "campaign")
+}
+
+type Contribution @entity {
+  id: ID! # campaign ID + contributor + index
+  campaign: Campaign!
+  contributor: Member!
+  token: Bytes! # contribution token address (0x0 for ETH)
+  amount: BigDecimal!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+
+  # Reward tracking
+  rewardEligible: Boolean!
+  rewardReceived: BigDecimal!
+}
+
+type Reward @entity {
+  id: ID! # tx hash + log index
+  campaign: Campaign!
+  recipient: Bytes!
+  token: Bytes!
+  amount: BigDecimal!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type Refund @entity {
+  id: ID! # tx hash + log index
+  campaign: Campaign!
+  recipient: Bytes!
+  token: Bytes!
+  amount: BigDecimal!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type ProtocolFee @entity {
+  id: ID! # tx hash + log index
+  campaign: Campaign!
+  amount: BigDecimal!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== SIGNAL MODULE ENTITIES =====
+
+enum ProposalType {
+  SIMPLE
+  PARAMETRIC
+  TREASURY
+  MEMBER
+  CONSTITUTIONAL
+}
+
+enum VotingType {
+  RELATIVE
+  ABSOLUTE
+  SUPERMAJORITY
+  UNANIMOUS
+}
+
+enum VotingPowerModel {
+  DEMOCRATIC
+  TOKEN_WEIGHTED
+  QUADRATIC
+  CONVICTION
+}
+
+enum ProposalState {
+  PENDING
+  ACTIVE
+  QUEUED
+  EXECUTED
+  DEFEATED
+  CANCELLED
+  EXPIRED
+}
+
+type Proposal @entity {
+  id: ID! # proposal ID (bytes32)
+  organization: Organization!
+  proposer: Member!
+
+  # Proposal details
+  proposalType: ProposalType!
+  votingType: VotingType!
+  votingPowerModel: VotingPowerModel!
+  title: String!
+  description: String!
+  executionData: Bytes!
+
+  # Voting parameters
+  quorum: BigInt!
+  threshold: BigInt!
+  startTime: BigInt!
+  endTime: BigInt!
+  state: ProposalState!
+
+  # Voting results
+  votesFor: BigDecimal!
+  votesAgainst: BigDecimal!
+  totalVotes: BigInt!
+
+  # Execution
+  executedAt: BigInt
+  executionSuccess: Boolean
+
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+
+  # Relationships
+  votes: [Vote!]! @derivedFrom(field: "proposal")
+}
+
+type Vote @entity {
+  id: ID! # proposal ID + voter address
+  proposal: Proposal!
+  voter: Member!
+  support: Boolean! # true for yes, false for no
+  votingPower: BigDecimal!
+  conviction: BigInt! # conviction multiplier
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type Delegation @entity {
+  id: ID! # organization ID + delegator + delegatee
+  organization: Organization!
+  delegator: Bytes!
+  delegatee: Bytes!
+  votingPower: BigDecimal!
+  timestamp: BigInt!
+  active: Boolean!
+}
+
+# ===== SENSE MODULE ENTITIES =====
+
+enum VerificationLevel {
+  NONE
+  BASIC
+  VERIFIED
+  PREMIUM
+}
+
+type Profile @entity {
+  id: ID! # profile ID (bytes32)
+  organization: Organization!
+  owner: Member!
+  username: String!
+
+  # Profile details
+  bio: String!
+  avatar: String!
+  website: String!
+  verificationLevel: VerificationLevel!
+
+  # Reputation data
+  experience: BigInt!
+  reputation: BigInt!
+  trustScore: BigInt!
+  convictionScore: BigInt!
+
+  # Statistics
+  achievementCount: BigInt!
+  feedbackCount: BigInt!
+  positiveFeedbacks: BigInt!
+  negativeFeedbacks: BigInt!
+
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+
+  # Relationships
+  achievements: [Achievement!]! @derivedFrom(field: "profile")
+  feedbacksReceived: [Feedback!]! @derivedFrom(field: "target")
+  feedbacksGiven: [Feedback!]! @derivedFrom(field: "author")
+  reputationImports: [ReputationImport!]! @derivedFrom(field: "profile")
+}
+
+type Achievement @entity {
+  id: ID! # profile ID + achievement ID
+  profile: Profile!
+  achievementId: Bytes!
+  title: String!
+  description: String!
+  category: String!
+  points: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+enum FeedbackType {
+  POSITIVE
+  NEGATIVE
+  NEUTRAL
+}
+
+type Feedback @entity {
+  id: ID! # feedback ID (bytes32)
+  target: Profile!
+  author: Profile!
+  feedbackType: FeedbackType!
+  rating: BigInt!
+  comment: String!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type ReputationImport @entity {
+  id: ID! # tx hash + log index
+  profile: Profile!
+  sourceProfile: Bytes!
+  importedExperience: BigInt!
+  importedReputation: BigInt!
+  importedTrust: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== GLOBAL STATISTICS =====
+
+type GlobalStats @entity {
+  id: ID! # "global"
+
+  # Module statistics
+  totalModules: BigInt!
+  activeModules: BigInt!
+
+  # Organization statistics
+  totalOrganizations: BigInt!
+  activeOrganizations: BigInt!
+  totalMembers: BigInt!
+
+  # Campaign statistics
+  totalCampaigns: BigInt!
+  activeCampaigns: BigInt!
+  totalRaised: BigDecimal!
+
+  # Governance statistics
+  totalProposals: BigInt!
+  activeProposals: BigInt!
+  totalVotes: BigInt!
+
+  # Identity statistics
+  totalProfiles: BigInt!
+  verifiedProfiles: BigInt!
+  totalAchievements: BigInt!
+
+  # Last updated
+  updatedAt: BigInt!
+}

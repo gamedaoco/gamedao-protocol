@@ -1,0 +1,48 @@
+{
+  "name": "@gamedao/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GameDAO Protocol - Comprehensive gaming community operating system",
+  "keywords": ["dao", "gaming", "web3", "defi", "governance"],
+  "homepage": "https://github.com/gamedao/gamedao-protocol",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gamedao/gamedao-protocol.git"
+  },
+  "license": "Apache-2.0",
+  "author": "GameDAO AG",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "test": "turbo test",
+    "test:contracts": "pnpm --filter contracts-solidity test",
+    "test:frontend": "pnpm --filter frontend test",
+    "clean": "turbo clean",
+    "typecheck": "turbo typecheck",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.26.2",
+    "@types/node": "^20.8.0",
+    "eslint": "^8.48.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^14.0.1",
+    "prettier": "^3.0.3",
+    "turbo": "^1.10.14",
+    "typescript": "^5.2.2"
+  },
+  "packageManager": "pnpm@8.8.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
