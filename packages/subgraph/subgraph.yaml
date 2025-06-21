@@ -179,5 +179,43 @@ dataSources:
           handler: handleFeedbackSubmitted
       file: ./src/sense.ts
 
-# Signal and Sense modules will be added later
-# Currently focusing on core functionality: Registry, Control, and Flow
+  # GameStaking Contract - Staking & Rewards
+  - kind: ethereum
+    name: GameStaking
+    network: localhost
+    source:
+      address: "0x5FeaeBfB4439F3516c74939A9D04e95AFE82C4ae"
+      abi: GameStaking
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - StakingPool
+        - UserStake
+        - UnstakeRequest
+        - RewardClaim
+        - RewardDistribution
+        - SlashEvent
+        - StakingPoolUpdate
+        - StakingStats
+      abis:
+        - name: GameStaking
+          file: ./abis/GameStaking.json
+      eventHandlers:
+        - event: Staked(indexed address,indexed uint8,uint256,uint8,uint256)
+          handler: handleStaked
+        - event: UnstakeRequested(indexed address,indexed uint8,uint256,uint8,uint256,uint256)
+          handler: handleUnstakeRequested
+        - event: Unstaked(indexed address,indexed uint8,uint256,uint256,uint256)
+          handler: handleUnstaked
+        - event: RewardsClaimed(indexed address,indexed uint8,uint256,uint256)
+          handler: handleRewardsClaimed
+        - event: RewardsDistributed(indexed uint8,uint256,uint256)
+          handler: handleRewardsDistributed
+        - event: Slashed(indexed address,indexed uint8,uint256,indexed address,string,uint256)
+          handler: handleSlashed
+        - event: PoolUpdated(indexed uint8,uint256,bool)
+          handler: handlePoolUpdated
+      file: ./src/staking.ts

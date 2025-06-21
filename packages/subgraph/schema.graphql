@@ -475,3 +475,126 @@ type GlobalStats @entity {
   # Last updated
   updatedAt: BigInt!
 }
+
+# ===== STAKING MODULE ENTITIES =====
+
+enum StakingPurpose {
+  GOVERNANCE
+  DAO_CREATION
+  TREASURY_BOND
+  LIQUIDITY_MINING
+}
+
+enum UnstakingStrategy {
+  RAGE_QUIT
+  STANDARD
+  PATIENT
+}
+
+type StakingPool @entity {
+  id: ID! # StakingPurpose as string
+  purpose: StakingPurpose!
+  totalStaked: BigDecimal!
+  rewardRate: BigInt! # APY in basis points
+  totalRewardsDistributed: BigDecimal!
+  active: Boolean!
+  lastUpdateTime: BigInt!
+
+  # Relationships
+  stakes: [UserStake!]! @derivedFrom(field: "pool")
+  rewardDistributions: [RewardDistribution!]! @derivedFrom(field: "pool")
+
+  # Statistics
+  stakersCount: BigInt!
+  averageStakeAmount: BigDecimal!
+  totalRewardsClaimed: BigDecimal!
+}
+
+type UserStake @entity {
+  id: ID! # user address + purpose
+  user: Bytes!
+  pool: StakingPool!
+  amount: BigDecimal!
+  stakedAt: BigInt!
+  lastClaimTime: BigInt!
+  preferredStrategy: UnstakingStrategy!
+  pendingRewards: BigDecimal!
+  totalRewardsClaimed: BigDecimal!
+
+  # Relationships
+  unstakeRequests: [UnstakeRequest!]! @derivedFrom(field: "userStake")
+  rewardClaims: [RewardClaim!]! @derivedFrom(field: "userStake")
+  slashEvents: [SlashEvent!]! @derivedFrom(field: "userStake")
+}
+
+type UnstakeRequest @entity {
+  id: ID! # user address + request ID
+  userStake: UserStake!
+  amount: BigDecimal!
+  strategy: UnstakingStrategy!
+  requestTime: BigInt!
+  unlockTime: BigInt!
+  processed: Boolean!
+  processedAt: BigInt
+  penalty: BigDecimal!
+  finalAmount: BigDecimal!
+
+  # Transaction info
+  requestTxHash: Bytes!
+  processTxHash: Bytes
+}
+
+type RewardClaim @entity {
+  id: ID! # tx hash + log index
+  userStake: UserStake!
+  amount: BigDecimal!
+  strategyBonus: BigDecimal!
+  totalAmount: BigDecimal!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type RewardDistribution @entity {
+  id: ID! # tx hash + log index
+  pool: StakingPool!
+  amount: BigDecimal!
+  distributor: Bytes!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type SlashEvent @entity {
+  id: ID! # tx hash + log index
+  userStake: UserStake!
+  amount: BigDecimal!
+  slasher: Bytes!
+  reason: String!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type StakingPoolUpdate @entity {
+  id: ID! # tx hash + log index
+  pool: StakingPool!
+  oldRewardRate: BigInt!
+  newRewardRate: BigInt!
+  active: Boolean!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# Global staking statistics
+type StakingStats @entity {
+  id: ID! # "global"
+  totalStaked: BigDecimal!
+  totalRewardsDistributed: BigDecimal!
+  totalRewardsClaimed: BigDecimal!
+  totalSlashed: BigDecimal!
+  activeStakers: BigInt!
+  totalStakingPools: BigInt!
+  lastUpdated: BigInt!
+}
