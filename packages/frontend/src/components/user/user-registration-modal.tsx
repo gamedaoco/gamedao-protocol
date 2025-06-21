@@ -41,8 +41,8 @@ export function UserRegistrationModal({ isOpen, onClose }: UserRegistrationModal
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md mx-4">
+    <div className="fixed inset-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/95 flex items-center justify-center z-50">
+      <Card className="w-full max-w-md mx-4 border shadow-lg">
         <CardHeader>
           <CardTitle>Welcome to GameDAO</CardTitle>
           <CardDescription>
@@ -116,7 +116,7 @@ export function UserRegistrationModal({ isOpen, onClose }: UserRegistrationModal
             <div className="flex gap-2 pt-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={onClose}
                 className="flex-1"
                 disabled={isLoading}
@@ -125,6 +125,7 @@ export function UserRegistrationModal({ isOpen, onClose }: UserRegistrationModal
               </Button>
               <Button
                 type="submit"
+                variant="outline"
                 className="flex-1"
                 disabled={isLoading || !formData.name.trim()}
               >

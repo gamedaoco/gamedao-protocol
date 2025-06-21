@@ -23,7 +23,12 @@ NETWORK?=localhost
 DEPLOYER_PRIVATE_KEY?=""
 ETHERSCAN_API_KEY?=""
 
-.PHONY: help install clean build test deploy verify docs lint format setup-env all
+# Graph node configuration
+GRAPH_NODE_PORT?=8020
+IPFS_PORT?=5001
+POSTGRES_PORT?=5432
+
+.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy
 
 # Default target
 all: clean install build test
@@ -57,6 +62,12 @@ help:
 	@echo "  make deploy-mainnet   Deploy to mainnet"
 	@echo "  make verify           Verify contracts on Etherscan"
 	@echo ""
+	@echo "$(GREEN)📊 Graph & Indexing:$(NC)"
+	@echo "  make graph-node       Start local Graph node with IPFS & Postgres"
+	@echo "  make graph-deploy     Deploy subgraph to local Graph node"
+	@echo "  make graph-full       Complete Graph setup (node + deploy)"
+	@echo "  make dev-full         Full dev environment (contracts + graph + frontend)"
+	@echo ""
 	@echo "$(GREEN)📚 Documentation & Quality:$(NC)"
 	@echo "  make docs             Generate documentation"
 	@echo "  make lint             Run linting"
@@ -71,7 +82,7 @@ help:
 	@echo "$(YELLOW)📝 Examples:$(NC)"
 	@echo "  make deploy NETWORK=sepolia"
 	@echo "  make test-contracts"
-	@echo "  make build-all"
+	@echo "  make dev-full         # Start everything: contracts + graph + frontend"
 
 # Installation targets
 install:
@@ -79,6 +90,10 @@ install:
 	@npm install
 	@echo "$(BLUE)📦 Installing contract dependencies...$(NC)"
 	@cd $(CONTRACTS_DIR) && npm install --legacy-peer-deps || npm install --force
+	@echo "$(BLUE)📦 Installing subgraph dependencies...$(NC)"
+	@if [ -d "$(SUBGRAPH_DIR)" ]; then \
+		cd $(SUBGRAPH_DIR) && npm install; \
+	fi
 	@echo "$(GREEN)✅ Dependencies installed successfully$(NC)"
 
 setup-env:
@@ -99,6 +114,7 @@ clean:
 	@rm -rf $(FRONTEND_DIR)/.next
 	@rm -rf $(SUBGRAPH_DIR)/node_modules
 	@rm -rf $(SUBGRAPH_DIR)/build
+	@rm -rf $(SUBGRAPH_DIR)/generated
 	@echo "$(GREEN)✅ Clean complete$(NC)"
 
 # Build targets
@@ -122,7 +138,7 @@ build-frontend:
 build-subgraph:
 	@echo "$(BLUE)🏗️  Building subgraph...$(NC)"
 	@if [ -d "$(SUBGRAPH_DIR)" ]; then \
-		cd $(SUBGRAPH_DIR) && npm run build; \
+		cd $(SUBGRAPH_DIR) && npm run codegen && npm run build; \
 		echo "$(GREEN)✅ Subgraph built successfully$(NC)"; \
 	else \
 		echo "$(YELLOW)⚠️  Subgraph directory not found, skipping...$(NC)"; \
@@ -186,6 +202,69 @@ verify:
 	@cd $(CONTRACTS_DIR) && npm run verify
 	@echo "$(GREEN)✅ Contract verification complete$(NC)"
 
+# Graph node and subgraph targets
+graph-node:
+	@echo "$(BLUE)📊 Starting local Graph node infrastructure...$(NC)"
+	@echo "$(CYAN)🐳 Starting Docker services...$(NC)"
+	@docker-compose -f docker-compose.graph.yml up -d
+	@echo "$(YELLOW)⏳ Waiting for services to be ready...$(NC)"
+	@sleep 10
+	@echo "$(GREEN)✅ Graph node infrastructure started$(NC)"
+	@echo "$(CYAN)📋 Services available at:$(NC)"
+	@echo "  - Graph Node: http://localhost:$(GRAPH_NODE_PORT)"
+	@echo "  - IPFS: http://localhost:$(IPFS_PORT)"
+	@echo "  - PostgreSQL: localhost:$(POSTGRES_PORT)"
+
+graph-deploy:
+	@echo "$(BLUE)📊 Deploying subgraph to local Graph node...$(NC)"
+	@if [ ! -d "$(SUBGRAPH_DIR)" ]; then \
+		echo "$(RED)❌ Subgraph directory not found$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)🏗️  Building subgraph...$(NC)"
+	@cd $(SUBGRAPH_DIR) && npm run codegen && npm run build
+	@echo "$(BLUE)🚀 Creating subgraph...$(NC)"
+	@cd $(SUBGRAPH_DIR) && npm run create-local || echo "$(YELLOW)⚠️  Subgraph already exists$(NC)"
+	@echo "$(BLUE)🚀 Deploying subgraph...$(NC)"
+	@cd $(SUBGRAPH_DIR) && npm run deploy-local
+	@echo "$(GREEN)✅ Subgraph deployed successfully$(NC)"
+	@echo "$(CYAN)📋 Subgraph available at:$(NC)"
+	@echo "  - GraphQL Playground: http://localhost:8000/subgraphs/name/gamedao/protocol"
+
+graph-full: graph-node
+	@echo "$(BLUE)📊 Setting up complete Graph environment...$(NC)"
+	@sleep 5
+	@make graph-deploy
+	@echo "$(GREEN)🎉 Complete Graph environment ready!$(NC)"
+
+graph-stop:
+	@echo "$(BLUE)🛑 Stopping Graph node infrastructure...$(NC)"
+	@docker-compose -f docker-compose.graph.yml down
+	@echo "$(GREEN)✅ Graph node infrastructure stopped$(NC)"
+
+# Full development environment
+dev-full:
+	@echo "$(BLUE)🚀 Starting complete development environment...$(NC)"
+	@echo "$(CYAN)1️⃣  Starting Hardhat node...$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run node &
+	@sleep 3
+	@echo "$(CYAN)2️⃣  Deploying contracts...$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run deploy:localhost
+	@echo "$(CYAN)3️⃣  Starting Graph node...$(NC)"
+	@make graph-node
+	@echo "$(CYAN)4️⃣  Deploying subgraph...$(NC)"
+	@make graph-deploy
+	@echo "$(CYAN)5️⃣  Starting frontend...$(NC)"
+	@if [ -d "$(FRONTEND_DIR)" ]; then \
+		cd $(FRONTEND_DIR) && npm run dev & \
+	fi
+	@echo "$(GREEN)🎉 Complete development environment ready!$(NC)"
+	@echo "$(CYAN)📋 Services available:$(NC)"
+	@echo "  - Hardhat Node: http://localhost:8545"
+	@echo "  - Graph Node: http://localhost:8020"
+	@echo "  - Subgraph: http://localhost:8000/subgraphs/name/gamedao/protocol"
+	@echo "  - Frontend: http://localhost:3000"
+
 # Documentation targets
 docs:
 	@echo "$(BLUE)📚 Generating documentation...$(NC)"
@@ -195,6 +274,7 @@ docs:
 	@echo "  - Milestone Plan: logs/004-milestone-plan.md"
 	@echo "  - Technical Analysis: logs/001-technical-analysis.md"
 	@echo "  - Control Module Guide: logs/003-control-module.md"
+	@echo "  - Frontend Development Plan: logs/010-frontend-development-plan.md"
 	@echo "$(GREEN)✅ Documentation available$(NC)"
 
 # Code quality targets
@@ -250,17 +330,20 @@ status:
 	@echo ""
 	@echo "$(YELLOW)📈 Implementation Progress:$(NC)"
 	@echo "  ✅ Milestone 1 (Control Module): 100% Complete"
-	@echo "  🔄 Milestone 2 (Flow Module): 15% Complete"
-	@echo "  ⏳ Milestone 3 (Signal Module): Planned"
+	@echo "  ✅ Milestone 2 (Flow Module): 100% Complete"
+	@echo "  ✅ Milestone 3 (Signal Module): 100% Complete"
 	@echo "  ⏳ Milestone 4 (Sense Module): Planned"
 	@echo "  ⏳ Milestone 5 (Battlepass Module): Planned"
+	@echo "  🔄 Frontend Development: 30% Complete"
+	@echo "  🔄 Subgraph Integration: 80% Complete"
 	@echo ""
 	@echo "$(YELLOW)🏗️  Architecture Status:$(NC)"
 	@echo "  ✅ GameDAORegistry: Complete"
 	@echo "  ✅ GameDAOModule: Complete"
 	@echo "  ✅ Control Module: Complete"
+	@echo "  ✅ Flow Module: Complete"
+	@echo "  ✅ Signal Module: Complete"
 	@echo "  ✅ Treasury: Complete"
-	@echo "  🔄 Flow Module: Interface Complete"
 	@echo ""
 	@echo "$(YELLOW)🔒 Security Status:$(NC)"
 	@echo "  ✅ OpenZeppelin Integration: Complete"
@@ -273,8 +356,8 @@ info:
 	@echo ""
 	@echo "$(YELLOW)📋 Project Structure:$(NC)"
 	@echo "  - packages/contracts-solidity/: Smart contracts"
-	@echo "  - packages/frontend/: Next.js frontend (planned)"
-	@echo "  - packages/subgraph/: The Graph indexing (planned)"
+	@echo "  - packages/frontend/: Next.js frontend"
+	@echo "  - packages/subgraph/: The Graph indexing"
 	@echo "  - packages/shared/: Shared utilities (planned)"
 	@echo "  - logs/: Documentation and guides"
 	@echo ""
@@ -286,6 +369,7 @@ info:
 	@echo "$(YELLOW)📚 Key Documentation:$(NC)"
 	@echo "  - make docs: View all documentation"
 	@echo "  - logs/005-implementation-status.md: Current status"
+	@echo "  - logs/010-frontend-development-plan.md: Frontend roadmap"
 	@echo "  - packages/contracts-solidity/ARCHITECTURE_VALIDATION.md: Architecture review"
 
 # Maintenance targets
