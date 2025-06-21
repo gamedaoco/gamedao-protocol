@@ -9,3 +9,5 @@ import type * as mocks from "./mocks";
 export type { mocks };
 import type * as modules from "./modules";
 export type { modules };
+import type * as staking from "./staking";
+export type { staking };
