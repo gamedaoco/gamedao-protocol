@@ -4,8 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Coins, DollarSign, CheckCircle, Clock } from "lucide-react"
-import { useTokenBalances } from "@/hooks/use-token-balances"
-import { formatUnits } from "viem"
+
+// Mock data for testing
+const mockBalances = {
+  gameBalance: "10000000000000000000000", // 10,000 GAME
+  usdcBalance: "10000000000", // 10,000 USDC (6 decimals)
+  gameAllowance: "1000000000000000000000000", // Large allowance
+  usdcAllowance: "1000000000000", // Large allowance
+  isLoading: false,
+  isApproving: false
+}
 
 export function TokenBalanceCard() {
   const {
@@ -14,10 +22,16 @@ export function TokenBalanceCard() {
     gameAllowance,
     usdcAllowance,
     isLoading,
-    approveGame,
-    approveUsdc,
     isApproving
-  } = useTokenBalances()
+  } = mockBalances
+
+  const approveGame = () => {
+    console.log('Approve GAME clicked')
+  }
+
+  const approveUsdc = () => {
+    console.log('Approve USDC clicked')
+  }
 
   if (isLoading) {
     return (
@@ -57,14 +71,14 @@ export function TokenBalanceCard() {
 
           <div className="text-right space-y-1">
             <p className="text-lg font-bold">
-              {gameBalance ? Number(formatUnits(gameBalance, 18)).toLocaleString(undefined, {
+              {gameBalance ? (Number(gameBalance) / 1e18).toLocaleString(undefined, {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2
               }) : '0'}
             </p>
 
             <div className="flex items-center space-x-2">
-              {gameAllowance && gameAllowance > BigInt(0) ? (
+              {gameAllowance && Number(gameAllowance) > 0 ? (
                 <Badge variant="secondary" className="text-xs">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Approved
@@ -105,14 +119,14 @@ export function TokenBalanceCard() {
 
           <div className="text-right space-y-1">
             <p className="text-lg font-bold">
-              {usdcBalance ? Number(formatUnits(usdcBalance, 6)).toLocaleString(undefined, {
+              {usdcBalance ? (Number(usdcBalance) / 1e6).toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
               }) : '0.00'}
             </p>
 
             <div className="flex items-center space-x-2">
-              {usdcAllowance && usdcAllowance > BigInt(0) ? (
+              {usdcAllowance && Number(usdcAllowance) > 0 ? (
                 <Badge variant="secondary" className="text-xs">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Approved
