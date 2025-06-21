@@ -502,8 +502,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Control/Control.sol": {
-      "lastModificationDate": 1750448845102,
-      "contentHash": "27cb197f4d1603cbb90293028696a35a",
+      "lastModificationDate": 1750541907873,
+      "contentHash": "027af95f669f88c0bd6a76fd99744ae8",
       "sourceName": "contracts/modules/Control/Control.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -547,8 +547,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IGameToken.sol": {
-      "lastModificationDate": 1750447576707,
-      "contentHash": "011b149107ff4d8f8ed040050ea918f5",
+      "lastModificationDate": 1750541903721,
+      "contentHash": "6fd3a798cfdc5afe7a052eb657e6009f",
       "sourceName": "contracts/interfaces/IGameToken.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1857,6 +1857,167 @@
       ],
       "artifacts": [
         "MerkleProof"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/node_modules/.pnpm/@openzeppelin+contracts@4.9.6/node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol": {
+      "lastModificationDate": 1750462382309,
+      "contentHash": "3ae5166c6827a9cf1a7a462d1632b464",
+      "sourceName": "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IERC20.sol",
+        "./extensions/IERC20Metadata.sol",
+        "../../utils/Context.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ERC20"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/node_modules/.pnpm/@openzeppelin+contracts@4.9.6/node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+      "lastModificationDate": 1750462382425,
+      "contentHash": "909ab67fc5c25033fe6cd364f8c056f9",
+      "sourceName": "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../IERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC20Metadata"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/mocks/MockGameToken.sol": {
+      "lastModificationDate": 1750541905497,
+      "contentHash": "2fe8c58cfa49be1532e1a0384f2d754d",
+      "sourceName": "contracts/mocks/MockGameToken.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+        "@openzeppelin/contracts/access/AccessControl.sol",
+        "../interfaces/IGameToken.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "MockGameToken"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/mocks/MockUSDC.sol": {
+      "lastModificationDate": 1750539882982,
+      "contentHash": "6fd8a8971818681617df7a36069d80b8",
+      "sourceName": "contracts/mocks/MockUSDC.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+        "@openzeppelin/contracts/access/AccessControl.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "MockUSDC"
       ]
     }
   }

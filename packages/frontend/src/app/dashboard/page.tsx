@@ -15,6 +15,7 @@ import {
   ExternalLink
 } from 'lucide-react'
 import { useGameDAO } from '@/hooks/useGameDAO'
+import { useReputation } from '@/hooks/useReputation'
 import { PortfolioCard } from '@/components/dashboard/portfolio-card'
 import { ReputationCard } from '@/components/reputation/reputation-card'
 import { redirect } from 'next/navigation'
@@ -22,6 +23,7 @@ import { useEffect } from 'react'
 
 export default function DashboardPage() {
   const { isConnected, address } = useGameDAO()
+  const { reputation, isLoading: reputationLoading } = useReputation()
 
   // Redirect to home if not connected
   useEffect(() => {
@@ -112,8 +114,19 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2,450</div>
-            <p className="text-xs text-muted-foreground">Rank #234</p>
+            {reputationLoading ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-muted rounded w-20 mb-1"></div>
+                <div className="h-3 bg-muted rounded w-16"></div>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{reputation?.reputation?.toLocaleString() || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  {reputation?.trust ? `${reputation.trust}% trust score` : 'Building reputation'}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

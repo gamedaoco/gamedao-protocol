@@ -36,6 +36,8 @@ interface IGameToken is IERC20 {
     // Staking Functions
     function stake(bytes32 purpose, uint256 amount) external;
 
+    function stakeFor(address user, bytes32 purpose, uint256 amount) external;
+
     function unstake(bytes32 purpose, uint256 amount) external;
 
     function unstakeAll(bytes32 purpose) external;

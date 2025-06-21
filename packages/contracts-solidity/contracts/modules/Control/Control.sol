@@ -105,7 +105,8 @@ contract Control is GameDAOModule, IControl {
 
         // Stake GAME tokens if required
         if (gameStakeRequired > 0) {
-            gameToken.stake(GAME_STAKE_PURPOSE, gameStakeRequired);
+            // Stake tokens on behalf of the user (requires user approval)
+            gameToken.stakeFor(_msgSender(), GAME_STAKE_PURPOSE, gameStakeRequired);
         }
 
         // Generate organization ID

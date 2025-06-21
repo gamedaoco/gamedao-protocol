@@ -28,7 +28,7 @@ GRAPH_NODE_PORT?=8020
 IPFS_PORT?=5001
 POSTGRES_PORT?=5432
 
-.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy
+.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy scaffold scaffold-copy scaffold-full scaffold-clean dev-scaffold
 
 # Default target
 all: clean install build test
@@ -78,6 +78,9 @@ help:
 	@echo "  make dev              Start development environment"
 	@echo "  make demo             Run complete demo"
 	@echo "  make integration      Run integration tests"
+	@echo "  make scaffold         Generate test data for development"
+	@echo "  make scaffold-full    Generate and copy test data to frontend"
+	@echo "  make dev-scaffold     Full dev setup with test data"
 	@echo ""
 	@echo "$(YELLOW)📝 Examples:$(NC)"
 	@echo "  make deploy NETWORK=sepolia"
@@ -264,6 +267,8 @@ dev-full:
 	@echo "  - Graph Node: http://localhost:8020"
 	@echo "  - Subgraph: http://localhost:8000/subgraphs/name/gamedao/protocol"
 	@echo "  - Frontend: http://localhost:3000"
+	@echo "$(CYAN)💡 Generate test data:$(NC)"
+	@echo "  - Run: make scaffold-full"
 
 # Documentation targets
 docs:
@@ -324,6 +329,49 @@ integration:
 	@make test-contracts
 	@echo "$(GREEN)✅ Integration tests complete$(NC)"
 
+# Scaffolding targets for test data generation
+scaffold:
+	@echo "$(BLUE)🏗️  Generating test data...$(NC)"
+	@echo "$(YELLOW)⚠️  Ensure local node is running and contracts are deployed$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run scaffold
+	@echo "$(GREEN)✅ Test data generated successfully$(NC)"
+
+scaffold-copy:
+	@echo "$(BLUE)📋 Copying scaffold data to frontend...$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run scaffold:copy
+	@echo "$(GREEN)✅ Scaffold data copied to frontend$(NC)"
+
+scaffold-full:
+	@echo "$(BLUE)🏗️  Generating and copying test data...$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run scaffold:full
+	@echo "$(GREEN)✅ Complete scaffold data setup finished$(NC)"
+
+scaffold-clean:
+	@echo "$(BLUE)🧹 Cleaning scaffold data...$(NC)"
+	@rm -f $(CONTRACTS_DIR)/scaffold-output.json
+	@rm -f $(FRONTEND_DIR)/public/scaffold-data.json
+	@echo "$(GREEN)✅ Scaffold data cleaned$(NC)"
+
+dev-scaffold:
+	@echo "$(BLUE)🚀 Starting development environment with test data...$(NC)"
+	@echo "$(CYAN)1️⃣  Killing any existing processes...$(NC)"
+	@-lsof -ti:8545 | xargs kill -9 2>/dev/null || true
+	@echo "$(CYAN)2️⃣  Starting Hardhat node...$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run node &
+	@echo "$(YELLOW)⏳ Waiting for node to start...$(NC)"
+	@sleep 5
+	@echo "$(CYAN)3️⃣  Deploying contracts...$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run deploy:localhost
+	@echo "$(CYAN)4️⃣  Generating test data...$(NC)"
+	@make scaffold-full
+	@echo "$(GREEN)🎉 Development environment with test data ready!$(NC)"
+	@echo "$(CYAN)📋 Available services:$(NC)"
+	@echo "  - Hardhat Node: http://localhost:8545"
+	@echo "  - Test Data: Generated and available in frontend"
+	@echo "$(CYAN)💡 Next steps:$(NC)"
+	@echo "  - Start frontend: cd $(FRONTEND_DIR) && npm run dev"
+	@echo "  - View scaffold data: cat $(CONTRACTS_DIR)/scaffold-output.json"
+
 # Status and information targets
 status:
 	@echo "$(CYAN)📊 GameDAO Protocol Status$(NC)"
@@ -332,9 +380,10 @@ status:
 	@echo "  ✅ Milestone 1 (Control Module): 100% Complete"
 	@echo "  ✅ Milestone 2 (Flow Module): 100% Complete"
 	@echo "  ✅ Milestone 3 (Signal Module): 100% Complete"
+	@echo "  ✅ Test Data Scaffolding: 100% Complete"
 	@echo "  ⏳ Milestone 4 (Sense Module): Planned"
 	@echo "  ⏳ Milestone 5 (Battlepass Module): Planned"
-	@echo "  🔄 Frontend Development: 30% Complete"
+	@echo "  🔄 Frontend Development: 40% Complete"
 	@echo "  🔄 Subgraph Integration: 80% Complete"
 	@echo ""
 	@echo "$(YELLOW)🏗️  Architecture Status:$(NC)"
@@ -344,6 +393,7 @@ status:
 	@echo "  ✅ Flow Module: Complete"
 	@echo "  ✅ Signal Module: Complete"
 	@echo "  ✅ Treasury: Complete"
+	@echo "  ✅ Test Data Scaffolding: Complete"
 	@echo ""
 	@echo "$(YELLOW)🔒 Security Status:$(NC)"
 	@echo "  ✅ OpenZeppelin Integration: Complete"
