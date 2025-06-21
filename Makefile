@@ -206,7 +206,7 @@ verify:
 graph-node:
 	@echo "$(BLUE)📊 Starting local Graph node infrastructure...$(NC)"
 	@echo "$(CYAN)🐳 Starting Docker services...$(NC)"
-	@docker-compose -f docker-compose.graph.yml up -d
+	@docker compose -f docker-compose.graph.yml up -d
 	@echo "$(YELLOW)⏳ Waiting for services to be ready...$(NC)"
 	@sleep 10
 	@echo "$(GREEN)✅ Graph node infrastructure started$(NC)"
@@ -239,7 +239,7 @@ graph-full: graph-node
 
 graph-stop:
 	@echo "$(BLUE)🛑 Stopping Graph node infrastructure...$(NC)"
-	@docker-compose -f docker-compose.graph.yml down
+	@docker compose -f docker-compose.graph.yml down
 	@echo "$(GREEN)✅ Graph node infrastructure stopped$(NC)"
 
 # Full development environment

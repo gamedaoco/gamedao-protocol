@@ -7,7 +7,7 @@ import {
   Entity,
   Bytes,
   Address,
-  BigInt,
+  BigInt
 } from "@graphprotocol/graph-ts";
 
 export class ModuleDisabled extends ethereum.Event {
@@ -280,7 +280,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.call(
       "DEFAULT_ADMIN_ROLE",
       "DEFAULT_ADMIN_ROLE():(bytes32)",
-      [],
+      []
     );
 
     return result[0].toBytes();
@@ -290,7 +290,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.tryCall(
       "DEFAULT_ADMIN_ROLE",
       "DEFAULT_ADMIN_ROLE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -303,7 +303,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.call(
       "MODULE_MANAGER_ROLE",
       "MODULE_MANAGER_ROLE():(bytes32)",
-      [],
+      []
     );
 
     return result[0].toBytes();
@@ -313,7 +313,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.tryCall(
       "MODULE_MANAGER_ROLE",
       "MODULE_MANAGER_ROLE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -332,7 +332,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.tryCall(
       "getAllModules",
       "getAllModules():(bytes32[])",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -345,7 +345,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.call(
       "getEnabledModuleCount",
       "getEnabledModuleCount():(uint256)",
-      [],
+      []
     );
 
     return result[0].toBigInt();
@@ -355,7 +355,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.tryCall(
       "getEnabledModuleCount",
       "getEnabledModuleCount():(uint256)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -368,7 +368,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.call(
       "getEnabledModules",
       "getEnabledModules():(bytes32[])",
-      [],
+      []
     );
 
     return result[0].toBytesArray();
@@ -378,7 +378,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.tryCall(
       "getEnabledModules",
       "getEnabledModules():(bytes32[])",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -389,7 +389,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
 
   getModule(moduleId: Bytes): Address {
     let result = super.call("getModule", "getModule(bytes32):(address)", [
-      ethereum.Value.fromFixedBytes(moduleId),
+      ethereum.Value.fromFixedBytes(moduleId)
     ]);
 
     return result[0].toAddress();
@@ -397,7 +397,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
 
   try_getModule(moduleId: Bytes): ethereum.CallResult<Address> {
     let result = super.tryCall("getModule", "getModule(bytes32):(address)", [
-      ethereum.Value.fromFixedBytes(moduleId),
+      ethereum.Value.fromFixedBytes(moduleId)
     ]);
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -416,7 +416,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.tryCall(
       "getModuleCount",
       "getModuleCount():(uint256)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -426,26 +426,26 @@ export class GameDAORegistry extends ethereum.SmartContract {
   }
 
   getModuleInfo(
-    moduleId: Bytes,
+    moduleId: Bytes
   ): GameDAORegistry__getModuleInfoResultValue0Struct {
     let result = super.call(
       "getModuleInfo",
       "getModuleInfo(bytes32):((address,string,bool,uint256,uint256))",
-      [ethereum.Value.fromFixedBytes(moduleId)],
+      [ethereum.Value.fromFixedBytes(moduleId)]
     );
 
     return changetype<GameDAORegistry__getModuleInfoResultValue0Struct>(
-      result[0].toTuple(),
+      result[0].toTuple()
     );
   }
 
   try_getModuleInfo(
-    moduleId: Bytes,
+    moduleId: Bytes
   ): ethereum.CallResult<GameDAORegistry__getModuleInfoResultValue0Struct> {
     let result = super.tryCall(
       "getModuleInfo",
       "getModuleInfo(bytes32):((address,string,bool,uint256,uint256))",
-      [ethereum.Value.fromFixedBytes(moduleId)],
+      [ethereum.Value.fromFixedBytes(moduleId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -453,8 +453,8 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let value = result.value;
     return ethereum.CallResult.fromValue(
       changetype<GameDAORegistry__getModuleInfoResultValue0Struct>(
-        value[0].toTuple(),
-      ),
+        value[0].toTuple()
+      )
     );
   }
 
@@ -462,7 +462,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.call(
       "getModuleVersion",
       "getModuleVersion(bytes32):(string)",
-      [ethereum.Value.fromFixedBytes(moduleId)],
+      [ethereum.Value.fromFixedBytes(moduleId)]
     );
 
     return result[0].toString();
@@ -472,7 +472,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.tryCall(
       "getModuleVersion",
       "getModuleVersion(bytes32):(string)",
-      [ethereum.Value.fromFixedBytes(moduleId)],
+      [ethereum.Value.fromFixedBytes(moduleId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -483,7 +483,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
 
   getRoleAdmin(role: Bytes): Bytes {
     let result = super.call("getRoleAdmin", "getRoleAdmin(bytes32):(bytes32)", [
-      ethereum.Value.fromFixedBytes(role),
+      ethereum.Value.fromFixedBytes(role)
     ]);
 
     return result[0].toBytes();
@@ -493,7 +493,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.tryCall(
       "getRoleAdmin",
       "getRoleAdmin(bytes32):(bytes32)",
-      [ethereum.Value.fromFixedBytes(role)],
+      [ethereum.Value.fromFixedBytes(role)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -505,7 +505,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
   hasRole(role: Bytes, account: Address): boolean {
     let result = super.call("hasRole", "hasRole(bytes32,address):(bool)", [
       ethereum.Value.fromFixedBytes(role),
-      ethereum.Value.fromAddress(account),
+      ethereum.Value.fromAddress(account)
     ]);
 
     return result[0].toBoolean();
@@ -514,7 +514,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
   try_hasRole(role: Bytes, account: Address): ethereum.CallResult<boolean> {
     let result = super.tryCall("hasRole", "hasRole(bytes32,address):(bool)", [
       ethereum.Value.fromFixedBytes(role),
-      ethereum.Value.fromAddress(account),
+      ethereum.Value.fromAddress(account)
     ]);
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -527,7 +527,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.call(
       "isModuleEnabled",
       "isModuleEnabled(bytes32):(bool)",
-      [ethereum.Value.fromFixedBytes(moduleId)],
+      [ethereum.Value.fromFixedBytes(moduleId)]
     );
 
     return result[0].toBoolean();
@@ -537,7 +537,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.tryCall(
       "isModuleEnabled",
       "isModuleEnabled(bytes32):(bool)",
-      [ethereum.Value.fromFixedBytes(moduleId)],
+      [ethereum.Value.fromFixedBytes(moduleId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -565,7 +565,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.call(
       "supportsInterface",
       "supportsInterface(bytes4):(bool)",
-      [ethereum.Value.fromFixedBytes(interfaceId)],
+      [ethereum.Value.fromFixedBytes(interfaceId)]
     );
 
     return result[0].toBoolean();
@@ -575,7 +575,7 @@ export class GameDAORegistry extends ethereum.SmartContract {
     let result = super.tryCall(
       "supportsInterface",
       "supportsInterface(bytes4):(bool)",
-      [ethereum.Value.fromFixedBytes(interfaceId)],
+      [ethereum.Value.fromFixedBytes(interfaceId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();

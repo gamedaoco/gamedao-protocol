@@ -7,7 +7,7 @@ import {
   Entity,
   Bytes,
   Address,
-  BigInt,
+  BigInt
 } from "@graphprotocol/graph-ts";
 
 export class MemberAdded extends ethereum.Event {
@@ -542,7 +542,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "DEFAULT_ADMIN_ROLE",
       "DEFAULT_ADMIN_ROLE():(bytes32)",
-      [],
+      []
     );
 
     return result[0].toBytes();
@@ -552,7 +552,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "DEFAULT_ADMIN_ROLE",
       "DEFAULT_ADMIN_ROLE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -565,7 +565,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "GAME_STAKE_PURPOSE",
       "GAME_STAKE_PURPOSE():(bytes32)",
-      [],
+      []
     );
 
     return result[0].toBytes();
@@ -575,7 +575,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "GAME_STAKE_PURPOSE",
       "GAME_STAKE_PURPOSE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -609,7 +609,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "OPERATOR_ROLE",
       "OPERATOR_ROLE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -622,10 +622,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "canJoinOrganization",
       "canJoinOrganization(bytes32,address):(bool)",
-      [
-        ethereum.Value.fromFixedBytes(orgId),
-        ethereum.Value.fromAddress(member),
-      ],
+      [ethereum.Value.fromFixedBytes(orgId), ethereum.Value.fromAddress(member)]
     );
 
     return result[0].toBoolean();
@@ -633,15 +630,12 @@ export class Control extends ethereum.SmartContract {
 
   try_canJoinOrganization(
     orgId: Bytes,
-    member: Address,
+    member: Address
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "canJoinOrganization",
       "canJoinOrganization(bytes32,address):(bool)",
-      [
-        ethereum.Value.fromFixedBytes(orgId),
-        ethereum.Value.fromAddress(member),
-      ],
+      [ethereum.Value.fromFixedBytes(orgId), ethereum.Value.fromAddress(member)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -658,7 +652,7 @@ export class Control extends ethereum.SmartContract {
     feeModel: i32,
     memberLimit: BigInt,
     membershipFee: BigInt,
-    gameStakeRequired: BigInt,
+    gameStakeRequired: BigInt
   ): Bytes {
     let result = super.call(
       "createOrganization",
@@ -671,8 +665,8 @@ export class Control extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(feeModel)),
         ethereum.Value.fromUnsignedBigInt(memberLimit),
         ethereum.Value.fromUnsignedBigInt(membershipFee),
-        ethereum.Value.fromUnsignedBigInt(gameStakeRequired),
-      ],
+        ethereum.Value.fromUnsignedBigInt(gameStakeRequired)
+      ]
     );
 
     return result[0].toBytes();
@@ -686,7 +680,7 @@ export class Control extends ethereum.SmartContract {
     feeModel: i32,
     memberLimit: BigInt,
     membershipFee: BigInt,
-    gameStakeRequired: BigInt,
+    gameStakeRequired: BigInt
   ): ethereum.CallResult<Bytes> {
     let result = super.tryCall(
       "createOrganization",
@@ -699,8 +693,8 @@ export class Control extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(feeModel)),
         ethereum.Value.fromUnsignedBigInt(memberLimit),
         ethereum.Value.fromUnsignedBigInt(membershipFee),
-        ethereum.Value.fromUnsignedBigInt(gameStakeRequired),
-      ],
+        ethereum.Value.fromUnsignedBigInt(gameStakeRequired)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -728,7 +722,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "getAllOrganizations",
       "getAllOrganizations():(bytes32[])",
-      [],
+      []
     );
 
     return result[0].toBytesArray();
@@ -738,7 +732,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "getAllOrganizations",
       "getAllOrganizations():(bytes32[])",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -751,7 +745,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "getGameStakeRequired",
       "getGameStakeRequired(bytes32):(uint256)",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
 
     return result[0].toBigInt();
@@ -761,7 +755,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "getGameStakeRequired",
       "getGameStakeRequired(bytes32):(uint256)",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -772,40 +766,34 @@ export class Control extends ethereum.SmartContract {
 
   getMember(
     orgId: Bytes,
-    member: Address,
+    member: Address
   ): Control__getMemberResultValue0Struct {
     let result = super.call(
       "getMember",
       "getMember(bytes32,address):((uint8,uint256,uint256,bytes32,uint256))",
-      [
-        ethereum.Value.fromFixedBytes(orgId),
-        ethereum.Value.fromAddress(member),
-      ],
+      [ethereum.Value.fromFixedBytes(orgId), ethereum.Value.fromAddress(member)]
     );
 
     return changetype<Control__getMemberResultValue0Struct>(
-      result[0].toTuple(),
+      result[0].toTuple()
     );
   }
 
   try_getMember(
     orgId: Bytes,
-    member: Address,
+    member: Address
   ): ethereum.CallResult<Control__getMemberResultValue0Struct> {
     let result = super.tryCall(
       "getMember",
       "getMember(bytes32,address):((uint8,uint256,uint256,bytes32,uint256))",
-      [
-        ethereum.Value.fromFixedBytes(orgId),
-        ethereum.Value.fromAddress(member),
-      ],
+      [ethereum.Value.fromFixedBytes(orgId), ethereum.Value.fromAddress(member)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<Control__getMemberResultValue0Struct>(value[0].toTuple()),
+      changetype<Control__getMemberResultValue0Struct>(value[0].toTuple())
     );
   }
 
@@ -813,7 +801,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "getMemberCount",
       "getMemberCount(bytes32):(uint256)",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
 
     return result[0].toBigInt();
@@ -823,7 +811,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "getMemberCount",
       "getMemberCount(bytes32):(uint256)",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -836,30 +824,28 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "getOrganization",
       "getOrganization(bytes32):((uint256,address,address,string,string,uint8,uint8,uint8,uint256,address,uint32,uint8,uint256,uint256))",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
 
     return changetype<Control__getOrganizationResultValue0Struct>(
-      result[0].toTuple(),
+      result[0].toTuple()
     );
   }
 
   try_getOrganization(
-    orgId: Bytes,
+    orgId: Bytes
   ): ethereum.CallResult<Control__getOrganizationResultValue0Struct> {
     let result = super.tryCall(
       "getOrganization",
       "getOrganization(bytes32):((uint256,address,address,string,string,uint8,uint8,uint8,uint256,address,uint32,uint8,uint256,uint256))",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<Control__getOrganizationResultValue0Struct>(
-        value[0].toTuple(),
-      ),
+      changetype<Control__getOrganizationResultValue0Struct>(value[0].toTuple())
     );
   }
 
@@ -867,7 +853,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "getOrganizationCount",
       "getOrganizationCount():(uint256)",
-      [],
+      []
     );
 
     return result[0].toBigInt();
@@ -877,7 +863,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "getOrganizationCount",
       "getOrganizationCount():(uint256)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -890,19 +876,19 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "getOrganizationMembers",
       "getOrganizationMembers(bytes32):(address[])",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
 
     return result[0].toAddressArray();
   }
 
   try_getOrganizationMembers(
-    orgId: Bytes,
+    orgId: Bytes
   ): ethereum.CallResult<Array<Address>> {
     let result = super.tryCall(
       "getOrganizationMembers",
       "getOrganizationMembers(bytes32):(address[])",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -915,7 +901,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "getOrganizationsByState",
       "getOrganizationsByState(uint8):(bytes32[])",
-      [ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(state))],
+      [ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(state))]
     );
 
     return result[0].toBytesArray();
@@ -925,7 +911,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "getOrganizationsByState",
       "getOrganizationsByState(uint8):(bytes32[])",
-      [ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(state))],
+      [ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(state))]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -936,7 +922,7 @@ export class Control extends ethereum.SmartContract {
 
   getRoleAdmin(role: Bytes): Bytes {
     let result = super.call("getRoleAdmin", "getRoleAdmin(bytes32):(bytes32)", [
-      ethereum.Value.fromFixedBytes(role),
+      ethereum.Value.fromFixedBytes(role)
     ]);
 
     return result[0].toBytes();
@@ -946,7 +932,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "getRoleAdmin",
       "getRoleAdmin(bytes32):(bytes32)",
-      [ethereum.Value.fromFixedBytes(role)],
+      [ethereum.Value.fromFixedBytes(role)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -959,7 +945,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "getTreasuryAddress",
       "getTreasuryAddress(bytes32):(address)",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
 
     return result[0].toAddress();
@@ -969,7 +955,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "getTreasuryAddress",
       "getTreasuryAddress(bytes32):(address)",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -985,8 +971,8 @@ export class Control extends ethereum.SmartContract {
       [
         ethereum.Value.fromFixedBytes(orgId),
         ethereum.Value.fromAddress(member),
-        ethereum.Value.fromFixedBytes(role),
-      ],
+        ethereum.Value.fromFixedBytes(role)
+      ]
     );
 
     return result[0].toBoolean();
@@ -995,7 +981,7 @@ export class Control extends ethereum.SmartContract {
   try_hasRole(
     orgId: Bytes,
     member: Address,
-    role: Bytes,
+    role: Bytes
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "hasRole",
@@ -1003,8 +989,8 @@ export class Control extends ethereum.SmartContract {
       [
         ethereum.Value.fromFixedBytes(orgId),
         ethereum.Value.fromAddress(member),
-        ethereum.Value.fromFixedBytes(role),
-      ],
+        ethereum.Value.fromFixedBytes(role)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1016,7 +1002,7 @@ export class Control extends ethereum.SmartContract {
   hasRole1(role: Bytes, account: Address): boolean {
     let result = super.call("hasRole", "hasRole(bytes32,address):(bool)", [
       ethereum.Value.fromFixedBytes(role),
-      ethereum.Value.fromAddress(account),
+      ethereum.Value.fromAddress(account)
     ]);
 
     return result[0].toBoolean();
@@ -1025,7 +1011,7 @@ export class Control extends ethereum.SmartContract {
   try_hasRole1(role: Bytes, account: Address): ethereum.CallResult<boolean> {
     let result = super.tryCall("hasRole", "hasRole(bytes32,address):(bool)", [
       ethereum.Value.fromFixedBytes(role),
-      ethereum.Value.fromAddress(account),
+      ethereum.Value.fromAddress(account)
     ]);
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1053,10 +1039,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "isMemberActive",
       "isMemberActive(bytes32,address):(bool)",
-      [
-        ethereum.Value.fromFixedBytes(orgId),
-        ethereum.Value.fromAddress(member),
-      ],
+      [ethereum.Value.fromFixedBytes(orgId), ethereum.Value.fromAddress(member)]
     );
 
     return result[0].toBoolean();
@@ -1064,15 +1047,12 @@ export class Control extends ethereum.SmartContract {
 
   try_isMemberActive(
     orgId: Bytes,
-    member: Address,
+    member: Address
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "isMemberActive",
       "isMemberActive(bytes32,address):(bool)",
-      [
-        ethereum.Value.fromFixedBytes(orgId),
-        ethereum.Value.fromAddress(member),
-      ],
+      [ethereum.Value.fromFixedBytes(orgId), ethereum.Value.fromAddress(member)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1085,7 +1065,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "isOrganizationActive",
       "isOrganizationActive(bytes32):(bool)",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
 
     return result[0].toBoolean();
@@ -1095,7 +1075,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "isOrganizationActive",
       "isOrganizationActive(bytes32):(bool)",
-      [ethereum.Value.fromFixedBytes(orgId)],
+      [ethereum.Value.fromFixedBytes(orgId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1153,7 +1133,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.call(
       "supportsInterface",
       "supportsInterface(bytes4):(bool)",
-      [ethereum.Value.fromFixedBytes(interfaceId)],
+      [ethereum.Value.fromFixedBytes(interfaceId)]
     );
 
     return result[0].toBoolean();
@@ -1163,7 +1143,7 @@ export class Control extends ethereum.SmartContract {
     let result = super.tryCall(
       "supportsInterface",
       "supportsInterface(bytes4):(bool)",
-      [ethereum.Value.fromFixedBytes(interfaceId)],
+      [ethereum.Value.fromFixedBytes(interfaceId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();

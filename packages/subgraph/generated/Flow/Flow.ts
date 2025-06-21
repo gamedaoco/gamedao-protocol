@@ -7,7 +7,7 @@ import {
   Entity,
   Bytes,
   Address,
-  BigInt,
+  BigInt
 } from "@graphprotocol/graph-ts";
 
 export class CampaignCreated extends ethereum.Event {
@@ -669,7 +669,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "CAMPAIGN_CREATOR_ROLE",
       "CAMPAIGN_CREATOR_ROLE():(bytes32)",
-      [],
+      []
     );
 
     return result[0].toBytes();
@@ -679,7 +679,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "CAMPAIGN_CREATOR_ROLE",
       "CAMPAIGN_CREATOR_ROLE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -692,7 +692,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "DEFAULT_ADMIN_ROLE",
       "DEFAULT_ADMIN_ROLE():(bytes32)",
-      [],
+      []
     );
 
     return result[0].toBytes();
@@ -702,7 +702,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "DEFAULT_ADMIN_ROLE",
       "DEFAULT_ADMIN_ROLE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -715,7 +715,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "FLOW_ADMIN_ROLE",
       "FLOW_ADMIN_ROLE():(bytes32)",
-      [],
+      []
     );
 
     return result[0].toBytes();
@@ -725,7 +725,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "FLOW_ADMIN_ROLE",
       "FLOW_ADMIN_ROLE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -738,7 +738,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "MAX_PROTOCOL_FEE",
       "MAX_PROTOCOL_FEE():(uint256)",
-      [],
+      []
     );
 
     return result[0].toBigInt();
@@ -748,7 +748,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "MAX_PROTOCOL_FEE",
       "MAX_PROTOCOL_FEE():(uint256)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -767,7 +767,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "OPERATOR_ROLE",
       "OPERATOR_ROLE():(bytes32)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -780,7 +780,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "calculateProtocolFee",
       "calculateProtocolFee(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(amount)],
+      [ethereum.Value.fromUnsignedBigInt(amount)]
     );
 
     return result[0].toBigInt();
@@ -790,7 +790,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "calculateProtocolFee",
       "calculateProtocolFee(uint256):(uint256)",
-      [ethereum.Value.fromUnsignedBigInt(amount)],
+      [ethereum.Value.fromUnsignedBigInt(amount)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -805,8 +805,8 @@ export class Flow extends ethereum.SmartContract {
       "canContribute(bytes32,address):(bool)",
       [
         ethereum.Value.fromFixedBytes(campaignId),
-        ethereum.Value.fromAddress(param1),
-      ],
+        ethereum.Value.fromAddress(param1)
+      ]
     );
 
     return result[0].toBoolean();
@@ -814,15 +814,15 @@ export class Flow extends ethereum.SmartContract {
 
   try_canContribute(
     campaignId: Bytes,
-    param1: Address,
+    param1: Address
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "canContribute",
       "canContribute(bytes32,address):(bool)",
       [
         ethereum.Value.fromFixedBytes(campaignId),
-        ethereum.Value.fromAddress(param1),
-      ],
+        ethereum.Value.fromAddress(param1)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -842,7 +842,7 @@ export class Flow extends ethereum.SmartContract {
     min: BigInt,
     max: BigInt,
     duration: BigInt,
-    autoFinalize: boolean,
+    autoFinalize: boolean
   ): Bytes {
     let result = super.call(
       "createCampaign",
@@ -858,8 +858,8 @@ export class Flow extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(min),
         ethereum.Value.fromUnsignedBigInt(max),
         ethereum.Value.fromUnsignedBigInt(duration),
-        ethereum.Value.fromBoolean(autoFinalize),
-      ],
+        ethereum.Value.fromBoolean(autoFinalize)
+      ]
     );
 
     return result[0].toBytes();
@@ -876,7 +876,7 @@ export class Flow extends ethereum.SmartContract {
     min: BigInt,
     max: BigInt,
     duration: BigInt,
-    autoFinalize: boolean,
+    autoFinalize: boolean
   ): ethereum.CallResult<Bytes> {
     let result = super.tryCall(
       "createCampaign",
@@ -892,8 +892,8 @@ export class Flow extends ethereum.SmartContract {
         ethereum.Value.fromUnsignedBigInt(min),
         ethereum.Value.fromUnsignedBigInt(max),
         ethereum.Value.fromUnsignedBigInt(duration),
-        ethereum.Value.fromBoolean(autoFinalize),
-      ],
+        ethereum.Value.fromBoolean(autoFinalize)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -906,26 +906,26 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "getCampaign",
       "getCampaign(bytes32):((uint256,bytes32,address,address,string,string,string,uint8,uint8,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,uint256))",
-      [ethereum.Value.fromFixedBytes(campaignId)],
+      [ethereum.Value.fromFixedBytes(campaignId)]
     );
 
     return changetype<Flow__getCampaignResultValue0Struct>(result[0].toTuple());
   }
 
   try_getCampaign(
-    campaignId: Bytes,
+    campaignId: Bytes
   ): ethereum.CallResult<Flow__getCampaignResultValue0Struct> {
     let result = super.tryCall(
       "getCampaign",
       "getCampaign(bytes32):((uint256,bytes32,address,address,string,string,string,uint8,uint8,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,uint256))",
-      [ethereum.Value.fromFixedBytes(campaignId)],
+      [ethereum.Value.fromFixedBytes(campaignId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<Flow__getCampaignResultValue0Struct>(value[0].toTuple()),
+      changetype<Flow__getCampaignResultValue0Struct>(value[0].toTuple())
     );
   }
 
@@ -933,19 +933,19 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "getCampaignContributors",
       "getCampaignContributors(bytes32):(address[])",
-      [ethereum.Value.fromFixedBytes(campaignId)],
+      [ethereum.Value.fromFixedBytes(campaignId)]
     );
 
     return result[0].toAddressArray();
   }
 
   try_getCampaignContributors(
-    campaignId: Bytes,
+    campaignId: Bytes
   ): ethereum.CallResult<Array<Address>> {
     let result = super.tryCall(
       "getCampaignContributors",
       "getCampaignContributors(bytes32):(address[])",
-      [ethereum.Value.fromFixedBytes(campaignId)],
+      [ethereum.Value.fromFixedBytes(campaignId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -958,7 +958,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "getCampaignCount",
       "getCampaignCount():(uint256)",
-      [],
+      []
     );
 
     return result[0].toBigInt();
@@ -968,7 +968,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "getCampaignCount",
       "getCampaignCount():(uint256)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -981,23 +981,23 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "getCampaignProgress",
       "getCampaignProgress(bytes32):(uint256,uint256,uint256)",
-      [ethereum.Value.fromFixedBytes(campaignId)],
+      [ethereum.Value.fromFixedBytes(campaignId)]
     );
 
     return new Flow__getCampaignProgressResult(
       result[0].toBigInt(),
       result[1].toBigInt(),
-      result[2].toBigInt(),
+      result[2].toBigInt()
     );
   }
 
   try_getCampaignProgress(
-    campaignId: Bytes,
+    campaignId: Bytes
   ): ethereum.CallResult<Flow__getCampaignProgressResult> {
     let result = super.tryCall(
       "getCampaignProgress",
       "getCampaignProgress(bytes32):(uint256,uint256,uint256)",
-      [ethereum.Value.fromFixedBytes(campaignId)],
+      [ethereum.Value.fromFixedBytes(campaignId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1007,8 +1007,8 @@ export class Flow extends ethereum.SmartContract {
       new Flow__getCampaignProgressResult(
         value[0].toBigInt(),
         value[1].toBigInt(),
-        value[2].toBigInt(),
-      ),
+        value[2].toBigInt()
+      )
     );
   }
 
@@ -1016,19 +1016,19 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "getCampaignsByOrganization",
       "getCampaignsByOrganization(bytes32):(bytes32[])",
-      [ethereum.Value.fromFixedBytes(organizationId)],
+      [ethereum.Value.fromFixedBytes(organizationId)]
     );
 
     return result[0].toBytesArray();
   }
 
   try_getCampaignsByOrganization(
-    organizationId: Bytes,
+    organizationId: Bytes
   ): ethereum.CallResult<Array<Bytes>> {
     let result = super.tryCall(
       "getCampaignsByOrganization",
       "getCampaignsByOrganization(bytes32):(bytes32[])",
-      [ethereum.Value.fromFixedBytes(organizationId)],
+      [ethereum.Value.fromFixedBytes(organizationId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1041,7 +1041,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "getCampaignsByState",
       "getCampaignsByState(uint8):(bytes32[])",
-      [ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(state))],
+      [ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(state))]
     );
 
     return result[0].toBytesArray();
@@ -1051,7 +1051,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "getCampaignsByState",
       "getCampaignsByState(uint8):(bytes32[])",
-      [ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(state))],
+      [ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(state))]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1062,40 +1062,40 @@ export class Flow extends ethereum.SmartContract {
 
   getContribution(
     campaignId: Bytes,
-    contributor: Address,
+    contributor: Address
   ): Flow__getContributionResultValue0Struct {
     let result = super.call(
       "getContribution",
       "getContribution(bytes32,address):((address,uint256,uint256,uint8,string))",
       [
         ethereum.Value.fromFixedBytes(campaignId),
-        ethereum.Value.fromAddress(contributor),
-      ],
+        ethereum.Value.fromAddress(contributor)
+      ]
     );
 
     return changetype<Flow__getContributionResultValue0Struct>(
-      result[0].toTuple(),
+      result[0].toTuple()
     );
   }
 
   try_getContribution(
     campaignId: Bytes,
-    contributor: Address,
+    contributor: Address
   ): ethereum.CallResult<Flow__getContributionResultValue0Struct> {
     let result = super.tryCall(
       "getContribution",
       "getContribution(bytes32,address):((address,uint256,uint256,uint8,string))",
       [
         ethereum.Value.fromFixedBytes(campaignId),
-        ethereum.Value.fromAddress(contributor),
-      ],
+        ethereum.Value.fromAddress(contributor)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(
-      changetype<Flow__getContributionResultValue0Struct>(value[0].toTuple()),
+      changetype<Flow__getContributionResultValue0Struct>(value[0].toTuple())
     );
   }
 
@@ -1103,7 +1103,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "getProtocolFeeRate",
       "getProtocolFeeRate():(uint256)",
-      [],
+      []
     );
 
     return result[0].toBigInt();
@@ -1113,7 +1113,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "getProtocolFeeRate",
       "getProtocolFeeRate():(uint256)",
-      [],
+      []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1125,7 +1125,7 @@ export class Flow extends ethereum.SmartContract {
   getRewardDistribution(
     campaignId: Bytes,
     rewardToken: Address,
-    contributor: Address,
+    contributor: Address
   ): Flow__getRewardDistributionResult {
     let result = super.call(
       "getRewardDistribution",
@@ -1133,21 +1133,21 @@ export class Flow extends ethereum.SmartContract {
       [
         ethereum.Value.fromFixedBytes(campaignId),
         ethereum.Value.fromAddress(rewardToken),
-        ethereum.Value.fromAddress(contributor),
-      ],
+        ethereum.Value.fromAddress(contributor)
+      ]
     );
 
     return new Flow__getRewardDistributionResult(
       result[0].toBigInt(),
       result[1].toBigInt(),
-      result[2].toBigInt(),
+      result[2].toBigInt()
     );
   }
 
   try_getRewardDistribution(
     campaignId: Bytes,
     rewardToken: Address,
-    contributor: Address,
+    contributor: Address
   ): ethereum.CallResult<Flow__getRewardDistributionResult> {
     let result = super.tryCall(
       "getRewardDistribution",
@@ -1155,8 +1155,8 @@ export class Flow extends ethereum.SmartContract {
       [
         ethereum.Value.fromFixedBytes(campaignId),
         ethereum.Value.fromAddress(rewardToken),
-        ethereum.Value.fromAddress(contributor),
-      ],
+        ethereum.Value.fromAddress(contributor)
+      ]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1166,14 +1166,14 @@ export class Flow extends ethereum.SmartContract {
       new Flow__getRewardDistributionResult(
         value[0].toBigInt(),
         value[1].toBigInt(),
-        value[2].toBigInt(),
-      ),
+        value[2].toBigInt()
+      )
     );
   }
 
   getRoleAdmin(role: Bytes): Bytes {
     let result = super.call("getRoleAdmin", "getRoleAdmin(bytes32):(bytes32)", [
-      ethereum.Value.fromFixedBytes(role),
+      ethereum.Value.fromFixedBytes(role)
     ]);
 
     return result[0].toBytes();
@@ -1183,7 +1183,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "getRoleAdmin",
       "getRoleAdmin(bytes32):(bytes32)",
-      [ethereum.Value.fromFixedBytes(role)],
+      [ethereum.Value.fromFixedBytes(role)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1196,7 +1196,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "getTimeRemaining",
       "getTimeRemaining(bytes32):(uint256)",
-      [ethereum.Value.fromFixedBytes(campaignId)],
+      [ethereum.Value.fromFixedBytes(campaignId)]
     );
 
     return result[0].toBigInt();
@@ -1206,7 +1206,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "getTimeRemaining",
       "getTimeRemaining(bytes32):(uint256)",
-      [ethereum.Value.fromFixedBytes(campaignId)],
+      [ethereum.Value.fromFixedBytes(campaignId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1218,7 +1218,7 @@ export class Flow extends ethereum.SmartContract {
   hasRole(role: Bytes, account: Address): boolean {
     let result = super.call("hasRole", "hasRole(bytes32,address):(bool)", [
       ethereum.Value.fromFixedBytes(role),
-      ethereum.Value.fromAddress(account),
+      ethereum.Value.fromAddress(account)
     ]);
 
     return result[0].toBoolean();
@@ -1227,7 +1227,7 @@ export class Flow extends ethereum.SmartContract {
   try_hasRole(role: Bytes, account: Address): ethereum.CallResult<boolean> {
     let result = super.tryCall("hasRole", "hasRole(bytes32,address):(bool)", [
       ethereum.Value.fromFixedBytes(role),
-      ethereum.Value.fromAddress(account),
+      ethereum.Value.fromAddress(account)
     ]);
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1240,7 +1240,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "isCampaignActive",
       "isCampaignActive(bytes32):(bool)",
-      [ethereum.Value.fromFixedBytes(campaignId)],
+      [ethereum.Value.fromFixedBytes(campaignId)]
     );
 
     return result[0].toBoolean();
@@ -1250,7 +1250,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "isCampaignActive",
       "isCampaignActive(bytes32):(bool)",
-      [ethereum.Value.fromFixedBytes(campaignId)],
+      [ethereum.Value.fromFixedBytes(campaignId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -1323,7 +1323,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.call(
       "supportsInterface",
       "supportsInterface(bytes4):(bool)",
-      [ethereum.Value.fromFixedBytes(interfaceId)],
+      [ethereum.Value.fromFixedBytes(interfaceId)]
     );
 
     return result[0].toBoolean();
@@ -1333,7 +1333,7 @@ export class Flow extends ethereum.SmartContract {
     let result = super.tryCall(
       "supportsInterface",
       "supportsInterface(bytes4):(bool)",
-      [ethereum.Value.fromFixedBytes(interfaceId)],
+      [ethereum.Value.fromFixedBytes(interfaceId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
