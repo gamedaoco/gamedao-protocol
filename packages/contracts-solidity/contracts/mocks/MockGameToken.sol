@@ -257,6 +257,7 @@ contract MockGameToken is ERC20, AccessControl, IGameToken {
         super._beforeTokenTransfer(from, to, amount);
 
         // Allow transfers to this contract (for staking) and from this contract (for unstaking)
+        // Also allow transfers to external staking contracts
         if (from != address(0) && from != address(this) && to != address(this)) {
             // Check if user has enough available balance for regular transfers
             uint256 availableBalance = balanceOf(from) - _totalStaked[from];

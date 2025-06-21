@@ -1940,8 +1940,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/mocks/MockGameToken.sol": {
-      "lastModificationDate": 1750541905497,
-      "contentHash": "2fe8c58cfa49be1532e1a0384f2d754d",
+      "lastModificationDate": 1750544011445,
+      "contentHash": "84b1bb7ac12b8877e8d7732b8104e424",
       "sourceName": "contracts/mocks/MockGameToken.sol",
       "solcConfig": {
         "version": "0.8.20",

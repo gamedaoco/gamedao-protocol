@@ -112,15 +112,51 @@ async function main() {
   console.log("⚡ Sense Module enabled");
   console.log("");
 
-  // 6. Configure GAME Token Integration
+  // 6. Deploy GameStaking Contract
+  console.log("🎯 Deploying GameStaking Contract...");
+  const GameStakingFactory = await ethers.getContractFactory("GameStaking");
+  const gameStaking = await GameStakingFactory.deploy(
+    gameTokenAddress,
+    deployer.address, // Treasury address (using deployer for now)
+    1000 // 10% of protocol fees go to staking rewards
+  );
+  await gameStaking.waitForDeployment();
+  const gameStakingAddress = await gameStaking.getAddress();
+  console.log("✅ GameStaking Contract deployed to:", gameStakingAddress);
+  console.log("");
+
+  // 7. Configure GAME Token Integration
   console.log("🎮 Configuring GAME Token Integration...");
   await control.setGameToken(gameTokenAddress);
   console.log("✅ GAME Token set in Control module");
   console.log("");
 
-    // 7. Distribute Test Tokens
+      // 8. Distribute Test Tokens
   console.log("💰 Distributing test tokens to accounts...");
   const [, ...accounts] = await ethers.getSigners();
+
+    // 9. Test GameStaking Integration
+  console.log("🧪 Testing GameStaking Integration...");
+
+  // Give staking contract some rewards to distribute (from deployer who has all tokens)
+  await (gameToken as any).transfer(gameStakingAddress, ethers.parseEther("50000")); // 50k GAME for rewards
+
+  // Test staking functionality with a fresh account that has tokens
+  const testStaker = accounts[0]; // Use first account from the accounts array
+  const stakeAmount = ethers.parseEther("1000"); // 1k GAME (smaller amount)
+
+  // First give the test staker some tokens
+  await (gameToken as any).transfer(testStaker.address, ethers.parseEther("5000"));
+
+  // Approve and stake
+  await (gameToken as any).connect(testStaker).approve(gameStakingAddress, stakeAmount);
+  await gameStaking.connect(testStaker).stake(1, stakeAmount, 1); // DAO_CREATION purpose, STANDARD strategy
+
+  console.log("✅ GameStaking integration test successful");
+  console.log(`   Staked: ${ethers.formatEther(stakeAmount)} GAME`);
+  console.log(`   Purpose: DAO_CREATION (8% APY)`);
+  console.log(`   Strategy: STANDARD (7-day unstaking)`);
+  console.log("");
 
   for (let i = 0; i < Math.min(accounts.length, 12); i++) {
     const account = accounts[i];
@@ -412,6 +448,7 @@ async function main() {
          console.log("====================");
          console.log("GAME Token Address:  ", gameTokenAddress);
          console.log("USDC Token Address:  ", usdcAddress);
+         console.log("GameStaking Address: ", gameStakingAddress);
          console.log("Registry Address:    ", registryAddress);
          console.log("Control Address:     ", controlAddress);
          console.log("Flow Address:        ", flowAddress);
@@ -431,6 +468,7 @@ async function main() {
          return {
            gameToken: gameTokenAddress,
            usdc: usdcAddress,
+           gameStaking: gameStakingAddress,
            registry: registryAddress,
            control: controlAddress,
            flow: flowAddress,
