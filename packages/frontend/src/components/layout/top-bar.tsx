@@ -22,6 +22,14 @@ export function TopBar() {
 
         {/* Navigation - Left aligned after logo */}
         <nav className="flex items-center space-x-6 text-sm mr-auto">
+          {isConnected && (
+            <Link
+              href="/dashboard"
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
+            >
+              Dashboard
+            </Link>
+          )}
           <Link
             href="/control"
             className="transition-colors hover:text-foreground/80 text-foreground/60"
