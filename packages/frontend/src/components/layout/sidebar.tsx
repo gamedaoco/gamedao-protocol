@@ -9,12 +9,6 @@ import { cn } from '@/lib/utils'
 
 const navigation = [
   {
-    name: 'Dashboard',
-    href: '/',
-    icon: '🏠',
-    description: 'Overview and quick actions'
-  },
-  {
     name: 'Control',
     icon: '🏛️',
     description: 'DAO Management',
@@ -75,58 +69,45 @@ export function Sidebar() {
         <nav className="flex-1 space-y-1 p-4">
           {navigation.map((item) => (
             <div key={item.name}>
-              {item.href ? (
-                // Single page item
-                <Link href={item.href}>
-                  <Button
-                    variant={pathname === item.href ? "secondary" : "ghost"}
-                    className="w-full justify-start"
-                  >
-                    <span className="mr-2">{item.icon}</span>
-                    {item.name}
-                  </Button>
-                </Link>
-              ) : (
-                // Module with children
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between px-3 py-2">
-                    <div className="flex items-center space-x-2">
-                      <span>{item.icon}</span>
-                      <div>
-                        <div className="font-medium text-sm">{item.name}</div>
-                        <div className="text-xs text-muted-foreground">{item.description}</div>
-                      </div>
+              {/* Module with children */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between px-3 py-2">
+                  <div className="flex items-center space-x-2">
+                    <span>{item.icon}</span>
+                    <div>
+                      <div className="font-medium text-sm">{item.name}</div>
+                      <div className="text-xs text-muted-foreground">{item.description}</div>
                     </div>
-                    <Badge
-                      variant={item.badge === 'Active' ? 'default' : 'outline'}
-                      className="text-xs"
-                    >
-                      {item.badge}
-                    </Badge>
                   </div>
-
-                  {/* Child pages */}
-                  {item.children && (
-                    <div className="ml-4 space-y-1">
-                      {item.children.map((child) => (
-                        <Link key={child.href} href={child.href}>
-                          <Button
-                            variant={pathname === child.href ? "secondary" : "ghost"}
-                            className={cn(
-                              "w-full justify-start text-sm",
-                              !isConnected && item.badge === 'Active' && "opacity-50 cursor-not-allowed"
-                            )}
-                            disabled={!isConnected && item.badge === 'Active'}
-                          >
-                            <span className="mr-2">{child.icon}</span>
-                            {child.name}
-                          </Button>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                  <Badge
+                    variant={item.badge === 'Active' ? 'default' : 'outline'}
+                    className="text-xs"
+                  >
+                    {item.badge}
+                  </Badge>
                 </div>
-              )}
+
+                {/* Child pages */}
+                {item.children && (
+                  <div className="ml-4 space-y-1">
+                    {item.children.map((child) => (
+                      <Link key={child.href} href={child.href}>
+                        <Button
+                          variant={pathname === child.href ? "secondary" : "ghost"}
+                          className={cn(
+                            "w-full justify-start text-sm",
+                            !isConnected && item.badge === 'Active' && "opacity-50 cursor-not-allowed"
+                          )}
+                          disabled={!isConnected && item.badge === 'Active'}
+                        >
+                          <span className="mr-2">{child.icon}</span>
+                          {child.name}
+                        </Button>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </nav>

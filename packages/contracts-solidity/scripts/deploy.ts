@@ -8,7 +8,25 @@ async function main() {
   console.log("💰 Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)));
   console.log("");
 
-  // 1. Deploy GameDAO Registry
+  // 1. Deploy Test Tokens
+  console.log("🪙 Deploying Test Tokens...");
+
+  // Deploy GAME token
+  const GameTokenFactory = await ethers.getContractFactory("MockGameToken");
+  const gameToken = await GameTokenFactory.deploy();
+  await gameToken.waitForDeployment();
+  const gameTokenAddress = await gameToken.getAddress();
+  console.log("✅ GAME Token deployed to:", gameTokenAddress);
+
+  // Deploy USDC token
+  const USDCFactory = await ethers.getContractFactory("MockUSDC");
+  const usdc = await USDCFactory.deploy();
+  await usdc.waitForDeployment();
+  const usdcAddress = await usdc.getAddress();
+  console.log("✅ USDC Token deployed to:", usdcAddress);
+  console.log("");
+
+  // 2. Deploy GameDAO Registry
   console.log("📋 Deploying GameDAO Registry...");
   const GameDAORegistryFactory = await ethers.getContractFactory("GameDAORegistry");
   const registry = await GameDAORegistryFactory.deploy(deployer.address);
@@ -94,6 +112,30 @@ async function main() {
   console.log("⚡ Sense Module enabled");
   console.log("");
 
+  // 6. Configure GAME Token Integration
+  console.log("🎮 Configuring GAME Token Integration...");
+  await control.setGameToken(gameTokenAddress);
+  console.log("✅ GAME Token set in Control module");
+  console.log("");
+
+    // 7. Distribute Test Tokens
+  console.log("💰 Distributing test tokens to accounts...");
+  const [, ...accounts] = await ethers.getSigners();
+
+  for (let i = 0; i < Math.min(accounts.length, 12); i++) {
+    const account = accounts[i];
+
+    // Give each account 10,000 GAME tokens
+    await (gameToken as any).transfer(account.address, ethers.parseEther("10000"));
+
+    // Give each account 10,000 USDC
+    await (usdc as any).transfer(account.address, ethers.parseUnits("10000", 6));
+
+    console.log(`💸 Distributed tokens to ${account.address}`);
+  }
+  console.log("✅ Token distribution complete");
+  console.log("");
+
   // 5. Create a Test Organization
   console.log("🏗️ Creating test organization...");
   const createOrgTx = await control.createOrganization(
@@ -158,10 +200,10 @@ async function main() {
       "A test crowdfunding campaign for GameDAO",
       "ipfs://QmTestCampaignMetadata",
       0, // Grant type
-      ethers.ZeroAddress, // ETH payments
-      ethers.parseEther("10"), // Target: 10 ETH
-      ethers.parseEther("5"),  // Min: 5 ETH
-      ethers.parseEther("20"), // Max: 20 ETH
+      usdcAddress, // USDC payments
+      ethers.parseUnits("10000", 6), // Target: 10,000 USDC
+      ethers.parseUnits("5000", 6),  // Min: 5,000 USDC
+      ethers.parseUnits("20000", 6), // Max: 20,000 USDC
       86400 * 30, // 30 days duration
       false // Manual finalization
     );
@@ -183,26 +225,29 @@ async function main() {
       console.log("📊 Campaign Details:");
       console.log("   Title:", campaign.title);
       console.log("   Creator:", campaign.creator);
-      console.log("   Target:", ethers.formatEther(campaign.target), "ETH");
-      console.log("   Min:", ethers.formatEther(campaign.min), "ETH");
-      console.log("   Max:", ethers.formatEther(campaign.max), "ETH");
+      console.log("   Target:", ethers.formatUnits(campaign.target, 6), "USDC");
+      console.log("   Min:", ethers.formatUnits(campaign.min, 6), "USDC");
+      console.log("   Max:", ethers.formatUnits(campaign.max, 6), "USDC");
       console.log("   State:", campaign.state); // 0 = Created
       console.log("   Auto Finalize:", campaign.autoFinalize);
       console.log("");
 
       // Test a small contribution
       console.log("💸 Making test contribution...");
-      const contributionAmount = ethers.parseEther("2");
+      const contributionAmount = ethers.parseUnits("1000", 6); // 1000 USDC
+
+      // Approve USDC spending first
+      await (usdc as any).connect(testMember).approve(flowAddress, contributionAmount);
+
       await flow.connect(testMember).contribute(
         campaignId,
         contributionAmount,
-        "Test contribution from deployment script",
-        { value: contributionAmount }
+        "Test contribution from deployment script"
       );
 
       const updatedCampaign = await flow.getCampaign(campaignId);
       console.log("✅ Contribution successful!");
-      console.log("   Amount raised:", ethers.formatEther(updatedCampaign.raised), "ETH");
+      console.log("   Amount raised:", ethers.formatUnits(updatedCampaign.raised, 6), "USDC");
       console.log("   Contributors:", updatedCampaign.contributorCount.toString());
       console.log("   State:", updatedCampaign.state); // Should be 1 = Active
       console.log("");
@@ -365,6 +410,8 @@ async function main() {
         // 10. Summary
          console.log("🎯 DEPLOYMENT SUMMARY");
          console.log("====================");
+         console.log("GAME Token Address:  ", gameTokenAddress);
+         console.log("USDC Token Address:  ", usdcAddress);
          console.log("Registry Address:    ", registryAddress);
          console.log("Control Address:     ", controlAddress);
          console.log("Flow Address:        ", flowAddress);
@@ -382,6 +429,8 @@ async function main() {
          console.log("🚀 GameDAO Protocol successfully deployed and tested!");
 
          return {
+           gameToken: gameTokenAddress,
+           usdc: usdcAddress,
            registry: registryAddress,
            control: controlAddress,
            flow: flowAddress,
@@ -410,6 +459,15 @@ main()
     console.log("\n✨ Deployment completed successfully!");
     console.log("📋 Save these addresses for frontend integration:");
     console.log(JSON.stringify(deploymentInfo, null, 2));
+
+    // Save deployment addresses to file for other scripts
+    const fs = require('fs');
+    const path = require('path');
+    const deploymentFile = path.join(__dirname, '..', 'deployment-addresses.json');
+
+    fs.writeFileSync(deploymentFile, JSON.stringify(deploymentInfo, null, 2));
+    console.log(`💾 Deployment addresses saved to: ${deploymentFile}`);
+
     process.exit(0);
   })
   .catch((error) => {

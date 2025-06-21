@@ -41,6 +41,7 @@ export interface IGameTokenInterface extends Interface {
       | "setUnstakingDelay"
       | "slash"
       | "stake"
+      | "stakeFor"
       | "totalSupply"
       | "transfer"
       | "transferFrom"
@@ -118,6 +119,10 @@ export interface IGameTokenInterface extends Interface {
     values: [BytesLike, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "stakeFor",
+    values: [AddressLike, BytesLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "totalSupply",
     values?: undefined
   ): string;
@@ -174,6 +179,7 @@ export interface IGameTokenInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "slash", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "stake", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "stakeFor", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "totalSupply",
     data: BytesLike
@@ -428,6 +434,12 @@ export interface IGameToken extends BaseContract {
     "nonpayable"
   >;
 
+  stakeFor: TypedContractMethod<
+    [user: AddressLike, purpose: BytesLike, amount: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   totalSupply: TypedContractMethod<[], [bigint], "view">;
 
   transfer: TypedContractMethod<
@@ -529,6 +541,13 @@ export interface IGameToken extends BaseContract {
     nameOrSignature: "stake"
   ): TypedContractMethod<
     [purpose: BytesLike, amount: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "stakeFor"
+  ): TypedContractMethod<
+    [user: AddressLike, purpose: BytesLike, amount: BigNumberish],
     [void],
     "nonpayable"
   >;

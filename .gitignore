@@ -115,3 +115,5 @@ temp/
 *.njsproj
 *.sln
 *.sw?
+
+command.cache
