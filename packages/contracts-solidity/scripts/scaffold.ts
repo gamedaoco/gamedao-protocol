@@ -107,8 +107,10 @@ async function main() {
   // Get token contracts from deployment
   const gameTokenAddress = deploymentData.gameToken
   const usdcAddress = deploymentData.usdc
+  const gameStakingAddress = deploymentData.gameStaking
   const gameToken = await ethers.getContractAt("MockGameToken", gameTokenAddress)
   const usdc = await ethers.getContractAt("MockUSDC", usdcAddress)
+  const gameStaking = await ethers.getContractAt("GameStaking", gameStakingAddress)
 
   console.log(`📋 Control: ${controlAddress}`)
   console.log(`📋 Flow: ${flowAddress}`)
@@ -405,6 +407,51 @@ async function main() {
     }
   }
 
+  // Create staking activity
+  console.log("\n🎯 Creating staking activity...")
+
+  // Staking purposes enum
+  const StakingPurpose = {
+    GOVERNANCE: 0,
+    DAO_CREATION: 1,
+    TREASURY_BOND: 2,
+    LIQUIDITY_MINING: 3
+  }
+
+  // Unstaking strategies enum
+  const UnstakingStrategy = {
+    RAGE_QUIT: 0,
+    STANDARD: 1,
+    PATIENT: 2
+  }
+
+  let stakingCount = 0
+
+  // Have some users stake in different pools
+  for (let i = 0; i < Math.min(6, userAccounts.length); i++) {
+    const user = userAccounts[i]
+    const purposes = [StakingPurpose.GOVERNANCE, StakingPurpose.TREASURY_BOND, StakingPurpose.LIQUIDITY_MINING]
+    const purpose = purposes[i % purposes.length]
+    const strategies = [UnstakingStrategy.STANDARD, UnstakingStrategy.PATIENT]
+    const strategy = strategies[i % strategies.length]
+
+    try {
+      // Random stake amount between 500-3000 GAME
+      const stakeAmount = ethers.parseEther((Math.random() * 2500 + 500).toFixed(0))
+
+      console.log(`  ${USERS[i].avatar} ${USERS[i].name} staking ${ethers.formatEther(stakeAmount)} GAME`)
+
+      // Approve and stake
+      await (gameToken as any).connect(user).approve(gameStakingAddress, stakeAmount)
+      await gameStaking.connect(user).stake(purpose, stakeAmount, strategy)
+
+      stakingCount++
+      console.log(`    ✅ Staked in pool ${purpose} with strategy ${strategy}`)
+    } catch (error) {
+      console.log(`    ❌ Failed to stake for ${USERS[i].name}`)
+    }
+  }
+
   // Save results
   const outputPath = path.join(__dirname, '../scaffold-output.json')
   const output = {
@@ -426,6 +473,7 @@ async function main() {
   console.log(`  🏛️  DAOs: ${result.daos.length}`)
   console.log(`  💸 Campaigns: ${result.campaigns.length}`)
   console.log(`  🗳️  Proposals: ${result.proposals.length}`)
+  console.log(`  🎯 Staking Activities: ${stakingCount}`)
   console.log(`💾 Data saved to: ${outputPath}`)
 }
 

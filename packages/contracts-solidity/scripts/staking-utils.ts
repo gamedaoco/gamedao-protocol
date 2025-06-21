@@ -157,12 +157,13 @@ async function main() {
   console.log("   npx hardhat run scripts/staking-utils.ts --network localhost -- process 1 0");
   console.log("");
 
-        console.log("📈 STAKING REWARDS ACCRUING");
-  console.log("===========================");
-  console.log("Rewards are now accruing for your staked tokens!");
-  console.log("• Governance Pool: 3% APY with Patient strategy (5% bonus)");
-  console.log("• Treasury Bond Pool: 12% APY with Standard strategy");
-  console.log("• You have an active unstake request that can be processed");
+        console.log("🎊 ECOSYSTEM OVERVIEW");
+  console.log("====================");
+  console.log("The GameDAO ecosystem is now fully operational!");
+  console.log("• Multiple staking pools with active participants");
+  console.log("• DAOs created with GAME token staking requirements");
+  console.log("• USDC-based campaigns for stable funding");
+  console.log("• Reward system incentivizing long-term participation");
   console.log("");
 
   // Handle command line arguments (skip hardhat run and script name)
