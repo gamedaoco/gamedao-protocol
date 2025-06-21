@@ -56,3 +56,5 @@ export type { Sense } from "./contracts/modules/Sense/Sense";
 export { Sense__factory } from "./factories/contracts/modules/Sense/Sense__factory";
 export type { Signal } from "./contracts/modules/Signal/Signal";
 export { Signal__factory } from "./factories/contracts/modules/Signal/Signal__factory";
+export type { GameStaking } from "./contracts/staking/GameStaking";
+export { GameStaking__factory } from "./factories/contracts/staking/GameStaking__factory";

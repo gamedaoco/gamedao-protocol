@@ -113,6 +113,10 @@ declare module "hardhat/types/runtime" {
       name: "Signal",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Signal__factory>;
+    getContractFactory(
+      name: "GameStaking",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.GameStaking__factory>;
 
     getContractAt(
       name: "AccessControl",
@@ -239,6 +243,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.Signal>;
+    getContractAt(
+      name: "GameStaking",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.GameStaking>;
 
     deployContract(
       name: "AccessControl",
@@ -340,6 +349,10 @@ declare module "hardhat/types/runtime" {
       name: "Signal",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Signal>;
+    deployContract(
+      name: "GameStaking",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.GameStaking>;
 
     deployContract(
       name: "AccessControl",
@@ -466,6 +479,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Signal>;
+    deployContract(
+      name: "GameStaking",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.GameStaking>;
 
     // default types
     getContractFactory(
