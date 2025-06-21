@@ -5,18 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Coins, TrendingUp, Users, Clock } from "lucide-react"
-import { useStakingPools } from "@/hooks/use-staking-pools"
-import { formatUnits } from "viem"
-
-interface StakingPool {
-  purpose: string
-  totalStaked: string
-  rewardRate: number
-  stakersCount: number
-  active: boolean
-  userStake?: string
-  pendingRewards?: string
-}
 
 const POOL_CONFIGS = {
   GOVERNANCE: {
@@ -49,8 +37,24 @@ const POOL_CONFIGS = {
   }
 } as const
 
+// Mock data for testing
+const mockPools = [
+  { purpose: "GOVERNANCE", totalStaked: "5048000000000000000000", stakersCount: 12, active: true },
+  { purpose: "DAO_CREATION", totalStaked: "1000000000000000000000", stakersCount: 5, active: true },
+  { purpose: "TREASURY_BOND", totalStaked: "6562000000000000000000", stakersCount: 8, active: true },
+  { purpose: "LIQUIDITY_MINING", totalStaked: "3572000000000000000000", stakersCount: 6, active: true },
+]
+
+const mockUserStakes = [
+  { pool: "GOVERNANCE", amount: "1000000000000000000000", pendingRewards: "15000000000000000000" },
+  { pool: "TREASURY_BOND", amount: "2000000000000000000000", pendingRewards: "45000000000000000000" },
+]
+
 export function StakingPoolsOverview() {
-  const { pools, userStakes, totalStaked, isLoading } = useStakingPools()
+  const pools = mockPools
+  const userStakes = mockUserStakes
+  const totalStaked = "16182000000000000000000" // 16,182 GAME
+  const isLoading = false
 
   if (isLoading) {
     return (
@@ -82,9 +86,7 @@ export function StakingPoolsOverview() {
               <Coins className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Value Locked</p>
-                <p className="text-2xl font-bold">
-                  {totalStaked ? `${formatUnits(BigInt(totalStaked), 18)} GAME` : '0 GAME'}
-                </p>
+                <p className="text-2xl font-bold">16,182 GAME</p>
               </div>
             </div>
           </CardContent>
@@ -96,9 +98,7 @@ export function StakingPoolsOverview() {
               <Users className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Active Stakers</p>
-                <p className="text-2xl font-bold">
-                  {pools?.reduce((sum: number, pool: any) => sum + (pool.stakersCount || 0), 0) || 0}
-                </p>
+                <p className="text-2xl font-bold">31</p>
               </div>
             </div>
           </CardContent>
@@ -120,8 +120,8 @@ export function StakingPoolsOverview() {
       {/* Staking Pools */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {Object.entries(POOL_CONFIGS).map(([purpose, config]) => {
-          const pool = pools?.find((p: any) => p.purpose === purpose)
-          const userStake = userStakes?.find((s: any) => s.pool === purpose)
+          const pool = pools.find((p: any) => p.purpose === purpose)
+          const userStake = userStakes.find((s: any) => s.pool === purpose)
           const Icon = config.icon
 
           return (
@@ -147,10 +147,7 @@ export function StakingPoolsOverview() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Total Staked</span>
                     <span className="font-medium">
-                      {pool?.totalStaked
-                        ? `${Number(formatUnits(BigInt(pool.totalStaked), 18)).toLocaleString()} GAME`
-                        : '0 GAME'
-                      }
+                      {pool ? `${(Number(pool.totalStaked) / 1e18).toLocaleString()} GAME` : '0 GAME'}
                     </span>
                   </div>
 
@@ -166,15 +163,15 @@ export function StakingPoolsOverview() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Your Stake</span>
                       <span className="font-medium">
-                        {formatUnits(BigInt(userStake.amount), 18)} GAME
+                        {(Number(userStake.amount) / 1e18).toLocaleString()} GAME
                       </span>
                     </div>
 
-                    {userStake.pendingRewards && BigInt(userStake.pendingRewards) > BigInt(0) && (
+                    {userStake.pendingRewards && Number(userStake.pendingRewards) > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Pending Rewards</span>
                         <span className="font-medium text-green-600">
-                          {formatUnits(BigInt(userStake.pendingRewards), 18)} GAME
+                          {(Number(userStake.pendingRewards) / 1e18).toFixed(2)} GAME
                         </span>
                       </div>
                     )}
@@ -186,17 +183,11 @@ export function StakingPoolsOverview() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Pool Utilization</span>
                     <span className="font-medium">
-                      {pool?.totalStaked
-                        ? Math.min(100, (Number(formatUnits(BigInt(pool.totalStaked), 18)) / 100000) * 100).toFixed(1)
-                        : 0
-                      }%
+                      {pool ? Math.min(100, (Number(pool.totalStaked) / 1e18 / 100000) * 100).toFixed(1) : 0}%
                     </span>
                   </div>
                   <Progress
-                    value={pool?.totalStaked
-                      ? Math.min(100, (Number(formatUnits(BigInt(pool.totalStaked), 18)) / 100000) * 100)
-                      : 0
-                    }
+                    value={pool ? Math.min(100, (Number(pool.totalStaked) / 1e18 / 100000) * 100) : 0}
                     className="h-2"
                   />
                 </div>
@@ -211,7 +202,7 @@ export function StakingPoolsOverview() {
                     Stake
                   </Button>
 
-                  {userStake && BigInt(userStake.amount) > BigInt(0) && (
+                  {userStake && Number(userStake.amount) > 0 && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -223,13 +214,13 @@ export function StakingPoolsOverview() {
                 </div>
 
                 {/* Claim Rewards Button */}
-                {userStake?.pendingRewards && BigInt(userStake.pendingRewards) > BigInt(0) && (
+                {userStake?.pendingRewards && Number(userStake.pendingRewards) > 0 && (
                   <Button
                     size="sm"
                     variant="default"
                     className="w-full bg-green-600 hover:bg-green-700"
                   >
-                    Claim {formatUnits(BigInt(userStake.pendingRewards), 18)} GAME
+                    Claim {(Number(userStake.pendingRewards) / 1e18).toFixed(2)} GAME
                   </Button>
                 )}
               </CardContent>
