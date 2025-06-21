@@ -9,6 +9,18 @@ import { cn } from '@/lib/utils'
 
 const navigation = [
   {
+    name: 'Staking',
+    icon: '🪙',
+    description: 'Earn Rewards',
+    badge: 'Active',
+    children: [
+      { name: 'Dashboard', href: '/staking', icon: '📊' },
+      { name: 'Pools', href: '/staking/pools', icon: '🏊' },
+      { name: 'Rewards', href: '/staking/rewards', icon: '🎁' },
+      { name: 'History', href: '/staking/history', icon: '📜' },
+    ]
+  },
+  {
     name: 'Control',
     icon: '🏛️',
     description: 'DAO Management',
