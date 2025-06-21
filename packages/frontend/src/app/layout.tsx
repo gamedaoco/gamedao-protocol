@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Web3Provider } from "@/providers/web3-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { AppLayout } from "@/components/layout/app-layout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,16 +31,14 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
           <Web3Provider>
-            <div className="relative flex min-h-screen flex-col">
-              <div className="flex-1">
-                {children}
-              </div>
-            </div>
+            <AppLayout>
+              {children}
+            </AppLayout>
           </Web3Provider>
         </ThemeProvider>
       </body>
