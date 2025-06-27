@@ -26,7 +26,7 @@ const navigation = [
     description: 'DAO Management',
     badge: 'Active',
     children: [
-      { name: 'Organizations', href: '/control/organizations', icon: '🏢' },
+      { name: 'Organizations', href: '/control', icon: '🏢' },
       { name: 'Create DAO', href: '/control/create', icon: '➕' },
       { name: 'Members', href: '/control/members', icon: '👥' },
       { name: 'Treasury', href: '/control/treasury', icon: '💰' },
@@ -38,7 +38,7 @@ const navigation = [
     description: 'Crowdfunding',
     badge: 'Active',
     children: [
-      { name: 'Campaigns', href: '/flow/campaigns', icon: '🎯' },
+      { name: 'Campaigns', href: '/flow', icon: '🎯' },
       { name: 'Create Campaign', href: '/flow/create', icon: '🚀' },
       { name: 'My Contributions', href: '/flow/contributions', icon: '💝' },
       { name: 'Analytics', href: '/flow/analytics', icon: '📊' },
@@ -48,9 +48,9 @@ const navigation = [
     name: 'Signal',
     icon: '🗳️',
     description: 'Governance',
-    badge: 'Coming Soon',
+    badge: 'Active',
     children: [
-      { name: 'Proposals', href: '/signal/proposals', icon: '📋' },
+      { name: 'Proposals', href: '/signal', icon: '📋' },
       { name: 'Create Proposal', href: '/signal/create', icon: '✍️' },
       { name: 'Voting', href: '/signal/voting', icon: '🗳️' },
       { name: 'Delegation', href: '/signal/delegation', icon: '🤝' },

@@ -4,16 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Coins, DollarSign, CheckCircle, Clock } from "lucide-react"
-
-// Mock data for testing
-const mockBalances = {
-  gameBalance: "10000000000000000000000", // 10,000 GAME
-  usdcBalance: "10000000000", // 10,000 USDC (6 decimals)
-  gameAllowance: "1000000000000000000000000", // Large allowance
-  usdcAllowance: "1000000000000", // Large allowance
-  isLoading: false,
-  isApproving: false
-}
+import { useTokenBalances } from "@/hooks/use-token-balances"
 
 export function TokenBalanceCard() {
   const {
@@ -22,16 +13,10 @@ export function TokenBalanceCard() {
     gameAllowance,
     usdcAllowance,
     isLoading,
-    isApproving
-  } = mockBalances
-
-  const approveGame = () => {
-    console.log('Approve GAME clicked')
-  }
-
-  const approveUsdc = () => {
-    console.log('Approve USDC clicked')
-  }
+    isApproving,
+    approveGame,
+    approveUsdc
+  } = useTokenBalances()
 
   if (isLoading) {
     return (

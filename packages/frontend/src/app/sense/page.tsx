@@ -203,16 +203,16 @@ export default function SensePage() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {[
-              { name: 'First DAO', description: 'Created your first DAO', icon: '🏛️', rarity: 'Common' },
-              { name: 'Fundraiser', description: 'Launched a successful campaign', icon: '💰', rarity: 'Uncommon' },
-              { name: 'Governance Guru', description: 'Voted on 50+ proposals', icon: '🗳️', rarity: 'Rare' },
-              { name: 'Community Builder', description: 'Invited 25+ members', icon: '👥', rarity: 'Uncommon' },
-              { name: 'Whale Supporter', description: 'Contributed $10K+ to campaigns', icon: '🐋', rarity: 'Epic' },
-              { name: 'DAO Master', description: 'Member of 10+ DAOs', icon: '👑', rarity: 'Legendary' }
+              { name: 'First DAO', description: 'Created your first DAO', icon: 'DAO', rarity: 'Common' },
+              { name: 'Fundraiser', description: 'Launched a successful campaign', icon: 'FUND', rarity: 'Uncommon' },
+              { name: 'Governance Guru', description: 'Voted on 50+ proposals', icon: 'VOTE', rarity: 'Rare' },
+              { name: 'Community Builder', description: 'Invited 25+ members', icon: 'BUILD', rarity: 'Uncommon' },
+              { name: 'Whale Supporter', description: 'Contributed $10K+ to campaigns', icon: 'WHALE', rarity: 'Epic' },
+              { name: 'DAO Master', description: 'Member of 10+ DAOs', icon: 'MASTER', rarity: 'Legendary' }
             ].map((achievement, index) => (
               <Card key={index} className="text-center hover:shadow-lg transition-shadow cursor-pointer">
                 <CardContent className="p-4">
-                  <div className="text-3xl mb-2">{achievement.icon}</div>
+                  <div className="text-lg font-bold mb-2 text-primary">{achievement.icon}</div>
                   <h4 className="font-medium text-sm mb-1">{achievement.name}</h4>
                   <p className="text-xs text-muted-foreground mb-2">{achievement.description}</p>
                   <Badge

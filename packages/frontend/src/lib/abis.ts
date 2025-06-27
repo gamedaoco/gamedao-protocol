@@ -34,6 +34,13 @@ export const CONTROL_ABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getAllOrganizations",
+    "outputs": [{"internalType": "bytes32[]", "name": "", "type": "bytes32[]"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [{"internalType": "bytes32", "name": "orgId", "type": "bytes32"}],
     "name": "getOrganization",
     "outputs": [
@@ -85,6 +92,13 @@ export const FLOW_ABI = [
     "type": "function"
   },
   {
+    "inputs": [{"internalType": "uint8", "name": "state", "type": "uint8"}],
+    "name": "getCampaignsByState",
+    "outputs": [{"internalType": "bytes32[]", "name": "", "type": "bytes32[]"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [{"internalType": "bytes32", "name": "campaignId", "type": "bytes32"}],
     "name": "getCampaign",
     "outputs": [
@@ -122,20 +136,136 @@ export const SIGNAL_ABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getActiveProposals",
+    "outputs": [{"internalType": "bytes32[]", "name": "", "type": "bytes32[]"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes32", "name": "organizationId", "type": "bytes32"}],
+    "name": "getProposalsByOrganization",
+    "outputs": [{"internalType": "bytes32[]", "name": "", "type": "bytes32[]"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "uint8", "name": "state", "type": "uint8"}],
+    "name": "getProposalsByState",
+    "outputs": [{"internalType": "bytes32[]", "name": "", "type": "bytes32[]"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [{"internalType": "bytes32", "name": "proposalId", "type": "bytes32"}],
     "name": "getProposal",
     "outputs": [
+      {"internalType": "uint256", "name": "index", "type": "uint256"},
+      {"internalType": "bytes32", "name": "proposalId", "type": "bytes32"},
       {"internalType": "bytes32", "name": "organizationId", "type": "bytes32"},
       {"internalType": "address", "name": "proposer", "type": "address"},
       {"internalType": "string", "name": "title", "type": "string"},
       {"internalType": "string", "name": "description", "type": "string"},
+      {"internalType": "string", "name": "metadataURI", "type": "string"},
       {"internalType": "uint8", "name": "proposalType", "type": "uint8"},
       {"internalType": "uint8", "name": "votingType", "type": "uint8"},
+      {"internalType": "uint8", "name": "votingPower", "type": "uint8"},
       {"internalType": "uint8", "name": "state", "type": "uint8"},
       {"internalType": "uint256", "name": "startTime", "type": "uint256"},
-      {"internalType": "uint256", "name": "endTime", "type": "uint256"}
+      {"internalType": "uint256", "name": "endTime", "type": "uint256"},
+      {"internalType": "uint256", "name": "executionTime", "type": "uint256"},
+      {"internalType": "uint256", "name": "createdAt", "type": "uint256"},
+      {"internalType": "uint256", "name": "updatedAt", "type": "uint256"},
+      {"internalType": "bytes", "name": "executionData", "type": "bytes"},
+      {"internalType": "address", "name": "targetContract", "type": "address"},
+      {"internalType": "uint256", "name": "requiredQuorum", "type": "uint256"},
+      {"internalType": "uint256", "name": "votesFor", "type": "uint256"},
+      {"internalType": "uint256", "name": "votesAgainst", "type": "uint256"},
+      {"internalType": "uint256", "name": "votesAbstain", "type": "uint256"},
+      {"internalType": "uint256", "name": "totalVotingPower", "type": "uint256"},
+      {"internalType": "bool", "name": "executed", "type": "bool"},
+      {"internalType": "bool", "name": "cancelled", "type": "bool"}
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes32", "name": "proposalId", "type": "bytes32"}],
+    "name": "getProposalResult",
+    "outputs": [
+      {"internalType": "bool", "name": "passed", "type": "bool"},
+      {"internalType": "uint256", "name": "forVotes", "type": "uint256"},
+      {"internalType": "uint256", "name": "againstVotes", "type": "uint256"},
+      {"internalType": "uint256", "name": "abstainVotes", "type": "uint256"},
+      {"internalType": "uint256", "name": "quorum", "type": "uint256"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes32", "name": "proposalId", "type": "bytes32"},
+      {"internalType": "address", "name": "voter", "type": "address"}
+    ],
+    "name": "hasVoted",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes32", "name": "proposalId", "type": "bytes32"},
+      {"internalType": "address", "name": "voter", "type": "address"}
+    ],
+    "name": "canVote",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes32", "name": "proposalId", "type": "bytes32"},
+      {"internalType": "address", "name": "voter", "type": "address"}
+    ],
+    "name": "getVotingPower",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes32", "name": "proposalId", "type": "bytes32"}],
+    "name": "getTimeRemaining",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes32", "name": "proposalId", "type": "bytes32"},
+      {"internalType": "uint8", "name": "choice", "type": "uint8"},
+      {"internalType": "string", "name": "reason", "type": "string"}
+    ],
+    "name": "castVote",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes32", "name": "organizationId", "type": "bytes32"},
+      {"internalType": "string", "name": "title", "type": "string"},
+      {"internalType": "string", "name": "description", "type": "string"},
+      {"internalType": "string", "name": "metadataURI", "type": "string"},
+      {"internalType": "uint8", "name": "proposalType", "type": "uint8"},
+      {"internalType": "uint8", "name": "votingType", "type": "uint8"},
+      {"internalType": "uint8", "name": "votingPower", "type": "uint8"},
+      {"internalType": "uint256", "name": "votingPeriod", "type": "uint256"},
+      {"internalType": "bytes", "name": "executionData", "type": "bytes"},
+      {"internalType": "address", "name": "targetContract", "type": "address"}
+    ],
+    "name": "createProposal",
+    "outputs": [{"internalType": "bytes32", "name": "proposalId", "type": "bytes32"}],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ] as const
@@ -165,12 +295,43 @@ export const SENSE_ABI = [
   }
 ] as const
 
+export const STAKING_ABI = [
+  {
+    "inputs": [
+      {"internalType": "string", "name": "poolId", "type": "string"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"}
+    ],
+    "name": "stake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "string", "name": "poolId", "type": "string"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"}
+    ],
+    "name": "unstake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "string", "name": "poolId", "type": "string"}],
+    "name": "claimRewards",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+] as const
+
 export const ABIS = {
   REGISTRY: REGISTRY_ABI as Abi,
   CONTROL: CONTROL_ABI as Abi,
   FLOW: FLOW_ABI as Abi,
   SIGNAL: SIGNAL_ABI as Abi,
   SENSE: SENSE_ABI as Abi,
+  STAKING: STAKING_ABI as Abi,
 } as const
 
 // Type exports for better TypeScript support
@@ -179,3 +340,4 @@ export type ControlABI = typeof CONTROL_ABI
 export type FlowABI = typeof FLOW_ABI
 export type SignalABI = typeof SIGNAL_ABI
 export type SenseABI = typeof SENSE_ABI
+export type StakingABI = typeof STAKING_ABI

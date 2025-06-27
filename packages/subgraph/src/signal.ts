@@ -128,9 +128,7 @@ export function handleVoteCast(event: VoteCast): void {
 
   proposal.save()
 
-  // Update voter statistics
-  voter.votesCount = voter.votesCount.plus(BigInt.fromI32(1))
-  voter.save()
+  // Vote count is tracked via the votes relationship
 
   log.info('Vote cast: {} on proposal {} with power {}', [
     voterAddress,

@@ -3,11 +3,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Target, TrendingUp, Clock, DollarSign } from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
+import { EntityCard } from '@/components/ui/entity-card'
+import { ErrorBoundary } from '@/components/ui/error-boundary'
+import { EmptyState, EmptyCampaigns } from '@/components/ui/empty-state'
 import { useGameDAO } from '@/hooks/useGameDAO'
+import { useCampaigns } from '@/hooks/useCampaigns'
+import { Plus, Target, TrendingUp, Clock, DollarSign } from 'lucide-react'
 
 export default function FlowPage() {
   const { isConnected } = useGameDAO()
+  const { campaigns, isLoading, stats, getProgress, formatAmount, isActive, timeRemaining, getStateString, getFlowTypeString } = useCampaigns()
 
   return (
     <div className="space-y-6">
@@ -21,7 +27,7 @@ export default function FlowPage() {
         </div>
         <Button disabled={!isConnected} className="flex items-center space-x-2">
           <Plus className="h-4 w-4" />
-          <span>Launch Campaign</span>
+          <span>Create Campaign</span>
         </Button>
       </div>
 
@@ -35,8 +41,10 @@ export default function FlowPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
-            <p className="text-xs text-muted-foreground">+5 this week</p>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : stats.activeCampaigns}
+            </div>
+            <p className="text-xs text-muted-foreground">Currently fundraising</p>
           </CardContent>
         </Card>
 
@@ -48,7 +56,9 @@ export default function FlowPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$847K</div>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : `$${parseFloat(stats.totalRaised).toFixed(2)}`}
+            </div>
             <p className="text-xs text-muted-foreground">All time</p>
           </CardContent>
         </Card>
@@ -57,12 +67,14 @@ export default function FlowPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center space-x-2">
               <TrendingUp className="h-4 w-4" />
-              <span>Success Rate</span>
+              <span>Total Campaigns</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">78%</div>
-            <p className="text-xs text-muted-foreground">Campaigns funded</p>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : stats.totalCampaigns}
+            </div>
+            <p className="text-xs text-muted-foreground">All time</p>
           </CardContent>
         </Card>
 
@@ -71,123 +83,99 @@ export default function FlowPage() {
             <CardTitle className="text-sm font-medium">Your Contributions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isConnected ? '$2,340' : '$0'}</div>
+            <div className="text-2xl font-bold">
+              {isConnected ? `$${stats.userContributions.toFixed(2)}` : '$0.00'}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {isConnected ? 'Across 7 campaigns' : 'Connect wallet to see'}
+              {isConnected ? 'Total contributed' : 'Connect wallet to see'}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Campaign Categories */}
-      <div className="flex flex-wrap gap-2">
-        {['All', 'Game Development', 'Esports', 'NFT Projects', 'Community Events', 'Hardware'].map((category) => (
-          <Badge key={category} variant={category === 'All' ? 'default' : 'outline'} className="cursor-pointer">
-            {category}
-          </Badge>
-        ))}
+      {/* Filter Tabs */}
+      <div className="flex space-x-2">
+        <Button variant="default" size="sm">All Campaigns</Button>
+        <Button variant="outline" size="sm">Active</Button>
+        <Button variant="outline" size="sm">Successful</Button>
+        <Button variant="outline" size="sm">My Contributions</Button>
+        <Button variant="outline" size="sm">Trending</Button>
       </div>
 
-      {/* Campaign List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Featured Campaigns</CardTitle>
-          <CardDescription>
-            Support innovative gaming projects and earn rewards
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Sample Campaign Items */}
-            {[
-              {
-                title: 'Indie RPG: Chronicles of Etheria',
-                description: 'An open-world fantasy RPG built by the community',
-                raised: 45000,
-                target: 75000,
-                backers: 234,
-                daysLeft: 12,
-                category: 'Game Development',
-                image: '🎮'
-              },
-              {
-                title: 'Esports Arena Construction',
-                description: 'Building a state-of-the-art gaming facility',
-                raised: 120000,
-                target: 200000,
-                backers: 89,
-                daysLeft: 25,
-                category: 'Esports',
-                image: '🏟️'
-              },
-              {
-                title: 'NFT Trading Card Game',
-                description: 'Collectible card game with play-to-earn mechanics',
-                raised: 67000,
-                target: 100000,
-                backers: 156,
-                daysLeft: 8,
-                category: 'NFT Projects',
-                image: '🃏'
-              }
-            ].map((campaign, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-4">
-                  <div className="w-full h-32 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-4xl">
-                    {campaign.image}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="font-medium">{campaign.title}</h3>
-                    <p className="text-sm text-muted-foreground">{campaign.description}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium">
-                        ${campaign.raised.toLocaleString()} / ${campaign.target.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary rounded-full h-2"
-                        style={{ width: `${(campaign.raised / campaign.target) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center text-sm text-muted-foreground">
-                    <span>{campaign.backers} backers</span>
-                    <div className="flex items-center space-x-1">
-                      <Clock className="h-3 w-3" />
-                      <span>{campaign.daysLeft} days left</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="text-xs">
-                      {campaign.category}
-                    </Badge>
-                    <Button size="sm">
-                      Back Project
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+      {/* Campaigns */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">
+            {isLoading ? 'Loading Campaigns...' : `All Campaigns (${campaigns.length})`}
+          </h2>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm">
+              Refresh
+            </Button>
+            <Button variant="outline" size="sm">
+              Filter
+            </Button>
           </div>
+        </div>
 
-          {!isConnected && (
-            <div className="text-center py-8 border-t mt-6">
-              <p className="text-muted-foreground mb-4">
-                Connect your wallet to back campaigns and track your contributions
-              </p>
+        <ErrorBoundary>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <EntityCard
+                  key={index}
+                  entity={{
+                    id: `loading-${index}`,
+                    name: 'Loading...',
+                    description: 'Loading campaign details...'
+                  }}
+                  variant="campaign"
+                  loading={true}
+                />
+              ))}
             </div>
+          ) : campaigns.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {campaigns.map((campaign) => (
+                <EntityCard
+                  key={campaign.id}
+                  entity={{
+                    id: campaign.id,
+                    name: campaign.title || `Campaign ${campaign.id.slice(0, 8)}`,
+                    description: campaign.description,
+                    target: campaign.target,
+                    raised: campaign.raised,
+                    contributors: 0, // TODO: Get actual contributor count
+                    endTime: campaign.expiry,
+                    status: getStateString(campaign.state)
+                  }}
+                  variant="campaign"
+                  href={`/flow/${campaign.id}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyCampaigns
+              title={isConnected ? 'No campaigns yet' : 'Connect Wallet'}
+              description={
+                isConnected
+                  ? "There are no campaigns available at the moment. Be the first to create one!"
+                  : "Connect your wallet to view and support campaigns."
+              }
+              primaryAction={{
+                label: isConnected ? 'Create First Campaign' : 'Connect Wallet',
+                onClick: () => {
+                  if (isConnected) {
+                    window.location.href = '/flow/create'
+                  } else {
+                    console.log('Connect wallet')
+                  }
+                }
+              }}
+            />
           )}
-        </CardContent>
-      </Card>
+        </ErrorBoundary>
+      </div>
     </div>
   )
 }
