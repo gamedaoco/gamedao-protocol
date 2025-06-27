@@ -1,108 +1,314 @@
 'use client'
 
 import { useQuery } from '@apollo/client'
-import { gql } from '@apollo/client'
+import { useReadContract, useWriteContract } from 'wagmi'
 import { useAccount } from 'wagmi'
+import { useGameDAO } from './useGameDAO'
+import { ABIS } from '@/lib/abis'
+import { GET_STAKING_POOLS, GET_USER_STAKES, GET_STAKING_STATS } from '@/lib/queries'
+import { useState, useEffect } from 'react'
+import { formatEther, parseEther } from 'viem'
 
-const STAKING_POOLS_QUERY = gql`
-  query StakingPools {
-    stakingPools {
-      id
-      purpose
-      totalStaked
-      rewardRate
-      stakersCount
-      totalRewardsDistributed
-      active
-      lastUpdateTime
-    }
-  }
-`
-
-const USER_STAKES_QUERY = gql`
-  query UserStakes($user: Bytes!) {
-    userStakes(where: { user: $user }) {
-      id
-      user
-      pool
-      amount
-      stakedAt
-      lastClaimTime
-      preferredStrategy
-      pendingRewards
-      totalRewardsClaimed
-    }
-  }
-`
-
-interface StakingPool {
+export interface StakingPool {
   id: string
   purpose: string
-  totalStaked: string
+  totalStaked: bigint
   rewardRate: number
-  stakersCount: number
-  totalRewardsDistributed: string
+  totalRewardsDistributed: bigint
   active: boolean
-  lastUpdateTime: string
+  lastUpdateTime: number
+  stakersCount: number
+  averageStakeAmount: bigint
+  totalRewardsClaimed: bigint
+  apy?: number
 }
 
-interface UserStake {
+export interface UserStake {
   id: string
   user: string
-  pool: string
-  amount: string
-  stakedAt: string
-  lastClaimTime: string
+  pool: {
+    id: string
+    purpose: string
+    rewardRate: number
+    active: boolean
+  }
+  amount: bigint
+  stakedAt: number
+  lastClaimTime: number
   preferredStrategy: string
-  pendingRewards: string
-  totalRewardsClaimed: string
+  pendingRewards: bigint
+  totalRewardsClaimed: bigint
+}
+
+export interface StakingStats {
+  totalStaked: bigint
+  totalRewardsDistributed: bigint
+  totalRewardsClaimed: bigint
+  totalSlashed: bigint
+  activeStakers: number
+  totalStakingPools: number
+  lastUpdated: number
 }
 
 export function useStakingPools() {
+  const { contracts, isConnected } = useGameDAO()
   const { address } = useAccount()
+  const [mockPools, setMockPools] = useState<StakingPool[]>([])
 
-  const {
-    data: poolsData,
-    loading: poolsLoading,
-    error: poolsError
-  } = useQuery(STAKING_POOLS_QUERY, {
-    pollInterval: 30000, // Poll every 30 seconds for fresh data
+  // Fetch staking pools from subgraph
+  const { data: poolsData, loading: poolsLoading, error: poolsError, refetch: refetchPools } = useQuery(GET_STAKING_POOLS, {
+    pollInterval: 30000,
+    errorPolicy: 'ignore',
   })
 
-  const {
-    data: userStakesData,
-    loading: userStakesLoading,
-    error: userStakesError
-  } = useQuery(USER_STAKES_QUERY, {
-    variables: { user: address?.toLowerCase() },
+  // Fetch user stakes from subgraph
+  const { data: userStakesData, loading: userStakesLoading, refetch: refetchUserStakes } = useQuery(GET_USER_STAKES, {
+    variables: { user: address },
     skip: !address,
     pollInterval: 30000,
+    errorPolicy: 'ignore',
   })
 
-  const pools: StakingPool[] = poolsData?.stakingPools || []
-  const userStakes: UserStake[] = userStakesData?.userStakes || []
+  // Fetch global staking stats from subgraph
+  const { data: statsData, loading: statsLoading, refetch: refetchStats } = useQuery(GET_STAKING_STATS, {
+    pollInterval: 60000, // Less frequent for global stats
+    errorPolicy: 'ignore',
+  })
 
-  // Calculate total staked across all pools
-  const totalStaked = pools.reduce((sum: string, pool: StakingPool) => {
-    const poolStaked = BigInt(pool.totalStaked || '0')
-    const currentSum = BigInt(sum || '0')
-    return (currentSum + poolStaked).toString()
-  }, '0')
+  // Create mock data for development
+  useEffect(() => {
+    const mockPoolsData: StakingPool[] = [
+      {
+        id: '1',
+        purpose: 'Governance Staking',
+        totalStaked: parseEther('1000000'),
+        rewardRate: 12,
+        totalRewardsDistributed: parseEther('50000'),
+        active: true,
+        lastUpdateTime: Math.floor(Date.now() / 1000),
+        stakersCount: 245,
+        averageStakeAmount: parseEther('4081.63'),
+        totalRewardsClaimed: parseEther('45000'),
+        apy: 12.5,
+      },
+      {
+        id: '2',
+        purpose: 'Liquidity Provision',
+        totalStaked: parseEther('750000'),
+        rewardRate: 18,
+        totalRewardsDistributed: parseEther('75000'),
+        active: true,
+        lastUpdateTime: Math.floor(Date.now() / 1000),
+        stakersCount: 189,
+        averageStakeAmount: parseEther('3968.25'),
+        totalRewardsClaimed: parseEther('68000'),
+        apy: 18.7,
+      },
+      {
+        id: '3',
+        purpose: 'Validator Staking',
+        totalStaked: parseEther('2500000'),
+        rewardRate: 8,
+        totalRewardsDistributed: parseEther('120000'),
+        active: true,
+        lastUpdateTime: Math.floor(Date.now() / 1000),
+        stakersCount: 78,
+        averageStakeAmount: parseEther('32051.28'),
+        totalRewardsClaimed: parseEther('110000'),
+        apy: 8.2,
+      },
+    ]
+    setMockPools(mockPoolsData)
+  }, [])
 
-  // Calculate total active stakers
-  const totalStakers = pools.reduce((sum: number, pool: StakingPool) => {
-    return sum + (pool.stakersCount || 0)
-  }, 0)
+  // Contract interactions
+  const { writeContract: stakeTokens, isPending: isStaking } = useWriteContract()
+  const { writeContract: unstakeTokens, isPending: isUnstaking } = useWriteContract()
+  const { writeContract: claimRewards, isPending: isClaiming } = useWriteContract()
 
-  const isLoading = poolsLoading || userStakesLoading
-  const error = poolsError || userStakesError
+  // Transform subgraph data or use mock data
+  const stakingPools: StakingPool[] = poolsData?.stakingPools?.map((pool: any) => ({
+    id: pool.id,
+    purpose: pool.purpose || 'General Staking',
+    totalStaked: BigInt(pool.totalStaked || '0'),
+    rewardRate: parseFloat(pool.rewardRate) || 0,
+    totalRewardsDistributed: BigInt(pool.totalRewardsDistributed || '0'),
+    active: pool.active !== false,
+    lastUpdateTime: parseInt(pool.lastUpdateTime) || Math.floor(Date.now() / 1000),
+    stakersCount: parseInt(pool.stakersCount) || 0,
+    averageStakeAmount: BigInt(pool.averageStakeAmount || '0'),
+    totalRewardsClaimed: BigInt(pool.totalRewardsClaimed || '0'),
+    apy: parseFloat(pool.rewardRate) || 0, // Simplified APY calculation
+  })) || mockPools
+
+  // Transform user stakes data
+  const userStakes: UserStake[] = userStakesData?.userStakes?.map((stake: any) => ({
+    id: stake.id,
+    user: stake.user,
+    pool: {
+      id: stake.pool.id,
+      purpose: stake.pool.purpose,
+      rewardRate: parseFloat(stake.pool.rewardRate),
+      active: stake.pool.active,
+    },
+    amount: BigInt(stake.amount || '0'),
+    stakedAt: parseInt(stake.stakedAt) || 0,
+    lastClaimTime: parseInt(stake.lastClaimTime) || 0,
+    preferredStrategy: stake.preferredStrategy || 'COMPOUND',
+    pendingRewards: BigInt(stake.pendingRewards || '0'),
+    totalRewardsClaimed: BigInt(stake.totalRewardsClaimed || '0'),
+  })) || []
+
+  // Transform global stats
+  const globalStats: StakingStats = statsData?.stakingStats ? {
+    totalStaked: BigInt(statsData.stakingStats.totalStaked || '0'),
+    totalRewardsDistributed: BigInt(statsData.stakingStats.totalRewardsDistributed || '0'),
+    totalRewardsClaimed: BigInt(statsData.stakingStats.totalRewardsClaimed || '0'),
+    totalSlashed: BigInt(statsData.stakingStats.totalSlashed || '0'),
+    activeStakers: parseInt(statsData.stakingStats.activeStakers) || 0,
+    totalStakingPools: parseInt(statsData.stakingStats.totalStakingPools) || 0,
+    lastUpdated: parseInt(statsData.stakingStats.lastUpdated) || Math.floor(Date.now() / 1000),
+  } : {
+    totalStaked: stakingPools.reduce((sum, pool) => sum + pool.totalStaked, BigInt(0)),
+    totalRewardsDistributed: stakingPools.reduce((sum, pool) => sum + pool.totalRewardsDistributed, BigInt(0)),
+    totalRewardsClaimed: stakingPools.reduce((sum, pool) => sum + pool.totalRewardsClaimed, BigInt(0)),
+    totalSlashed: BigInt(0),
+    activeStakers: stakingPools.reduce((sum, pool) => sum + pool.stakersCount, 0),
+    totalStakingPools: stakingPools.length,
+    lastUpdated: Math.floor(Date.now() / 1000),
+  }
+
+  // Stake tokens function
+  const stake = async (poolId: string, amount: string) => {
+    if (!isConnected || !address) {
+      throw new Error('Wallet not connected')
+    }
+
+    return stakeTokens({
+      address: contracts.STAKING,
+      abi: ABIS.STAKING,
+      functionName: 'stake',
+      args: [poolId, parseEther(amount)],
+    })
+  }
+
+  // Unstake tokens function
+  const unstake = async (poolId: string, amount: string) => {
+    if (!isConnected || !address) {
+      throw new Error('Wallet not connected')
+    }
+
+    return unstakeTokens({
+      address: contracts.STAKING,
+      abi: ABIS.STAKING,
+      functionName: 'unstake',
+      args: [poolId, parseEther(amount)],
+    })
+  }
+
+  // Claim rewards function
+  const claimReward = async (poolId: string) => {
+    if (!isConnected || !address) {
+      throw new Error('Wallet not connected')
+    }
+
+    return claimRewards({
+      address: contracts.STAKING,
+      abi: ABIS.STAKING,
+      functionName: 'claimRewards',
+      args: [poolId],
+    })
+  }
+
+  // Utility functions
+  const formatStakeAmount = (amount: bigint): string => {
+    return formatEther(amount)
+  }
+
+  const calculatePendingRewards = (stake: UserStake): bigint => {
+    // Simplified calculation - in reality would be more complex
+    const timeStaked = Math.floor(Date.now() / 1000) - stake.stakedAt
+    const dailyRate = stake.pool.rewardRate / 365 / 100
+    const pendingAmount = stake.amount * BigInt(Math.floor(timeStaked * dailyRate * 86400))
+    return pendingAmount / BigInt(86400) // Normalize
+  }
+
+  const getTotalUserStaked = (): bigint => {
+    return userStakes.reduce((sum, stake) => sum + stake.amount, BigInt(0))
+  }
+
+  const getTotalUserRewards = (): bigint => {
+    return userStakes.reduce((sum, stake) => sum + stake.totalRewardsClaimed, BigInt(0))
+  }
+
+  const getTotalPendingRewards = (): bigint => {
+    return userStakes.reduce((sum, stake) => sum + stake.pendingRewards, BigInt(0))
+  }
+
+  const getPoolById = (poolId: string): StakingPool | undefined => {
+    return stakingPools.find(pool => pool.id === poolId)
+  }
+
+  const getUserStakeInPool = (poolId: string): UserStake | undefined => {
+    return userStakes.find(stake => stake.pool.id === poolId)
+  }
+
+  const isUserStakedInPool = (poolId: string): boolean => {
+    return userStakes.some(stake => stake.pool.id === poolId && stake.amount > BigInt(0))
+  }
+
+  // Calculate user's portfolio stats
+  const userStats = {
+    totalStaked: getTotalUserStaked(),
+    totalRewardsClaimed: getTotalUserRewards(),
+    totalPendingRewards: getTotalPendingRewards(),
+    activeStakes: userStakes.filter(stake => stake.amount > BigInt(0)).length,
+    averageAPY: userStakes.length > 0
+      ? userStakes.reduce((sum, stake) => sum + stake.pool.rewardRate, 0) / userStakes.length
+      : 0,
+  }
 
   return {
-    pools,
+    // Data
+    stakingPools,
+    pools: stakingPools, // Alias for backward compatibility
     userStakes,
-    totalStaked,
-    totalStakers,
-    isLoading,
-    error,
+    globalStats,
+    userStats,
+    totalStaked: globalStats.totalStaked,
+    totalStakers: globalStats.activeStakers,
+    avgApy: userStats.averageAPY,
+
+    // Actions
+    stake,
+    unstake,
+    claimReward,
+    claimRewards: claimReward, // Alias for backward compatibility
+
+    // Status
+    isLoading: poolsLoading && stakingPools.length === 0,
+    isLoadingUserStakes: userStakesLoading,
+    isLoadingStats: statsLoading,
+    isStaking,
+    isUnstaking,
+    isClaiming,
+    error: poolsError && stakingPools.length === 0 ? poolsError : null,
+
+    // Utils
+    formatStakeAmount,
+    calculatePendingRewards,
+    getTotalUserStaked,
+    getTotalUserRewards,
+    getTotalPendingRewards,
+    getPoolById,
+    getUserStakeInPool,
+    isUserStakedInPool,
+
+    // Refetch
+    refetch: () => {
+      refetchPools()
+      refetchUserStakes()
+      refetchStats()
+    },
   }
 }

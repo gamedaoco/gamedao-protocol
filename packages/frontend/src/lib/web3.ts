@@ -1,7 +1,7 @@
 import { http, createConfig } from 'wagmi'
 import { mainnet, sepolia, hardhat } from 'wagmi/chains'
-import { injected, metaMask, walletConnect } from 'wagmi/connectors'
-import { getContractAddresses, type ContractAddresses } from './contracts'
+import { injected, metaMask } from 'wagmi/connectors'
+import { getContractAddresses, logContractConfiguration, type ContractAddresses } from './contracts'
 
 // Window type extension for Talisman
 declare global {
@@ -17,50 +17,9 @@ export const supportedChains = [
   mainnet, // Production (when ready)
 ] as const
 
-// Web3 configuration - with multiple wallet support
-export const config = createConfig({
-  chains: supportedChains,
-  connectors: [
-    // Injected connector - will detect Talisman, MetaMask, etc.
-    injected({
-      target() {
-        return {
-          id: 'injected',
-          name: 'Browser Wallet',
-          provider: typeof window !== 'undefined' ? window.ethereum : undefined,
-        }
-      },
-    }),
-    // MetaMask specific connector
-    metaMask(),
-    // Talisman-specific injected connector
-    injected({
-      target() {
-        return {
-          id: 'talisman',
-          name: 'Talisman',
-          provider: typeof window !== 'undefined' ? window.talismanEth : undefined,
-        }
-      },
-    }),
-    // WalletConnect for mobile wallets
-    walletConnect({
-      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo-project-id',
-      metadata: {
-        name: 'GameDAO',
-        description: 'Video Games Operating System for Communities',
-        url: 'https://gamedao.co',
-        icons: ['https://gamedao.co/favicon.ico'],
-      },
-    }),
-  ],
-  transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
-    [hardhat.id]: http('http://127.0.0.1:8545'),
-  },
-  ssr: true,
-})
+// NOTE: Web3 configuration moved to Web3Provider to handle client-side only initialization
+// This prevents SSR issues with WalletConnect's indexedDB usage
+// See: packages/frontend/src/providers/web3-provider.tsx
 
 // Chain-specific configuration
 export const getChainConfig = (chainId: number) => {
@@ -130,8 +89,13 @@ export function getPreferredNetwork() {
 // Contract ABI imports
 export { ABIS } from './abis'
 
-declare module 'wagmi' {
-  interface Register {
-    config: typeof config
-  }
+// Log contract configuration in development (client-side only)
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('🔧 Web3 Configuration:')
+  console.log('  Chains:', supportedChains.map(c => `${c.name} (${c.id})`).join(', '))
+
+  // Log contract configuration for all supported chains
+  supportedChains.forEach(chain => {
+    logContractConfiguration(chain.id)
+  })
 }

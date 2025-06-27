@@ -1,6 +1,6 @@
 {
   "name": "@gamedao/protocol",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "private": true,
   "description": "GameDAO Protocol - Comprehensive gaming community operating system",
   "keywords": ["dao", "gaming", "web3", "defi", "governance"],

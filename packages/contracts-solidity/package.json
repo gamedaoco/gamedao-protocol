@@ -1,6 +1,6 @@
 {
   "name": "@gamedao/contracts-solidity",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "description": "GameDAO Protocol Solidity Smart Contracts",
   "main": "index.js",
   "scripts": {
@@ -16,7 +16,8 @@
     "scaffold:copy": "node scripts/copy-scaffold-data.js",
     "scaffold:full": "npm run scaffold && npm run scaffold:copy",
     "verify": "hardhat verify",
-    "node": "hardhat node",
+    "node": "hardhat node --hostname 0.0.0.0",
+    "node:quiet": "hardhat node --hostname 0.0.0.0 > /dev/null 2>&1",
     "clean": "hardhat clean",
     "typechain": "hardhat typechain",
     "lint": "echo 'Linting not configured yet'",

@@ -28,7 +28,7 @@ GRAPH_NODE_PORT?=8020
 IPFS_PORT?=5001
 POSTGRES_PORT?=5432
 
-.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy scaffold scaffold-copy scaffold-full scaffold-clean dev-scaffold
+.PHONY: help install clean build test deploy verify docs lint format setup-env update-addresses update-addresses-manual update-addresses-sepolia all graph-node graph-deploy scaffold scaffold-copy scaffold-full scaffold-clean dev-scaffold
 
 # Default target
 all: clean install build test
@@ -43,6 +43,11 @@ help:
 	@echo "  make install          Install all dependencies"
 	@echo "  make setup-env        Setup development environment"
 	@echo "  make clean            Clean all build artifacts"
+	@echo ""
+	@echo "$(GREEN)🔧 Contract Management:$(NC)"
+	@echo "  make update-addresses        Update contract addresses from deployment"
+	@echo "  make update-addresses-manual Manually enter contract addresses"
+	@echo "  make update-addresses-sepolia Update Sepolia contract addresses"
 	@echo ""
 	@echo "$(GREEN)🏗️  Build & Compilation:$(NC)"
 	@echo "  make build            Build all packages"
@@ -66,6 +71,9 @@ help:
 	@echo "  make graph-node       Start local Graph node with IPFS & Postgres"
 	@echo "  make graph-deploy     Deploy subgraph to local Graph node"
 	@echo "  make graph-full       Complete Graph setup (node + deploy)"
+	@echo "  make graph-stop       Stop all Graph services (aggressive)"
+	@echo "  make graph-stop-safe  Stop only GameDAO Graph services (recommended)"
+	@echo "  make graph-status     Check GameDAO Graph services status"
 	@echo "  make dev-full         Full dev environment (contracts + graph + frontend)"
 	@echo ""
 	@echo "$(GREEN)📚 Documentation & Quality:$(NC)"
@@ -76,10 +84,12 @@ help:
 	@echo ""
 	@echo "$(GREEN)🔄 Development Workflows:$(NC)"
 	@echo "  make dev              Start development environment"
+	@echo "  make dev-reset        Reset development environment (node + graph)"
 	@echo "  make demo             Run complete demo"
 	@echo "  make integration      Run integration tests"
 	@echo "  make scaffold         Generate test data for development"
 	@echo "  make scaffold-full    Generate and copy test data to frontend"
+	@echo "  make scaffold-data-only Generate new test data without redeploying contracts"
 	@echo "  make dev-scaffold     Full dev setup with test data"
 	@echo ""
 	@echo "$(YELLOW)📝 Examples:$(NC)"
@@ -101,9 +111,25 @@ install:
 
 setup-env:
 	@echo "$(BLUE)🔧 Setting up development environment...$(NC)"
-	@cp .env.example .env 2>/dev/null || echo "# GameDAO Protocol Environment" > .env
-	@echo "$(YELLOW)⚠️  Please update .env file with your configuration$(NC)"
+	@cp env.template .env.local 2>/dev/null || echo "# GameDAO Protocol Environment" > .env.local
+	@echo "$(YELLOW)⚠️  Please update .env.local file with your configuration$(NC)"
 	@echo "$(GREEN)✅ Environment setup complete$(NC)"
+
+# Contract address management
+update-addresses:
+	@echo "$(BLUE)🔧 Updating contract addresses...$(NC)"
+	@node scripts/update-contract-addresses.js --network local
+	@echo "$(GREEN)✅ Contract addresses updated$(NC)"
+
+update-addresses-manual:
+	@echo "$(BLUE)🔧 Manually updating contract addresses...$(NC)"
+	@node scripts/update-contract-addresses.js --network local --manual
+	@echo "$(GREEN)✅ Contract addresses updated$(NC)"
+
+update-addresses-sepolia:
+	@echo "$(BLUE)🔧 Updating Sepolia contract addresses...$(NC)"
+	@node scripts/update-contract-addresses.js --network sepolia --manual
+	@echo "$(GREEN)✅ Sepolia contract addresses updated$(NC)"
 
 # Clean targets
 clean:
@@ -216,7 +242,7 @@ graph-node:
 	@echo "$(CYAN)📋 Services available at:$(NC)"
 	@echo "  - Graph Node: http://localhost:$(GRAPH_NODE_PORT)"
 	@echo "  - IPFS: http://localhost:$(IPFS_PORT)"
-	@echo "  - PostgreSQL: localhost:$(POSTGRES_PORT)"
+	@echo "  - PostgreSQL: localhost:5433 (GameDAO-specific port)"
 
 graph-deploy:
 	@echo "$(BLUE)📊 Deploying subgraph to local Graph node...$(NC)"
@@ -245,11 +271,33 @@ graph-stop:
 	@docker compose -f docker-compose.graph.yml down
 	@echo "$(GREEN)✅ Graph node infrastructure stopped$(NC)"
 
+graph-stop-safe:
+	@echo "$(BLUE)🛑 Safely stopping GameDAO Graph services...$(NC)"
+	@echo "$(CYAN)🔍 Stopping only GameDAO-specific containers...$(NC)"
+	@-docker stop gamedao-graph-node 2>/dev/null || true
+	@-docker stop gamedao-ipfs 2>/dev/null || true
+	@-docker stop gamedao-postgres 2>/dev/null || true
+	@-docker rm gamedao-graph-node 2>/dev/null || true
+	@-docker rm gamedao-ipfs 2>/dev/null || true
+	@-docker rm gamedao-postgres 2>/dev/null || true
+	@echo "$(GREEN)✅ GameDAO Graph services stopped safely$(NC)"
+
+graph-status:
+	@echo "$(BLUE)📊 GameDAO Graph Services Status$(NC)"
+	@echo "$(CYAN)🐳 GameDAO Containers:$(NC)"
+	@docker ps -a --filter "name=gamedao-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "$(YELLOW)⚠️  No GameDAO containers found$(NC)"
+	@echo ""
+	@echo "$(CYAN)🔌 Port Usage:$(NC)"
+	@echo "  - 8000: Graph Node GraphQL"
+	@echo "  - 8020: Graph Node JSON-RPC"
+	@echo "  - 5001: IPFS API"
+	@echo "  - 5433: PostgreSQL (GameDAO-specific port)"
+
 # Full development environment
 dev-full:
 	@echo "$(BLUE)🚀 Starting complete development environment...$(NC)"
-	@echo "$(CYAN)1️⃣  Starting Hardhat node...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run node &
+	@echo "$(CYAN)1️⃣  Starting Hardhat node (quiet mode)...$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run node:quiet &
 	@sleep 3
 	@echo "$(CYAN)2️⃣  Deploying contracts...$(NC)"
 	@cd $(CONTRACTS_DIR) && npm run deploy:localhost
@@ -313,6 +361,25 @@ dev:
 	@echo "  - Local node: http://localhost:8545"
 	@echo "  - Chain ID: 31337"
 
+dev-reset:
+	@echo "$(BLUE)🔄 Resetting development environment...$(NC)"
+	@echo "$(CYAN)1️⃣  Killing existing Hardhat processes...$(NC)"
+	@-lsof -ti:8545 | xargs kill -9 2>/dev/null || true
+	@echo "$(CYAN)2️⃣  Stopping GameDAO Graph services only...$(NC)"
+	@make graph-stop-safe || true
+	@echo "$(CYAN)3️⃣  Starting Hardhat node (quiet mode)...$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run node:quiet &
+	@echo "$(YELLOW)⏳ Waiting for node to start...$(NC)"
+	@sleep 5
+	@echo "$(CYAN)4️⃣  Deploying contracts...$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run deploy:localhost
+	@echo "$(CYAN)5️⃣  Starting Graph node...$(NC)"
+	@make graph-node
+	@echo "$(CYAN)6️⃣  Deploying subgraph...$(NC)"
+	@make graph-deploy
+	@echo "$(GREEN)✅ Development environment reset complete!$(NC)"
+	@echo "$(CYAN)💡 Ready for development with fresh blockchain and subgraph!$(NC)"
+
 demo: deploy-localhost
 	@echo "$(BLUE)🎮 Running GameDAO Protocol demo...$(NC)"
 	@echo "$(CYAN)🎯 Demo includes:$(NC)"
@@ -352,17 +419,30 @@ scaffold-clean:
 	@rm -f $(FRONTEND_DIR)/public/scaffold-data.json
 	@echo "$(GREEN)✅ Scaffold data cleaned$(NC)"
 
+scaffold-data-only:
+	@echo "$(BLUE)🏗️  Generating new test data (without redeploying contracts)...$(NC)"
+	@echo "$(YELLOW)⚠️  Using existing deployed contracts$(NC)"
+	@make scaffold-full
+	@echo "$(GREEN)✅ New test data generated$(NC)"
+	@echo "$(CYAN)💡 The subgraph will automatically index the new data$(NC)"
+
 dev-scaffold:
 	@echo "$(BLUE)🚀 Starting development environment with test data...$(NC)"
-	@echo "$(CYAN)1️⃣  Killing any existing processes...$(NC)"
+	@echo "$(CYAN)1️⃣  Killing any existing Hardhat processes...$(NC)"
 	@-lsof -ti:8545 | xargs kill -9 2>/dev/null || true
-	@echo "$(CYAN)2️⃣  Starting Hardhat node...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run node &
+	@echo "$(CYAN)2️⃣  Stopping GameDAO Graph services only...$(NC)"
+	@make graph-stop-safe || true
+	@echo "$(CYAN)3️⃣  Starting Hardhat node (quiet mode)...$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run node:quiet &
 	@echo "$(YELLOW)⏳ Waiting for node to start...$(NC)"
 	@sleep 5
-	@echo "$(CYAN)3️⃣  Deploying contracts...$(NC)"
+	@echo "$(CYAN)4️⃣  Deploying contracts...$(NC)"
 	@cd $(CONTRACTS_DIR) && npm run deploy:localhost
-	@echo "$(CYAN)4️⃣  Generating test data...$(NC)"
+	@echo "$(CYAN)5️⃣  Starting Graph node...$(NC)"
+	@make graph-node
+	@echo "$(CYAN)6️⃣  Deploying subgraph...$(NC)"
+	@make graph-deploy
+	@echo "$(CYAN)7️⃣  Generating test data...$(NC)"
 	@make scaffold-full
 	@echo "$(GREEN)🎉 Development environment with test data ready!$(NC)"
 	@echo "$(CYAN)📋 Available services:$(NC)"
