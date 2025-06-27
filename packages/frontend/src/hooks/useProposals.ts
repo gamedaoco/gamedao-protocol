@@ -7,7 +7,7 @@ import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_PROPOSALS, GET_PROPOSAL_BY_ID, GET_USER_VOTES } from '@/lib/queries'
 import { useState, useMemo, useEffect } from 'react'
-import { getScaffoldData, ScaffoldProposal } from '@/lib/scaffold-data'
+
 
 export interface Proposal {
   id: string
@@ -47,8 +47,6 @@ export function useProposals(organizationId?: string) {
   const { contracts, isConnected } = useGameDAO()
   const [isVoting, setIsVoting] = useState(false)
   const { writeContract } = useWriteContract()
-  const [scaffoldProposals, setScaffoldProposals] = useState<Proposal[]>([])
-
   // Fetch proposals from subgraph
   const { data, loading, error, refetch } = useQuery(GET_PROPOSALS, {
     variables: { first: 100, skip: 0 },
@@ -64,38 +62,6 @@ export function useProposals(organizationId?: string) {
     errorPolicy: 'ignore',
   })
 
-  // Load scaffold data as fallback
-  useEffect(() => {
-    const scaffoldData = getScaffoldData()
-    if (scaffoldData?.proposals) {
-      const props: Proposal[] = scaffoldData.proposals.map((prop: ScaffoldProposal) => ({
-        id: prop.id,
-        title: prop.title,
-        description: `A governance proposal for ${prop.daoName}`,
-        organization: {
-          id: prop.daoId,
-          name: prop.daoName,
-        },
-        proposer: {
-          id: prop.proposer,
-          address: prop.proposer,
-        },
-        proposalType: 'SIMPLE',
-        votingType: 'SIMPLE',
-        state: Math.random() > 0.5 ? 'ACTIVE' : 'PENDING',
-        startTime: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 86400 * 7),
-        endTime: Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 86400 * 7),
-        votesFor: Math.floor(Math.random() * 100),
-        votesAgainst: Math.floor(Math.random() * 50),
-        totalVotes: Math.floor(Math.random() * 150),
-        quorum: 100,
-        createdAt: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 86400 * 7),
-        updatedAt: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 86400 * 2),
-      }))
-      setScaffoldProposals(props)
-    }
-  }, [])
-
   // Get total proposal count
   const { data: proposalCount, refetch: refetchCount } = useReadContract({
     address: contracts.SIGNAL,
@@ -104,7 +70,7 @@ export function useProposals(organizationId?: string) {
     query: { enabled: isConnected },
   })
 
-  // Transform subgraph data to match our interface, fallback to scaffold data
+  // Transform subgraph data to match our interface
   const proposals: Proposal[] = data?.proposals?.map((prop: any) => ({
     id: prop.id,
     title: prop.title || `Proposal ${prop.id.slice(0, 8)}`,
@@ -127,7 +93,7 @@ export function useProposals(organizationId?: string) {
     totalVotes: parseInt(prop.totalVotes) || 0,
     createdAt: parseInt(prop.createdAt) || Math.floor(Date.now() / 1000),
     updatedAt: parseInt(prop.updatedAt) || Math.floor(Date.now() / 1000),
-  })) || scaffoldProposals
+  })) || []
 
   // Filter by organization if specified
   const filteredProposals = organizationId

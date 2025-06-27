@@ -10,7 +10,7 @@ import { useState } from 'react'
 
 export default function SignalPage() {
   const { isConnected } = useGameDAO()
-  const { proposals, stats, isLoading, isVoting, castVote } = useProposals()
+  const { proposals, stats, isLoading, isVoting, castVote, error } = useProposals()
   const [selectedStatus, setSelectedStatus] = useState('All')
 
   const handleVote = async (proposalId: string, choice: 0 | 1 | 2) => {
@@ -30,6 +30,11 @@ export default function SignalPage() {
           <p className="text-muted-foreground">
             Participate in DAO governance and shape the future of gaming communities
           </p>
+          {error && (
+            <p className="text-red-500 text-sm mt-1">
+              ⚠️ Unable to connect to subgraph: {error.message}
+            </p>
+          )}
         </div>
         <Button disabled={!isConnected} className="flex items-center space-x-2">
           <Plus className="h-4 w-4" />
@@ -119,6 +124,21 @@ export default function SignalPage() {
               <div className="text-center py-8">
                 <p className="text-muted-foreground">Loading proposals...</p>
               </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium mb-2">Unable to load proposals</h3>
+                <p className="text-muted-foreground mb-4">
+                  There was an error connecting to the subgraph. Please check that:
+                </p>
+                <ul className="text-sm text-muted-foreground mb-4 space-y-1">
+                  <li>• The subgraph is deployed and running</li>
+                  <li>• The local blockchain has proposal data</li>
+                  <li>• The GraphQL endpoint is accessible</li>
+                </ul>
+                <Button onClick={() => window.location.reload()}>
+                  Retry
+                </Button>
+              </div>
             ) : proposals.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">No proposals found</p>
@@ -153,7 +173,7 @@ export default function SignalPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span>Voting Progress</span>
-                    <span>{(proposal.votes?.for || 0) + (proposal.votes?.against || 0) + (proposal.votes?.abstain || 0)} / {proposal.quorum || 100} votes</span>
+                    <span>{proposal.totalVotes} / {proposal.quorum || 100} votes</span>
                   </div>
 
                   <div className="space-y-2">
@@ -161,27 +181,18 @@ export default function SignalPage() {
                     <div className="flex items-center space-x-2">
                       <div className="w-12 text-xs text-muted-foreground">For</div>
                       <div className="flex-1 bg-muted rounded-full h-2">
-                        <div className="bg-green-500 rounded-full h-2" style={{ width: `${(proposal.votes?.for || 0) / Math.max((proposal.votes?.for || 0) + (proposal.votes?.against || 0) + (proposal.votes?.abstain || 0), 1) * 100}%` }} />
+                        <div className="bg-green-500 rounded-full h-2" style={{ width: `${proposal.totalVotes > 0 ? (proposal.votesFor / proposal.totalVotes) * 100 : 0}%` }} />
                       </div>
-                      <div className="w-12 text-xs text-right">{proposal.votes?.for || 0}</div>
+                      <div className="w-12 text-xs text-right">{proposal.votesFor}</div>
                     </div>
 
                     {/* Against votes */}
                     <div className="flex items-center space-x-2">
                       <div className="w-12 text-xs text-muted-foreground">Against</div>
                       <div className="flex-1 bg-muted rounded-full h-2">
-                        <div className="bg-red-500 rounded-full h-2" style={{ width: `${(proposal.votes?.against || 0) / Math.max((proposal.votes?.for || 0) + (proposal.votes?.against || 0) + (proposal.votes?.abstain || 0), 1) * 100}%` }} />
+                        <div className="bg-red-500 rounded-full h-2" style={{ width: `${proposal.totalVotes > 0 ? (proposal.votesAgainst / proposal.totalVotes) * 100 : 0}%` }} />
                       </div>
-                      <div className="w-12 text-xs text-right">{proposal.votes?.against || 0}</div>
-                    </div>
-
-                    {/* Abstain votes */}
-                    <div className="flex items-center space-x-2">
-                      <div className="w-12 text-xs text-muted-foreground">Abstain</div>
-                      <div className="flex-1 bg-muted rounded-full h-2">
-                        <div className="bg-gray-500 rounded-full h-2" style={{ width: `${(proposal.votes?.abstain || 0) / Math.max((proposal.votes?.for || 0) + (proposal.votes?.against || 0) + (proposal.votes?.abstain || 0), 1) * 100}%` }} />
-                      </div>
-                      <div className="w-12 text-xs text-right">{proposal.votes?.abstain || 0}</div>
+                      <div className="w-12 text-xs text-right">{proposal.votesAgainst}</div>
                     </div>
                   </div>
 

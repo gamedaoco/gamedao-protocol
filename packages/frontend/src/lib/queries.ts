@@ -157,8 +157,6 @@ export const GET_PROPOSALS = gql`
       totalVotes
       createdAt
       updatedAt
-      blockNumber
-      transactionHash
     }
   }
 `
@@ -193,8 +191,6 @@ export const GET_PROPOSAL_BY_ID = gql`
       executionSuccess
       createdAt
       updatedAt
-      blockNumber
-      transactionHash
       votes {
         id
         voter {
