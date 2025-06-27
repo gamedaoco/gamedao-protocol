@@ -34,11 +34,13 @@ function useProposal(id: string) {
 }
 
 interface ProposalDetailPageProps {
-  params: Promise<{ id: string }>
+  params: { id: string } | Promise<{ id: string }>
 }
 
 export default function ProposalDetailPage({ params }: ProposalDetailPageProps) {
-  const { id } = use(params)
+  // Handle both Promise and resolved params
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const { id } = resolvedParams
   const {
     proposal,
     organization,

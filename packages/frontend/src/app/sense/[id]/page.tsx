@@ -27,11 +27,13 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 
 interface ProfileDetailPageProps {
-  params: Promise<{ id: string }>
+  params: { id: string } | Promise<{ id: string }>
 }
 
 export default function ProfileDetailPage({ params }: ProfileDetailPageProps) {
-  const { id } = use(params)
+  // Handle both Promise and resolved params
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const { id } = resolvedParams
   const { profile, isLoading, error, refetch } = useProfile(id)
 
   // Loading state
