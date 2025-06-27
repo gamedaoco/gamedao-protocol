@@ -1,0 +1,783 @@
+{
+  "originalData": {
+    "users": [
+      {
+        "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "name": "Alice Chen",
+        "role": "Game Developer",
+        "avatar": "👩‍💻"
+      },
+      {
+        "address": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+        "name": "Bob Martinez",
+        "role": "Esports Organizer",
+        "avatar": "🎮"
+      },
+      {
+        "address": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+        "name": "Carol Johnson",
+        "role": "3D Artist",
+        "avatar": "🎨"
+      },
+      {
+        "address": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+        "name": "David Kim",
+        "role": "Audio Designer",
+        "avatar": "🎵"
+      },
+      {
+        "address": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+        "name": "Eva Rodriguez",
+        "role": "Narrative Designer",
+        "avatar": "✍️"
+      },
+      {
+        "address": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+        "name": "Frank Wilson",
+        "role": "Blockchain Dev",
+        "avatar": "⛓️"
+      },
+      {
+        "address": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+        "name": "Grace Liu",
+        "role": "UI/UX Designer",
+        "avatar": "🎯"
+      },
+      {
+        "address": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+        "name": "Henry Brown",
+        "role": "QA Tester",
+        "avatar": "🔍"
+      },
+      {
+        "address": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+        "name": "Iris Taylor",
+        "role": "Marketing",
+        "avatar": "📈"
+      },
+      {
+        "address": "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+        "name": "Jack Davis",
+        "role": "Streamer",
+        "avatar": "📹"
+      },
+      {
+        "address": "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
+        "name": "Kate Miller",
+        "role": "Producer",
+        "avatar": "📋"
+      },
+      {
+        "address": "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
+        "name": "Leo Zhang",
+        "role": "Engine Dev",
+        "avatar": "⚙️"
+      }
+    ],
+    "daos": [
+      {
+        "id": "0x526b971bc3aec06428ff9be42674031bc3eee1b3d8d308de6f8eb95a7a90aefa",
+        "name": "Indie Game Collective",
+        "description": "Independent game developers collaborating on projects",
+        "members": [
+          "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+          "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+          "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
+          "0xBcd4042DE499D14e55001CcbB24a551F3b954096"
+        ],
+        "treasury": "Indie Game Collective",
+        "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      {
+        "id": "0x4f6dc06b185917d22734903f4aa342a67ee232a5f25a98f2ad2e86e86bdecee8",
+        "name": "Esports Alliance",
+        "description": "Professional esports organization",
+        "members": [
+          "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+        ],
+        "treasury": "Esports Alliance",
+        "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      },
+      {
+        "id": "0x28857554056f6e7efdbb07e27ad2b14103afa36db301d3453ddfe98f34542195",
+        "name": "NFT Gaming Hub",
+        "description": "Blockchain gaming with NFT integration",
+        "members": [
+          "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+          "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+          "0x71bE63f3384f5fb98995898A86B02Fb2426c5788"
+        ],
+        "treasury": "NFT Gaming Hub",
+        "creator": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+      },
+      {
+        "id": "0xd1e6584b8d3b7ebcdc92393391813bdcfe3d59e538069bf45b46e7e8b9f4d048",
+        "name": "VR Game Studios",
+        "description": "Virtual reality game development",
+        "members": [
+          "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+          "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "0x976EA74026E726554dB657fA54763abd0C3a0aa9"
+        ],
+        "treasury": "VR Game Studios",
+        "creator": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+      },
+      {
+        "id": "0x3098c4a5d144fe4fb2536cffb2e23c0611bf7ed71ef64563a894049b494905e2",
+        "name": "Mobile Gaming Guild",
+        "description": "Mobile game developers and publishers",
+        "members": [
+          "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+          "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+          "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+          "0x976EA74026E726554dB657fA54763abd0C3a0aa9"
+        ],
+        "treasury": "Mobile Gaming Guild",
+        "creator": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+      }
+    ],
+    "campaigns": [
+      {
+        "id": "0x8b65dfc713c313d4af26a9ce938083e71e14ab737fe0482f778a2e28e7d8cf3b",
+        "title": "Fantasy RPG: Chronicles of Etheria",
+        "daoId": "0x4f6dc06b185917d22734903f4aa342a67ee232a5f25a98f2ad2e86e86bdecee8",
+        "daoName": "Esports Alliance",
+        "target": "25000",
+        "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      },
+      {
+        "id": "0x0e4d612b77263e1359e0bbe8694ffb18ade2709c14d3bb4116d58ec6b7fbc1d6",
+        "title": "Cyberpunk Racing League",
+        "daoId": "0x526b971bc3aec06428ff9be42674031bc3eee1b3d8d308de6f8eb95a7a90aefa",
+        "daoName": "Indie Game Collective",
+        "target": "40000",
+        "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      {
+        "id": "0xb8f493f9489be791711ea744cb0280653575b0b4218431cfe5222d0ca9051eab",
+        "title": "VR Mystic Realms",
+        "daoId": "0x4f6dc06b185917d22734903f4aa342a67ee232a5f25a98f2ad2e86e86bdecee8",
+        "daoName": "Esports Alliance",
+        "target": "60000",
+        "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      },
+      {
+        "id": "0xc05e661d8e822fc6fe85dadae3d9ff9ce814fc776780ec69590282e2f92f8e84",
+        "title": "Retro Arcade Revival",
+        "daoId": "0x526b971bc3aec06428ff9be42674031bc3eee1b3d8d308de6f8eb95a7a90aefa",
+        "daoName": "Indie Game Collective",
+        "target": "15000",
+        "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      {
+        "id": "0xec0faf79b4fdb0b3ff817bcd55f8052d51e800925b7843e0e9898cdca8e2579d",
+        "title": "Mobile Strategy Empire",
+        "daoId": "0xd1e6584b8d3b7ebcdc92393391813bdcfe3d59e538069bf45b46e7e8b9f4d048",
+        "daoName": "VR Game Studios",
+        "target": "30000",
+        "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      {
+        "id": "0x6dec35f7edf85b67d39f43c274d6307279608c5f954b02617e32ad60c2ac992b",
+        "title": "Indie Puzzle Adventure",
+        "daoId": "0x4f6dc06b185917d22734903f4aa342a67ee232a5f25a98f2ad2e86e86bdecee8",
+        "daoName": "Esports Alliance",
+        "target": "20000",
+        "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      },
+      {
+        "id": "0x8165e2b7337638e92360607d8a195ea064e491a2dee6fbfc585a87c321192b7f",
+        "title": "Multiplayer Battle Arena",
+        "daoId": "0x526b971bc3aec06428ff9be42674031bc3eee1b3d8d308de6f8eb95a7a90aefa",
+        "daoName": "Indie Game Collective",
+        "target": "50000",
+        "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      {
+        "id": "0x334c3adffdfb53c89b4d0f205407ab60a06f03811c142465449a84e249fe4a55",
+        "title": "Space Exploration Sim",
+        "daoId": "0x28857554056f6e7efdbb07e27ad2b14103afa36db301d3453ddfe98f34542195",
+        "daoName": "NFT Gaming Hub",
+        "target": "35000",
+        "creator": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+      }
+    ],
+    "proposals": [
+      {
+        "id": "0x5eedb60a05b2682193d81bfd3ee4b5d14167eccba53abfcc38e70412b211937e",
+        "title": "Increase Marketing Budget",
+        "daoId": "0xd1e6584b8d3b7ebcdc92393391813bdcfe3d59e538069bf45b46e7e8b9f4d048",
+        "daoName": "VR Game Studios",
+        "proposer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      {
+        "id": "0x1bdc6615ae5ad376d6928945fa977d637799b02c8ab93d3dcd8208ef53802d8d",
+        "title": "Add Developer Role",
+        "daoId": "0x28857554056f6e7efdbb07e27ad2b14103afa36db301d3453ddfe98f34542195",
+        "daoName": "NFT Gaming Hub",
+        "proposer": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+      },
+      {
+        "id": "0x689da8bbc539608516f1bb8880c19cf9724a88fcc9e044c017cb0ccb6cfdee87",
+        "title": "Partnership Proposal",
+        "daoId": "0xd1e6584b8d3b7ebcdc92393391813bdcfe3d59e538069bf45b46e7e8b9f4d048",
+        "daoName": "VR Game Studios",
+        "proposer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      {
+        "id": "0x7d1bc2baf1c255d7a67e508a9a6a3d2a0edf2c67696adbdb7fd3a01ff658dcba",
+        "title": "Community Event Funding",
+        "daoId": "0x4f6dc06b185917d22734903f4aa342a67ee232a5f25a98f2ad2e86e86bdecee8",
+        "daoName": "Esports Alliance",
+        "proposer": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      },
+      {
+        "id": "0x3552d830cb9afb1f25af459395bdfbb95951efdb9aed3fd112c911d9cb1e2988",
+        "title": "Treasury Allocation",
+        "daoId": "0x4f6dc06b185917d22734903f4aa342a67ee232a5f25a98f2ad2e86e86bdecee8",
+        "daoName": "Esports Alliance",
+        "proposer": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      },
+      {
+        "id": "0xca8df744e89f9f90287c48a016faaaa6d72551a9ebd6d0b238e8ac907ab9cb38",
+        "title": "Governance Update",
+        "daoId": "0xd1e6584b8d3b7ebcdc92393391813bdcfe3d59e538069bf45b46e7e8b9f4d048",
+        "daoName": "VR Game Studios",
+        "proposer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    ],
+    "contracts": {
+      "registry": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "control": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "flow": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+      "signal": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+    },
+    "timestamp": "2025-06-27T22:21:34.251Z"
+  },
+  "additionalUsers": [
+    {
+      "index": 12,
+      "name": "Zoe Chen",
+      "bio": "Blockchain game economist designing token economies",
+      "role": "Token Economist",
+      "avatar": "💰",
+      "interests": [
+        "DeFi",
+        "Tokenomics",
+        "Economics"
+      ],
+      "keyPair": {
+        "privateKey": "0x30553d5e3bcb9bedefcb8862698a48d7af15a5e3ee5cbe0926e6b0902aeeaa37",
+        "publicKey": "0x04de1edf49624de0e2078e9a3fca4b92780468957478765f2175becaa1b3937d564e07bb4b195deaf2e4ef8c93aacfba0117e4d76e32856618e035ba957644ef8f",
+        "address": "0xb43640Cb7438Cd135E6Ea01E3DFCe24125c24618"
+      },
+      "account": "0x1CBd3b2770909D4e10f157cABC84C7264073C9Ec",
+      "reputation": 1143,
+      "activityLevel": 0.24481824128255392,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 13,
+      "name": "Alex Rivera",
+      "bio": "Metaverse architect building virtual worlds",
+      "role": "Metaverse Dev",
+      "avatar": "🌐",
+      "interests": [
+        "Metaverse",
+        "3D",
+        "Virtual Worlds"
+      ],
+      "keyPair": {
+        "privateKey": "0x926ea07606d81d032723736743885eca9063b091db31670ee47b9aafedab70d2",
+        "publicKey": "0x043f3179060e6f3f9e3a6795b14f9bac10c959068f1dd66842c8b84b81df9228ed342950f0c71e132993db93c4975288f47047762d68df9f45331c5ae41182b020",
+        "address": "0xDf45a85413c4c720dbb3BACFc0Bd650C81887226"
+      },
+      "account": "0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097",
+      "reputation": 2549,
+      "activityLevel": 0.17108039325312566,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 14,
+      "name": "Jamie Foster",
+      "bio": "Play-to-earn specialist creating sustainable game economies",
+      "role": "P2E Designer",
+      "avatar": "🎯",
+      "interests": [
+        "P2E",
+        "Sustainability",
+        "Gaming"
+      ],
+      "keyPair": {
+        "privateKey": "0x508b60cc16d1168778c6c6e48133a9cfd5fe69ca7281296a23156ac8227d131d",
+        "publicKey": "0x049a1e43f8d9104893cef1d84d90dc7cb949ace04c68e9d410b3dbb4fadc70d09a337d5d74851de212c036773f5cbcf9ca5ba30a3336654932386a76bee13600c0",
+        "address": "0x911A5DBd17051DfDAb8E7c87f97F9F71B9E83aCb"
+      },
+      "account": "0xcd3B766CCDd6AE721141F452C550Ca635964ce71",
+      "reputation": 1182,
+      "activityLevel": 0.26294709588506426,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 15,
+      "name": "Morgan Lee",
+      "bio": "Cross-chain developer bridging gaming ecosystems",
+      "role": "Cross-chain Dev",
+      "avatar": "🌉",
+      "interests": [
+        "Cross-chain",
+        "Interoperability",
+        "Bridges"
+      ],
+      "keyPair": {
+        "privateKey": "0xa418fe67af9f464bfe6085e26e41054fe35f877f365d6d8f6764495c985d2fed",
+        "publicKey": "0x04e50688ba163ad3e75154a030de31a08b1165f1a8bb99fc1e0fd91c95c2c49970bf875123e432834ceac585a06e53dacca2b2d11aaf81447d5d218077f45eadd8",
+        "address": "0x9B5C457F77c6534D035Ea2EC9d21842Dbe30C2A1"
+      },
+      "account": "0x2546BcD3c84621e976D8185a91A922aE77ECEc30",
+      "reputation": 2037,
+      "activityLevel": 0.2512226953501161,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 16,
+      "name": "Casey Wong",
+      "bio": "Gaming DAO governance expert",
+      "role": "Governance Lead",
+      "avatar": "🏛️",
+      "interests": [
+        "Governance",
+        "DAOs",
+        "Voting"
+      ],
+      "keyPair": {
+        "privateKey": "0xf8a4244403fc3b3322f640995bb41ea6eaf9b082bf333afde15a35fb0f0ba463",
+        "publicKey": "0x0445401a112cc557c26b880465fd8e1cd6b34990cfca4ec9a2548d3cd7819cfd07659e6d9556e8f5bad99558cda8e72e94081852cc6a301a212fa4a38d163a2516",
+        "address": "0x1150101Ca822009A1c7367d4e98fe2e58A0AcA44"
+      },
+      "account": "0xbDA5747bFD65F08deb54cb465eB87D40e51B197E",
+      "reputation": 3415,
+      "activityLevel": 0.14934137319530943,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 17,
+      "name": "River Smith",
+      "bio": "NFT marketplace developer for gaming assets",
+      "role": "NFT Dev",
+      "avatar": "🖼️",
+      "interests": [
+        "NFTs",
+        "Marketplace",
+        "Assets"
+      ],
+      "keyPair": {
+        "privateKey": "0x51e1393282df57092bd1926a52882887aadfb091c3a882dee821410d09d0e3fb",
+        "publicKey": "0x0492e57b79cb735093b98994d44a6b513e0f2ed21a102b8fdd4f9de41f55ea276e45edd771e14e9c755d9bc3270ec2bd7b7ef5cd865ed9b126378d11f722aee50f",
+        "address": "0xeCD8b41b12BBFA62c9A843dD943E0704C5438E77"
+      },
+      "account": "0xdD2FD4581271e230360230F9337D5c0430Bf44C0",
+      "reputation": 1104,
+      "activityLevel": 0.2227271573106273,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 18,
+      "name": "Sage Johnson",
+      "bio": "GameFi researcher analyzing play-to-earn trends",
+      "role": "GameFi Analyst",
+      "avatar": "📊",
+      "interests": [
+        "GameFi",
+        "Research",
+        "Analytics"
+      ],
+      "keyPair": {
+        "privateKey": "0xa22940d72ad3d8c0040af562123a1d44476b8648303f9338d71212661d9dc15e",
+        "publicKey": "0x048ffbda06e705135011760c9c6b0506b00ff2350e8b02c5cc89117d5a9d209d930a6b2bef0607b43d1816600571734589ac4b0a8122c81ccf87995c835f6148d8",
+        "address": "0x313028435B6dD1B35f6652cDcFFF19532Df38fb8"
+      },
+      "account": "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199",
+      "reputation": 619,
+      "activityLevel": 0.12899640860591036,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 19,
+      "name": "Phoenix Davis",
+      "bio": "Decentralized gaming infrastructure engineer",
+      "role": "Infrastructure",
+      "avatar": "🏗️",
+      "interests": [
+        "Infrastructure",
+        "Decentralization",
+        "Scaling"
+      ],
+      "keyPair": {
+        "privateKey": "0xc4a24f957c13b8660e0c041bf330fabcc5efedfc293b72afaf280cfbecdf4b07",
+        "publicKey": "0x0439fe2fa76ba6f8b5166caeab13a560d30bb20a41dff6382d5c90b182978cf10236ad5532d2fdda22135a173ef84c4f9df7e0fb8807386f0397ae3d9136564689",
+        "address": "0x5654b139c13f57A286d34Fe53Ad18572A38729A3"
+      },
+      "account": null,
+      "reputation": 3256,
+      "activityLevel": 0.20864360799849557,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 20,
+      "name": "Rowan Taylor",
+      "bio": "Gaming community token specialist",
+      "role": "Token Specialist",
+      "avatar": "🪙",
+      "interests": [
+        "Tokens",
+        "Community",
+        "Rewards"
+      ],
+      "keyPair": {
+        "privateKey": "0x3a015a407647ecc3fd0bc7558bfd88b7e4e828c28a1a7a8276bb6099f1059257",
+        "publicKey": "0x0491203f4bff91b0af5383b06e97e71e941d46d1940503cca3fb851ec43d00279743153d7f8f29314f405aceb8128e4a24f2c950b60bca9c5025766a7b55fd3363",
+        "address": "0xC855FBae65f3Cbc18AA83a36e778d18df8013252"
+      },
+      "account": null,
+      "reputation": 2542,
+      "activityLevel": 0.1888196212106085,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 21,
+      "name": "Skylar Brown",
+      "bio": "Web3 gaming UX/UI designer",
+      "role": "Web3 Designer",
+      "avatar": "🎨",
+      "interests": [
+        "Web3",
+        "UX",
+        "Gaming UI"
+      ],
+      "keyPair": {
+        "privateKey": "0xfbd5941e5ca8199a9e3a7dfeb38e4c69f4f2cf7834715b130ca18d5abd943174",
+        "publicKey": "0x049e67a5c1ad6f9349036719c5b3ee57db0f8a521e1f7617cec895dfb0aa08436401e6b4ebb2f7d2c8b4912464b1ee51504248912aad4718d588358c6547447bf0",
+        "address": "0x4aA3c57ec0917922A8Dc706BECeD44E91D8bFD15"
+      },
+      "account": null,
+      "reputation": 2869,
+      "activityLevel": 0.1454630076957656,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 22,
+      "name": "Jordan Kim",
+      "bio": "Esports betting platform developer",
+      "role": "Betting Dev",
+      "avatar": "🎲",
+      "interests": [
+        "Betting",
+        "Esports",
+        "Probability"
+      ],
+      "keyPair": {
+        "privateKey": "0x50570f203ce07f2899eafba2aadffc595ed7f7f68d31554cb301d0ce09ddc2a1",
+        "publicKey": "0x04ce4f18c9e177b2cb37694e4b8eacdb2c30abbf35929758bbecbee918fb5345f665a14ba31aeca2d3839ece838020c8f3bab2adff513676a92172b5f8034f7ee2",
+        "address": "0xb9b62cD9c3d9D494f305BcbDCfBa5A80Fd52854b"
+      },
+      "account": null,
+      "reputation": 1469,
+      "activityLevel": 0.1688720747522561,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 23,
+      "name": "Avery Martinez",
+      "bio": "Gaming guild management specialist",
+      "role": "Guild Manager",
+      "avatar": "⚔️",
+      "interests": [
+        "Guilds",
+        "Management",
+        "Strategy"
+      ],
+      "keyPair": {
+        "privateKey": "0xf3e1d6ee6117fcd35dd29446021a6516c3b54b19140ba168c119a0fcc6f60c89",
+        "publicKey": "0x046e979f89a52061948dc5cd44030c6792f29a51d725dc32fba3e3b25996244b396318434772d1657157c01f45f123db44c0eee4cb1993090f69f9a50d679a92f4",
+        "address": "0x1a8383F6FeE01E9BC2Abc4E5BA562aa8cbaA01a2"
+      },
+      "account": null,
+      "reputation": 3476,
+      "activityLevel": 0.16094475142109485,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 24,
+      "name": "Blake Wilson",
+      "bio": "Blockchain gaming security auditor",
+      "role": "Security Auditor",
+      "avatar": "🔐",
+      "interests": [
+        "Security",
+        "Auditing",
+        "Smart Contracts"
+      ],
+      "keyPair": {
+        "privateKey": "0x2cc5d26568cc615268ba071279cf0833cfc8bb3ad0290df903e5db459f5233ab",
+        "publicKey": "0x046ef1be56fc1f482c0e3e91d8fceb8775f6fde0a13ba28e135fa221286d61b34ede7d4c1cb9b8e0ba4540a102e5475ae2cab6a7228b1a9c23aa39a0a5e5172d37",
+        "address": "0x2dd62b473880488c35826252d02F87e1e19382F4"
+      },
+      "account": null,
+      "reputation": 2748,
+      "activityLevel": 0.1524375666784655,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 25,
+      "name": "Cameron Garcia",
+      "bio": "Gaming analytics and data science expert",
+      "role": "Data Scientist",
+      "avatar": "📈",
+      "interests": [
+        "Analytics",
+        "Data Science",
+        "ML"
+      ],
+      "keyPair": {
+        "privateKey": "0xef24315442e24388e2067ff16d6e408fe4c2462408a6ce2a4801512ed6f33038",
+        "publicKey": "0x048ef0d7b276d9d4484da4533f32e522eed7e9c621a657dc0c6c6a2fd01a2d353fd6ceac371e11937ffd7c21e314f116157423ae4182d0e84a9e812f2b4eba128d",
+        "address": "0x96C9C204405e72E483F924ED6e4770C5fD2a4f84"
+      },
+      "account": null,
+      "reputation": 902,
+      "activityLevel": 0.12572678727540187,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    },
+    {
+      "index": 26,
+      "name": "Drew Anderson",
+      "bio": "Decentralized autonomous gaming worlds creator",
+      "role": "World Builder",
+      "avatar": "🗺️",
+      "interests": [
+        "World Building",
+        "Autonomy",
+        "Simulation"
+      ],
+      "keyPair": {
+        "privateKey": "0x7ed6da5b956b903409e11f4ee5853de9f60e0b4138273a1400fb6749c5e5b65d",
+        "publicKey": "0x04e431862184fc9d278b4ecfc525789046dec48d8f614e6b8d732cbb06512aae7d588fc051d31336727b2ae092ffdd7d709297c8d19b2df74804cb285b71eeb70d",
+        "address": "0x902ac9c3Ef8C7E8627191c86Ec01B37B3434DFBd"
+      },
+      "account": null,
+      "reputation": 1852,
+      "activityLevel": 0.09432366796645768,
+      "joinedDAOs": [],
+      "contributedCampaigns": [],
+      "votedProposals": []
+    }
+  ],
+  "interactions": {
+    "contributions": [
+      {
+        "campaignId": "0x334c3adffdfb53c89b4d0f205407ab60a06f03811c142465449a84e249fe4a55",
+        "campaignTitle": "Space Exploration Sim",
+        "contributor": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "amount": "909.0",
+        "timestamp": 1751062901312
+      },
+      {
+        "campaignId": "0xb8f493f9489be791711ea744cb0280653575b0b4218431cfe5222d0ca9051eab",
+        "campaignTitle": "VR Mystic Realms",
+        "contributor": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+        "amount": "800.0",
+        "timestamp": 1751062901318
+      },
+      {
+        "campaignId": "0x8165e2b7337638e92360607d8a195ea064e491a2dee6fbfc585a87c321192b7f",
+        "campaignTitle": "Multiplayer Battle Arena",
+        "contributor": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "amount": "808.0",
+        "timestamp": 1751062901323
+      },
+      {
+        "campaignId": "0x6dec35f7edf85b67d39f43c274d6307279608c5f954b02617e32ad60c2ac992b",
+        "campaignTitle": "Indie Puzzle Adventure",
+        "contributor": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+        "amount": "828.0",
+        "timestamp": 1751062901335
+      },
+      {
+        "campaignId": "0xb8f493f9489be791711ea744cb0280653575b0b4218431cfe5222d0ca9051eab",
+        "campaignTitle": "VR Mystic Realms",
+        "contributor": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+        "amount": "635.0",
+        "timestamp": 1751062901360
+      },
+      {
+        "campaignId": "0x334c3adffdfb53c89b4d0f205407ab60a06f03811c142465449a84e249fe4a55",
+        "campaignTitle": "Space Exploration Sim",
+        "contributor": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+        "amount": "880.0",
+        "timestamp": 1751062901375
+      },
+      {
+        "campaignId": "0xec0faf79b4fdb0b3ff817bcd55f8052d51e800925b7843e0e9898cdca8e2579d",
+        "campaignTitle": "Mobile Strategy Empire",
+        "contributor": "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
+        "amount": "576.0",
+        "timestamp": 1751062901380
+      },
+      {
+        "campaignId": "0x8165e2b7337638e92360607d8a195ea064e491a2dee6fbfc585a87c321192b7f",
+        "campaignTitle": "Multiplayer Battle Arena",
+        "contributor": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+        "amount": "562.0",
+        "timestamp": 1751062901384
+      },
+      {
+        "campaignId": "0x8165e2b7337638e92360607d8a195ea064e491a2dee6fbfc585a87c321192b7f",
+        "campaignTitle": "Multiplayer Battle Arena",
+        "contributor": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+        "amount": "738.0",
+        "timestamp": 1751062901389
+      },
+      {
+        "campaignId": "0x6dec35f7edf85b67d39f43c274d6307279608c5f954b02617e32ad60c2ac992b",
+        "campaignTitle": "Indie Puzzle Adventure",
+        "contributor": "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+        "amount": "202.0",
+        "timestamp": 1751062901407
+      },
+      {
+        "campaignId": "0x6dec35f7edf85b67d39f43c274d6307279608c5f954b02617e32ad60c2ac992b",
+        "campaignTitle": "Indie Puzzle Adventure",
+        "contributor": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+        "amount": "838.0",
+        "timestamp": 1751062901411
+      },
+      {
+        "campaignId": "0x8165e2b7337638e92360607d8a195ea064e491a2dee6fbfc585a87c321192b7f",
+        "campaignTitle": "Multiplayer Battle Arena",
+        "contributor": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+        "amount": "659.0",
+        "timestamp": 1751062901415
+      },
+      {
+        "campaignId": "0xec0faf79b4fdb0b3ff817bcd55f8052d51e800925b7843e0e9898cdca8e2579d",
+        "campaignTitle": "Mobile Strategy Empire",
+        "contributor": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+        "amount": "870.0",
+        "timestamp": 1751062901418
+      },
+      {
+        "campaignId": "0x334c3adffdfb53c89b4d0f205407ab60a06f03811c142465449a84e249fe4a55",
+        "campaignTitle": "Space Exploration Sim",
+        "contributor": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+        "amount": "446.0",
+        "timestamp": 1751062901422
+      },
+      {
+        "campaignId": "0x334c3adffdfb53c89b4d0f205407ab60a06f03811c142465449a84e249fe4a55",
+        "campaignTitle": "Space Exploration Sim",
+        "contributor": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "amount": "765.0",
+        "timestamp": 1751062901426
+      },
+      {
+        "campaignId": "0xc05e661d8e822fc6fe85dadae3d9ff9ce814fc776780ec69590282e2f92f8e84",
+        "campaignTitle": "Retro Arcade Revival",
+        "contributor": "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+        "amount": "845.0",
+        "timestamp": 1751062901431
+      },
+      {
+        "campaignId": "0x334c3adffdfb53c89b4d0f205407ab60a06f03811c142465449a84e249fe4a55",
+        "campaignTitle": "Space Exploration Sim",
+        "contributor": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+        "amount": "858.0",
+        "timestamp": 1751062901439
+      },
+      {
+        "campaignId": "0x334c3adffdfb53c89b4d0f205407ab60a06f03811c142465449a84e249fe4a55",
+        "campaignTitle": "Space Exploration Sim",
+        "contributor": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+        "amount": "452.0",
+        "timestamp": 1751062901443
+      },
+      {
+        "campaignId": "0xb8f493f9489be791711ea744cb0280653575b0b4218431cfe5222d0ca9051eab",
+        "campaignTitle": "VR Mystic Realms",
+        "contributor": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+        "amount": "782.0",
+        "timestamp": 1751062901464
+      },
+      {
+        "campaignId": "0x8b65dfc713c313d4af26a9ce938083e71e14ab737fe0482f778a2e28e7d8cf3b",
+        "campaignTitle": "Fantasy RPG: Chronicles of Etheria",
+        "contributor": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+        "amount": "910.0",
+        "timestamp": 1751062901467
+      },
+      {
+        "campaignId": "0xb8f493f9489be791711ea744cb0280653575b0b4218431cfe5222d0ca9051eab",
+        "campaignTitle": "VR Mystic Realms",
+        "contributor": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+        "amount": "871.0",
+        "timestamp": 1751062901472
+      }
+    ],
+    "votes": [],
+    "stakes": [],
+    "joins": [],
+    "profiles": []
+  },
+  "summary": {
+    "totalUsers": 27,
+    "totalInteractions": 21,
+    "activeUsers": 11
+  },
+  "contracts": {
+    "registry": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    "control": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+    "flow": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+    "signal": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+  },
+  "config": {
+    "additionalUsers": 15,
+    "interactions": {
+      "campaignContributions": 40,
+      "proposalVotes": 50,
+      "stakingActivities": 25,
+      "daoJoins": 20,
+      "profileCreations": 15
+    }
+  },
+  "timestamp": "2025-06-27T22:21:41.479Z"
+}
