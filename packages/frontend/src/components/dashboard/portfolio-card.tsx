@@ -49,12 +49,25 @@ export function PortfolioCard({ className }: PortfolioCardProps) {
         <CardContent>
           <div className="flex flex-col items-center justify-center h-32 text-muted-foreground space-y-2">
             <Wallet className="h-8 w-8" />
-            <p className="text-sm">Connect wallet to view portfolio</p>
+            {error ? (
+              <p className="text-sm text-center">{error}</p>
+            ) : (
+              <p className="text-sm">Connect wallet to view portfolio</p>
+            )}
           </div>
         </CardContent>
       </Card>
     )
   }
+
+  // Show empty state when portfolio exists but has no tokens
+  const hasTokens = portfolio.tokens && portfolio.tokens.length > 0
+  const hasParticipation = portfolio.participation && (
+    portfolio.participation.organizations > 0 ||
+    portfolio.participation.campaigns > 0 ||
+    portfolio.participation.proposals > 0 ||
+    portfolio.participation.votes > 0
+  )
 
   return (
     <Card className={className}>
@@ -82,75 +95,93 @@ export function PortfolioCard({ className }: PortfolioCardProps) {
               maximumFractionDigits: 2
             })}
           </div>
-          <div className="flex items-center space-x-2 text-sm">
-            {portfolio.change24h >= 0 ? (
-              <TrendingUp className="h-4 w-4 text-green-500" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-red-500" />
-            )}
-            <span className={portfolio.change24h >= 0 ? 'text-green-500' : 'text-red-500'}>
-              {portfolio.change24h >= 0 ? '+' : ''}{portfolio.change24h.toFixed(2)}%
-            </span>
-            <span className="text-muted-foreground">24h</span>
-          </div>
+          {portfolio.totalValueUSD > 0 && (
+            <div className="flex items-center space-x-2 text-sm">
+              {portfolio.change24h >= 0 ? (
+                <TrendingUp className="h-4 w-4 text-green-500" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-red-500" />
+              )}
+              <span className={portfolio.change24h >= 0 ? 'text-green-500' : 'text-red-500'}>
+                {portfolio.change24h >= 0 ? '+' : ''}{portfolio.change24h.toFixed(2)}%
+              </span>
+              <span className="text-muted-foreground">24h</span>
+            </div>
+          )}
         </div>
 
         {/* Token Breakdown */}
         <div className="space-y-3">
           <h4 className="text-sm font-medium">Holdings</h4>
-          <div className="space-y-2">
-            {portfolio.tokens.map((token) => (
-              <div key={token.address} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
-                    {token.symbol.charAt(0)}
+          {hasTokens ? (
+            <div className="space-y-2">
+              {portfolio.tokens.map((token) => (
+                <div key={token.address} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
+                      {token.symbol.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">{token.symbol}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {token.allocation.toFixed(1)}%
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium">{token.symbol}</div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium">
+                      {token.decimals === 18
+                        ? parseFloat(formatEther(BigInt(token.balance))).toFixed(4)
+                        : (parseInt(token.balance) / Math.pow(10, token.decimals)).toFixed(4)
+                      }
+                    </div>
                     <div className="text-xs text-muted-foreground">
-                      {token.allocation.toFixed(1)}%
+                      ${token.valueUSD.toFixed(2)}
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium">
-                    {token.decimals === 18
-                      ? parseFloat(formatEther(BigInt(token.balance))).toFixed(4)
-                      : (parseInt(token.balance) / Math.pow(10, token.decimals)).toFixed(4)
-                    }
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    ${token.valueUSD.toFixed(2)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              <p className="text-sm">No tokens detected</p>
+              <p className="text-xs">Token balances would appear here</p>
+            </div>
+          )}
         </div>
 
         {/* GameDAO Participation */}
         <div className="space-y-2 pt-2 border-t">
           <h4 className="text-sm font-medium">GameDAO Activity</h4>
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <div className="text-lg font-bold text-primary">{portfolio.participation.organizations}</div>
-              <div className="text-xs text-muted-foreground">Organizations</div>
+          {hasParticipation ? (
+            <>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <div className="text-lg font-bold text-primary">{portfolio.participation.organizations}</div>
+                  <div className="text-xs text-muted-foreground">Organizations</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-primary">{portfolio.participation.campaigns}</div>
+                  <div className="text-xs text-muted-foreground">Campaigns</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <div className="text-lg font-bold text-primary">{portfolio.participation.proposals}</div>
+                  <div className="text-xs text-muted-foreground">Proposals</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-primary">{portfolio.participation.votes}</div>
+                  <div className="text-xs text-muted-foreground">Votes Cast</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              <p className="text-sm">No GameDAO activity yet</p>
+              <p className="text-xs">Start participating to see stats here</p>
             </div>
-            <div>
-              <div className="text-lg font-bold text-primary">{portfolio.participation.campaigns}</div>
-              <div className="text-xs text-muted-foreground">Campaigns</div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <div className="text-lg font-bold text-primary">{portfolio.participation.proposals}</div>
-              <div className="text-xs text-muted-foreground">Proposals</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-primary">{portfolio.participation.votes}</div>
-              <div className="text-xs text-muted-foreground">Votes Cast</div>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Actions */}
