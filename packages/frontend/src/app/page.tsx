@@ -3,7 +3,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Users, DollarSign, Vote, Zap, Target, Coins, Shield, Trophy, Gamepad2, TrendingUp, Activity } from 'lucide-react'
-import { useGameDAO } from '@/hooks/useGameDAO'
 import { useProtocolStats } from '@/hooks/useProtocolStats'
 import { useStakingPools } from '@/hooks/use-staking-pools'
 import { WalletConnection } from '@/components/wallet/wallet-connection'

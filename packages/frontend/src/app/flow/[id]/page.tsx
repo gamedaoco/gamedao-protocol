@@ -2,19 +2,16 @@
 
 import { use } from 'react'
 import { DetailPageLayout } from '@/components/layout/detail-page-layout'
-import { EntityCard } from '@/components/ui/entity-card'
 import { ErrorBoundary, ErrorState } from '@/components/ui/error-boundary'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
 import { useCampaigns } from '@/hooks/useCampaigns'
 import { useOrganizations } from '@/hooks/useOrganizations'
-import { Target, Users, Calendar, Coins, Activity, Share2, Heart, MessageCircle } from 'lucide-react'
+import { Target, Users, Calendar, Coins, Share2, Heart, MessageCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { formatEther } from 'viem'
 
 // Individual campaign hook (to be implemented)
 function useCampaign(id: string) {
@@ -65,7 +62,6 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
     formatAmount,
     isActive,
     timeRemaining,
-    getStateString,
     getFlowTypeString
   } = useCampaign(id)
 
@@ -76,7 +72,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
         title="Loading..."
         breadcrumbs={[
           { label: 'Flow', href: '/flow' },
-          { label: 'Campaigns', href: '/flow/campaigns' },
+          { label: 'Campaigns', href: '/flow' },
           { label: 'Loading...', current: true }
         ]}
         loading={true}
@@ -93,7 +89,7 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
         title="Error"
         breadcrumbs={[
           { label: 'Flow', href: '/flow' },
-          { label: 'Campaigns', href: '/flow/campaigns' },
+          { label: 'Campaigns', href: '/flow' },
           { label: 'Error', current: true }
         ]}
       >
@@ -109,17 +105,17 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
         title="Campaign Not Found"
         breadcrumbs={[
           { label: 'Flow', href: '/flow' },
-          { label: 'Campaigns', href: '/flow/campaigns' },
+          { label: 'Campaigns', href: '/flow' },
           { label: 'Not Found', current: true }
         ]}
-        backHref="/flow/campaigns"
+        backHref="/flow"
       >
         <EmptyState
           title="Campaign not found"
           description="The campaign you're looking for doesn't exist or may have been removed."
           primaryAction={{
             label: 'Browse Campaigns',
-            onClick: () => window.location.href = '/flow/campaigns'
+            onClick: () => window.location.href = '/flow'
           }}
         />
       </DetailPageLayout>
@@ -130,16 +126,15 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
   const progress = getProgress(campaign)
   const isActiveCampaign = isActive(campaign)
   const timeLeft = timeRemaining(campaign)
-  const state = getStateString(campaign.state)
   const flowType = getFlowTypeString(campaign.flowType)
 
   // Get campaign status for badge
   const getCampaignStatus = () => {
-    if (campaign.state === 1 && isActiveCampaign) return { label: 'Active', variant: 'default' as const, color: 'bg-green-100 text-green-800' }
-    if (campaign.state === 2) return { label: 'Succeeded', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' }
-    if (campaign.state === 3) return { label: 'Failed', variant: 'destructive' as const, color: 'bg-red-100 text-red-800' }
-    if (campaign.state === 4) return { label: 'Cancelled', variant: 'secondary' as const, color: 'bg-gray-100 text-gray-800' }
-    if (campaign.state === 5) return { label: 'Finalized', variant: 'outline' as const, color: 'bg-purple-100 text-purple-800' }
+    if (campaign.state === 'ACTIVE' && isActiveCampaign) return { label: 'Active', variant: 'default' as const, color: 'bg-green-100 text-green-800' }
+    if (campaign.state === 'SUCCEEDED') return { label: 'Succeeded', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' }
+    if (campaign.state === 'FAILED') return { label: 'Failed', variant: 'destructive' as const, color: 'bg-red-100 text-red-800' }
+    if (campaign.state === 'CANCELLED') return { label: 'Cancelled', variant: 'secondary' as const, color: 'bg-gray-100 text-gray-800' }
+    if (campaign.state === 'FINALIZED') return { label: 'Finalized', variant: 'outline' as const, color: 'bg-purple-100 text-purple-800' }
     return { label: 'Created', variant: 'secondary' as const, color: 'bg-yellow-100 text-yellow-800' }
   }
 
@@ -200,309 +195,228 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
             </Button>
           </div>
         }
-        tabs={[
-          { id: 'overview', label: 'Overview', href: `/flow/${id}`, current: true },
-          { id: 'updates', label: 'Updates', href: `/flow/${id}/updates`, badge: updates.length },
-          { id: 'contributors', label: 'Contributors', href: `/flow/${id}/contributors`, badge: contributors.length },
-          { id: 'comments', label: 'Comments', href: `/flow/${id}/comments`, badge: comments.length }
-        ]}
-        sidebar={
-          <div className="space-y-6">
-            {/* Funding Progress */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <Target className="h-5 w-5 mr-2" />
-                  Funding Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Raised</span>
-                    <span className="font-medium">{formatAmount(campaign.raised)} ETH</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Target</span>
-                    <span className="font-medium">{formatAmount(campaign.target)} ETH</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                  <div className="text-center text-sm font-medium">
-                    {progress}% funded
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Min Contribution</span>
-                    <span>{formatAmount(campaign.min)} ETH</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Max Contribution</span>
-                    <span>{formatAmount(campaign.max)} ETH</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Contributors</span>
-                    <span>{contributors.length}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Campaign Timeline */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  Timeline
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Started</span>
-                    <span>{formatDistanceToNow(new Date(campaign.startTime * 1000), { addSuffix: true })}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Ends</span>
-                    <span>{formatDistanceToNow(new Date(campaign.endTime * 1000), { addSuffix: true })}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Duration</span>
-                    <span>{Math.ceil((campaign.endTime - campaign.startTime) / 86400)} days</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Organization Info */}
-            {organization && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Organization</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <EntityCard
-                    entity={{
-                      id: organization.id,
-                      name: organization.name,
-                      memberCount: organization.memberCount,
-                      status: organization.state === 1 ? 'Active' : 'Inactive'
-                    }}
-                    variant="organization"
-                    layout="compact"
-                    href={`/control/${organization.id}`}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Quick Actions */}
-            {isActiveCampaign && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button className="w-full justify-start">
-                    <Coins className="h-4 w-4 mr-2" />
-                    Contribute
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Leave Comment
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline">
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share Campaign
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        }
       >
         <div className="space-y-8">
           {/* Campaign Overview */}
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Campaign Details</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Stats Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Funding Progress */}
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Amount Raised</p>
-                      <p className="text-3xl font-bold">{formatAmount(campaign.raised)} ETH</p>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Funding Progress</span>
+                    <Badge variant={status.variant}>{status.label}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Progress</span>
+                      <span>{progress.toFixed(1)}%</span>
                     </div>
-                    <Coins className="h-8 w-8 text-muted-foreground" />
+                    <Progress value={progress} className="h-3" />
                   </div>
-                  <div className="mt-2">
-                    <Progress value={progress} className="h-1" />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {progress}% of {formatAmount(campaign.target)} ETH goal
-                    </p>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Raised</p>
+                      <p className="text-2xl font-bold">${formatAmount(campaign.raised)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Target</p>
+                      <p className="text-2xl font-bold">${formatAmount(campaign.target)}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 pt-4 border-t text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Contributors</p>
+                      <p className="font-semibold">{campaign.contributorCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Time Left</p>
+                      <p className="font-semibold">{timeLeft}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Type</p>
+                      <p className="font-semibold">{flowType}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Campaign Description */}
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Contributors</p>
-                      <p className="text-3xl font-bold">{contributors.length}</p>
-                    </div>
-                    <Users className="h-8 w-8 text-muted-foreground" />
+                <CardHeader>
+                  <CardTitle>About This Campaign</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose prose-sm max-w-none">
+                    <p>{campaign.description || 'No description provided for this campaign.'}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    People supporting this campaign
-                  </p>
                 </CardContent>
               </Card>
 
+              {/* Campaign Details */}
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+                <CardHeader>
+                  <CardTitle>Campaign Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Time Remaining</p>
-                      <p className="text-3xl font-bold">{timeLeft}</p>
+                      <p className="text-muted-foreground">Campaign ID</p>
+                      <p className="font-mono">{campaign.id}</p>
                     </div>
-                    <Calendar className="h-8 w-8 text-muted-foreground" />
+                    <div>
+                      <p className="text-muted-foreground">Creator</p>
+                      <p className="font-mono">{campaign.creator.slice(0, 8)}...{campaign.creator.slice(-6)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Created</p>
+                      <p>{formatDistanceToNow(new Date(campaign.createdAt * 1000), { addSuffix: true })}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Expires</p>
+                      <p>{formatDistanceToNow(new Date(campaign.expiry * 1000), { addSuffix: true })}</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {isActiveCampaign ? 'Campaign is active' : 'Campaign ended'}
-                  </p>
                 </CardContent>
               </Card>
-            </div>
-          </div>
 
-          {/* Campaign Description */}
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">About This Campaign</h2>
-            <Card>
-              <CardContent className="p-6">
-                <div className="prose max-w-none">
-                  <p className="text-muted-foreground leading-relaxed">
-                    {campaign.description || 'No description provided for this campaign.'}
-                  </p>
-
-                  {/* Campaign Details */}
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <h4 className="font-semibold">Campaign Type</h4>
-                      <Badge variant="outline">{flowType}</Badge>
-
-                      <h4 className="font-semibold">Funding Goal</h4>
-                      <p>{formatAmount(campaign.target)} ETH</p>
-
-                      <h4 className="font-semibold">Contribution Range</h4>
-                      <p>{formatAmount(campaign.min)} - {formatAmount(campaign.max)} ETH</p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-semibold">Campaign Status</h4>
-                      <Badge className={status.color}>{state}</Badge>
-
-                      <h4 className="font-semibold">Created By</h4>
-                      <p className="font-mono text-sm">
-                        {campaign.creator.slice(0, 6)}...{campaign.creator.slice(-4)}
-                      </p>
-
-                      <h4 className="font-semibold">Organization</h4>
-                      <p>{organization?.name || 'Unknown Organization'}</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Updates */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold">Recent Updates</h2>
-              <Button variant="outline" size="sm">
-                View All
-              </Button>
-            </div>
-            {updates.length > 0 ? (
-              <div className="space-y-4">
-                {updates.slice(0, 3).map((update: any, index: number) => (
-                  <Card key={index}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
-                        <div className="flex-1">
+              {/* Updates Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Campaign Updates</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {updates.length > 0 ? (
+                    <div className="space-y-4">
+                      {updates.map((update: { id: string; title: string; content: string; timestamp: number }, index: number) => (
+                        <div key={update.id || index} className="border-l-2 border-primary pl-4">
                           <h4 className="font-medium">{update.title}</h4>
-                          <p className="text-sm text-muted-foreground mt-1">{update.content}</p>
-                          <p className="text-xs text-muted-foreground mt-2">{update.timestamp}</p>
+                          <p className="text-sm text-muted-foreground">{update.content}</p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {formatDistanceToNow(new Date(update.timestamp * 1000), { addSuffix: true })}
+                          </p>
                         </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No updates yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Organization Info */}
+              {organization && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Organization</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-medium">{organization.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {organization.memberCount} members
+                        </p>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                title="No updates yet"
-                description="The campaign creator hasn't posted any updates yet."
-                variant="card"
-                size="sm"
-              />
-            )}
+                      <Button variant="outline" size="sm" className="w-full">
+                        View Organization
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Contribution Action */}
+              {isActiveCampaign && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Support This Campaign</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Button className="w-full" size="lg">
+                        <Coins className="h-4 w-4 mr-2" />
+                        Contribute Now
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      <p>• Contributions are non-refundable</p>
+                      <p>• Funds are released upon milestone completion</p>
+                      <p>• You&apos;ll receive updates on campaign progress</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Recent Contributors */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Contributors</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {contributors.length > 0 ? (
+                    <div className="space-y-3">
+                      {contributors.slice(0, 5).map((contributor: { address: string; amount: string; timestamp: number }, index: number) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div>
+                            <p className="font-mono text-sm">{contributor.address.slice(0, 8)}...{contributor.address.slice(-6)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(contributor.timestamp * 1000), { addSuffix: true })}
+                            </p>
+                          </div>
+                          <p className="font-medium">${contributor.amount}</p>
+                        </div>
+                      ))}
+                      {contributors.length > 5 && (
+                        <Button variant="ghost" size="sm" className="w-full">
+                          View All Contributors
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No contributions yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
-          {/* Top Contributors */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold">Top Contributors</h2>
-              <Button variant="outline" size="sm">
-                View All
-              </Button>
-            </div>
-            {contributors.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {contributors.slice(0, 6).map((contributor: any, index: number) => (
-                  <Card key={index}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                          {contributor.address.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">
-                            {contributor.address.slice(0, 6)}...{contributor.address.slice(-4)}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {contributor.amount} ETH contributed
-                          </p>
-                        </div>
+          {/* Comments Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MessageCircle className="h-5 w-5 mr-2" />
+                Comments ({comments.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {comments.length > 0 ? (
+                <div className="space-y-4">
+                  {comments.map((comment: { id: string; author: string; content: string; timestamp: number }, index: number) => (
+                    <div key={comment.id || index} className="border-b pb-4 last:border-b-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium">{comment.author}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(comment.timestamp * 1000), { addSuffix: true })}
+                        </p>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                title="No contributors yet"
-                description="Be the first to support this campaign!"
-                variant="card"
-                size="sm"
-                primaryAction={
-                  isActiveCampaign ? {
-                    label: 'Contribute Now',
-                    onClick: () => {
-                      console.log('Contribute to campaign:', campaign.id)
-                    }
-                  } : undefined
-                }
-              />
-            )}
-          </div>
+                      <p className="text-sm">{comment.content}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No comments yet. Be the first to share your thoughts!</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </DetailPageLayout>
     </ErrorBoundary>
