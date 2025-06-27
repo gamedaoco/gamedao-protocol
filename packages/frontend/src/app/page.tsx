@@ -9,6 +9,7 @@ import { useProtocolStats } from '@/hooks/useProtocolStats'
 import { useStakingPools } from '@/hooks/use-staking-pools'
 import { WalletConnection } from '@/components/wallet/wallet-connection'
 import { useRouter } from 'next/navigation'
+import { DebugStats } from '@/components/debug-stats'
 
 export default function HomePage() {
   const { isConnected, address } = useGameDAO()
@@ -22,6 +23,9 @@ export default function HomePage() {
 
   return (
     <div className="space-y-16">
+      {/* Debug Section - Remove in production */}
+      <DebugStats />
+
       {/* Hero Section */}
       <div className="text-center space-y-8 pt-8">
         <div className="space-y-4">
