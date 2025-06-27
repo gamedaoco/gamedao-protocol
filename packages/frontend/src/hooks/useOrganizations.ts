@@ -30,6 +30,43 @@ export interface CreateOrgParams {
   memberLimit: number
 }
 
+// Utility functions - moved to top to avoid temporal dead zone
+const getAccessModelFromString = (accessModel: string): number => {
+  switch (accessModel?.toUpperCase()) {
+    case 'OPEN': return 0
+    case 'VOTING': return 1
+    case 'INVITE': return 2
+    default: return 0
+  }
+}
+
+const getStateFromString = (state: string): number => {
+  switch (state?.toUpperCase()) {
+    case 'INACTIVE': return 0
+    case 'ACTIVE': return 1
+    case 'LOCKED': return 2
+    default: return 1
+  }
+}
+
+const getAccessModelString = (accessModel: number): string => {
+  switch (accessModel) {
+    case 0: return 'Open'
+    case 1: return 'Voting'
+    case 2: return 'Invite'
+    default: return 'Unknown'
+  }
+}
+
+const getStateString = (state: number): string => {
+  switch (state) {
+    case 0: return 'Inactive'
+    case 1: return 'Active'
+    case 2: return 'Locked'
+    default: return 'Unknown'
+  }
+}
+
 export function useOrganizations() {
   const { contracts, isConnected } = useGameDAO()
   const { address } = useAccount()
@@ -117,41 +154,7 @@ export function useOrganizations() {
     })
   }
 
-  const getAccessModelFromString = (accessModel: string): number => {
-    switch (accessModel?.toUpperCase()) {
-      case 'OPEN': return 0
-      case 'VOTING': return 1
-      case 'INVITE': return 2
-      default: return 0
-    }
-  }
 
-  const getStateFromString = (state: string): number => {
-    switch (state?.toUpperCase()) {
-      case 'INACTIVE': return 0
-      case 'ACTIVE': return 1
-      case 'LOCKED': return 2
-      default: return 1
-    }
-  }
-
-  const getAccessModelString = (accessModel: number): string => {
-    switch (accessModel) {
-      case 0: return 'Open'
-      case 1: return 'Voting'
-      case 2: return 'Invite'
-      default: return 'Unknown'
-    }
-  }
-
-  const getStateString = (state: number): string => {
-    switch (state) {
-      case 0: return 'Inactive'
-      case 1: return 'Active'
-      case 2: return 'Locked'
-      default: return 'Unknown'
-    }
-  }
 
   // Calculate stats
   const stats = {

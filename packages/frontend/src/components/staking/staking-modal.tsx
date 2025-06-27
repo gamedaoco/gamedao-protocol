@@ -12,6 +12,13 @@ import { Coins, Clock, Zap, Shield } from "lucide-react"
 import { useStakingPools } from "@/hooks/use-staking-pools"
 import { useTokenBalances } from "@/hooks/use-token-balances"
 
+// Unstaking strategies enum (matches the Solidity contract)
+enum UnstakeStrategy {
+  RAGE_QUIT = 0,
+  STANDARD = 1,
+  PATIENT = 2
+}
+
 interface StakingModalProps {
   isOpen: boolean
   onClose: () => void
