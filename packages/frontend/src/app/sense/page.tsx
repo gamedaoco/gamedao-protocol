@@ -1,13 +1,11 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search } from 'lucide-react'
+import { Search, Users, Trophy, Star } from 'lucide-react'
 import { useGameDAO } from '@/hooks/useGameDAO'
-import { useReputation } from '@/hooks/useReputation'
-import { Users, Trophy, Star, Award, Target, Crown } from 'lucide-react'
 
 export default function SensePage() {
   const { isConnected } = useGameDAO()
