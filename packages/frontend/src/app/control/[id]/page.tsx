@@ -10,7 +10,7 @@ import { Loader } from '@/components/ui/loader'
 import { DetailPageLayout } from '@/components/layout/detail-page-layout'
 
 interface OrganizationDetailPageProps {
-  params: Promise<{ id: string }>
+  params: { id: string } | Promise<{ id: string }>
 }
 
 // Individual organization hook (to be implemented)
@@ -34,7 +34,9 @@ function useOrganization(id: string) {
 }
 
 export default function OrganizationDetailPage({ params }: OrganizationDetailPageProps) {
-  const { id } = use(params)
+  // Handle both Promise and resolved params
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const { id } = resolvedParams
   const {
     organization,
     loading,
