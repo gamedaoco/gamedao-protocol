@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -12,6 +12,8 @@ export default function SensePage() {
   const { isConnected } = useGameDAO()
   const { profiles, stats, isLoading, error, userProfile, getTopProfiles } = useReputation()
 
+  const topProfiles = getTopProfiles(5)
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -21,6 +23,11 @@ export default function SensePage() {
           <p className="text-muted-foreground">
             Discover community members and build your gaming reputation
           </p>
+          {error && (
+            <p className="text-red-500 text-sm mt-1">
+              ⚠️ Unable to connect to subgraph: {error.message}
+            </p>
+          )}
         </div>
         <div className="flex items-center space-x-2">
           <div className="relative">
@@ -43,8 +50,8 @@ export default function SensePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2,847</div>
-            <p className="text-xs text-muted-foreground">+47 this week</p>
+            <div className="text-2xl font-bold">{isLoading ? '...' : stats.totalProfiles}</div>
+            <p className="text-xs text-muted-foreground">Registered users</p>
           </CardContent>
         </Card>
 
@@ -56,7 +63,7 @@ export default function SensePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,247</div>
+            <div className="text-2xl font-bold">{isLoading ? '...' : Math.round(stats.averageReputation)}</div>
             <p className="text-xs text-muted-foreground">Cross-platform score</p>
           </CardContent>
         </Card>
@@ -69,7 +76,7 @@ export default function SensePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">156</div>
+            <div className="text-2xl font-bold">{isLoading ? '...' : stats.totalAchievements}</div>
             <p className="text-xs text-muted-foreground">Total badges earned</p>
           </CardContent>
         </Card>
@@ -79,9 +86,11 @@ export default function SensePage() {
             <CardTitle className="text-sm font-medium">Your Reputation</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isConnected ? '2,450' : '0'}</div>
+            <div className="text-2xl font-bold">
+              {isConnected ? (userProfile ? userProfile.reputation : '0') : '0'}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {isConnected ? 'Rank #234' : 'Connect wallet to see'}
+              {isConnected ? (userProfile ? 'Your score' : 'No profile yet') : 'Connect wallet to see'}
             </p>
           </CardContent>
         </Card>
@@ -97,99 +106,79 @@ export default function SensePage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[
-              {
-                rank: 1,
-                username: 'GameMaster_Pro',
-                address: '0x1234...5678',
-                reputation: 8750,
-                level: 'Legendary',
-                achievements: 45,
-                daos: 12,
-                avatar: null
-              },
-              {
-                rank: 2,
-                username: 'CryptoGamer_X',
-                address: '0xabcd...efgh',
-                reputation: 7890,
-                level: 'Expert',
-                achievements: 38,
-                daos: 8,
-                avatar: null
-              },
-              {
-                rank: 3,
-                username: 'BlockchainBuilder',
-                address: '0x9876...5432',
-                reputation: 7234,
-                level: 'Expert',
-                achievements: 42,
-                daos: 15,
-                avatar: null
-              },
-              {
-                rank: 4,
-                username: 'DAO_Enthusiast',
-                address: '0xfedc...ba98',
-                reputation: 6890,
-                level: 'Advanced',
-                achievements: 31,
-                daos: 6,
-                avatar: null
-              },
-              {
-                rank: 5,
-                username: 'MetaverseMaven',
-                address: '0x5678...1234',
-                reputation: 6456,
-                level: 'Advanced',
-                achievements: 29,
-                daos: 9,
-                avatar: null
-              }
-            ].map((user, index) => (
-              <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      user.rank === 1 ? 'bg-yellow-500 text-white' :
-                      user.rank === 2 ? 'bg-gray-400 text-white' :
-                      user.rank === 3 ? 'bg-amber-600 text-white' :
-                      'bg-muted text-muted-foreground'
-                    }`}>
-                      #{user.rank}
-                    </div>
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={user.avatar || undefined} />
-                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                        {user.username.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-
-                  <div>
-                    <h3 className="font-medium">{user.username}</h3>
-                    <p className="text-sm text-muted-foreground">{user.address}</p>
-                    <div className="flex items-center space-x-4 mt-1">
-                      <Badge variant="secondary" className="text-xs">{user.level}</Badge>
-                      <span className="text-xs text-muted-foreground">{user.achievements} achievements</span>
-                      <span className="text-xs text-muted-foreground">{user.daos} DAOs</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 text-yellow-500" />
-                    <span className="font-bold">{user.reputation.toLocaleString()}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" className="mt-2">
-                    View Profile
-                  </Button>
-                </div>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading profiles...</p>
               </div>
-            ))}
+            ) : error ? (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium mb-2">Unable to load profiles</h3>
+                <p className="text-muted-foreground mb-4">
+                  There was an error connecting to the subgraph. Please check that:
+                </p>
+                <ul className="text-sm text-muted-foreground mb-4 space-y-1">
+                  <li>• The subgraph is deployed and running</li>
+                  <li>• The local blockchain has profile data</li>
+                  <li>• The GraphQL endpoint is accessible</li>
+                </ul>
+                <Button onClick={() => window.location.reload()}>
+                  Retry
+                </Button>
+              </div>
+            ) : topProfiles.length > 0 ? (
+              topProfiles.map((profile, index) => (
+                <div key={profile.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        index === 0 ? 'bg-yellow-500 text-white' :
+                        index === 1 ? 'bg-gray-400 text-white' :
+                        index === 2 ? 'bg-amber-600 text-white' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        #{index + 1}
+                      </div>
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={profile.avatar || undefined} />
+                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                          {profile.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+
+                    <div>
+                      <h3 className="font-medium">{profile.username}</h3>
+                      <p className="text-sm text-muted-foreground">{profile.owner.address.slice(0, 6)}...{profile.owner.address.slice(-4)}</p>
+                      <div className="flex items-center space-x-4 mt-1">
+                        <Badge variant="secondary" className="text-xs">Level {profile.verificationLevel}</Badge>
+                        <span className="text-xs text-muted-foreground">{profile.achievementCount} achievements</span>
+                        <span className="text-xs text-muted-foreground">{profile.organization.name}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="flex items-center space-x-1">
+                      <Star className="h-4 w-4 text-yellow-500" />
+                      <span className="font-bold">{profile.reputation.toLocaleString()}</span>
+                    </div>
+                    <Button variant="ghost" size="sm" className="mt-2">
+                      View Profile
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <h3 className="text-lg font-medium mb-2">No profiles found</h3>
+                <p className="text-muted-foreground mb-4">
+                  No user profiles have been created yet. Be the first to create your profile!
+                </p>
+                <Button>
+                  Create Profile
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
