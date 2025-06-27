@@ -1,6 +1,6 @@
 {
   "name": "@gamedao/frontend",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "description": "GameDAO Protocol Frontend - Modern Web3 DAO Management Interface",
   "private": true,
   "scripts": {
@@ -11,7 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@apollo/client": "^3.8.8",
+    "@apollo/client": "^3.13.8",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.0.5",
@@ -34,7 +34,7 @@
     "@wagmi/connectors": "^5.8.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.0.0",
-    "graphql": "^16.8.1",
+    "graphql": "^16.11.0",
     "lucide-react": "^0.307.0",
     "next": "14.2.30",
     "next-themes": "^0.2.1",

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { ModeToggle } from '@/components/mode-toggle'
 import { WalletConnection } from '@/components/wallet/wallet-connection'
+import { Button } from '@/components/ui/button'
 
 export function TopBar() {
   const { isConnected } = useGameDAO()
@@ -21,6 +22,12 @@ export function TopBar() {
 
         {/* Navigation - Left aligned after logo */}
         <nav className="flex items-center space-x-6 text-sm mr-auto">
+          <Link
+            href="/staking"
+            className="transition-colors hover:text-foreground/80 text-foreground font-medium"
+          >
+            Staking
+          </Link>
           <Link
             href="/control"
             className="transition-colors hover:text-foreground/80 text-foreground/60"
@@ -60,7 +67,11 @@ export function TopBar() {
           )}
 
           {/* Wallet Connection */}
-          <WalletConnection />
+          <WalletConnection>
+            <Button variant="outline" size="sm">
+              {isConnected ? 'Connected' : 'Connect Wallet'}
+            </Button>
+          </WalletConnection>
 
           {/* Theme Toggle */}
           <ModeToggle />

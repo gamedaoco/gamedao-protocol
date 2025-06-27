@@ -3,69 +3,123 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  Plus,
-  TrendingUp,
-  Users,
-  Vote,
-  DollarSign,
-  Bell,
-  Settings,
-  ExternalLink
-} from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
+import { ArrowUpRight, Users, Target, Vote, Coins, TrendingUp, Calendar, Award, DollarSign, Zap, Activity } from 'lucide-react'
 import { useGameDAO } from '@/hooks/useGameDAO'
-import { useReputation } from '@/hooks/useReputation'
-import { PortfolioCard } from '@/components/dashboard/portfolio-card'
-import { ReputationCard } from '@/components/reputation/reputation-card'
-import { redirect } from 'next/navigation'
-import { useEffect } from 'react'
+import { useProtocolStats } from '@/hooks/useProtocolStats'
+import { useOrganizations } from '@/hooks/useOrganizations'
+import { useCampaigns } from '@/hooks/useCampaigns'
+import { useProposals } from '@/hooks/useProposals'
+import { useStakingPools } from '@/hooks/use-staking-pools'
+import { formatUnits } from 'viem'
 
 export default function DashboardPage() {
-  const { isConnected, address } = useGameDAO()
-  const { reputation, isLoading: reputationLoading } = useReputation()
+  const { address, isConnected } = useGameDAO()
+  const { globalStats: stats, isLoading } = useProtocolStats()
+  const { userOrganizations, stats: orgStats } = useOrganizations()
+  const { userContributions, stats: campaignStats } = useCampaigns()
+  const { userVotes, stats: proposalStats } = useProposals()
+  const { userStakes, userStats } = useStakingPools()
 
-  // Redirect to home if not connected
-  useEffect(() => {
-    if (!isConnected) {
-      redirect('/')
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
+    return num.toFixed(0)
+  }
+
+  const formatTokenAmount = (amount: string) => {
+    try {
+      const formatted = formatUnits(BigInt(amount), 18)
+      const num = parseFloat(formatted)
+      return formatNumber(num)
+    } catch {
+      return '0'
     }
-  }, [isConnected])
+  }
 
   if (!isConnected) {
-    return null // Will redirect
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold">Connect Your Wallet</h2>
+          <p className="text-muted-foreground">Connect your wallet to view your dashboard</p>
+          <Button>Connect Wallet</Button>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <div className="flex items-center space-x-4">
-          <Avatar className="w-16 h-16">
-            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl">
-              {address?.slice(2, 4).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h1 className="text-3xl font-bold">Welcome back!</h1>
-            <p className="text-muted-foreground">
-              {address?.slice(0, 6)}...{address?.slice(-4)}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-          <Button variant="outline" size="sm">
-            <Bell className="h-4 w-4 mr-2" />
-            Notifications
-          </Button>
-        </div>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-muted-foreground">Overview of your GameDAO activity and portfolio</p>
       </div>
 
-      {/* Quick Stats */}
+      {/* User Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center">
+              <Users className="h-4 w-4 mr-2" />
+              My Organizations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoading ? <div className="h-6 w-8 bg-muted rounded animate-pulse"></div> : userOrganizations.length}
+            </div>
+            <p className="text-xs text-muted-foreground">DAOs you're part of</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Campaign Contributions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoading ? <div className="h-6 w-8 bg-muted rounded animate-pulse"></div> : userContributions.length}
+            </div>
+            <p className="text-xs text-muted-foreground">Total: ${userContributions.reduce((sum: number, c: any) => sum + parseFloat(c.amount), 0).toFixed(2)}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center">
+              <Vote className="h-4 w-4 mr-2" />
+              Governance Participation
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoading ? <div className="h-6 w-8 bg-muted rounded animate-pulse"></div> : userVotes.length}
+            </div>
+            <p className="text-xs text-muted-foreground">Votes cast</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center">
+              <Coins className="h-4 w-4 mr-2" />
+              Staking Rewards
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {userStats.totalRewardsClaimed ? formatNumber(parseFloat(formatUnits(userStats.totalRewardsClaimed, 18))) : '0'}
+            </div>
+            <p className="text-xs text-muted-foreground">GAME tokens earned</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Personal Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="pb-2">
@@ -75,8 +129,8 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">Member of 3 organizations</p>
+            <div className="text-2xl font-bold">{stats.userOrganizations}</div>
+            <p className="text-xs text-muted-foreground">Organizations you're part of</p>
           </CardContent>
         </Card>
 
@@ -88,8 +142,8 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$2,340</div>
-            <p className="text-xs text-muted-foreground">Across 7 campaigns</p>
+            <div className="text-2xl font-bold">${stats.userCampaigns * 500}</div>
+            <p className="text-xs text-muted-foreground">Across {stats.userCampaigns} campaigns</p>
           </CardContent>
         </Card>
 
@@ -101,163 +155,190 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">23</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold">{stats.userVotes}</div>
+            <p className="text-xs text-muted-foreground">Governance participation</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4" />
-              <span>Reputation</span>
+              <Coins className="h-4 w-4" />
+              <span>Staked GAME</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {reputationLoading ? (
-              <div className="animate-pulse">
-                <div className="h-8 bg-muted rounded w-20 mb-1"></div>
-                <div className="h-3 bg-muted rounded w-16"></div>
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{reputation?.reputation?.toLocaleString() || 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  {reputation?.trust ? `${reputation.trust}% trust score` : 'Building reputation'}
-                </p>
-              </>
-            )}
+            <div className="text-2xl font-bold">
+              {userStakes.length > 0
+                ? formatTokenAmount(userStakes.reduce((sum, stake) => sum + (stake ? Number(stake.amount) : 0), 0).toString())
+                : '0'
+              }
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {userStakes.length > 0 ? `In ${userStakes.length} pools` : 'Connect to see stakes'}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Portfolio */}
-          <PortfolioCard />
-
-          {/* Active Participations */}
+      {/* Protocol Overview */}
+      <div>
+        <h2 className="text-2xl font-semibold mb-4">Protocol Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                <Users className="h-4 w-4" />
+                <span>Total DAOs</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {isLoading ? '...' : formatNumber(stats.totalOrganizations)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isLoading ? 'Loading...' : `${stats.activeOrganizations} active`}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                <Target className="h-4 w-4" />
+                <span>Campaigns</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {isLoading ? '...' : formatNumber(stats.totalCampaigns)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isLoading ? 'Loading...' : `${stats.activeCampaigns} active`}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                <Vote className="h-4 w-4" />
+                <span>Proposals</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {isLoading ? '...' : formatNumber(stats.totalProposals)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isLoading ? 'Loading...' : `${stats.activeProposals} active`}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center space-x-2">
+                <Coins className="h-4 w-4" />
+                <span>GAME Staked</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatTokenAmount(stats.totalStaked)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.totalStakers} stakers • {stats.avgApy.toFixed(1)}% avg APY
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <h2 className="text-2xl font-semibold mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardHeader>
-              <CardTitle>Active Participations</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <Users className="h-5 w-5" />
+                <span>Create DAO</span>
+              </CardTitle>
               <CardDescription>
-                Your ongoing activities across the ecosystem
+                Start your own gaming organization with tokenomics and governance
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {/* DAO Memberships */}
-                <div>
-                  <h4 className="font-medium mb-3">DAO Memberships</h4>
-                  <div className="space-y-2">
-                    {[
-                      { name: 'GameDev Collective', role: 'Member', status: 'Active' },
-                      { name: 'Esports Alliance', role: 'Contributor', status: 'Active' },
-                      { name: 'NFT Gaming Hub', role: 'Moderator', status: 'Active' }
-                    ].map((dao, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
-                            {dao.name.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-medium">{dao.name}</p>
-                            <p className="text-sm text-muted-foreground">{dao.role}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="secondary" className="text-xs">{dao.status}</Badge>
-                          <Button variant="ghost" size="sm">
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Campaign Contributions */}
-                <div>
-                  <h4 className="font-medium mb-3">Campaign Contributions</h4>
-                  <div className="space-y-2">
-                    {[
-                      { name: 'Indie RPG: Chronicles of Etheria', amount: '$500', status: 'Active' },
-                      { name: 'NFT Trading Card Game', amount: '$250', status: 'Funded' }
-                    ].map((campaign, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{campaign.name}</p>
-                          <p className="text-sm text-muted-foreground">Contributed {campaign.amount}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={campaign.status === 'Active' ? 'default' : 'secondary'} className="text-xs">
-                            {campaign.status}
-                          </Badge>
-                          <Button variant="ghost" size="sm">
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Reputation Card */}
-          <ReputationCard />
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button className="w-full justify-start" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Create DAO
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Launch Campaign
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Proposal
+              <Button className="w-full" disabled={!isConnected}>
+                <Zap className="h-4 w-4 mr-2" />
+                Launch DAO
               </Button>
             </CardContent>
           </Card>
 
-          {/* Recent Activity */}
-          <Card>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <Target className="h-5 w-5" />
+                <span>Fund Campaign</span>
+              </CardTitle>
+              <CardDescription>
+                Create a fundraising campaign for your game development project
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[
-                  { action: 'Voted on proposal', dao: 'GameDev Collective', time: '2 hours ago' },
-                  { action: 'Contributed to campaign', dao: 'Indie RPG Project', time: '1 day ago' },
-                  { action: 'Joined DAO', dao: 'NFT Gaming Hub', time: '3 days ago' }
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 mt-2" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{activity.action}</p>
-                      <p className="text-xs text-muted-foreground">{activity.dao}</p>
-                      <p className="text-xs text-muted-foreground">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <Button className="w-full" variant="outline" disabled={!isConnected}>
+                <DollarSign className="h-4 w-4 mr-2" />
+                Start Campaign
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Coins className="h-5 w-5" />
+                <span>Stake GAME</span>
+              </CardTitle>
+              <CardDescription>
+                Earn rewards by staking GAME tokens in various pools
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline" disabled={!isConnected}>
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Stake Tokens
+              </Button>
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div>
+        <h2 className="text-2xl font-semibold mb-4">Recent Activity</h2>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Recent Activity</h3>
+                <p className="text-muted-foreground max-w-md">
+                  {isConnected
+                    ? "Start participating in DAOs, campaigns, and governance to see your activity here."
+                    : "Connect your wallet to see your recent activity across the GameDAO ecosystem."
+                  }
+                </p>
+                {!isConnected && (
+                  <Button className="mt-4">
+                    Connect Wallet
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

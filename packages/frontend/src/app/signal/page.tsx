@@ -5,9 +5,21 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Vote, Users, Clock, CheckCircle, XCircle } from 'lucide-react'
 import { useGameDAO } from '@/hooks/useGameDAO'
+import { useProposals } from '@/hooks/useProposals'
+import { useState } from 'react'
 
 export default function SignalPage() {
   const { isConnected } = useGameDAO()
+  const { proposals, stats, isLoading, isVoting, castVote } = useProposals()
+  const [selectedStatus, setSelectedStatus] = useState('All')
+
+  const handleVote = async (proposalId: string, choice: 0 | 1 | 2) => {
+    try {
+      await castVote(proposalId, choice)
+    } catch (error) {
+      console.error('Error voting:', error)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -35,7 +47,7 @@ export default function SignalPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{isLoading ? '...' : stats.activeProposals}</div>
             <p className="text-xs text-muted-foreground">Awaiting votes</p>
           </CardContent>
         </Card>
@@ -44,12 +56,12 @@ export default function SignalPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center space-x-2">
               <Users className="h-4 w-4" />
-              <span>Total Voters</span>
+              <span>Total Proposals</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,847</div>
-            <p className="text-xs text-muted-foreground">Across all DAOs</p>
+            <div className="text-2xl font-bold">{isLoading ? '...' : stats.totalProposals}</div>
+            <p className="text-xs text-muted-foreground">All time</p>
           </CardContent>
         </Card>
 
@@ -61,7 +73,7 @@ export default function SignalPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">92%</div>
+            <div className="text-2xl font-bold">{isLoading ? '...' : stats.executionRate}%</div>
             <p className="text-xs text-muted-foreground">Proposals executed</p>
           </CardContent>
         </Card>
@@ -71,9 +83,9 @@ export default function SignalPage() {
             <CardTitle className="text-sm font-medium">Your Votes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isConnected ? '23' : '0'}</div>
+            <div className="text-2xl font-bold">{isConnected ? stats.userVotes : '0'}</div>
             <p className="text-xs text-muted-foreground">
-              {isConnected ? 'Votes cast this month' : 'Connect wallet to see'}
+              {isConnected ? 'Votes cast' : 'Connect wallet to see'}
             </p>
           </CardContent>
         </Card>
@@ -82,7 +94,12 @@ export default function SignalPage() {
       {/* Proposal Status Filter */}
       <div className="flex flex-wrap gap-2">
         {['All', 'Active', 'Pending', 'Executed', 'Defeated', 'Expired'].map((status) => (
-          <Badge key={status} variant={status === 'All' ? 'default' : 'outline'} className="cursor-pointer">
+          <Badge
+            key={status}
+            variant={status === selectedStatus ? 'default' : 'outline'}
+            className="cursor-pointer"
+            onClick={() => setSelectedStatus(status)}
+          >
             {status}
           </Badge>
         ))}
@@ -98,66 +115,35 @@ export default function SignalPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Sample Proposal Items */}
-            {[
-              {
-                id: 'PROP-001',
-                title: 'Increase Development Fund Allocation',
-                description: 'Proposal to allocate additional 50,000 USDC from treasury to game development initiatives',
-                dao: 'GameDev Collective',
-                type: 'Treasury',
-                status: 'active',
-                votes: { for: 234, against: 45, abstain: 12 },
-                quorum: 300,
-                timeLeft: '2 days',
-                proposer: '0x1234...5678'
-              },
-              {
-                id: 'PROP-002',
-                title: 'Add New Gaming Category',
-                description: 'Proposal to add "Metaverse Gaming" as a new category for campaign submissions',
-                dao: 'Esports Alliance',
-                type: 'Parametric',
-                status: 'active',
-                votes: { for: 156, against: 23, abstain: 8 },
-                quorum: 200,
-                timeLeft: '5 days',
-                proposer: '0xabcd...efgh'
-              },
-              {
-                id: 'PROP-003',
-                title: 'Partnership with Gaming Studio',
-                description: 'Establish strategic partnership with Indie Studios Inc. for exclusive game development',
-                dao: 'NFT Gaming Hub',
-                type: 'Simple',
-                status: 'executed',
-                votes: { for: 345, against: 67, abstain: 23 },
-                quorum: 400,
-                timeLeft: 'Completed',
-                proposer: '0x9876...5432'
-              }
-            ].map((proposal, index) => (
-              <div key={index} className="border rounded-lg p-6 hover:bg-muted/50 transition-colors">
+            {isLoading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading proposals...</p>
+              </div>
+            ) : proposals.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No proposals found</p>
+                <p className="text-sm text-muted-foreground">
+                  {isConnected ? 'Create the first proposal!' : 'Connect your wallet to see proposals'}
+                </p>
+              </div>
+            ) : (
+              proposals.slice(0, 5).map((proposal, index) => (
+              <div key={proposal.id} className="border rounded-lg p-6 hover:bg-muted/50 transition-colors">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <Badge variant="outline" className="text-xs">{proposal.id}</Badge>
-                      <Badge variant="secondary" className="text-xs">{proposal.type}</Badge>
-                      <Badge
-                        variant={proposal.status === 'active' ? 'default' : proposal.status === 'executed' ? 'secondary' : 'outline'}
-                        className="text-xs"
-                      >
-                        {proposal.status}
-                      </Badge>
+                      <Badge variant="outline" className="text-xs">{proposal.id.slice(0, 8)}...</Badge>
+                      <Badge variant="secondary" className="text-xs">{proposal.proposalType}</Badge>
+                      <Badge variant="default" className="text-xs">{proposal.state}</Badge>
                     </div>
-                    <h3 className="font-medium text-lg mb-2">{proposal.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-3">{proposal.description}</p>
+                    <h3 className="font-medium text-lg mb-2">{proposal.title || `Proposal ${index + 1}`}</h3>
+                    <p className="text-sm text-muted-foreground mb-3">{proposal.description || 'Loading proposal details...'}</p>
                     <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                      <span>DAO: {proposal.dao}</span>
-                      <span>Proposer: {proposal.proposer}</span>
+                      <span>DAO: {proposal.organization?.name || 'Loading...'}</span>
+                      <span>Proposer: {proposal.proposer?.id?.slice(0, 6) || 'Loading'}...</span>
                       <div className="flex items-center space-x-1">
                         <Clock className="h-3 w-3" />
-                        <span>{proposal.timeLeft}</span>
+                        <span>{proposal.endTime ? new Date(parseInt(proposal.endTime.toString()) * 1000).toLocaleDateString() : '2 days'}</span>
                       </div>
                     </div>
                   </div>
@@ -167,7 +153,7 @@ export default function SignalPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span>Voting Progress</span>
-                    <span>{proposal.votes.for + proposal.votes.against + proposal.votes.abstain} / {proposal.quorum} votes</span>
+                    <span>{(proposal.votes?.for || 0) + (proposal.votes?.against || 0) + (proposal.votes?.abstain || 0)} / {proposal.quorum || 100} votes</span>
                   </div>
 
                   <div className="space-y-2">
@@ -175,65 +161,70 @@ export default function SignalPage() {
                     <div className="flex items-center space-x-2">
                       <div className="w-12 text-xs text-muted-foreground">For</div>
                       <div className="flex-1 bg-muted rounded-full h-2">
-                        <div
-                          className="bg-green-500 rounded-full h-2"
-                          style={{ width: `${(proposal.votes.for / proposal.quorum) * 100}%` }}
-                        />
+                        <div className="bg-green-500 rounded-full h-2" style={{ width: `${(proposal.votes?.for || 0) / Math.max((proposal.votes?.for || 0) + (proposal.votes?.against || 0) + (proposal.votes?.abstain || 0), 1) * 100}%` }} />
                       </div>
-                      <div className="w-12 text-xs text-right">{proposal.votes.for}</div>
+                      <div className="w-12 text-xs text-right">{proposal.votes?.for || 0}</div>
                     </div>
 
                     {/* Against votes */}
                     <div className="flex items-center space-x-2">
                       <div className="w-12 text-xs text-muted-foreground">Against</div>
                       <div className="flex-1 bg-muted rounded-full h-2">
-                        <div
-                          className="bg-red-500 rounded-full h-2"
-                          style={{ width: `${(proposal.votes.against / proposal.quorum) * 100}%` }}
-                        />
+                        <div className="bg-red-500 rounded-full h-2" style={{ width: `${(proposal.votes?.against || 0) / Math.max((proposal.votes?.for || 0) + (proposal.votes?.against || 0) + (proposal.votes?.abstain || 0), 1) * 100}%` }} />
                       </div>
-                      <div className="w-12 text-xs text-right">{proposal.votes.against}</div>
+                      <div className="w-12 text-xs text-right">{proposal.votes?.against || 0}</div>
                     </div>
 
                     {/* Abstain votes */}
                     <div className="flex items-center space-x-2">
                       <div className="w-12 text-xs text-muted-foreground">Abstain</div>
                       <div className="flex-1 bg-muted rounded-full h-2">
-                        <div
-                          className="bg-gray-500 rounded-full h-2"
-                          style={{ width: `${(proposal.votes.abstain / proposal.quorum) * 100}%` }}
-                        />
+                        <div className="bg-gray-500 rounded-full h-2" style={{ width: `${(proposal.votes?.abstain || 0) / Math.max((proposal.votes?.for || 0) + (proposal.votes?.against || 0) + (proposal.votes?.abstain || 0), 1) * 100}%` }} />
                       </div>
-                      <div className="w-12 text-xs text-right">{proposal.votes.abstain}</div>
+                      <div className="w-12 text-xs text-right">{proposal.votes?.abstain || 0}</div>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center justify-between pt-3">
                     <div className="flex space-x-2">
-                      {proposal.status === 'active' && (
-                        <>
-                          <Button size="sm" variant="outline" className="text-green-600 hover:text-green-700">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Vote For
-                          </Button>
-                          <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            Vote Against
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            Abstain
-                          </Button>
-                        </>
-                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-green-600 hover:text-green-700"
+                        onClick={() => handleVote(proposal.id, 1)}
+                        disabled={isVoting}
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Vote For
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleVote(proposal.id, 0)}
+                        disabled={isVoting}
+                      >
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Vote Against
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleVote(proposal.id, 2)}
+                        disabled={isVoting}
+                      >
+                        Abstain
+                      </Button>
                     </div>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => window.location.href = `/signal/${proposal.id}`}>
                       View Details
                     </Button>
                   </div>
                 </div>
               </div>
-            ))}
+            ))
+            )}
           </div>
 
           {!isConnected && (

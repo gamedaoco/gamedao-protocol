@@ -4,10 +4,10 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { useState, useEffect } from 'react'
 import { Address, erc20Abi, maxUint256 } from 'viem'
 
-// Contract addresses (these should come from your deployment)
-const GAME_TOKEN_ADDRESS = '0x457cCf29090fe5A24c19c1bc95F492168C0EaFdb' as Address
-const USDC_TOKEN_ADDRESS = '0x525C7063E7C20997BaaE9bDa922159152D0e8417' as Address
-const GAME_STAKING_ADDRESS = '0x5FeaeBfB4439F3516c74939A9D04e95AFE82C4ae' as Address
+// Contract addresses from deployment
+const GAME_TOKEN_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3' as Address
+const USDC_TOKEN_ADDRESS = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512' as Address
+const GAME_STAKING_ADDRESS = '0x0B306BF915C4d645ff596e518fAf3F9669b97016' as Address
 
 export function useTokenBalances() {
   const { address } = useAccount()

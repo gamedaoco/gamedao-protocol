@@ -1,11 +1,13 @@
 'use client'
 
-import { useReadContract, useWriteContract, useWatchContractEvent } from 'wagmi'
+import { useQuery } from '@apollo/client'
+import { useWriteContract } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
-import { TEST_DATA } from '@/lib/contracts'
-import { useState, useEffect } from 'react'
-import { formatEther } from 'viem'
+import { GET_ORGANIZATIONS, GET_USER_ORGANIZATIONS } from '@/lib/queries'
+import { getScaffoldData, ScaffoldDAO } from '@/lib/scaffold-data'
+import { useEffect, useState } from 'react'
+import { useAccount } from 'wagmi'
 
 export interface Organization {
   id: string
@@ -16,6 +18,8 @@ export interface Organization {
   feeModel: number
   memberLimit: number
   memberCount: number
+  totalCampaigns: number
+  totalProposals: number
   state: number
   createdAt: number
 }
@@ -27,25 +31,46 @@ export interface CreateOrgParams {
 }
 
 export function useOrganizations() {
-  const { contracts, isConnected, address } = useGameDAO()
-  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const { contracts, isConnected } = useGameDAO()
+  const { address } = useAccount()
+  const [scaffoldOrgs, setScaffoldOrgs] = useState<Organization[]>([])
 
-  // Get organization count from contract
-  const { data: orgCount, refetch: refetchCount } = useReadContract({
-    address: contracts.CONTROL,
-    abi: ABIS.CONTROL,
-    functionName: 'getOrganizationCount',
-    query: { enabled: isConnected },
+  // Fetch organizations from subgraph
+  const { data, loading, error, refetch } = useQuery(GET_ORGANIZATIONS, {
+    variables: { first: 100, skip: 0 },
+    pollInterval: 30000, // Poll every 30 seconds
+    errorPolicy: 'ignore', // Don't throw errors, we'll use scaffold data as fallback
   })
 
-  // Get the test organization details
-  const { data: testOrgData, refetch: refetchTestOrg } = useReadContract({
-    address: contracts.CONTROL,
-    abi: ABIS.CONTROL,
-    functionName: 'getOrganization',
-    args: [TEST_DATA.organizationId as `0x${string}`],
-    query: { enabled: isConnected },
+  // Fetch user's organizations from subgraph
+  const { data: userOrgsData, loading: userOrgsLoading } = useQuery(GET_USER_ORGANIZATIONS, {
+    variables: { user: address },
+    skip: !address,
+    pollInterval: 30000,
+    errorPolicy: 'ignore',
   })
+
+  // Load scaffold data as fallback
+  useEffect(() => {
+    const scaffoldData = getScaffoldData()
+    if (scaffoldData?.daos) {
+      const orgs: Organization[] = scaffoldData.daos.map((dao: ScaffoldDAO) => ({
+        id: dao.id,
+        name: dao.name,
+        creator: dao.creator,
+        treasury: dao.treasury,
+        accessModel: 0, // Default to Open
+        feeModel: 0,
+        memberLimit: 100,
+        memberCount: dao.members.length,
+        totalCampaigns: 0, // Will be calculated from campaigns
+        totalProposals: 0, // Will be calculated from proposals
+        state: 1, // Active
+        createdAt: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 86400 * 30), // Random time in last 30 days
+      }))
+      setScaffoldOrgs(orgs)
+    }
+  }, [])
 
   // Contract write for creating organization
   const {
@@ -55,40 +80,29 @@ export function useOrganizations() {
     error: createError
   } = useWriteContract()
 
-  // Watch for organization creation events
-  useWatchContractEvent({
-    address: contracts.CONTROL,
-    abi: ABIS.CONTROL,
-    eventName: 'OrganizationCreated',
-    onLogs(logs) {
-      console.log('New organization created:', logs)
-      // Refetch data when new organization is created
-      refetchCount()
-      refetchTestOrg()
-    },
-  })
+  // Transform subgraph data to match our interface, fallback to scaffold data
+  const organizations: Organization[] = data?.organizations?.map((org: any) => ({
+    id: org.id,
+    name: org.name || `Organization ${org.id.slice(0, 8)}`,
+    creator: org.creator,
+    treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
+    accessModel: getAccessModelFromString(org.accessModel) || 0,
+    feeModel: 0, // Not in subgraph schema
+    memberLimit: parseInt(org.memberLimit) || 100,
+    memberCount: parseInt(org.memberCount) || 0,
+    totalCampaigns: parseInt(org.totalCampaigns) || 0,
+    totalProposals: parseInt(org.totalProposals) || 0,
+    state: getStateFromString(org.state) || 1,
+    createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
+  })) || scaffoldOrgs
 
-  // Update organizations state when contract data changes
-  useEffect(() => {
-    if (testOrgData && Array.isArray(testOrgData)) {
-      const [name, creator, treasury, accessModel, feeModel, memberLimit, memberCount, state, createdAt] = testOrgData
-
-      const org: Organization = {
-        id: TEST_DATA.organizationId,
-        name: name as string,
-        creator: creator as string,
-        treasury: treasury as string,
-        accessModel: accessModel as number,
-        feeModel: feeModel as number,
-        memberLimit: memberLimit as number,
-        memberCount: Number(memberCount),
-        state: state as number,
-        createdAt: Number(createdAt),
-      }
-
-      setOrganizations([org])
-    }
-  }, [testOrgData])
+  // Get user's organizations from subgraph data
+  const userOrganizations = userOrgsData?.members?.map((member: any) => ({
+    ...member.organization,
+    memberRole: member.role,
+    memberState: member.state,
+    joinedAt: member.joinedAt,
+  })) || []
 
   const createOrganization = async (params: CreateOrgParams) => {
     if (!isConnected) {
@@ -101,6 +115,24 @@ export function useOrganizations() {
       functionName: 'createOrganization',
       args: [params.name, params.accessModel, params.memberLimit],
     })
+  }
+
+  const getAccessModelFromString = (accessModel: string): number => {
+    switch (accessModel?.toUpperCase()) {
+      case 'OPEN': return 0
+      case 'VOTING': return 1
+      case 'INVITE': return 2
+      default: return 0
+    }
+  }
+
+  const getStateFromString = (state: string): number => {
+    switch (state?.toUpperCase()) {
+      case 'INACTIVE': return 0
+      case 'ACTIVE': return 1
+      case 'LOCKED': return 2
+      default: return 1
+    }
   }
 
   const getAccessModelString = (accessModel: number): string => {
@@ -121,28 +153,37 @@ export function useOrganizations() {
     }
   }
 
+  // Calculate stats
+  const stats = {
+    totalOrganizations: organizations.length,
+    activeOrganizations: organizations.filter(org => org.state === 1).length,
+    totalMembers: organizations.reduce((sum, org) => sum + org.memberCount, 0),
+    userMemberships: userOrganizations.length,
+  }
+
   return {
     // Data
     organizations,
-    orgCount: orgCount ? Number(orgCount) : 0,
+    userOrganizations,
+    orgCount: organizations.length,
+    stats,
 
     // Actions
     createOrganization,
 
-    // Status
-    isLoading: !testOrgData && isConnected,
+    // Status - show loading only if we have no data at all
+    isLoading: loading && organizations.length === 0,
+    isLoadingUserOrgs: userOrgsLoading,
     isCreating,
     createSuccess,
     createError,
+    error: error && organizations.length === 0 ? error : null, // Hide error if we have scaffold data
 
     // Utils
     getAccessModelString,
     getStateString,
 
     // Refetch
-    refetch: () => {
-      refetchCount()
-      refetchTestOrg()
-    },
+    refetch,
   }
 }

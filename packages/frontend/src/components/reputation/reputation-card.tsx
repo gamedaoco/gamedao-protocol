@@ -5,32 +5,32 @@ import { Badge } from '@/components/ui/badge'
 import { Star, Trophy, Shield, TrendingUp } from 'lucide-react'
 import { useReputation } from '@/hooks/useReputation'
 import { cn } from '@/lib/utils'
+import { CardHeader, CardTitle } from '@/components/ui/card'
 
 export function ReputationCard() {
-  const { reputation, isLoading, error } = useReputation()
+  const { userProfile, isLoading, error } = useReputation()
 
   if (isLoading) {
     return (
-      <Card className="w-48">
-        <CardContent className="p-3">
-          <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-muted rounded w-3/4"></div>
-            <div className="h-3 bg-muted rounded w-1/2"></div>
-            <div className="h-3 bg-muted rounded w-2/3"></div>
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Reputation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-6 w-16 bg-muted rounded animate-pulse"></div>
         </CardContent>
       </Card>
     )
   }
 
-  if (error || !reputation) {
+  if (error) {
     return (
-      <Card className="w-48 border-muted">
-        <CardContent className="p-3">
-          <div className="flex items-center space-x-2 text-muted-foreground">
-            <Shield className="h-4 w-4" />
-            <span className="text-sm">No reputation data</span>
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Reputation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Failed to load reputation</p>
         </CardContent>
       </Card>
     )
@@ -52,11 +52,14 @@ export function ReputationCard() {
     return { level: 'New', color: 'text-gray-600 dark:text-gray-400' }
   }
 
-  const repLevel = getReputationLevel(reputation.reputation)
-  const trustLevel = getTrustLevel(reputation.trust)
+  const repLevel = getReputationLevel(userProfile?.reputation || 0)
+  const trustLevel = getTrustLevel(userProfile?.reputation || 0)
 
   return (
     <Card className="w-56 bg-gradient-to-br from-background/50 to-muted/30 border-border/50 backdrop-blur-sm">
+      <CardHeader>
+        <CardTitle>Reputation</CardTitle>
+      </CardHeader>
       <CardContent className="p-4 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -76,7 +79,7 @@ export function ReputationCard() {
               <span className="text-xs text-muted-foreground">XP</span>
             </div>
             <Badge variant="secondary" className="text-xs font-mono">
-              {reputation.experience.toLocaleString()}
+              {userProfile?.experience.toLocaleString() || '0'}
             </Badge>
           </div>
 
@@ -87,7 +90,7 @@ export function ReputationCard() {
               <span className="text-xs text-muted-foreground">REP</span>
             </div>
             <Badge variant="secondary" className="text-xs font-mono">
-              {reputation.reputation.toLocaleString()}
+              {userProfile?.reputation.toLocaleString() || '0'}
             </Badge>
           </div>
 
@@ -98,10 +101,10 @@ export function ReputationCard() {
               <span className="text-xs text-muted-foreground">TRUST</span>
             </div>
             <Badge
-              variant="outline"
+              variant="secondary"
               className={cn("text-xs font-mono border-0", trustLevel.color)}
             >
-              {reputation.trust}%
+              {userProfile?.reputation?.toLocaleString() || '0'}%
             </Badge>
           </div>
         </div>

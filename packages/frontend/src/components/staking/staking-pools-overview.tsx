@@ -5,56 +5,78 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Coins, TrendingUp, Users, Clock } from "lucide-react"
+import { useStakingPools } from "@/hooks/use-staking-pools"
+import { StakingModal } from "./staking-modal"
+import { useState } from "react"
+
+type PoolPurpose = 'GOVERNANCE' | 'DAO_CREATION' | 'TREASURY_BOND' | 'LIQUIDITY_MINING'
 
 const POOL_CONFIGS = {
   GOVERNANCE: {
     title: "Governance",
     description: "Participate in protocol governance",
     color: "bg-blue-500",
-    icon: Users,
-    apy: 3
+    icon: Users
   },
   DAO_CREATION: {
     title: "DAO Creation",
     description: "Stake to create and manage DAOs",
     color: "bg-green-500",
-    icon: TrendingUp,
-    apy: 8
+    icon: TrendingUp
   },
   TREASURY_BOND: {
     title: "Treasury Bond",
     description: "Long-term commitment for maximum rewards",
     color: "bg-purple-500",
-    icon: Coins,
-    apy: 12
+    icon: Coins
   },
   LIQUIDITY_MINING: {
     title: "Liquidity Mining",
     description: "Provide liquidity for trading rewards",
     color: "bg-orange-500",
-    icon: Clock,
-    apy: 6
+    icon: Clock
   }
 } as const
 
-// Mock data for testing
-const mockPools = [
-  { purpose: "GOVERNANCE", totalStaked: "5048000000000000000000", stakersCount: 12, active: true },
-  { purpose: "DAO_CREATION", totalStaked: "1000000000000000000000", stakersCount: 5, active: true },
-  { purpose: "TREASURY_BOND", totalStaked: "6562000000000000000000", stakersCount: 8, active: true },
-  { purpose: "LIQUIDITY_MINING", totalStaked: "3572000000000000000000", stakersCount: 6, active: true },
-]
-
-const mockUserStakes = [
-  { pool: "GOVERNANCE", amount: "1000000000000000000000", pendingRewards: "15000000000000000000" },
-  { pool: "TREASURY_BOND", amount: "2000000000000000000000", pendingRewards: "45000000000000000000" },
-]
-
 export function StakingPoolsOverview() {
-  const pools = mockPools
-  const userStakes = mockUserStakes
-  const totalStaked = "16182000000000000000000" // 16,182 GAME
-  const isLoading = false
+  const {
+    pools,
+    userStakes,
+    totalStaked,
+    totalStakers,
+    avgApy,
+    isLoading,
+    claimRewards,
+    isClaiming
+  } = useStakingPools()
+
+  const [stakingModal, setStakingModal] = useState<{
+    isOpen: boolean
+    poolPurpose: PoolPurpose
+    poolTitle: string
+    poolApy: number
+    mode: 'stake' | 'unstake'
+  }>({
+    isOpen: false,
+    poolPurpose: 'GOVERNANCE',
+    poolTitle: '',
+    poolApy: 0,
+    mode: 'stake'
+  })
+
+  const openStakingModal = (poolPurpose: PoolPurpose, poolTitle: string, poolApy: number, mode: 'stake' | 'unstake') => {
+    setStakingModal({
+      isOpen: true,
+      poolPurpose,
+      poolTitle,
+      poolApy,
+      mode
+    })
+  }
+
+  const closeStakingModal = () => {
+    setStakingModal(prev => ({ ...prev, isOpen: false }))
+  }
 
   if (isLoading) {
     return (
@@ -86,7 +108,9 @@ export function StakingPoolsOverview() {
               <Coins className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Value Locked</p>
-                <p className="text-2xl font-bold">16,182 GAME</p>
+                <p className="text-2xl font-bold">
+                  {(Number(totalStaked) / 1e18).toLocaleString()} GAME
+                </p>
               </div>
             </div>
           </CardContent>
@@ -98,7 +122,7 @@ export function StakingPoolsOverview() {
               <Users className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Active Stakers</p>
-                <p className="text-2xl font-bold">31</p>
+                <p className="text-2xl font-bold">{totalStakers}</p>
               </div>
             </div>
           </CardContent>
@@ -110,7 +134,7 @@ export function StakingPoolsOverview() {
               <TrendingUp className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Avg APY</p>
-                <p className="text-2xl font-bold">7.25%</p>
+                <p className="text-2xl font-bold">{avgApy.toFixed(2)}%</p>
               </div>
             </div>
           </CardContent>
@@ -135,7 +159,7 @@ export function StakingPoolsOverview() {
                     <CardTitle className="text-lg">{config.title}</CardTitle>
                   </div>
                   <Badge variant="secondary" className="font-mono">
-                    {config.apy}% APY
+                    {pool?.apyRate || 0}% APY
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{config.description}</p>
@@ -198,6 +222,7 @@ export function StakingPoolsOverview() {
                     size="sm"
                     className="flex-1"
                     disabled={!pool?.active}
+                    onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apyRate || 0, 'stake')}
                   >
                     Stake
                   </Button>
@@ -207,6 +232,7 @@ export function StakingPoolsOverview() {
                       size="sm"
                       variant="outline"
                       className="flex-1"
+                      onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apyRate || 0, 'unstake')}
                     >
                       Unstake
                     </Button>
@@ -219,8 +245,10 @@ export function StakingPoolsOverview() {
                     size="sm"
                     variant="default"
                     className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={() => claimRewards(purpose as PoolPurpose)}
+                    disabled={isClaiming}
                   >
-                    Claim {(Number(userStake.pendingRewards) / 1e18).toFixed(2)} GAME
+                    {isClaiming ? 'Claiming...' : `Claim ${(Number(userStake.pendingRewards) / 1e18).toFixed(2)} GAME`}
                   </Button>
                 )}
               </CardContent>
@@ -228,6 +256,16 @@ export function StakingPoolsOverview() {
           )
         })}
       </div>
+
+      {/* Staking Modal */}
+      <StakingModal
+        isOpen={stakingModal.isOpen}
+        onClose={closeStakingModal}
+        poolPurpose={stakingModal.poolPurpose}
+        poolTitle={stakingModal.poolTitle}
+        poolApy={stakingModal.poolApy}
+        mode={stakingModal.mode}
+      />
     </div>
   )
 }
