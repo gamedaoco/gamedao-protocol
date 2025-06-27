@@ -6,9 +6,11 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Search, Users, Trophy, Star } from 'lucide-react'
 import { useGameDAO } from '@/hooks/useGameDAO'
+import { useReputation } from '@/hooks/useReputation'
 
 export default function SensePage() {
   const { isConnected } = useGameDAO()
+  const { profiles, stats, isLoading, error, userProfile, getTopProfiles } = useReputation()
 
   return (
     <div className="space-y-6">
