@@ -326,8 +326,8 @@ export default function CampaignDetailPage({ params }: CampaignDetailPageProps) 
                           {organization.memberCount} members
                         </p>
                       </div>
-                      <Button variant="outline" size="sm" className="w-full">
-                        View Organization
+                      <Button variant="outline" size="sm" className="w-full" asChild>
+                        <a href={`/control/${organization.id}`}>View Organization</a>
                       </Button>
                     </div>
                   </CardContent>
