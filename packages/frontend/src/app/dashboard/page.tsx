@@ -7,10 +7,11 @@ import { useProtocolStats } from '@/hooks/useProtocolStats'
 import { PortfolioCard } from '@/components/dashboard/portfolio-card'
 import { TreasuryCard } from '@/components/dashboard/treasury-card'
 import { ReputationCard } from '@/components/reputation/reputation-card'
+import { formatDistanceToNow } from 'date-fns'
 
 export default function DashboardPage() {
   const { isConnected } = useAccount()
-  const { globalStats } = useProtocolStats()
+  const { globalStats, recentActivities, isLoading, error } = useProtocolStats()
 
   if (!isConnected) {
     return (
@@ -160,29 +161,43 @@ export default function DashboardPage() {
           <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between py-2 border-b">
-              <div>
-                <p className="font-medium">Joined Gaming Alliance DAO</p>
-                <p className="text-sm text-muted-foreground">2 hours ago</p>
-              </div>
-              <Button variant="ghost" size="sm">View</Button>
+          {isLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse flex items-center justify-between py-2 border-b">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-muted rounded w-48"></div>
+                    <div className="h-3 bg-muted rounded w-24"></div>
+                  </div>
+                  <div className="h-8 bg-muted rounded w-16"></div>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center justify-between py-2 border-b">
-              <div>
-                <p className="font-medium">Voted on Proposal #42</p>
-                <p className="text-sm text-muted-foreground">1 day ago</p>
-              </div>
-              <Button variant="ghost" size="sm">View</Button>
+          ) : error ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Unable to load recent activity</p>
+              <p className="text-sm">Please check your connection</p>
             </div>
-            <div className="flex items-center justify-between py-2">
-              <div>
-                <p className="font-medium">Contributed to RPG Campaign</p>
-                <p className="text-sm text-muted-foreground">3 days ago</p>
-              </div>
-              <Button variant="ghost" size="sm">View</Button>
+          ) : recentActivities.length > 0 ? (
+            <div className="space-y-4">
+              {recentActivities.slice(0, 5).map((activity) => (
+                <div key={activity.id} className="flex items-center justify-between py-2 border-b">
+                  <div>
+                    <p className="font-medium">{activity.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDistanceToNow(new Date(activity.timestamp * 1000), { addSuffix: true })}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm">View</Button>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No recent activity</p>
+              <p className="text-sm">Start participating to see activity here</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

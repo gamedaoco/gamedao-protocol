@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { ModeToggle } from '@/components/mode-toggle'
 import { WalletConnection } from '@/components/wallet/wallet-connection'
@@ -8,6 +9,21 @@ import { Button } from '@/components/ui/button'
 
 export function TopBar() {
   const { isConnected } = useGameDAO()
+  const pathname = usePathname()
+
+  // Helper function to determine if a nav item is active
+  const isActive = (path: string) => {
+    if (path === '/') return pathname === '/'
+    return pathname.startsWith(path)
+  }
+
+  // Helper function to get nav item classes
+  const getNavClasses = (path: string) => {
+    const baseClasses = "transition-colors hover:text-foreground/80"
+    return isActive(path)
+      ? `${baseClasses} text-foreground font-medium`
+      : `${baseClasses} text-foreground/60`
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -24,31 +40,31 @@ export function TopBar() {
         <nav className="flex items-center space-x-6 text-sm mr-auto">
           <Link
             href="/staking"
-            className="transition-colors hover:text-foreground/80 text-foreground font-medium"
+            className={getNavClasses('/staking')}
           >
             Staking
           </Link>
           <Link
             href="/control"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
+            className={getNavClasses('/control')}
           >
             Organizations
           </Link>
           <Link
             href="/flow"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
+            className={getNavClasses('/flow')}
           >
             Campaigns
           </Link>
           <Link
             href="/signal"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
+            className={getNavClasses('/signal')}
           >
             Governance
           </Link>
           <Link
             href="/sense"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
+            className={getNavClasses('/sense')}
           >
             Profiles
           </Link>
@@ -60,7 +76,7 @@ export function TopBar() {
           {isConnected && (
             <Link
               href="/dashboard"
-              className="transition-colors hover:text-foreground/80 text-foreground/60"
+              className={getNavClasses('/dashboard')}
             >
               Dashboard
             </Link>

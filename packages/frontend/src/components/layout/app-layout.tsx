@@ -11,22 +11,22 @@ interface AppLayoutProps {
 
 // Function to determine if sidebar should be shown based on current path
 function shouldShowSidebar(pathname: string): boolean {
-  // Hide sidebar on top-level pages
+  // Hide sidebar on top-level pages, dashboard, and staking pages
   const topLevelPages = [
     '/',           // Home page
+    '/dashboard',  // Dashboard page
     '/control',    // Control module overview
     '/flow',       // Flow module overview
     '/signal',     // Signal module overview
     '/sense'       // Sense module overview
   ]
 
+  // Hide sidebar for staking pages (all staking routes)
+  if (pathname.startsWith('/staking')) return false
+
   // Show sidebar for:
-  // - Dashboard (personal)
-  // - Staking pages
   // - Sub-pages of modules (organizational/campaign/governance level)
   // - Settings and other personal pages
-  if (pathname === '/dashboard') return true
-  if (pathname.startsWith('/staking')) return true
   if (pathname.startsWith('/settings')) return true
 
   // Show sidebar for sub-pages of modules
