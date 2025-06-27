@@ -90,6 +90,9 @@ help:
 	@echo "  make scaffold         Generate test data for development"
 	@echo "  make scaffold-full    Generate and copy test data to frontend"
 	@echo "  make scaffold-data-only Generate new test data without redeploying contracts"
+	@echo "  make test-interactions Run extended interaction testing with user key pairs"
+	@echo "  make create-profiles  Generate realistic profiles with faker.js (USERS=N)"
+	@echo "  make create-profiles-large Generate large ecosystem (50 users, 15 orgs, 25 campaigns)"
 	@echo "  make dev-scaffold     Full dev setup with test data"
 	@echo ""
 	@echo "$(YELLOW)📝 Examples:$(NC)"
@@ -425,6 +428,27 @@ scaffold-data-only:
 	@make scaffold-full
 	@echo "$(GREEN)✅ New test data generated$(NC)"
 	@echo "$(CYAN)💡 The subgraph will automatically index the new data$(NC)"
+
+test-interactions:
+	@echo "$(BLUE)🧪 Running extended interaction testing...$(NC)"
+	@echo "$(YELLOW)⚠️  Ensure scaffold data exists first (run 'make scaffold-full')$(NC)"
+	@cd $(CONTRACTS_DIR) && npm run test-interactions
+	@echo "$(GREEN)✅ Extended interactions generated successfully$(NC)"
+	@echo "$(CYAN)💡 Check extended-interactions-output.json for detailed results$(NC)"
+
+create-profiles:
+	@echo "$(BLUE)🎭 Creating realistic profiles with faker.js...$(NC)"
+	@echo "$(CYAN)📊 Generating $(or $(USERS),10) users with organizations, campaigns, and proposals$(NC)"
+	@cd $(CONTRACTS_DIR) && USERS=$(or $(USERS),10) npx hardhat run scripts/create-profiles.ts --network localhost
+	@echo "$(GREEN)✅ Profile generation completed successfully$(NC)"
+	@echo "$(CYAN)💾 Check generated-profiles.json for detailed results$(NC)"
+
+create-profiles-large:
+	@echo "$(BLUE)🏟️  Creating large realistic gaming ecosystem...$(NC)"
+	@echo "$(CYAN)📊 Generating 50 users, 15 organizations, 25 campaigns, 12 proposals$(NC)"
+	@cd $(CONTRACTS_DIR) && USERS=50 ORGS=15 CAMPAIGNS=25 PROPOSALS=12 MULTIPLIER=2.0 npx hardhat run scripts/create-profiles.ts --network localhost
+	@echo "$(GREEN)✅ Large ecosystem generated successfully$(NC)"
+	@echo "$(CYAN)💾 Check generated-profiles.json for comprehensive results$(NC)"
 
 dev-scaffold:
 	@echo "$(BLUE)🚀 Starting development environment with test data...$(NC)"

@@ -15,6 +15,8 @@
     "scaffold": "hardhat run scripts/scaffold.ts --network localhost",
     "scaffold:copy": "node scripts/copy-scaffold-data.js",
     "scaffold:full": "npm run scaffold && npm run scaffold:copy",
+    "test-interactions": "hardhat run scripts/test-interactions.ts --network localhost",
+    "create-profiles": "hardhat run scripts/create-profiles.ts --network localhost",
     "verify": "hardhat verify",
     "node": "hardhat node --hostname 0.0.0.0",
     "node:quiet": "hardhat node --hostname 0.0.0.0 > /dev/null 2>&1",
@@ -30,6 +32,7 @@
     "@openzeppelin/contracts-upgradeable": "^4.9.3"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.8.0",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
     "@nomicfoundation/hardhat-ethers": "^3.0.4",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
