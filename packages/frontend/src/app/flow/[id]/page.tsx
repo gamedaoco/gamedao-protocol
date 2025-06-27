@@ -44,11 +44,13 @@ function useCampaign(id: string) {
 }
 
 interface CampaignDetailPageProps {
-  params: Promise<{ id: string }>
+  params: { id: string } | Promise<{ id: string }>
 }
 
 export default function CampaignDetailPage({ params }: CampaignDetailPageProps) {
-  const { id } = use(params)
+  // Handle both Promise and resolved params
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const { id } = resolvedParams
   const {
     campaign,
     organization,
