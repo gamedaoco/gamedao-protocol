@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { ArrowRight, Users, DollarSign, Vote, Zap, Target, Coins, Shield, Trophy, Gamepad2, TrendingUp, Activity } from 'lucide-react'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useProtocolStats } from '@/hooks/useProtocolStats'
@@ -12,8 +11,7 @@ import { useRouter } from 'next/navigation'
 
 
 export default function HomePage() {
-  const { isConnected, address } = useGameDAO()
-  const { globalStats: stats, isLoading } = useProtocolStats()
+  const { globalStats, isLoading } = useProtocolStats()
   const { stakingPools, globalStats: stakingStats } = useStakingPools()
   const router = useRouter()
 
@@ -91,7 +89,7 @@ export default function HomePage() {
                 {isLoading ? (
                   <div className="h-8 w-16 bg-green-200 dark:bg-green-800 rounded animate-pulse"></div>
                 ) : (
-                  stats.totalMembers.toLocaleString()
+                  globalStats.totalMembers.toLocaleString()
                 )}
               </div>
               <p className="text-sm text-green-600 dark:text-green-400 mt-1">
@@ -112,7 +110,7 @@ export default function HomePage() {
                 {isLoading ? (
                   <div className="h-8 w-20 bg-purple-200 dark:bg-purple-800 rounded animate-pulse"></div>
                 ) : (
-                  `$${parseFloat(stats.totalRaised).toLocaleString()}`
+                  `$${parseFloat(globalStats.totalRaised).toLocaleString()}`
                 )}
               </div>
               <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">
@@ -133,7 +131,7 @@ export default function HomePage() {
                 {isLoading ? (
                   <div className="h-8 w-16 bg-orange-200 dark:bg-orange-800 rounded animate-pulse"></div>
                 ) : (
-                  stats.totalAchievements.toLocaleString()
+                  globalStats.totalAchievements.toLocaleString()
                 )}
               </div>
               <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
@@ -175,13 +173,13 @@ export default function HomePage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total DAOs:</span>
                   <span className="font-semibold">
-                    {isLoading ? '...' : stats.totalOrganizations}
+                    {isLoading ? '...' : globalStats.totalOrganizations}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Active Members:</span>
                   <span className="font-semibold">
-                    {isLoading ? '...' : stats.totalMembers}
+                    {isLoading ? '...' : globalStats.totalMembers}
                   </span>
                 </div>
               </div>
@@ -211,7 +209,7 @@ export default function HomePage() {
               <div>
                 <CardTitle className="text-2xl group-hover:text-purple-600 transition-colors">Governance</CardTitle>
                 <CardDescription className="text-base mt-2">
-                  Participate in decentralized governance with voting, proposals, and community decision-making
+                  Participate in decentralized decision-making through proposals, voting, and community governance mechanisms.
                 </CardDescription>
               </div>
             </CardHeader>
@@ -220,13 +218,13 @@ export default function HomePage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Proposals:</span>
                   <span className="font-semibold">
-                    {isLoading ? '...' : stats.totalProposals}
+                    {isLoading ? '...' : globalStats.totalProposals}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Votes Cast:</span>
                   <span className="font-semibold">
-                    {isLoading ? '...' : stats.totalVotes}
+                    {isLoading ? '...' : globalStats.totalVotes}
                   </span>
                 </div>
               </div>
@@ -238,13 +236,13 @@ export default function HomePage() {
                   handleNavigate('/signal')
                 }}
               >
-                View Governance
+                View Proposals
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </CardContent>
           </Card>
 
-          {/* Campaigns (Flow) */}
+          {/* Fundraising (Flow) */}
           <Card
             className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-green-300 dark:hover:border-green-600"
             onClick={() => handleNavigate('/flow')}
@@ -254,9 +252,9 @@ export default function HomePage() {
                 <Target className="h-8 w-8 text-white" />
               </div>
               <div>
-                <CardTitle className="text-2xl group-hover:text-green-600 transition-colors">Campaigns</CardTitle>
+                <CardTitle className="text-2xl group-hover:text-green-600 transition-colors">Fundraising</CardTitle>
                 <CardDescription className="text-base mt-2">
-                  Fund game development with flexible crowdfunding models and transparent milestone tracking
+                  Launch and support game development campaigns with transparent funding, milestone tracking, and community backing.
                 </CardDescription>
               </div>
             </CardHeader>
@@ -265,13 +263,13 @@ export default function HomePage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Campaigns:</span>
                   <span className="font-semibold">
-                    {isLoading ? '...' : stats.totalCampaigns}
+                    {isLoading ? '...' : globalStats.totalCampaigns}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Active:</span>
                   <span className="font-semibold">
-                    {isLoading ? '...' : stats.activeCampaigns}
+                    {isLoading ? '...' : globalStats.activeCampaigns}
                   </span>
                 </div>
               </div>
@@ -289,19 +287,19 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          {/* Staking Pools */}
+          {/* Staking */}
           <Card
-            className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-orange-300 dark:hover:border-orange-600"
+            className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-yellow-300 dark:hover:border-yellow-600"
             onClick={() => handleNavigate('/staking')}
           >
             <CardHeader className="space-y-4">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                 <Coins className="h-8 w-8 text-white" />
               </div>
               <div>
-                <CardTitle className="text-2xl group-hover:text-orange-600 transition-colors">Staking Pools</CardTitle>
+                <CardTitle className="text-2xl group-hover:text-yellow-600 transition-colors">Staking</CardTitle>
                 <CardDescription className="text-base mt-2">
-                  Stake GAME tokens to earn rewards while supporting protocol governance and security
+                  Stake GAME tokens to earn rewards, participate in governance, and support the protocol ecosystem.
                 </CardDescription>
               </div>
             </CardHeader>
@@ -322,13 +320,13 @@ export default function HomePage() {
               </div>
               <Button
                 variant="outline"
-                className="w-full group-hover:bg-orange-50 dark:group-hover:bg-orange-950"
+                className="w-full group-hover:bg-yellow-50 dark:group-hover:bg-yellow-950"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleNavigate('/staking')
                 }}
               >
-                View Staking Pools
+                Start Staking
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </CardContent>
@@ -336,108 +334,80 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Key Features Section */}
+      {/* Features Section */}
       <div className="space-y-8">
         <div className="text-center space-y-4">
-          <h2 className="text-3xl md:text-4xl font-bold">Key Features</h2>
+          <h2 className="text-3xl md:text-4xl font-bold">Why Choose GameDAO?</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Powerful tools and features designed specifically for the gaming community
+            Built for gamers, by gamers. Experience the next generation of gaming infrastructure.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[
-            {
-              title: "Gaming Communities (DAOs)",
-              description: "Create and manage decentralized gaming organizations with transparent governance, treasury management, and member coordination.",
-              icon: <Users className="h-8 w-8" />,
-              color: "from-blue-500 to-blue-600"
-            },
-            {
-              title: "Decentralized Governance",
-              description: "Participate in community-driven decision making with transparent voting mechanisms and proposal systems.",
-              icon: <Vote className="h-8 w-8" />,
-              color: "from-purple-500 to-purple-600"
-            },
-            {
-              title: "Reputation System",
-              description: "Build trust and credibility through on-chain reputation tracking, achievements, and community recognition.",
-              icon: <Shield className="h-8 w-8" />,
-              color: "from-green-500 to-green-600"
-            },
-            {
-              title: "Flexible Campaigns",
-              description: "Launch crowdfunding campaigns with multiple models from grants to revenue sharing and milestone-based funding.",
-              icon: <Target className="h-8 w-8" />,
-              color: "from-orange-500 to-orange-600"
-            },
-            {
-              title: "Staking Rewards",
-              description: "Stake GAME tokens across multiple pools to earn rewards while supporting protocol governance and security.",
-              icon: <Coins className="h-8 w-8" />,
-              color: "from-yellow-500 to-yellow-600"
-            },
-            {
-              title: "Battlepass System",
-              description: "Gamified progression system with achievements, rewards, and seasonal challenges for active community members.",
-              icon: <Trophy className="h-8 w-8" />,
-              color: "from-pink-500 to-pink-600"
-            }
-          ].map((feature, index) => (
-            <Card key={index} className="group hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
-              <CardHeader className="space-y-4">
-                <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-300`}>
-                  {feature.icon}
-                </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base leading-relaxed">
-                  {feature.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Card className="text-center p-8">
+            <CardHeader>
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center mx-auto mb-4">
+                <Shield className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl">Secure & Transparent</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Built on blockchain technology with full transparency and security for all transactions and governance decisions.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center p-8">
+            <CardHeader>
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
+                <Gamepad2 className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl">Gaming-First Design</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Purpose-built for gaming communities with features tailored to game development, esports, and gaming DAOs.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center p-8">
+            <CardHeader>
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center mx-auto mb-4">
+                <Trophy className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl">Community Driven</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Governed entirely by the community through decentralized voting and proposal systems.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
       {/* Call to Action */}
-      <div className="text-center space-y-8 bg-gradient-to-r from-blue-50 via-purple-50 to-cyan-50 dark:from-blue-950 dark:via-purple-950 dark:to-cyan-950 rounded-2xl p-12 border-2 border-gradient-to-r from-blue-200 to-purple-200 dark:from-blue-800 dark:to-purple-800">
+      <div className="text-center space-y-8 py-16">
         <div className="space-y-4">
-          <h2 className="text-3xl md:text-4xl font-bold">Ready to Build the Future of Gaming?</h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Join the GameDAO ecosystem and start building, funding, and governing the next generation of gaming projects.
-            Connect your wallet or sign in with email to get started.
+          <h2 className="text-3xl md:text-4xl font-bold">Ready to Get Started?</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Join thousands of gamers building the future of decentralized gaming. Connect your wallet and explore the ecosystem today.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row justify-center gap-4">
           <WalletConnection>
             <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg px-8 py-6">
-              <Gamepad2 className="h-5 w-5 mr-2" />
-              Connect Wallet
+              <Zap className="h-5 w-5 mr-2" />
+              Get Started Now
             </Button>
           </WalletConnection>
-          <WalletConnection>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-              Sign in with Email
-            </Button>
-          </WalletConnection>
-        </div>
-
-        <div className="flex flex-wrap justify-center gap-6 pt-4 text-sm text-muted-foreground">
-          <span className="flex items-center">
-            <Shield className="h-4 w-4 mr-1" />
-            Secure & Decentralized
-          </span>
-          <span className="flex items-center">
-            <Activity className="h-4 w-4 mr-1" />
-            Real-time Updates
-          </span>
-          <span className="flex items-center">
-            <Zap className="h-4 w-4 mr-1" />
-            Low Gas Fees
-          </span>
+          <Button size="lg" variant="outline" className="text-lg px-8 py-6" onClick={() => handleNavigate('/dashboard')}>
+            <Activity className="h-5 w-5 mr-2" />
+            View Dashboard
+          </Button>
         </div>
       </div>
     </div>

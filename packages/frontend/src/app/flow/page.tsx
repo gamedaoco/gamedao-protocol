@@ -1,180 +1,121 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { EntityCard } from '@/components/ui/entity-card'
-import { ErrorBoundary } from '@/components/ui/error-boundary'
-import { EmptyState, EmptyCampaigns } from '@/components/ui/empty-state'
-import { useGameDAO } from '@/hooks/useGameDAO'
 import { useCampaigns } from '@/hooks/useCampaigns'
-import { Plus, Target, TrendingUp, Clock, DollarSign } from 'lucide-react'
+import { useState } from 'react'
 
 export default function FlowPage() {
-  const { isConnected } = useGameDAO()
-  const { campaigns, isLoading, stats, getProgress, formatAmount, isActive, timeRemaining, getStateString, getFlowTypeString } = useCampaigns()
+  const { campaigns, isLoading } = useCampaigns()
+
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
+
+  // Filter campaigns based on selected filter
+  const filteredCampaigns = campaigns.filter(campaign => {
+    if (filter === 'active') return campaign.state === 'ACTIVE'
+    if (filter === 'completed') return campaign.state === 'COMPLETED'
+    return true
+  })
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Campaigns</h1>
+          <h1 className="text-3xl font-bold">Flow</h1>
           <p className="text-muted-foreground">
-            Discover and support crowdfunding campaigns in the gaming ecosystem
+            Discover and support game development campaigns
           </p>
         </div>
-        <Button disabled={!isConnected} className="flex items-center space-x-2">
-          <Plus className="h-4 w-4" />
-          <span>Create Campaign</span>
+        <Button>
+          Create Campaign
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center space-x-2">
-              <Target className="h-4 w-4" />
-              <span>Active Campaigns</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {isLoading ? '...' : stats.activeCampaigns}
-            </div>
-            <p className="text-xs text-muted-foreground">Currently fundraising</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center space-x-2">
-              <DollarSign className="h-4 w-4" />
-              <span>Total Raised</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {isLoading ? '...' : `$${parseFloat(stats.totalRaised).toFixed(2)}`}
-            </div>
-            <p className="text-xs text-muted-foreground">All time</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4" />
-              <span>Total Campaigns</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {isLoading ? '...' : stats.totalCampaigns}
-            </div>
-            <p className="text-xs text-muted-foreground">All time</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Your Contributions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {isConnected ? `$${stats.userContributions.toFixed(2)}` : '$0.00'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {isConnected ? 'Total contributed' : 'Connect wallet to see'}
-            </p>
-          </CardContent>
-        </Card>
+      {/* Filters */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          onClick={() => setFilter('all')}
+        >
+          All
+        </Button>
+        <Button
+          variant={filter === 'active' ? 'default' : 'outline'}
+          onClick={() => setFilter('active')}
+        >
+          Active
+        </Button>
+        <Button
+          variant={filter === 'completed' ? 'default' : 'outline'}
+          onClick={() => setFilter('completed')}
+        >
+          Completed
+        </Button>
+        <div className="ml-auto flex gap-2">
+          <Button variant="outline">
+            Filter
+          </Button>
+          <Button variant="outline">
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex space-x-2">
-        <Button variant="default" size="sm">All Campaigns</Button>
-        <Button variant="outline" size="sm">Active</Button>
-        <Button variant="outline" size="sm">Successful</Button>
-        <Button variant="outline" size="sm">My Contributions</Button>
-        <Button variant="outline" size="sm">Trending</Button>
-      </div>
-
-      {/* Campaigns */}
+      {/* Campaigns Grid */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">
-            {isLoading ? 'Loading Campaigns...' : `All Campaigns (${campaigns.length})`}
-          </h2>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm">
-              Refresh
-            </Button>
-            <Button variant="outline" size="sm">
-              Filter
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-4 bg-muted rounded w-3/4" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="h-3 bg-muted rounded" />
+                    <div className="h-3 bg-muted rounded w-2/3" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredCampaigns.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCampaigns.map((campaign) => (
+              <EntityCard
+                key={campaign.id}
+                entity={{
+                  id: campaign.id,
+                  title: campaign.title,
+                  description: campaign.description,
+                  target: campaign.target,
+                  raised: campaign.raised,
+                  contributors: campaign.contributorCount,
+                  endTime: campaign.expiry,
+                  organizationName: campaign.organizationName
+                }}
+                variant="campaign"
+                href={`/flow/${campaign.id}`}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-medium mb-2">No campaigns found</h3>
+            <p className="text-muted-foreground mb-4">
+              {filter === 'all'
+                ? 'There are no campaigns available at the moment.'
+                : `No ${filter} campaigns found. Try changing your filter.`
+              }
+            </p>
+            <Button onClick={() => setFilter('all')}>
+              Clear Filter
             </Button>
           </div>
-        </div>
-
-        <ErrorBoundary>
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <EntityCard
-                  key={index}
-                  entity={{
-                    id: `loading-${index}`,
-                    name: 'Loading...',
-                    description: 'Loading campaign details...'
-                  }}
-                  variant="campaign"
-                  loading={true}
-                />
-              ))}
-            </div>
-          ) : campaigns.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {campaigns.map((campaign) => (
-                <EntityCard
-                  key={campaign.id}
-                  entity={{
-                    id: campaign.id,
-                    name: campaign.title || `Campaign ${campaign.id.slice(0, 8)}`,
-                    description: campaign.description,
-                    target: campaign.target,
-                    raised: campaign.raised,
-                    contributors: 0, // TODO: Get actual contributor count
-                    endTime: campaign.expiry,
-                    status: getStateString(campaign.state)
-                  }}
-                  variant="campaign"
-                  href={`/flow/${campaign.id}`}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyCampaigns
-              title={isConnected ? 'No campaigns yet' : 'Connect Wallet'}
-              description={
-                isConnected
-                  ? "There are no campaigns available at the moment. Be the first to create one!"
-                  : "Connect your wallet to view and support campaigns."
-              }
-              primaryAction={{
-                label: isConnected ? 'Create First Campaign' : 'Connect Wallet',
-                onClick: () => {
-                  if (isConnected) {
-                    window.location.href = '/flow/create'
-                  } else {
-                    console.log('Connect wallet')
-                  }
-                }
-              }}
-            />
-          )}
-        </ErrorBoundary>
+        )}
       </div>
     </div>
   )
