@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, Star, Trophy, Users, TrendingUp } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useGameDAO } from '@/hooks/useGameDAO'
+import { useReputation } from '@/hooks/useReputation'
+import { Users, Trophy, Star, Award, Target, Crown } from 'lucide-react'
 
 export default function SensePage() {
   const { isConnected } = useGameDAO()

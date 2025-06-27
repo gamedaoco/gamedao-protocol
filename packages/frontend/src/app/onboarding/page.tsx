@@ -1,15 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
-  User,
   Camera,
   CheckCircle,
   ArrowRight,
@@ -18,6 +17,8 @@ import {
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { redirect } from 'next/navigation'
 import { useEffect } from 'react'
+import { useAccount } from 'wagmi'
+import { Gamepad2, Shield, Trophy } from 'lucide-react'
 
 export default function OnboardingPage() {
   const { isConnected, address } = useGameDAO()
