@@ -10,14 +10,14 @@ import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useProposals } from '@/hooks/useProposals'
 import { useOrganizations } from '@/hooks/useOrganizations'
-import { Vote, Users, Calendar, Clock, CheckCircle, XCircle, Pause } from 'lucide-react'
+import { Vote, Users, Clock, CheckCircle, XCircle, Pause } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 // Individual proposal hook (to be implemented)
 function useProposal(id: string) {
   // For now, get from the proposals list
   // TODO: Implement individual proposal fetching
-  const { proposals, isLoading, error, refetch, getStateString } = useProposals()
+  const { proposals, isLoading, error, getStateString } = useProposals()
   const { organizations } = useOrganizations()
 
   const proposal = proposals?.find(prop => prop.id === id)
@@ -28,9 +28,6 @@ function useProposal(id: string) {
     organization,
     isLoading,
     error,
-    refetch,
-    // Additional proposal-specific data
-    votes: [], // TODO: Fetch votes
     // Utility functions
     getStateString
   }
@@ -47,8 +44,6 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
     organization,
     isLoading,
     error,
-    refetch,
-    votes,
     getStateString
   } = useProposal(id)
 
