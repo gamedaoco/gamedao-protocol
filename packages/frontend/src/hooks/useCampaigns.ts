@@ -5,9 +5,7 @@ import { useReadContract, useWriteContract } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_CAMPAIGNS, GET_USER_CONTRIBUTIONS } from '@/lib/queries'
-import { useState, useEffect } from 'react'
 import { formatEther, parseEther } from 'viem'
-import { getScaffoldData, ScaffoldCampaign } from '@/lib/scaffold-data'
 import { useAccount } from 'wagmi'
 
 export interface Campaign {
@@ -39,13 +37,12 @@ export interface CampaignStats {
 export function useCampaigns() {
   const { contracts, isConnected } = useGameDAO()
   const { address } = useAccount()
-  const [scaffoldCampaigns, setScaffoldCampaigns] = useState<Campaign[]>([])
 
   // Fetch campaigns from subgraph
   const { data, loading, error, refetch } = useQuery(GET_CAMPAIGNS, {
     variables: { first: 100, skip: 0 },
     pollInterval: 30000,
-    errorPolicy: 'ignore',
+    errorPolicy: 'all', // Show errors so we can debug
   })
 
   // Fetch user's contributions from subgraph
@@ -53,33 +50,8 @@ export function useCampaigns() {
     variables: { user: address, first: 50 },
     skip: !address,
     pollInterval: 30000,
-    errorPolicy: 'ignore',
+    errorPolicy: 'all',
   })
-
-  // Load scaffold data as fallback
-  useEffect(() => {
-    const scaffoldData = getScaffoldData()
-    if (scaffoldData?.campaigns) {
-      const camps: Campaign[] = scaffoldData.campaigns.map((camp: ScaffoldCampaign) => ({
-        id: camp.id,
-        organizationId: camp.daoId,
-        organizationName: camp.daoName,
-        creator: camp.creator,
-        title: camp.title,
-        description: `A ${camp.title} campaign by ${camp.daoName}`,
-        flowType: 'GRANT',
-        target: parseEther(camp.target),
-        deposit: parseEther('0'),
-        raised: parseEther((parseInt(camp.target) * (0.3 + Math.random() * 0.4)).toString()), // 30-70% funded
-        contributorCount: Math.floor(Math.random() * 50) + 5,
-        state: Math.random() > 0.3 ? 'ACTIVE' : 'CREATED',
-        expiry: Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 86400 * 30), // Ends within next month
-        createdAt: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 86400 * 7), // Started within last week
-        updatedAt: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 86400 * 2),
-      }))
-      setScaffoldCampaigns(camps)
-    }
-  }, [])
 
   // Get campaign count from contract
   const { data: campaignCount, refetch: refetchCount } = useReadContract({
@@ -97,7 +69,7 @@ export function useCampaigns() {
     error: contributeError
   } = useWriteContract()
 
-  // Transform subgraph data to match our interface, fallback to scaffold data
+  // Transform subgraph data to match our interface
   const campaigns: Campaign[] = data?.campaigns?.map((camp: any) => ({
     id: camp.id,
     organizationId: camp.organization.id,
@@ -114,7 +86,15 @@ export function useCampaigns() {
     expiry: parseInt(camp.expiry) || 0,
     createdAt: parseInt(camp.createdAt) || Math.floor(Date.now() / 1000),
     updatedAt: parseInt(camp.updatedAt) || Math.floor(Date.now() / 1000),
-  })) || scaffoldCampaigns
+  })) || []
+
+  // Debug logging
+  console.log('🎯 Campaigns from subgraph:', {
+    subgraphCampaigns: data?.campaigns?.length || 0,
+    totalCampaigns: campaigns.length,
+    loading,
+    error: error?.message || 'No error'
+  })
 
   // Get user's contributions
   const userContributions = userContribsData?.contributions || []
@@ -215,12 +195,12 @@ export function useCampaigns() {
     contributeToCampaign,
 
     // Status
-    isLoading: loading && campaigns.length === 0,
+    isLoading: loading,
     isLoadingUserContribs: userContribsLoading,
     isContributing,
     contributeSuccess,
     contributeError,
-    error: error && campaigns.length === 0 ? error : null,
+    error,
 
     // Utils
     getFlowTypeString,

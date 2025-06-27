@@ -7,7 +7,7 @@ import { useCampaigns } from '@/hooks/useCampaigns'
 import { useState } from 'react'
 
 export default function FlowPage() {
-  const { campaigns, isLoading } = useCampaigns()
+  const { campaigns, isLoading, error } = useCampaigns()
 
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
 
@@ -27,6 +27,11 @@ export default function FlowPage() {
           <p className="text-muted-foreground">
             Discover and support game development campaigns
           </p>
+          {error && (
+            <p className="text-red-500 text-sm mt-1">
+              ⚠️ Unable to connect to subgraph: {error.message}
+            </p>
+          )}
         </div>
         <Button>
           Create Campaign
@@ -82,6 +87,21 @@ export default function FlowPage() {
               </Card>
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-medium mb-2">Unable to load campaigns</h3>
+            <p className="text-muted-foreground mb-4">
+              There was an error connecting to the subgraph. Please check that:
+            </p>
+            <ul className="text-sm text-muted-foreground mb-4 space-y-1">
+              <li>• The subgraph is deployed and running</li>
+              <li>• The local blockchain has campaign data</li>
+              <li>• The GraphQL endpoint is accessible</li>
+            </ul>
+            <Button onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </div>
         ) : filteredCampaigns.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCampaigns.map((campaign) => (
@@ -107,13 +127,18 @@ export default function FlowPage() {
             <h3 className="text-lg font-medium mb-2">No campaigns found</h3>
             <p className="text-muted-foreground mb-4">
               {filter === 'all'
-                ? 'There are no campaigns available at the moment.'
+                ? 'There are no campaigns in the subgraph yet. Make sure the scaffold data has been deployed and indexed.'
                 : `No ${filter} campaigns found. Try changing your filter.`
               }
             </p>
-            <Button onClick={() => setFilter('all')}>
-              Clear Filter
-            </Button>
+            <div className="space-x-2">
+              <Button onClick={() => setFilter('all')}>
+                Clear Filter
+              </Button>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Refresh
+              </Button>
+            </div>
           </div>
         )}
       </div>

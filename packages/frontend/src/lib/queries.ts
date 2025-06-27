@@ -94,8 +94,6 @@ export const GET_CAMPAIGNS = gql`
       expiry
       createdAt
       updatedAt
-      blockNumber
-      transactionHash
     }
   }
 `
@@ -122,8 +120,6 @@ export const GET_CAMPAIGN_BY_ID = gql`
       expiry
       createdAt
       updatedAt
-      blockNumber
-      transactionHash
       contributions {
         id
         contributor {
