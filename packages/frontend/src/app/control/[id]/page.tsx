@@ -121,10 +121,23 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
           label: isActive ? 'Active' : 'Inactive',
           variant: isActive ? 'default' : 'secondary'
         }}
+        primaryAction={
+          isActive ? {
+            label: 'Join Organization',
+            onClick: () => {
+              // TODO: Implement join organization modal
+              console.log('Join organization:', organization.id)
+            }
+          } : undefined
+        }
         actions={
           <div className="flex gap-2">
+            <Button variant="outline" size="sm">
+              Share
+            </Button>
             <Button
               variant="outline"
+              size="sm"
               onClick={() => refetch()}
             >
               Refresh
@@ -222,8 +235,11 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
           {/* Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle>Campaigns</CardTitle>
+                <Button variant="outline" size="sm" asChild>
+                  <a href={`/flow?org=${organization.id}`}>View All</a>
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -236,8 +252,11 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle>Proposals</CardTitle>
+                <Button variant="outline" size="sm" asChild>
+                  <a href={`/signal?org=${organization.id}`}>View All</a>
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -250,18 +269,77 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
             </Card>
           </div>
 
-          {/* Activities/Events */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <EmptyState
-                title="No Recent Activity"
-                description="This organization hasn't had any recent activity."
-              />
-            </CardContent>
-          </Card>
+          {/* Members & Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Members</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {organization.memberCount > 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-muted-foreground">
+                        {organization.memberCount} member{organization.memberCount !== 1 ? 's' : ''} in this organization
+                      </p>
+                      <Button variant="outline" size="sm" className="mt-2">
+                        View Members
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-muted-foreground">
+                        No members yet. Be the first to join!
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-muted-foreground">
+                      Organization created {organization.createdAt ?
+                        new Date(organization.createdAt * 1000).toLocaleDateString() :
+                        'recently'
+                      }
+                    </span>
+                  </div>
+                  {organization.memberCount > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="text-muted-foreground">
+                        {organization.memberCount} member{organization.memberCount !== 1 ? 's' : ''} joined
+                      </span>
+                    </div>
+                  )}
+                  {(organization.totalCampaigns || 0) > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      <span className="text-muted-foreground">
+                        {organization.totalCampaigns} campaign{organization.totalCampaigns !== 1 ? 's' : ''} launched
+                      </span>
+                    </div>
+                  )}
+                  {(organization.totalProposals || 0) > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <span className="text-muted-foreground">
+                        {organization.totalProposals} proposal{organization.totalProposals !== 1 ? 's' : ''} created
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </DetailPageLayout>
     </ErrorBoundary>

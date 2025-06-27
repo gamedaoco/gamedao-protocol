@@ -162,8 +162,8 @@ export default function SensePage() {
                       <Star className="h-4 w-4 text-yellow-500" />
                       <span className="font-bold">{profile.reputation.toLocaleString()}</span>
                     </div>
-                    <Button variant="ghost" size="sm" className="mt-2">
-                      View Profile
+                    <Button variant="ghost" size="sm" className="mt-2" asChild>
+                      <a href={`/sense/${profile.id}`}>View Profile</a>
                     </Button>
                   </div>
                 </div>
