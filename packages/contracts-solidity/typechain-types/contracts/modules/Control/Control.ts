@@ -127,6 +127,7 @@ export interface ControlInterface extends Interface {
       | "isInitialized"
       | "isMemberActive"
       | "isOrganizationActive"
+      | "join"
       | "moduleId"
       | "onModuleDisabled"
       | "onModuleEnabled"
@@ -281,6 +282,10 @@ export interface ControlInterface extends Interface {
     functionFragment: "isOrganizationActive",
     values: [BytesLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "join",
+    values: [AddressLike, BytesLike]
+  ): string;
   encodeFunctionData(functionFragment: "moduleId", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "onModuleDisabled",
@@ -431,6 +436,7 @@ export interface ControlInterface extends Interface {
     functionFragment: "isOrganizationActive",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "join", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "moduleId", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "onModuleDisabled",
@@ -977,6 +983,12 @@ export interface Control extends BaseContract {
     "view"
   >;
 
+  join: TypedContractMethod<
+    [account: AddressLike, orgId: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+
   moduleId: TypedContractMethod<[], [string], "view">;
 
   onModuleDisabled: TypedContractMethod<[], [void], "nonpayable">;
@@ -1194,6 +1206,13 @@ export interface Control extends BaseContract {
   getFunction(
     nameOrSignature: "isOrganizationActive"
   ): TypedContractMethod<[orgId: BytesLike], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "join"
+  ): TypedContractMethod<
+    [account: AddressLike, orgId: BytesLike],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "moduleId"
   ): TypedContractMethod<[], [string], "view">;

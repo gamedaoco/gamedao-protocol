@@ -111,6 +111,7 @@ export interface IControlInterface extends Interface {
       | "hasRole"
       | "isMemberActive"
       | "isOrganizationActive"
+      | "join"
       | "removeMember"
       | "setOrganizationState"
       | "spendTreasuryFunds"
@@ -188,6 +189,10 @@ export interface IControlInterface extends Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "join",
+    values: [AddressLike, BytesLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "removeMember",
     values: [BytesLike, AddressLike]
   ): string;
@@ -255,6 +260,7 @@ export interface IControlInterface extends Interface {
     functionFragment: "isOrganizationActive",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "join", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "removeMember",
     data: BytesLike
@@ -608,6 +614,12 @@ export interface IControl extends BaseContract {
     "view"
   >;
 
+  join: TypedContractMethod<
+    [account: AddressLike, orgId: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+
   removeMember: TypedContractMethod<
     [orgId: BytesLike, member: AddressLike],
     [void],
@@ -729,6 +741,13 @@ export interface IControl extends BaseContract {
   getFunction(
     nameOrSignature: "isOrganizationActive"
   ): TypedContractMethod<[orgId: BytesLike], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "join"
+  ): TypedContractMethod<
+    [account: AddressLike, orgId: BytesLike],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "removeMember"
   ): TypedContractMethod<
