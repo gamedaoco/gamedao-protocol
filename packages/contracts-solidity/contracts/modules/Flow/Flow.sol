@@ -162,6 +162,77 @@ contract Flow is GameDAOModule, IFlow {
     }
 
     /**
+     * @dev Create a new campaign with struct parameters (new simplified API)
+     */
+    function createCampaignWithParams(
+        address creator,
+        bytes32 organizationId,
+        CampaignParams memory params
+    ) external override onlyInitialized whenNotPaused nonReentrant returns (bytes32 campaignId) {
+        // Validate organization exists through Control module
+        _validateOrganization(organizationId);
+
+        // Validate campaign parameters
+        if (bytes(params.title).length == 0) revert InvalidCampaignParameters();
+        if (params.target == 0 || params.min > params.target || (params.max > 0 && params.max < params.target)) {
+            revert InvalidCampaignParameters();
+        }
+        if (params.duration == 0) revert InvalidCampaignParameters();
+
+        // Generate unique campaign ID
+        campaignId = keccak256(abi.encodePacked(
+            organizationId,
+            creator,
+            params.title,
+            block.timestamp,
+            _campaignCounter++
+        ));
+
+        // Create campaign
+        Campaign storage campaign = _campaigns[campaignId];
+        campaign.index = _campaignCounter;
+        campaign.organizationId = organizationId;
+        campaign.creator = creator;
+        campaign.admin = creator;
+        campaign.title = params.title;
+        campaign.description = params.description;
+        campaign.metadataURI = params.metadataURI;
+        campaign.flowType = params.flowType;
+        campaign.state = FlowState.Created;
+        campaign.paymentToken = params.paymentToken;
+        campaign.target = params.target;
+        campaign.min = params.min;
+        campaign.max = params.max;
+        campaign.raised = 0;
+        campaign.contributorCount = 0;
+        campaign.startTime = block.timestamp;
+        campaign.endTime = block.timestamp + params.duration;
+        campaign.createdAt = block.timestamp;
+        campaign.updatedAt = block.timestamp;
+        campaign.autoFinalize = params.autoFinalize;
+        campaign.protocolFee = _protocolFeeRate;
+
+        // Add to tracking sets
+        _allCampaigns.add(campaignId);
+        _organizationCampaigns[organizationId].add(campaignId);
+        _campaignsByState[FlowState.Created].add(campaignId);
+
+        emit CampaignCreated(
+            campaignId,
+            organizationId,
+            creator,
+            params.title,
+            params.flowType,
+            params.target,
+            campaign.startTime,
+            campaign.endTime,
+            block.timestamp
+        );
+
+        return campaignId;
+    }
+
+    /**
      * @dev Update an existing campaign
      */
     function updateCampaign(

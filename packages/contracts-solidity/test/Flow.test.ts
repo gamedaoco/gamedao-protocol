@@ -193,6 +193,134 @@ describe("Flow Module", function () {
         )
       ).to.be.revertedWithCustomError(flow, "OrganizationNotFound");
     });
+
+    it("Should create campaign with struct parameters successfully", async function () {
+      const params = {
+        title: "Struct Campaign",
+        description: "A campaign created with struct parameters",
+        metadataURI: "ipfs://struct-metadata",
+        flowType: 1, // Crowdfunding
+        paymentToken: ethers.ZeroAddress,
+        target: ethers.parseEther("15"),
+        min: ethers.parseEther("8"),
+        max: ethers.parseEther("25"),
+        duration: 86400 * 45, // 45 days
+        autoFinalize: false
+      };
+
+      const campaignTx = await flow.connect(creator).createCampaignWithParams(
+        creator.address,
+        testOrgId,
+        params
+      );
+
+      const receipt = await campaignTx.wait();
+      const event = receipt?.logs.find((log: any) =>
+        flow.interface.parseLog(log)?.name === "CampaignCreated"
+      );
+
+      expect(event).to.not.be.undefined;
+
+      const parsedEvent = flow.interface.parseLog(event as any);
+      const campaignId = parsedEvent?.args[0];
+
+      // Verify campaign data matches struct parameters
+      const campaign = await flow.getCampaign(campaignId);
+      expect(campaign.title).to.equal(params.title);
+      expect(campaign.description).to.equal(params.description);
+      expect(campaign.metadataURI).to.equal(params.metadataURI);
+      expect(campaign.creator).to.equal(creator.address);
+      expect(campaign.organizationId).to.equal(testOrgId);
+      expect(campaign.target).to.equal(params.target);
+      expect(campaign.min).to.equal(params.min);
+      expect(campaign.max).to.equal(params.max);
+      expect(campaign.flowType).to.equal(params.flowType);
+      expect(campaign.autoFinalize).to.equal(params.autoFinalize);
+      expect(campaign.state).to.equal(0); // Created
+      expect(campaign.raised).to.equal(0);
+      expect(campaign.contributorCount).to.equal(0);
+    });
+
+    it("Should create campaign with different creator address", async function () {
+      const params = {
+        title: "Third Party Campaign",
+        description: "Campaign created on behalf of another user",
+        metadataURI: "ipfs://third-party-metadata",
+        flowType: 0, // Grant
+        paymentToken: ethers.ZeroAddress,
+        target: ethers.parseEther("5"),
+        min: ethers.parseEther("2"),
+        max: ethers.parseEther("10"),
+        duration: 86400 * 14, // 14 days
+        autoFinalize: true
+      };
+
+      // Admin creates campaign on behalf of contributor1
+      const campaignTx = await flow.connect(admin).createCampaignWithParams(
+        contributor1.address,
+        testOrgId,
+        params
+      );
+
+      const receipt = await campaignTx.wait();
+      const event = receipt?.logs.find((log: any) =>
+        flow.interface.parseLog(log)?.name === "CampaignCreated"
+      );
+
+      const parsedEvent = flow.interface.parseLog(event as any);
+      const campaignId = parsedEvent?.args[0];
+
+      // Verify the creator is set to contributor1, not admin
+      const campaign = await flow.getCampaign(campaignId);
+      expect(campaign.creator).to.equal(contributor1.address);
+      expect(campaign.admin).to.equal(contributor1.address);
+    });
+
+    it("Should reject struct campaign with invalid parameters", async function () {
+      // Empty title
+      const invalidParams1 = {
+        title: "",
+        description: "Valid description",
+        metadataURI: "ipfs://metadata",
+        flowType: 0,
+        paymentToken: ethers.ZeroAddress,
+        target: ethers.parseEther("10"),
+        min: ethers.parseEther("5"),
+        max: ethers.parseEther("20"),
+        duration: 86400,
+        autoFinalize: false
+      };
+
+      await expect(
+        flow.connect(creator).createCampaignWithParams(
+          creator.address,
+          testOrgId,
+          invalidParams1
+        )
+      ).to.be.revertedWithCustomError(flow, "InvalidCampaignParameters");
+
+      // Min > Target
+      const invalidParams2 = {
+        title: "Valid Title",
+        description: "Valid description",
+        metadataURI: "ipfs://metadata",
+        flowType: 0,
+        paymentToken: ethers.ZeroAddress,
+        target: ethers.parseEther("5"),
+        min: ethers.parseEther("10"),
+        max: ethers.parseEther("20"),
+        duration: 86400,
+        autoFinalize: false
+      };
+
+      await expect(
+        flow.connect(creator).createCampaignWithParams(
+          creator.address,
+          testOrgId,
+          invalidParams2
+        )
+      ).to.be.revertedWithCustomError(flow, "InvalidCampaignParameters");
+    });
   });
 
   describe("Campaign Management", function () {
