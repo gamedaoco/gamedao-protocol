@@ -1,24 +1,30 @@
 'use client'
 
+import { useMemo, useEffect } from 'react'
 import { useAccount, useChainId } from 'wagmi'
-import { getChainConfig, getContracts, isSupportedNetwork } from '@/lib/web3'
+import { getChainConfig, getContracts, isSupportedNetwork, logActiveChainConfiguration } from '@/lib/web3'
 import { validateContractAddresses, GAMEDAO_ROOT_ORG_ID } from '@/lib/contracts'
 
 export function useGameDAO() {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
 
-  // Get chain configuration
-  const chainConfig = getChainConfig(chainId)
+  // Memoize chain configuration
+  const chainConfig = useMemo(() => getChainConfig(chainId), [chainId])
 
-  // Get contract addresses for current chain
-  const contracts = getContracts(chainId)
+  // Memoize contract addresses for current chain
+  const contracts = useMemo(() => getContracts(chainId), [chainId])
 
-  // Validate that contracts are properly deployed
-  const contractsValid = validateContractAddresses(contracts)
+  // Memoize contract validation
+  const contractsValid = useMemo(() => validateContractAddresses(contracts), [contracts])
 
-  // Check if we're on a supported network
-  const isSupported = isSupportedNetwork(chainId)
+  // Memoize network support check
+  const isSupported = useMemo(() => isSupportedNetwork(chainId), [chainId])
+
+  // Log configuration when chain changes (development only)
+  useEffect(() => {
+    logActiveChainConfiguration(chainId)
+  }, [chainId])
 
   return {
     // Account info

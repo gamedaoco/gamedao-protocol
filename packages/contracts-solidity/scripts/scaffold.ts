@@ -95,14 +95,17 @@ async function main() {
   const CONTROL_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("CONTROL"))
   const FLOW_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("FLOW"))
   const SIGNAL_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("SIGNAL"))
+  const SENSE_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("SENSE"))
 
   const controlAddress = await registry.getModule(CONTROL_MODULE_ID)
   const flowAddress = await registry.getModule(FLOW_MODULE_ID)
   const signalAddress = await registry.getModule(SIGNAL_MODULE_ID)
+  const senseAddress = await registry.getModule(SENSE_MODULE_ID)
 
   const control = await ethers.getContractAt("Control", controlAddress)
   const flow = await ethers.getContractAt("Flow", flowAddress)
   const signal = await ethers.getContractAt("Signal", signalAddress)
+  const sense = await ethers.getContractAt("Sense", senseAddress)
 
   // Get token contracts from deployment
   const gameTokenAddress = deploymentData.gameToken
@@ -115,12 +118,15 @@ async function main() {
   console.log(`📋 Control: ${controlAddress}`)
   console.log(`📋 Flow: ${flowAddress}`)
   console.log(`📋 Signal: ${signalAddress}`)
+  console.log(`📋 Sense: ${senseAddress}`)
 
   const result = {
     users: [] as any[],
     daos: [] as any[],
     campaigns: [] as any[],
     proposals: [] as any[],
+    profiles: [] as any[],
+    profiles: [] as any[],
   }
 
   // Setup users
@@ -139,6 +145,71 @@ async function main() {
     })
 
     console.log(`  ${profile.avatar} ${profile.name} (${user.address.slice(0, 8)}...)`)
+  }
+
+  // Create user profiles
+  console.log("\n👤 Creating user profiles...")
+
+  for (let i = 0; i < userAccounts.length; i++) {
+    const user = userAccounts[i]
+    const profile = USERS[i % USERS.length]
+
+    // Find the user's organization (if they're a member of any)
+    const userOrg = result.daos.find(dao => dao.members.includes(user.address))
+    const orgId = userOrg ? userOrg.id : (result.daos[0]?.id || "0x0000000000000000000000000000000000000000000000000000000000000000")
+
+    try {
+      const tx = await sense.connect(user).createProfile(
+        orgId,
+        profile.name,
+        `ipfs://QmProfile${i}` // Mock IPFS metadata URI
+      )
+
+      const receipt = await tx.wait()
+      if (!receipt) continue
+
+      // Parse event
+      const event = receipt.logs.find(log => {
+        try {
+          const parsed = sense.interface.parseLog(log as any)
+          return parsed?.name === 'ProfileCreated'
+        } catch {
+          return false
+        }
+      })
+
+      if (event) {
+        const parsedEvent = sense.interface.parseLog(event as any)
+        const profileId = parsedEvent?.args[0]
+
+        // Add some reputation points
+        const experiencePoints = Math.floor(Math.random() * 500) + 100 // 100-600 XP
+        const reputationPoints = Math.floor(Math.random() * 200) + 50  // 50-250 REP
+
+        try {
+          await sense.updateReputation(profileId, 0, experiencePoints, "Initial scaffolding experience")
+          await sense.updateReputation(profileId, 1, reputationPoints, "Initial scaffolding reputation")
+        } catch {
+          // Ignore reputation update errors
+        }
+
+        result.profiles.push({
+          id: profileId,
+          owner: user.address,
+          username: profile.name,
+          organizationId: orgId,
+          role: profile.role,
+          avatar: profile.avatar,
+          experience: experiencePoints,
+          reputation: reputationPoints,
+        })
+
+        console.log(`    ✅ ${profile.avatar} ${profile.name} profile created`)
+      }
+
+    } catch (error) {
+      console.log(`    ❌ Failed to create profile for ${profile.name}`)
+    }
   }
 
   // Create DAOs

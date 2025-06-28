@@ -17,6 +17,7 @@
     "scaffold:full": "npm run scaffold && npm run scaffold:copy",
     "test-interactions": "hardhat run scripts/test-interactions.ts --network localhost",
     "create-profiles": "hardhat run scripts/create-profiles.ts --network localhost",
+    "send-tokens": "hardhat run scripts/send-tokens.ts --network localhost",
     "verify": "hardhat verify",
     "node": "hardhat node --hostname 0.0.0.0",
     "node:quiet": "hardhat node --hostname 0.0.0.0 > /dev/null 2>&1",

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, Users, Trophy, Star } from 'lucide-react'
+import { Search, Users, Trophy, Star, Plus } from 'lucide-react'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useReputation } from '@/hooks/useReputation'
 
@@ -37,6 +37,10 @@ export default function SensePage() {
               placeholder="Search profiles..."
             />
           </div>
+          <Button disabled={!isConnected} className="flex items-center space-x-2">
+            <Plus className="h-4 w-4" />
+            <span>Create Profile</span>
+          </Button>
         </div>
       </div>
 
@@ -174,8 +178,9 @@ export default function SensePage() {
                 <p className="text-muted-foreground mb-4">
                   No user profiles have been created yet. Be the first to create your profile!
                 </p>
-                <Button>
-                  Create Profile
+                <Button disabled={!isConnected} className="flex items-center space-x-2">
+                  <Plus className="h-4 w-4" />
+                  <span>Create Profile</span>
                 </Button>
               </div>
             )}

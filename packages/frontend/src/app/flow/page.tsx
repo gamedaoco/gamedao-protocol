@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button'
 import { EntityCard } from '@/components/ui/entity-card'
 import { useCampaigns } from '@/hooks/useCampaigns'
 import { useState } from 'react'
+import { Plus } from 'lucide-react'
+import { useAccount } from 'wagmi'
 
 export default function FlowPage() {
   const { campaigns, isLoading, error } = useCampaigns()
+  const { isConnected } = useAccount()
 
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
 
@@ -33,8 +36,9 @@ export default function FlowPage() {
             </p>
           )}
         </div>
-        <Button>
-          Create Campaign
+        <Button disabled={!isConnected} className="flex items-center space-x-2">
+          <Plus className="h-4 w-4" />
+          <span>Create Campaign</span>
         </Button>
       </div>
 
