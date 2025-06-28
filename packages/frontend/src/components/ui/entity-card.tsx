@@ -294,7 +294,7 @@ function StandardEntityCard({
         return {
           color: 'blue',
           primaryMetric: `${org.memberCount} members`,
-          secondaryMetric: org.treasury ? `${org.treasury} treasury` : undefined,
+          secondaryMetric: undefined, // Remove treasury address display
           icon: '🏛️'
         }
       case 'campaign':
@@ -336,6 +336,7 @@ function StandardEntityCard({
     <Card className={cn(
       'group hover:shadow-lg transition-all duration-200 cursor-pointer',
       isCompact && 'h-32',
+      !isCompact && variant === 'organization' && 'aspect-[3/4]', // Portrait format for organizations
       className
     )}>
       <CardHeader className={cn('pb-3', isCompact && 'pb-2')}>

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { ModeToggle } from '@/components/mode-toggle'
 import { WalletConnection } from '@/components/wallet/wallet-connection'
+import { WalletBalanceDropdown } from '@/components/wallet/wallet-balance-dropdown'
 import { Button } from '@/components/ui/button'
 
 export function TopBar() {
@@ -82,12 +83,16 @@ export function TopBar() {
             </Link>
           )}
 
-          {/* Wallet Connection */}
-          <WalletConnection>
-            <Button variant="outline" size="sm">
-              {isConnected ? 'Connected' : 'Connect Wallet'}
-            </Button>
-          </WalletConnection>
+          {/* Wallet - show balance dropdown if connected, connect button if not */}
+          {isConnected ? (
+            <WalletBalanceDropdown />
+          ) : (
+            <WalletConnection>
+              <Button variant="outline" size="sm">
+                Connect Wallet
+              </Button>
+            </WalletConnection>
+          )}
 
           {/* Theme Toggle */}
           <ModeToggle />

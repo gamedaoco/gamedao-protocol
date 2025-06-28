@@ -11,32 +11,20 @@ interface AppLayoutProps {
 
 // Function to determine if sidebar should be shown based on current path
 function shouldShowSidebar(pathname: string): boolean {
-  // Hide sidebar on top-level pages, dashboard, and staking pages
-  const topLevelPages = [
-    '/',           // Home page
-    '/dashboard',  // Dashboard page
-    '/control',    // Control module overview
-    '/flow',       // Flow module overview
-    '/signal',     // Signal module overview
-    '/sense'       // Sense module overview
+  // Sidebar is disabled by default - only enable for specific routes where it's needed
+
+  // Enable sidebar for:
+  // - Settings pages (user preferences, account management)
+  // - Admin/management interfaces (when implemented)
+
+  const sidebarEnabledRoutes = [
+    '/settings',           // Settings pages
+    '/admin',              // Admin interface (future)
+    '/management'          // Management interface (future)
   ]
 
-  // Hide sidebar for staking pages (all staking routes)
-  if (pathname.startsWith('/staking')) return false
-
-  // Show sidebar for:
-  // - Sub-pages of modules (organizational/campaign/governance level)
-  // - Settings and other personal pages
-  if (pathname.startsWith('/settings')) return true
-
-  // Show sidebar for sub-pages of modules
-  if (pathname.startsWith('/control/') && pathname !== '/control') return true
-  if (pathname.startsWith('/flow/') && pathname !== '/flow') return true
-  if (pathname.startsWith('/signal/') && pathname !== '/signal') return true
-  if (pathname.startsWith('/sense/') && pathname !== '/sense') return true
-
-  // Hide sidebar for top-level pages
-  return !topLevelPages.includes(pathname)
+  // Check if current path starts with any enabled route
+  return sidebarEnabledRoutes.some(route => pathname.startsWith(route))
 }
 
 export function AppLayout({ children }: AppLayoutProps) {

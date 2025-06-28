@@ -2,16 +2,46 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useAccount } from 'wagmi'
 import { useProtocolStats } from '@/hooks/useProtocolStats'
+import { useSenseUsername } from '@/hooks/useTokenBalances'
 import { PortfolioCard } from '@/components/dashboard/portfolio-card'
 import { TreasuryCard } from '@/components/dashboard/treasury-card'
 import { ReputationCard } from '@/components/reputation/reputation-card'
 import { formatDistanceToNow } from 'date-fns'
+import { Trophy, Award, Target, ExternalLink, Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
-  const { isConnected } = useAccount()
+  const { isConnected, address } = useAccount()
   const { globalStats, recentActivities, isLoading, error } = useProtocolStats()
+  const { hasProfile } = useSenseUsername()
+  const router = useRouter()
+
+  // Mock achievements and collectibles data - replace with actual NFT contract calls
+  const userAchievements = [
+    { id: 1, name: 'First DAO Creator', icon: '🏛️', rarity: 'common', earned: true },
+    { id: 2, name: 'Campaign Master', icon: '🎯', rarity: 'rare', earned: true },
+    { id: 3, name: 'Community Builder', icon: '👥', rarity: 'epic', earned: false },
+    { id: 4, name: 'Governance Expert', icon: '🗳️', rarity: 'legendary', earned: true },
+  ]
+
+  const userCollectibles = [
+    { id: 1, name: 'Genesis DAO Badge', image: '🏆', collection: 'GameDAO Genesis', tokenId: '#001' },
+    { id: 2, name: 'Alpha Tester', image: '🧪', collection: 'GameDAO Beta', tokenId: '#042' },
+    { id: 3, name: 'Community Champion', image: '⭐', collection: 'GameDAO Honors', tokenId: '#123' },
+  ]
+
+  const getRarityColor = (rarity: string) => {
+    switch (rarity) {
+      case 'common': return 'bg-gray-100 text-gray-800'
+      case 'rare': return 'bg-blue-100 text-blue-800'
+      case 'epic': return 'bg-purple-100 text-purple-800'
+      case 'legendary': return 'bg-yellow-100 text-yellow-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
 
   if (!isConnected) {
     return (
@@ -135,16 +165,16 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col">
-              <span className="text-lg mb-1">🏛️</span>
+            <Button variant="outline" className="h-20 flex-col" disabled={!isConnected}>
+              <Plus className="h-5 w-5 mb-1" />
               <span>Create DAO</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <span className="text-lg mb-1">🎯</span>
+            <Button variant="outline" className="h-20 flex-col" disabled={!isConnected}>
+              <Plus className="h-5 w-5 mb-1" />
               <span>Start Campaign</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <span className="text-lg mb-1">🗳️</span>
+            <Button variant="outline" className="h-20 flex-col" disabled={!isConnected}>
+              <Plus className="h-5 w-5 mb-1" />
               <span>Create Proposal</span>
             </Button>
             <Button variant="outline" className="h-20 flex-col">
@@ -196,6 +226,92 @@ export default function DashboardPage() {
             <div className="text-center py-8 text-muted-foreground">
               <p>No recent activity</p>
               <p className="text-sm">Start participating to see activity here</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Achievements Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            Recent Achievements
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={() => router.push(`/sense/${address}`)}>
+            <ExternalLink className="h-4 w-4 mr-1" />
+            View All
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {hasProfile ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {userAchievements.filter(a => a.earned).slice(0, 4).map((achievement) => (
+                <div key={achievement.id} className="flex items-center gap-3 p-3 rounded-lg border bg-background">
+                  <div className="text-xl">{achievement.icon}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-sm">{achievement.name}</h4>
+                      <Badge className={getRarityColor(achievement.rarity)} variant="secondary">
+                        {achievement.rarity}
+                      </Badge>
+                      <Award className="h-3 w-3 text-yellow-500" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="mb-2">No achievements yet</p>
+              <p className="text-sm">Create a profile to start earning achievements</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push(`/sense/${address}`)}>
+                Create Profile
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Collectibles Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            NFT Collectibles
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={() => router.push(`/sense/${address}`)}>
+            <ExternalLink className="h-4 w-4 mr-1" />
+            View Collection
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {hasProfile ? (
+            <div className="grid gap-4 md:grid-cols-3">
+              {userCollectibles.slice(0, 3).map((collectible) => (
+                <div key={collectible.id} className="p-4 rounded-lg border bg-background">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2">{collectible.image}</div>
+                    <h4 className="font-medium text-sm">{collectible.name}</h4>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {collectible.collection}
+                    </p>
+                    <Badge variant="outline" className="text-xs">
+                      {collectible.tokenId}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="mb-2">No collectibles yet</p>
+              <p className="text-sm">Participate in GameDAO to earn NFT collectibles</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push(`/sense/${address}`)}>
+                Create Profile
+              </Button>
             </div>
           )}
         </CardContent>

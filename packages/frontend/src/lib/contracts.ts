@@ -8,6 +8,8 @@ export interface ContractAddresses {
   SIGNAL: Address
   SENSE: Address
   STAKING: Address
+  GAME_TOKEN: Address
+  USDC_TOKEN: Address
 }
 
 // Default addresses (fallback)
@@ -18,6 +20,8 @@ const DEFAULT_ADDRESSES: ContractAddresses = {
   SIGNAL: '0x0000000000000000000000000000000000000000',
   SENSE: '0x0000000000000000000000000000000000000000',
   STAKING: '0x0000000000000000000000000000000000000000',
+  GAME_TOKEN: '0x0000000000000000000000000000000000000000',
+  USDC_TOKEN: '0x0000000000000000000000000000000000000000',
 }
 
 /**
@@ -54,6 +58,8 @@ function getContractAddressesFromEnv(chainId: number): ContractAddresses {
     SIGNAL: (process.env[`NEXT_PUBLIC_SIGNAL_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.SIGNAL,
     SENSE: (process.env[`NEXT_PUBLIC_SENSE_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.SENSE,
     STAKING: (process.env[`NEXT_PUBLIC_STAKING_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.STAKING,
+    GAME_TOKEN: (process.env[`NEXT_PUBLIC_GAME_TOKEN_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.GAME_TOKEN,
+    USDC_TOKEN: (process.env[`NEXT_PUBLIC_USDC_TOKEN_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.USDC_TOKEN,
   }
 }
 
@@ -66,42 +72,67 @@ const FALLBACK_ADDRESSES: Record<number, ContractAddresses> = {
     FLOW: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
     SIGNAL: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
     SENSE: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
-    STAKING: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+    STAKING: '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
+    GAME_TOKEN: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    USDC_TOKEN: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
   },
   // Sepolia Testnet (11155111)
-  11155111: DEFAULT_ADDRESSES,
+  11155111: { ...DEFAULT_ADDRESSES },
   // Ethereum Mainnet (1)
-  1: DEFAULT_ADDRESSES,
+  1: { ...DEFAULT_ADDRESSES },
   // Polygon (137)
-  137: DEFAULT_ADDRESSES,
+  137: { ...DEFAULT_ADDRESSES },
   // Arbitrum One (42161)
-  42161: DEFAULT_ADDRESSES,
+  42161: { ...DEFAULT_ADDRESSES },
 }
+
+// Cache for contract addresses to prevent repeated logging
+const addressCache = new Map<number, ContractAddresses>()
+const loggedChains = new Set<number>()
 
 /**
  * Get contract addresses for a specific chain
  * Prioritizes environment variables, falls back to hardcoded addresses
  */
 export function getContractAddresses(chainId: number): ContractAddresses {
+  // Return cached result if available
+  if (addressCache.has(chainId)) {
+    return addressCache.get(chainId)!
+  }
+
   // First try to get from environment variables
   const envAddresses = getContractAddressesFromEnv(chainId)
 
+  let result: ContractAddresses
+  let logMessage = ''
+
   // Check if we got valid addresses from environment
   if (validateContractAddresses(envAddresses)) {
-    console.log(`✅ Using contract addresses from environment for chain ${chainId}`)
-    return envAddresses
+    result = envAddresses
+    logMessage = `✅ Using contract addresses from environment for chain ${chainId}`
+  } else {
+    // Fall back to hardcoded addresses
+    const fallbackAddresses = FALLBACK_ADDRESSES[chainId] || DEFAULT_ADDRESSES
+    if (validateContractAddresses(fallbackAddresses)) {
+      result = fallbackAddresses
+      logMessage = `⚠️  Using fallback contract addresses for chain ${chainId}`
+    } else {
+      // Last resort - return default (zero) addresses
+      result = DEFAULT_ADDRESSES
+      logMessage = `❌ No valid contract addresses found for chain ${chainId}`
+    }
   }
 
-  // Fall back to hardcoded addresses
-  const fallbackAddresses = FALLBACK_ADDRESSES[chainId] || DEFAULT_ADDRESSES
-  if (validateContractAddresses(fallbackAddresses)) {
-    console.log(`⚠️  Using fallback contract addresses for chain ${chainId}`)
-    return fallbackAddresses
+  // Cache the result
+  addressCache.set(chainId, result)
+
+  // Only log once per chain
+  if (!loggedChains.has(chainId)) {
+    console.log(logMessage)
+    loggedChains.add(chainId)
   }
 
-  // Last resort - return default (zero) addresses
-  console.warn(`❌ No valid contract addresses found for chain ${chainId}`)
-  return DEFAULT_ADDRESSES
+  return result
 }
 
 /**

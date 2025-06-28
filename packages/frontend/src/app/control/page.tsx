@@ -6,7 +6,9 @@ import { useOrganizations } from '@/hooks/useOrganizations'
 import { useAccount } from 'wagmi'
 import { EntityCard } from '@/components/ui/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { CreateOrganizationModal } from '@/components/organization/create-organization-modal'
 import { useState } from 'react'
+import { Plus } from 'lucide-react'
 
 export default function ControlPage() {
   const { isConnected } = useAccount()
@@ -19,6 +21,15 @@ export default function ControlPage() {
   } = useOrganizations()
 
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+
+  const handleCreateOrganization = () => {
+    if (!isConnected) {
+      alert('Please connect your wallet first')
+      return
+    }
+    setShowCreateModal(true)
+  }
 
   // Filter organizations based on selected filter
   const filteredOrganizations = organizations.filter(org => {
@@ -37,11 +48,10 @@ export default function ControlPage() {
             Manage and participate in gaming organizations and DAOs
           </p>
         </div>
-        {isConnected && (
-          <Button>
-            Create Organization
-          </Button>
-        )}
+        <Button disabled={!isConnected} onClick={handleCreateOrganization} className="flex items-center space-x-2">
+          <Plus className="h-4 w-4" />
+          <span>Create Organization</span>
+        </Button>
       </div>
 
       {/* Stats Overview */}
@@ -140,7 +150,7 @@ export default function ControlPage() {
                  entity={{
                    id: org.id,
                    name: org.name,
-                   description: `${org.memberCount} members • ${getStateString(org.state)} • ${getAccessModelString(org.accessModel)}`,
+                   description: `${getStateString(org.state)} • ${getAccessModelString(org.accessModel)}`,
                    status: getStateString(org.state),
                    memberCount: org.memberCount,
                    treasury: org.treasury,
@@ -161,14 +171,10 @@ export default function ControlPage() {
                 ? 'Get started by creating your first gaming DAO or discover existing communities.'
                 : `There are currently no ${filter} organizations. Try changing your filter.`
             }
-            primaryAction={
-              isConnected
-                ? {
-                    label: 'Create Organization',
-                    onClick: () => console.log('Create organization')
-                  }
-                : undefined
-            }
+            primaryAction={{
+              label: 'Create Organization',
+              onClick: handleCreateOrganization
+            }}
             secondaryAction={{
               label: 'Clear Filter',
               onClick: () => setFilter('all')
@@ -176,6 +182,16 @@ export default function ControlPage() {
           />
         )}
       </div>
+
+      {/* Create Organization Modal */}
+      <CreateOrganizationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          // Refresh organizations list
+          window.location.reload()
+        }}
+      />
     </div>
   )
 }

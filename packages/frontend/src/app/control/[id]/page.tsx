@@ -1,6 +1,6 @@
 'use client'
 
-import { use } from 'react'
+import { use, useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useOrganizations } from '@/hooks/useOrganizations'
@@ -8,86 +8,73 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { Loader } from '@/components/ui/loader'
 import { DetailPageLayout } from '@/components/layout/detail-page-layout'
+import { JoinOrganizationModal } from '@/components/organization/join-organization-modal'
+import { Badge } from '@/components/ui/badge'
+import { formatAddress } from '@/lib/utils'
+import { Eye, EyeOff } from 'lucide-react'
+import { getDAOMembers, isDAOMember, ScaffoldUser } from '@/lib/scaffold-data'
+import { useAccount } from 'wagmi'
 
 interface OrganizationDetailPageProps {
   params: { id: string } | Promise<{ id: string }>
 }
 
-// Individual organization hook (to be implemented)
-function useOrganization(id: string) {
-  // For now, get from the organizations list
-  // TODO: Implement individual organization fetching
-  const { organizations, isLoading, createError, refetch } = useOrganizations()
 
-  const organization = organizations?.find(org => org.id === id)
-
-  return {
-    organization,
-    loading: isLoading,
-    error: createError, // Use createError from useOrganizations
-    refetch,
-    // Placeholder for additional organization-specific data
-    campaigns: [], // TODO: Fetch organization campaigns
-    proposals: [], // TODO: Fetch organization proposals
-    activity: [], // TODO: Fetch organization activity
-  }
-}
 
 export default function OrganizationDetailPage({ params }: OrganizationDetailPageProps) {
-  // Handle both Promise and resolved params
   const resolvedParams = params instanceof Promise ? use(params) : params
   const { id } = resolvedParams
-  const {
-    organization,
-    loading,
-    error,
-    refetch
-  } = useOrganization(id)
 
-  // Loading state
-  if (loading) {
+  const { address } = useAccount()
+  const { organizations, isLoading, refetch } = useOrganizations()
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
+  const [showAllMembers, setShowAllMembers] = useState(false)
+  const [members, setMembers] = useState<ScaffoldUser[]>([])
+
+  // Find the organization
+  const organization = organizations.find((org) => org.id === id)
+
+  // Check if current user is a member
+  const isMember = address && organization ? isDAOMember(organization.id, address) : false
+
+  // Load members when organization is found
+  useEffect(() => {
+    if (organization) {
+      const orgMembers = getDAOMembers(organization.id)
+      setMembers(orgMembers)
+    }
+  }, [organization?.id])
+
+  // Handle leaving organization (for now, just show alert - TODO: implement contract call)
+  const handleLeaveOrganization = () => {
+    if (!organization || !address) return
+
+    // TODO: Implement actual contract call to leave organization
+    // For now, just show confirmation
+    const confirmed = window.confirm(`Are you sure you want to leave ${organization.name}?`)
+    if (confirmed) {
+      console.log('🚪 Leaving organization:', organization.name)
+      // This would call the contract's removeMember function
+      alert('Leave functionality will be implemented with contract integration')
+    }
+  }
+
+  if (isLoading) {
     return (
       <DetailPageLayout
-        title="Loading..."
-        subtitle="Please wait while we load the organization details"
+        title="Loading Organization"
         breadcrumbs={[
           { label: 'Control', href: '/control' },
-          { label: 'Organizations', href: '/control' },
-          { label: 'Loading...', current: true }
+          { label: 'Organization', current: true }
         ]}
+        loading={true}
       >
-        <div className="flex justify-center items-center min-h-64">
-          <Loader />
-        </div>
+        <Loader />
       </DetailPageLayout>
     )
   }
 
   // Error state
-  if (error) {
-    return (
-      <DetailPageLayout
-        title="Error"
-        subtitle="Failed to load organization details"
-        breadcrumbs={[
-          { label: 'Control', href: '/control' },
-          { label: 'Organizations', href: '/control' },
-          { label: 'Error', current: true }
-        ]}
-      >
-        <EmptyState
-          title="Error Loading Organization"
-          description={typeof error === 'string' ? error : 'An error occurred while loading the organization'}
-          primaryAction={{
-            label: 'Try Again',
-            onClick: () => refetch()
-          }}
-        />
-      </DetailPageLayout>
-    )
-  }
-
-  // Not found state
   if (!organization) {
     return (
       <DetailPageLayout
@@ -124,13 +111,16 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
           variant: isActive ? 'default' : 'secondary'
         }}
         primaryAction={
-          isActive ? {
-            label: 'Join Organization',
-            onClick: () => {
-              // TODO: Implement join organization modal
-              console.log('Join organization:', organization.id)
+          isActive && address ? (
+            isMember ? {
+              label: 'Leave Organization',
+              onClick: handleLeaveOrganization,
+              variant: 'outline' as const
+            } : {
+              label: 'Join Organization',
+              onClick: () => setIsJoinModalOpen(true)
             }
-          } : undefined
+          ) : undefined
         }
         actions={
           <div className="flex gap-2">
@@ -169,6 +159,11 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                 <div className="text-2xl font-bold">
                   {organization.memberCount || 0}
                 </div>
+                {address && isMember && (
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                    ✓ You are a member
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -230,6 +225,26 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                     {organization.memberLimit || 'Unlimited'}
                   </p>
                 </div>
+
+                {/* Membership Status */}
+                {address && (
+                  <div>
+                    <h4 className="font-medium mb-2">Your Membership</h4>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={isMember ? "default" : "secondary"}
+                        className={isMember ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : ""}
+                      >
+                        {isMember ? '✓ Member' : 'Not a Member'}
+                      </Badge>
+                      {isMember && (
+                        <span className="text-sm text-muted-foreground">
+                          You can participate in governance and campaigns
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -275,18 +290,79 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Members</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Recent Members</span>
+                  {members.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAllMembers(!showAllMembers)}
+                      className="flex items-center gap-1"
+                    >
+                      {showAllMembers ? (
+                        <>
+                          <EyeOff className="h-4 w-4" />
+                          Hide
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4" />
+                          View All
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {organization.memberCount > 0 ? (
+                  {members.length > 0 ? (
+                    <>
+                      {/* Show first 3 members by default, all if showAllMembers is true */}
+                      {(showAllMembers ? members : members.slice(0, 3)).map((member) => (
+                        <div key={member.address} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                              {member.name ? member.name[0].toUpperCase() : formatAddress(member.address)[0]}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">
+                                {member.name || formatAddress(member.address)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {member.role || 'Member'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="outline" className="text-xs">
+                              {member.role || 'Member'}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+
+                      {!showAllMembers && members.length > 3 && (
+                        <div className="text-center pt-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAllMembers(true)}
+                            className="text-xs"
+                          >
+                            +{members.length - 3} more members
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  ) : organization.memberCount > 0 ? (
                     <div className="text-center py-4">
                       <p className="text-sm text-muted-foreground">
                         {organization.memberCount} member{organization.memberCount !== 1 ? 's' : ''} in this organization
                       </p>
-                      <Button variant="outline" size="sm" className="mt-2">
-                        View Members
-                      </Button>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Member details loading...
+                      </p>
                     </div>
                   ) : (
                     <div className="text-center py-4">
@@ -344,6 +420,25 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
           </div>
         </div>
       </DetailPageLayout>
+
+      {/* Join Organization Modal */}
+      {organization && (
+        <JoinOrganizationModal
+          isOpen={isJoinModalOpen}
+          onClose={() => setIsJoinModalOpen(false)}
+          organization={organization}
+          onSuccess={() => {
+            // Refresh organizations data to update member count
+            refetch()
+            // Reload members list to include the new member
+            if (organization) {
+              const orgMembers = getDAOMembers(organization.id)
+              setMembers(orgMembers)
+            }
+            setIsJoinModalOpen(false)
+          }}
+        />
+      )}
     </ErrorBoundary>
   )
 }

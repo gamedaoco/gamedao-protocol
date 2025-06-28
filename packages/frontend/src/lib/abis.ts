@@ -69,6 +69,26 @@ export const CONTROL_ABI = [
     "type": "function"
   },
   {
+    "inputs": [
+      {"internalType": "bytes32", "name": "orgId", "type": "bytes32"},
+      {"internalType": "address", "name": "member", "type": "address"}
+    ],
+    "name": "addMember",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes32", "name": "orgId", "type": "bytes32"},
+      {"internalType": "address", "name": "member", "type": "address"}
+    ],
+    "name": "canJoinOrganization",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {"indexed": true, "internalType": "bytes32", "name": "organizationId", "type": "bytes32"},

@@ -5,7 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatAddress(address: string, chars = 4): string {
+export function formatAddress(address: string | undefined | null, chars = 4): string {
+  if (!address) return 'Not connected'
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`
 }
 
