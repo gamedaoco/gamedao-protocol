@@ -24,6 +24,43 @@ import type {
 } from "../../common";
 
 export declare namespace IFlow {
+  export type CampaignParamsStruct = {
+    title: string;
+    description: string;
+    metadataURI: string;
+    flowType: BigNumberish;
+    paymentToken: AddressLike;
+    target: BigNumberish;
+    min: BigNumberish;
+    max: BigNumberish;
+    duration: BigNumberish;
+    autoFinalize: boolean;
+  };
+
+  export type CampaignParamsStructOutput = [
+    title: string,
+    description: string,
+    metadataURI: string,
+    flowType: bigint,
+    paymentToken: string,
+    target: bigint,
+    min: bigint,
+    max: bigint,
+    duration: bigint,
+    autoFinalize: boolean
+  ] & {
+    title: string;
+    description: string;
+    metadataURI: string;
+    flowType: bigint;
+    paymentToken: string;
+    target: bigint;
+    min: bigint;
+    max: bigint;
+    duration: bigint;
+    autoFinalize: boolean;
+  };
+
   export type CampaignStruct = {
     index: BigNumberish;
     organizationId: BytesLike;
@@ -125,6 +162,7 @@ export interface IFlowInterface extends Interface {
       | "claimRewards"
       | "contribute"
       | "createCampaign"
+      | "createCampaignWithParams"
       | "distributeRewards"
       | "finalizeCampaign"
       | "getCampaign"
@@ -187,6 +225,10 @@ export interface IFlowInterface extends Interface {
       BigNumberish,
       boolean
     ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "createCampaignWithParams",
+    values: [AddressLike, BytesLike, IFlow.CampaignParamsStruct]
   ): string;
   encodeFunctionData(
     functionFragment: "distributeRewards",
@@ -280,6 +322,10 @@ export interface IFlowInterface extends Interface {
   decodeFunctionResult(functionFragment: "contribute", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "createCampaign",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "createCampaignWithParams",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -675,6 +721,16 @@ export interface IFlow extends BaseContract {
     "nonpayable"
   >;
 
+  createCampaignWithParams: TypedContractMethod<
+    [
+      creator: AddressLike,
+      organizationId: BytesLike,
+      params: IFlow.CampaignParamsStruct
+    ],
+    [string],
+    "nonpayable"
+  >;
+
   distributeRewards: TypedContractMethod<
     [
       campaignId: BytesLike,
@@ -836,6 +892,17 @@ export interface IFlow extends BaseContract {
       max: BigNumberish,
       duration: BigNumberish,
       autoFinalize: boolean
+    ],
+    [string],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "createCampaignWithParams"
+  ): TypedContractMethod<
+    [
+      creator: AddressLike,
+      organizationId: BytesLike,
+      params: IFlow.CampaignParamsStruct
     ],
     [string],
     "nonpayable"

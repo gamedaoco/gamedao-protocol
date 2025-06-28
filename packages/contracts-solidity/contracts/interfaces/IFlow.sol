@@ -143,7 +143,28 @@ interface IFlow {
         uint256 timestamp
     );
 
+    // Campaign creation parameters struct
+    struct CampaignParams {
+        string title;
+        string description;
+        string metadataURI;
+        FlowType flowType;
+        address paymentToken;
+        uint256 target;
+        uint256 min;
+        uint256 max;
+        uint256 duration;
+        bool autoFinalize;
+    }
+
     // Core Functions
+    function createCampaignWithParams(
+        address creator,
+        bytes32 organizationId,
+        CampaignParams memory params
+    ) external returns (bytes32 campaignId);
+
+    // Legacy function - maintained for backward compatibility
     function createCampaign(
         bytes32 organizationId,
         string memory title,
