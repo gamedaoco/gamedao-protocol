@@ -85,6 +85,7 @@ help:
 	@echo "$(GREEN)🔄 Development Workflows:$(NC)"
 	@echo "  make dev              Start development environment"
 	@echo "  make dev-reset        Reset development environment (node + graph)"
+	@echo "  make dev-frontend     Start frontend development server"
 	@echo "  make demo             Run complete demo"
 	@echo "  make integration      Run integration tests"
 	@echo "  make scaffold         Generate test data for development"
@@ -93,6 +94,7 @@ help:
 	@echo "  make test-interactions Run extended interaction testing with user key pairs"
 	@echo "  make create-profiles  Generate realistic profiles with faker.js (USERS=N)"
 	@echo "  make create-profiles-large Generate large ecosystem (50 users, 15 orgs, 25 campaigns)"
+	@echo "  make send-tokens     Send tokens to account (RECIPIENT=0x... ETH=1.0 GAME=10000 USDC=5000)"
 	@echo "  make dev-scaffold     Full dev setup with test data"
 	@echo ""
 	@echo "$(YELLOW)📝 Examples:$(NC)"
@@ -448,7 +450,10 @@ create-profiles-large:
 	@echo "$(CYAN)📊 Generating 50 users, 15 organizations, 25 campaigns, 12 proposals$(NC)"
 	@cd $(CONTRACTS_DIR) && USERS=50 ORGS=15 CAMPAIGNS=25 PROPOSALS=12 MULTIPLIER=2.0 npx hardhat run scripts/create-profiles.ts --network localhost
 	@echo "$(GREEN)✅ Large ecosystem generated successfully$(NC)"
-	@echo "$(CYAN)💾 Check generated-profiles.json for comprehensive results$(NC)"
+
+send-tokens:
+	@echo "$(BLUE)💸 Sending tokens to account...$(NC)"
+	@cd $(CONTRACTS_DIR) && RECIPIENT=$(RECIPIENT) ETH=$(ETH) GAME=$(GAME) USDC=$(USDC) npm run send-tokens
 
 dev-scaffold:
 	@echo "$(BLUE)🚀 Starting development environment with test data...$(NC)"
@@ -475,6 +480,16 @@ dev-scaffold:
 	@echo "$(CYAN)💡 Next steps:$(NC)"
 	@echo "  - Start frontend: cd $(FRONTEND_DIR) && npm run dev"
 	@echo "  - View scaffold data: cat $(CONTRACTS_DIR)/scaffold-output.json"
+
+dev-frontend:
+	@echo "$(BLUE)🌐 Starting frontend development server...$(NC)"
+	@if [ -d "$(FRONTEND_DIR)" ]; then \
+		echo "$(CYAN)🚀 Starting Next.js development server...$(NC)"; \
+		cd $(FRONTEND_DIR) && npm run dev; \
+	else \
+		echo "$(RED)❌ Frontend directory not found: $(FRONTEND_DIR)$(NC)"; \
+		exit 1; \
+	fi
 
 # Status and information targets
 status:

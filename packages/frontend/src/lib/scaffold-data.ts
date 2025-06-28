@@ -127,6 +127,17 @@ export function getDAOProposals(daoId: string, scaffoldData?: ScaffoldData): Sca
   return data.proposals.filter(proposal => proposal.daoId === daoId)
 }
 
+// Check if a user is a member of a specific DAO
+export function isDAOMember(daoId: string, userAddress: string, scaffoldData?: ScaffoldData): boolean {
+  const data = scaffoldData || getScaffoldData()
+  if (!data || !userAddress) return false
+
+  const dao = data.daos.find(d => d.id === daoId)
+  if (!dao) return false
+
+  return dao.members.some(member => member.toLowerCase() === userAddress.toLowerCase())
+}
+
 // Development helper to load scaffold data from a file (would be called during development setup)
 export function loadScaffoldDataFromFile(data: ScaffoldData) {
   if (typeof window !== 'undefined') {

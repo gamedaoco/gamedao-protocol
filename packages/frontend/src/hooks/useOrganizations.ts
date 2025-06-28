@@ -6,7 +6,7 @@ import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_ORGANIZATIONS, GET_USER_ORGANIZATIONS } from '@/lib/queries'
 import { getScaffoldData, ScaffoldDAO } from '@/lib/scaffold-data'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useAccount } from 'wagmi'
 
 export interface Organization {
@@ -141,6 +141,14 @@ export function useOrganizations() {
     joinedAt: member.joinedAt,
   })) || []
 
+  // Contract write for joining organization
+  const {
+    writeContract: joinOrg,
+    isPending: isJoining,
+    isSuccess: joinSuccess,
+    error: joinError
+  } = useWriteContract()
+
   const createOrganization = async (params: CreateOrgParams) => {
     if (!isConnected) {
       throw new Error('Wallet not connected')
@@ -151,6 +159,19 @@ export function useOrganizations() {
       abi: ABIS.CONTROL,
       functionName: 'createOrganization',
       args: [params.name, params.accessModel, params.memberLimit],
+    })
+  }
+
+  const joinOrganization = async (organizationId: string) => {
+    if (!isConnected || !address) {
+      throw new Error('Wallet not connected')
+    }
+
+    return joinOrg({
+      address: contracts.CONTROL,
+      abi: ABIS.CONTROL,
+      functionName: 'addMember',
+      args: [organizationId, address],
     })
   }
 
@@ -173,6 +194,7 @@ export function useOrganizations() {
 
     // Actions
     createOrganization,
+    joinOrganization,
 
     // Status - show loading only if we have no data at all
     isLoading: loading && organizations.length === 0,
@@ -180,6 +202,9 @@ export function useOrganizations() {
     isCreating,
     createSuccess,
     createError,
+    isJoining,
+    joinSuccess,
+    joinError,
     error: error && organizations.length === 0 ? error : null, // Hide error if we have scaffold data
 
     // Utils

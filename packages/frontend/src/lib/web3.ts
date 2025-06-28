@@ -89,13 +89,18 @@ export function getPreferredNetwork() {
 // Contract ABI imports
 export { ABIS } from './abis'
 
-// Log contract configuration in development (client-side only)
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  console.log('🔧 Web3 Configuration:')
-  console.log('  Chains:', supportedChains.map(c => `${c.name} (${c.id})`).join(', '))
+/**
+ * Log contract configuration for the active chain only
+ * Should be called from useGameDAO when chain changes
+ */
+export function logActiveChainConfiguration(chainId: number) {
+  if (process.env.NODE_ENV === 'development') {
+    const chainConfig = getChainConfig(chainId)
+    console.log(`🔧 Active Chain Configuration (${chainId}):`)
+    console.log(`  Network: ${chainConfig.name}`)
+    console.log(`  Supported: ${isSupportedNetwork(chainId) ? '✅' : '❌'}`)
 
-  // Log contract configuration for all supported chains
-  supportedChains.forEach(chain => {
-    logContractConfiguration(chain.id)
-  })
+    // Log contract configuration for the active chain only
+    logContractConfiguration(chainId)
+  }
 }
