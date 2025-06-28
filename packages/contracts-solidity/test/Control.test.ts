@@ -197,6 +197,31 @@ describe("Control Module", function () {
       expect(memberData.joinedAt).to.be.gt(0);
     });
 
+    it("Should join organization using new join function", async function () {
+      // Test the new join(address, bytes32) function
+      await control.connect(member1).join(member1.address, orgId);
+
+      expect(await control.isMemberActive(orgId, member1.address)).to.be.true;
+      expect(await control.getMemberCount(orgId)).to.equal(2); // Creator + new member
+
+      const memberData = await control.getMember(orgId, member1.address);
+      expect(memberData.state).to.equal(1); // Active
+      expect(memberData.joinedAt).to.be.gt(0);
+    });
+
+    it("Should allow third party to add member using join function", async function () {
+      // Test that someone else can add a member using the new join function
+      // This demonstrates the improved API where the caller and the account being added are separate
+      await control.connect(creator).join(member1.address, orgId);
+
+      expect(await control.isMemberActive(orgId, member1.address)).to.be.true;
+      expect(await control.getMemberCount(orgId)).to.equal(2); // Creator + new member
+
+      const memberData = await control.getMember(orgId, member1.address);
+      expect(memberData.state).to.equal(1); // Active
+      expect(memberData.joinedAt).to.be.gt(0);
+    });
+
     it("Should handle voting access model correctly", async function () {
       // Update to voting access model
       await control.connect(creator).updateOrganization(

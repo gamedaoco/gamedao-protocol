@@ -217,9 +217,45 @@ contract Control is GameDAOModule, IControl {
     }
 
     /**
-     * @dev Add a member to an organization
+     * @dev Join an organization (new simplified API)
+     * @param account The address that wants to join
+     * @param orgId The organization to join
+     */
+    function join(address account, bytes32 orgId) external nonReentrant whenNotPaused {
+        Organization storage org = _organizations[orgId];
+        if (org.creator == address(0)) revert OrganizationNotFound(orgId);
+        if (_organizationStates[orgId] != OrgState.Active) revert OrganizationInactive(orgId);
+
+        // Check access permissions
+        if (org.accessModel == AccessModel.Invite && _msgSender() != org.prime) {
+            revert UnauthorizedAccess(orgId, _msgSender());
+        }
+
+        // Check member limit
+        if (org.memberLimit > 0 && _memberSets[orgId].length() >= org.memberLimit) {
+            revert MemberLimitReached(orgId, org.memberLimit);
+        }
+
+        // For voting access model, member starts as pending
+        MemberState initialState = org.accessModel == AccessModel.Voting
+            ? MemberState.Pending
+            : MemberState.Active;
+
+        uint256 fee = 0;
+        if (org.feeModel != FeeModel.NoFees && org.membershipFee > 0) {
+            fee = org.membershipFee;
+            // Handle fee collection (simplified for now)
+        }
+
+        _addMemberInternal(orgId, account, initialState, fee);
+    }
+
+    /**
+     * @dev Add a member to an organization (legacy function - maintained for backward compatibility)
+     * @notice Use join(address, bytes32) instead
      */
     function addMember(bytes32 orgId, address member) external nonReentrant whenNotPaused {
+        // Delegate to the new join function
         Organization storage org = _organizations[orgId];
         if (org.creator == address(0)) revert OrganizationNotFound(orgId);
         if (_organizationStates[orgId] != OrgState.Active) revert OrganizationInactive(orgId);

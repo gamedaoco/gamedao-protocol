@@ -156,6 +156,8 @@ interface IControl {
 
     function setOrganizationState(bytes32 orgId, OrgState newState) external;
 
+    function join(address account, bytes32 orgId) external;
+
     function addMember(bytes32 orgId, address member) external;
 
     function updateMemberState(
