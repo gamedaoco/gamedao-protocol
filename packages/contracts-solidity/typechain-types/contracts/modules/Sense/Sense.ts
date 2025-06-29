@@ -228,6 +228,31 @@ export declare namespace ISense {
     timestamp: bigint;
     blockNumber: bigint;
   };
+
+  export type AchievementParamsStruct = {
+    achievementId: BytesLike;
+    name: string;
+    description: string;
+    category: string;
+    points: BigNumberish;
+    data: BytesLike;
+  };
+
+  export type AchievementParamsStructOutput = [
+    achievementId: string,
+    name: string,
+    description: string,
+    category: string,
+    points: bigint,
+    data: string
+  ] & {
+    achievementId: string;
+    name: string;
+    description: string;
+    category: string;
+    points: bigint;
+    data: string;
+  };
 }
 
 export interface SenseInterface extends Interface {
@@ -266,6 +291,7 @@ export interface SenseInterface extends Interface {
       | "getRoleAdmin"
       | "getTopProfiles"
       | "grantAchievement"
+      | "grantAchievementWithParams"
       | "grantRole"
       | "hasAchievement"
       | "hasRole"
@@ -450,6 +476,10 @@ export interface SenseInterface extends Interface {
       BigNumberish,
       BytesLike
     ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "grantAchievementWithParams",
+    values: [AddressLike, BytesLike, ISense.AchievementParamsStruct]
   ): string;
   encodeFunctionData(
     functionFragment: "grantRole",
@@ -650,6 +680,10 @@ export interface SenseInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "grantAchievement",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "grantAchievementWithParams",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "grantRole", data: BytesLike): Result;
@@ -1234,6 +1268,16 @@ export interface Sense extends BaseContract {
     "nonpayable"
   >;
 
+  grantAchievementWithParams: TypedContractMethod<
+    [
+      granter: AddressLike,
+      profileId: BytesLike,
+      params: ISense.AchievementParamsStruct
+    ],
+    [void],
+    "nonpayable"
+  >;
+
   grantRole: TypedContractMethod<
     [role: BytesLike, account: AddressLike],
     [void],
@@ -1514,6 +1558,17 @@ export interface Sense extends BaseContract {
       category: string,
       points: BigNumberish,
       data: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "grantAchievementWithParams"
+  ): TypedContractMethod<
+    [
+      granter: AddressLike,
+      profileId: BytesLike,
+      params: ISense.AchievementParamsStruct
     ],
     [void],
     "nonpayable"

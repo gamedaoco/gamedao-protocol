@@ -448,6 +448,48 @@ contract Sense is ISense, GameDAOModule {
     }
 
     /**
+     * @dev Grant an achievement to a profile with struct parameters (new simplified API)
+     */
+    function grantAchievementWithParams(
+        address granter,
+        bytes32 profileId,
+        AchievementParams memory params
+    ) external override onlyRole(ACHIEVEMENT_GRANTER_ROLE) onlyInitialized whenNotPaused {
+        Profile storage profile = _profiles[profileId];
+        if (profile.owner == address(0)) revert ProfileNotFound(profileId);
+
+        // Check if achievement already granted
+        if (_hasAchievement[profileId][params.achievementId]) {
+            revert AchievementAlreadyGranted(profileId, params.achievementId);
+        }
+
+        // Create achievement
+        Achievement memory achievement = Achievement({
+            achievementId: params.achievementId,
+            profileId: profileId,
+            name: params.name,
+            description: params.description,
+            category: params.category,
+            data: params.data,
+            earnedAt: block.timestamp,
+            grantedBy: granter,
+            points: params.points
+        });
+
+        // Store achievement
+        _profileAchievements[profileId].push(achievement);
+        _hasAchievement[profileId][params.achievementId] = true;
+        _achievementsByCategory[keccak256(bytes(params.category))].add(params.achievementId);
+
+        // Award experience points
+        ReputationData storage reputation = _reputations[profileId];
+        reputation.experience += params.points;
+        reputation.lastUpdated = block.timestamp;
+
+        emit AchievementGranted(profileId, params.achievementId, params.name, params.points, granter, block.timestamp);
+    }
+
+    /**
      * @dev Get all achievements for a profile
      */
     function getAchievements(bytes32 profileId)
