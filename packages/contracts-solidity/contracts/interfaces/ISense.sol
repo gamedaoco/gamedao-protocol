@@ -379,7 +379,31 @@ interface ISense {
     // =============================================================
 
     /**
-     * @dev Grant an achievement to a profile
+     * @dev Achievement parameters for granting
+     */
+    struct AchievementParams {
+        bytes32 achievementId;
+        string name;
+        string description;
+        string category;
+        uint256 points;
+        bytes data;
+    }
+
+    /**
+     * @dev Grant an achievement to a profile with struct parameters (new simplified API)
+     * @param granter The address granting the achievement
+     * @param profileId The profile to grant achievement to
+     * @param params The achievement parameters
+     */
+    function grantAchievementWithParams(
+        address granter,
+        bytes32 profileId,
+        AchievementParams memory params
+    ) external;
+
+    /**
+     * @dev Grant an achievement to a profile (legacy function - maintained for backward compatibility)
      * @param profileId The profile to grant achievement to
      * @param achievementId The achievement identifier
      * @param name The achievement name

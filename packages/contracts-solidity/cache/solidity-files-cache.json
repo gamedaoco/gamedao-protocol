@@ -1017,7 +1017,7 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Signal/Signal.sol": {
-      "lastModificationDate": 1750452412058,
+      "lastModificationDate": 1751155038829,
       "contentHash": "7b48e9dfc60d735cc1f2d8de07d9dc1e",
       "sourceName": "contracts/modules/Signal/Signal.sol",
       "solcConfig": {
@@ -1061,7 +1061,7 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/ISignal.sol": {
-      "lastModificationDate": 1750451135492,
+      "lastModificationDate": 1751155038828,
       "contentHash": "b9de4d0717e389c5b913ad2e886e9eb2",
       "sourceName": "contracts/interfaces/ISignal.sol",
       "solcConfig": {
@@ -1098,8 +1098,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Sense/Sense.sol": {
-      "lastModificationDate": 1750456986716,
-      "contentHash": "593eae1e0a3e2f01e074d5a5920fe10d",
+      "lastModificationDate": 1751155107709,
+      "contentHash": "8a8a7115ab27a23cbeb3e725a1ae9107",
       "sourceName": "contracts/modules/Sense/Sense.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1141,8 +1141,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/ISense.sol": {
-      "lastModificationDate": 1750456916524,
-      "contentHash": "7486f9fba601c0da775dfa6c16fafaff",
+      "lastModificationDate": 1751155076138,
+      "contentHash": "d045b5724581a64eb71893295c3b7b68",
       "sourceName": "contracts/interfaces/ISense.sol",
       "solcConfig": {
         "version": "0.8.20",

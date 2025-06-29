@@ -228,6 +228,31 @@ export declare namespace ISense {
     timestamp: bigint;
     blockNumber: bigint;
   };
+
+  export type AchievementParamsStruct = {
+    achievementId: BytesLike;
+    name: string;
+    description: string;
+    category: string;
+    points: BigNumberish;
+    data: BytesLike;
+  };
+
+  export type AchievementParamsStructOutput = [
+    achievementId: string,
+    name: string,
+    description: string,
+    category: string,
+    points: bigint,
+    data: string
+  ] & {
+    achievementId: string;
+    name: string;
+    description: string;
+    category: string;
+    points: bigint;
+    data: string;
+  };
 }
 
 export interface ISenseInterface extends Interface {
@@ -250,6 +275,7 @@ export interface ISenseInterface extends Interface {
       | "getReputationHistory"
       | "getTopProfiles"
       | "grantAchievement"
+      | "grantAchievementWithParams"
       | "hasAchievement"
       | "importReputation"
       | "profileExists"
@@ -349,6 +375,10 @@ export interface ISenseInterface extends Interface {
     ]
   ): string;
   encodeFunctionData(
+    functionFragment: "grantAchievementWithParams",
+    values: [AddressLike, BytesLike, ISense.AchievementParamsStruct]
+  ): string;
+  encodeFunctionData(
     functionFragment: "hasAchievement",
     values: [BytesLike, BytesLike]
   ): string;
@@ -444,6 +474,10 @@ export interface ISenseInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "grantAchievement",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "grantAchievementWithParams",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -852,6 +886,16 @@ export interface ISense extends BaseContract {
     "nonpayable"
   >;
 
+  grantAchievementWithParams: TypedContractMethod<
+    [
+      granter: AddressLike,
+      profileId: BytesLike,
+      params: ISense.AchievementParamsStruct
+    ],
+    [void],
+    "nonpayable"
+  >;
+
   hasAchievement: TypedContractMethod<
     [profileId: BytesLike, achievementId: BytesLike],
     [boolean],
@@ -1030,6 +1074,17 @@ export interface ISense extends BaseContract {
       category: string,
       points: BigNumberish,
       data: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "grantAchievementWithParams"
+  ): TypedContractMethod<
+    [
+      granter: AddressLike,
+      profileId: BytesLike,
+      params: ISense.AchievementParamsStruct
     ],
     [void],
     "nonpayable"

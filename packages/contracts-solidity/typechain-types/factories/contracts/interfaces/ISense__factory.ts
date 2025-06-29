@@ -1325,6 +1325,61 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "address",
+        name: "granter",
+        type: "address",
+      },
+      {
+        internalType: "bytes32",
+        name: "profileId",
+        type: "bytes32",
+      },
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "achievementId",
+            type: "bytes32",
+          },
+          {
+            internalType: "string",
+            name: "name",
+            type: "string",
+          },
+          {
+            internalType: "string",
+            name: "description",
+            type: "string",
+          },
+          {
+            internalType: "string",
+            name: "category",
+            type: "string",
+          },
+          {
+            internalType: "uint256",
+            name: "points",
+            type: "uint256",
+          },
+          {
+            internalType: "bytes",
+            name: "data",
+            type: "bytes",
+          },
+        ],
+        internalType: "struct ISense.AchievementParams",
+        name: "params",
+        type: "tuple",
+      },
+    ],
+    name: "grantAchievementWithParams",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "bytes32",
         name: "profileId",
         type: "bytes32",
