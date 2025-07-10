@@ -1,7 +1,7 @@
 //! Benchmarking setup for gamedao-flow
 use super::*;
-
 use crate::Pallet as Flow;
+
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, whitelisted_caller};
 use frame_system::RawOrigin;
 use frame_support::traits::Hooks;
@@ -42,7 +42,7 @@ benchmarks! {
 		fund_account::<T>(&caller)?;
 		
 		// Prepare organization and treasury
-		let org_id = T::Control::create_org(caller.clone().into())?;
+		let org_id = T::ControlBenchmarkHelper::create_org(caller.clone().into())?;
 		let treasury_id = T::Control::org_treasury_account(&org_id).unwrap();
 		let bounded_vec = BoundedVec::truncate_from(vec![0; T::StringLimit::get() as usize]);
 		fund_account::<T>(&treasury_id)?;
@@ -71,7 +71,7 @@ benchmarks! {
 		fund_accounts::<T>(&vec![owner.clone(), contributor.clone()])?;
 
 		// Prepare organization and treasury
-		let org_id = T::Control::create_org(owner.clone().into())?;
+		let org_id = T::ControlBenchmarkHelper::create_org(owner.clone().into())?;
 		let treasury_id = T::Control::org_treasury_account(&org_id).unwrap();
 		fund_account::<T>(&treasury_id)?;
 
@@ -94,7 +94,7 @@ benchmarks! {
 		let now = frame_system::Pallet::<T>::block_number();
 		let owner: T::AccountId = whitelisted_caller();
 		fund_account::<T>(&owner)?;
-		let org_id = T::Control::create_org(owner.clone().into())?;
+		let org_id = T::ControlBenchmarkHelper::create_org(owner.clone().into())?;
 		let treasury_id = T::Control::org_treasury_account(&org_id).unwrap();
 		fund_account::<T>(&treasury_id)?;
 

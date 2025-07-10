@@ -1,6 +1,8 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use crate::*;
+use super::*;
+use crate::Pallet as Control;
+
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_system::RawOrigin;
 use sp_runtime::{DispatchError, traits::SaturatedConversion};
@@ -46,8 +48,11 @@ benchmarks! {
 	update_org {
 		let caller: T::AccountId = whitelisted_caller();
 		fund_account::<T>(&caller)?;
+		let text = BoundedVec::truncate_from((0..255).collect());
 
 		let org_id = <Pallet::<T> as ControlBenchmarkingTrait<T::AccountId, T::Hash>>::create_org(caller.clone()).unwrap();
+		let name = Some(text.clone());
+		let cid = Some(text.clone());
 		let prime_id = Some(caller.clone());
 		let org_type = Some(OrgType::Individual);
 		let access_model = Some(AccessModel::Voting);
@@ -55,10 +60,10 @@ benchmarks! {
 		let fee_model = Some(FeeModel::NoFees);
 		let membership_fee: Option<T::Balance> = Some(99_u32.saturated_into());
 	}: _(
-		RawOrigin::Signed(caller), org_id, prime_id, org_type, access_model.clone(),
+		RawOrigin::Signed(caller), org_id, name, cid, prime_id, org_type, access_model.clone(),
 		member_limit, fee_model.clone(), membership_fee
 	)
-	
+
 	verify {
 		let org = Orgs::<T>::get(org_id).unwrap();
 		assert_eq!(org.membership_fee, membership_fee);
@@ -159,7 +164,7 @@ benchmarks! {
 		let currency_id = T::PaymentTokenId::get();
 		let amount: T::Balance = 300_000_000_000_00_u128.saturated_into();
 		fund_account::<T>(&treasury_id)?;
-		
+
 	}: _(RawOrigin::Signed(caller), org_id, currency_id, beneficiary.clone(), amount)
 
 	verify {
