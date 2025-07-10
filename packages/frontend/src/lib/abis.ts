@@ -60,8 +60,13 @@ export const CONTROL_ABI = [
   {
     "inputs": [
       {"internalType": "string", "name": "name", "type": "string"},
+      {"internalType": "string", "name": "metadataURI", "type": "string"},
+      {"internalType": "uint8", "name": "orgType", "type": "uint8"},
       {"internalType": "uint8", "name": "accessModel", "type": "uint8"},
-      {"internalType": "uint32", "name": "memberLimit", "type": "uint32"}
+      {"internalType": "uint8", "name": "feeModel", "type": "uint8"},
+      {"internalType": "uint32", "name": "memberLimit", "type": "uint32"},
+      {"internalType": "uint256", "name": "membershipFee", "type": "uint256"},
+      {"internalType": "uint256", "name": "gameStakeRequired", "type": "uint256"}
     ],
     "name": "createOrganization",
     "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}],

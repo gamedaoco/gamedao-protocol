@@ -126,7 +126,6 @@ async function main() {
     campaigns: [] as any[],
     proposals: [] as any[],
     profiles: [] as any[],
-    profiles: [] as any[],
   }
 
   // Setup users

@@ -277,7 +277,7 @@ async function main() {
 
         console.log(`  🎯 ${ethers.formatEther(stakeAmount)} GAME staked (Purpose: ${purpose}, Strategy: ${strategy})`)
 
-        await (gameToken as any).connect(stakerAccount).approve(gameStaking.address, stakeAmount)
+        await (gameToken as any).connect(stakerAccount).approve(await gameStaking.getAddress(), stakeAmount)
         await gameStaking.connect(stakerAccount).stake(purpose, stakeAmount, strategy)
 
         result.interactions.stakes.push({
@@ -309,15 +309,25 @@ async function main() {
 
         console.log(`  👤 Creating profile: ${user.name}`)
 
-        const tx = await sense.connect(userAccount).createProfile(
-          dao.id,
-          username,
-          user.bio,
-          user.avatar,
-          user.interests.join(',')
-        )
+        // Check if profile already exists
+        try {
+          await sense.getProfileByOwner(userAccount.address, dao.id)
+          console.log(`    ⚠️  Profile already exists for ${user.name}`)
+          continue
+        } catch {
+          // Profile doesn't exist, continue with creation
+        }
 
+        const metadata = JSON.stringify({
+          username,
+          bio: user.bio,
+          avatar: user.avatar,
+          interests: user.interests.join(',')
+        })
+
+        const tx = await sense.connect(userAccount).createProfile(dao.id, metadata)
         const receipt = await tx.wait()
+
         if (receipt) {
           const event = receipt.logs.find(log => {
             try {
@@ -344,12 +354,12 @@ async function main() {
               owner: userAccount.address
             })
 
-            console.log(`    ✅ Profile created`)
+            console.log(`    ✅ Profile created successfully`)
           }
         }
 
-      } catch (error) {
-        console.log(`    ❌ Failed to create profile for ${user.name}`)
+      } catch (error: any) {
+        console.log(`    ❌ Failed to create profile for ${user.name}: ${error.message.split('\n')[0]}`)
       }
     }
   }

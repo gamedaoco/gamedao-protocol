@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useOrganizations } from '@/hooks/useOrganizations'
@@ -16,7 +16,9 @@ import { useGameDAO } from '@/hooks/useGameDAO'
 import { useAccount } from 'wagmi'
 import { formatAddress } from '@/lib/utils'
 import { InsufficientBalanceWarning } from '@/components/wallet/wallet-balance'
-import { AlertCircle, Users, Shield, CreditCard, Gamepad2, CheckCircle, Loader2 } from 'lucide-react'
+import { uploadOrganizationMetadata, uploadFileToIPFS } from '@/lib/ipfs'
+import { AlertCircle, Users, Shield, CreditCard, Gamepad2, CheckCircle, Loader2, Upload, Image, X } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 
 interface CreateOrganizationModalProps {
   isOpen: boolean
@@ -33,6 +35,11 @@ interface OrganizationFormData {
   memberLimit: number
   membershipFee: string
   gameStakeRequired: string
+  website: string
+  twitter: string
+  discord: string
+  github: string
+  tags: string
 }
 
 const ORG_TYPES = [
@@ -56,7 +63,7 @@ const FEE_MODELS = [
 
 export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOrganizationModalProps) {
   const { address, isConnected } = useAccount()
-  const { createOrganization, isCreating, createSuccess, createError } = useOrganizations()
+  const { createOrganization, isCreating, createSuccess, createError, resetCreate } = useOrganizations()
   const { ethBalance, gameBalance, usdcBalance, hasBalance } = useTokenBalances()
   const { contracts } = useGameDAO()
 
@@ -68,10 +75,38 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
     feeModel: 0, // Default to No Fees
     memberLimit: 100,
     membershipFee: '0',
-    gameStakeRequired: '0'
+    gameStakeRequired: '0',
+    website: '',
+    twitter: '',
+    discord: '',
+    github: '',
+    tags: ''
   })
 
-  const [step, setStep] = useState<'basic' | 'governance' | 'economics' | 'review'>('basic')
+  const [profileImage, setProfileImage] = useState<File | null>(null)
+  const [bannerImage, setBannerImage] = useState<File | null>(null)
+  const [profileImagePreview, setProfileImagePreview] = useState<string>('')
+  const [bannerImagePreview, setBannerImagePreview] = useState<string>('')
+  const [uploadProgress, setUploadProgress] = useState('')
+
+  const [step, setStep] = useState<'basic' | 'images' | 'governance' | 'economics' | 'review'>('basic')
+
+  const handleImageUpload = (file: File, type: 'profile' | 'banner') => {
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const preview = e.target?.result as string
+        if (type === 'profile') {
+          setProfileImage(file)
+          setProfileImagePreview(preview)
+        } else {
+          setBannerImage(file)
+          setBannerImagePreview(preview)
+        }
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -87,8 +122,13 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
 
       await createOrganization({
         name: formData.name,
+        metadataURI: '', // TODO: Upload to IPFS and use real metadata URI
+        orgType: formData.orgType,
         accessModel: formData.accessModel,
-        memberLimit: formData.memberLimit
+        feeModel: formData.feeModel,
+        memberLimit: formData.memberLimit,
+        membershipFee: formData.membershipFee,
+        gameStakeRequired: formData.gameStakeRequired,
       })
 
       console.log('✅ Organization creation transaction submitted')
@@ -126,38 +166,121 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         feeModel: 0,
         memberLimit: 100,
         membershipFee: '0',
-        gameStakeRequired: '0'
+        gameStakeRequired: '0',
+        website: '',
+        twitter: '',
+        discord: '',
+        github: '',
+        tags: ''
       })
       setStep('basic')
     }
   }, [createSuccess, onSuccess, onClose])
 
-  // Handle error state change
+  // Handle error state change - only during actual transaction attempts
   useEffect(() => {
-    if (createError) {
+    console.log('🔍 Error state check:', {
+      createError: !!createError,
+      isCreating,
+      step,
+      errorMessage: createError?.message
+    })
+
+    // Only show toast errors during actual transaction attempts
+    if (createError && isCreating) {
       console.error('❌ Organization creation failed:', createError)
+      // Show user-friendly error message
+      if (createError instanceof Error) {
+        if (createError.message.includes('user rejected')) {
+          toast.error('Transaction was cancelled by user')
+        } else if (createError.message.includes('insufficient funds')) {
+          toast.error('Insufficient funds for gas fees')
+        } else {
+          toast.error('Failed to create organization. Please try again.')
+        }
+      } else {
+        toast.error('Failed to create organization. Please try again.')
+      }
+    } else if (createError && !isCreating) {
+      // Log but don't show toast for stale errors
+      console.log('🔍 Stale error detected (not during creation):', createError?.message)
     }
-  }, [createError])
+  }, [createError, isCreating, step])
 
-  const isFormValid = () => {
-    const basicValid = formData.name.trim().length > 0 &&
-                      formData.description.trim().length > 0 &&
-                      formData.memberLimit > 0
+  // Debug form data when entering review step
+  useEffect(() => {
+    if (step === 'review') {
+      console.log('🔍 Review step - Form data:', formData)
+      console.log('🔍 Review step - Validation:', {
+        hasName: formData.name.trim().length > 0,
+        hasDescription: formData.description.trim().length > 0,
+        memberLimit: formData.memberLimit,
+        isConnected,
+        ethBalance: ethBalance.balance,
+        gameBalance: gameBalance.balance,
+      })
+    }
+  }, [step, formData, isConnected, ethBalance, gameBalance])
 
-    if (!isConnected) return basicValid
+  // Reset any previous errors when opening the modal
+  useEffect(() => {
+    if (isOpen) {
+      // Reset form and clear any previous errors
+      resetCreate()
+      setFormData({
+        name: '',
+        description: '',
+        orgType: 2,
+        accessModel: 0,
+        feeModel: 0,
+        memberLimit: 100,
+        membershipFee: '0',
+        gameStakeRequired: '0',
+        website: '',
+        twitter: '',
+        discord: '',
+        github: '',
+        tags: ''
+      })
+      setStep('basic')
+    }
+  }, [isOpen, resetCreate])
 
-    // Check ETH balance for gas fees
-    const hasEnoughEth = parseFloat(ethBalance.balance) >= 0.01
+    const isFormValid = () => {
+    // Step-specific validation
+    switch (step) {
+      case 'basic':
+        return formData.name.trim().length > 0 && formData.description.trim().length > 0
 
-    // Check GAME balance if required
-    const hasEnoughGame = formData.gameStakeRequired === '0' ||
-                         parseFloat(gameBalance.balance) >= parseFloat(formData.gameStakeRequired)
+      case 'images':
+        return true // Images are optional
 
-    return basicValid && hasEnoughEth && hasEnoughGame
+      case 'governance':
+        return formData.memberLimit > 0
+
+      case 'economics':
+        return true // Economics step is always valid (all fields have defaults)
+
+      case 'review':
+        if (!isConnected) return false
+
+        // Check ETH balance for gas fees
+        const hasEnoughEth = parseFloat(ethBalance.balance) >= 0.01
+
+        // Check GAME balance if required
+        const hasEnoughGame = formData.gameStakeRequired === '0' ||
+                             parseFloat(gameBalance.balance) >= parseFloat(formData.gameStakeRequired)
+
+        return hasEnoughEth && hasEnoughGame
+
+      default:
+        return false
+    }
   }
 
   const nextStep = () => {
-    if (step === 'basic') setStep('governance')
+    if (step === 'basic') setStep('images')
+    else if (step === 'images') setStep('governance')
     else if (step === 'governance') setStep('economics')
     else if (step === 'economics') setStep('review')
   }
@@ -165,7 +288,8 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
   const prevStep = () => {
     if (step === 'review') setStep('economics')
     else if (step === 'economics') setStep('governance')
-    else if (step === 'governance') setStep('basic')
+    else if (step === 'governance') setStep('images')
+    else if (step === 'images') setStep('basic')
   }
 
   const renderStepContent = () => {
@@ -218,6 +342,204 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
+        )
+
+      case 'images':
+        return (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Image className="h-5 w-5" />
+                    Organization Images
+                  </CardTitle>
+                  <CardDescription>
+                    Upload profile and banner images for your organization (optional)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Profile Image */}
+                    <div>
+                      <Label>Profile Image</Label>
+                      <div className="mt-2">
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          {profileImagePreview ? (
+                            <div className="space-y-2">
+                              <img
+                                src={profileImagePreview}
+                                alt="Profile preview"
+                                className="w-24 h-24 object-cover rounded-lg mx-auto"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setProfileImage(null)
+                                  setProfileImagePreview('')
+                                }}
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Remove
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                              <div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => document.getElementById('profile-image')?.click()}
+                                >
+                                  Choose Image
+                                </Button>
+                                <input
+                                  id="profile-image"
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0]
+                                    if (file) handleImageUpload(file, 'profile')
+                                  }}
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Recommended: 400x400px, max 2MB
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Banner Image */}
+                    <div>
+                      <Label>Banner Image</Label>
+                      <div className="mt-2">
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          {bannerImagePreview ? (
+                            <div className="space-y-2">
+                              <img
+                                src={bannerImagePreview}
+                                alt="Banner preview"
+                                className="w-full h-24 object-cover rounded-lg"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setBannerImage(null)
+                                  setBannerImagePreview('')
+                                }}
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Remove
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                              <div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => document.getElementById('banner-image')?.click()}
+                                >
+                                  Choose Image
+                                </Button>
+                                <input
+                                  id="banner-image"
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0]
+                                    if (file) handleImageUpload(file, 'banner')
+                                  }}
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Recommended: 1200x300px, max 5MB
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Social Links */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Social Links</CardTitle>
+                  <CardDescription>
+                    Connect your organization's social media profiles (optional)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="website">Website</Label>
+                      <Input
+                        id="website"
+                        value={formData.website}
+                        onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
+                        placeholder="https://your-website.com"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="twitter">Twitter</Label>
+                      <Input
+                        id="twitter"
+                        value={formData.twitter}
+                        onChange={(e) => setFormData(prev => ({ ...prev, twitter: e.target.value }))}
+                        placeholder="@username"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="discord">Discord</Label>
+                      <Input
+                        id="discord"
+                        value={formData.discord}
+                        onChange={(e) => setFormData(prev => ({ ...prev, discord: e.target.value }))}
+                        placeholder="Discord server invite"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="github">GitHub</Label>
+                      <Input
+                        id="github"
+                        value={formData.github}
+                        onChange={(e) => setFormData(prev => ({ ...prev, github: e.target.value }))}
+                        placeholder="username or organization"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="tags">Tags</Label>
+                    <Input
+                      id="tags"
+                      value={formData.tags}
+                      onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+                      placeholder="gaming, defi, nft, esports (comma-separated)"
+                      className="mt-1"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         )
@@ -516,18 +838,18 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
 
         {/* Step Indicator */}
         <div className="flex items-center justify-between">
-          {['basic', 'governance', 'economics', 'review'].map((stepName, index) => (
+          {['basic', 'images', 'governance', 'economics', 'review'].map((stepName, index) => (
             <div key={stepName} className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                 step === stepName ? 'bg-primary text-primary-foreground' :
-                ['basic', 'governance', 'economics', 'review'].indexOf(step) > index ? 'bg-primary/20 text-primary' :
+                ['basic', 'images', 'governance', 'economics', 'review'].indexOf(step) > index ? 'bg-primary/20 text-primary' :
                 'bg-muted text-muted-foreground'
               }`}>
                 {index + 1}
               </div>
-              {index < 3 && (
+              {index < 4 && (
                 <div className={`w-12 h-0.5 mx-2 ${
-                  ['basic', 'governance', 'economics', 'review'].indexOf(step) > index ? 'bg-primary' : 'bg-muted'
+                  ['basic', 'images', 'governance', 'economics', 'review'].indexOf(step) > index ? 'bg-primary' : 'bg-muted'
                 }`} />
               )}
             </div>
