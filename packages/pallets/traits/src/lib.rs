@@ -6,7 +6,7 @@
 //
 // This file is part of GameDAO Protocol.
 // Copyright (C) 2018-2022 GameDAO AG.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 //! TRAITS
 //! TODO: description (toml as well)

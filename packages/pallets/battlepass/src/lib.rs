@@ -6,7 +6,7 @@
 //
 // This file is part of GameDAO Protocol.
 // Copyright (C) 2018-2022 GameDAO AG.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 //! BATTLEPASS
 //! This pallet provides functionality to create, manage and participate in battlepasses.
@@ -36,7 +36,7 @@ pub type Resource<T> = BoundedVec<
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	
+
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
@@ -76,7 +76,7 @@ pub mod pallet {
 			battlepass_id: T::Hash,
 			season: u32
 		},
-		
+
 		/// BattlePass claimed
 		BattlepassClaimed {
 			by_who: T::AccountId,
@@ -299,7 +299,7 @@ pub mod pallet {
 			// check if Battlepass already claimed
 			ensure!(!ClaimedBattlepasses::<T>::contains_key(battlepass_id, for_who.clone()), Error::<T>::BattlepassClaimed);
 
-			let collection = <pallet_rmrk_core::Pallet<T>>::collections(battlepass.collection_id).ok_or(Error::<T>::CollectionUnknown)?;	
+			let collection = <pallet_rmrk_core::Pallet<T>>::collections(battlepass.collection_id).ok_or(Error::<T>::CollectionUnknown)?;
 			let new_nft_id = collection.nfts_count;
 
 			Self::do_claim_battlepass(by_who.clone(), for_who.clone(), battlepass_id, new_nft_id, battlepass.collection_id)?;
@@ -396,7 +396,7 @@ pub mod pallet {
 			ensure!(T::Control::is_org_active(&battlepass.org_id), Error::<T>::OrgUnknownOrInactive);
 			// check permissions (prime)
 			ensure!(Self::is_prime(&battlepass.org_id, creator.clone())?, Error::<T>::AuthorizationError);
-			
+
 			let collection_id = Self::create_collection(creator.clone(), max)?;
 			let reward_id = Self::do_create_reward(battlepass_id, name, cid, level, transferable, collection_id)?;
 
@@ -419,7 +419,7 @@ pub mod pallet {
 			let battlepass = Self::get_battlepass(reward.battlepass_id).ok_or(Error::<T>::BattlepassUnknown)?;
 			// check permissions (prime)
 			ensure!(Self::is_prime(&battlepass.org_id, creator.clone())?, Error::<T>::AuthorizationError);
-			
+
 			let state = RewardState::INACTIVE;
 
 			RewardStates::<T>::insert(reward_id, state.clone());
@@ -546,13 +546,13 @@ impl<T: Config> Pallet<T> {
 
 	fn check_battlepass_state(battlepass_id: T::Hash, state: BattlepassState) -> Result<bool, DispatchError> {
 		let current_state = Self::get_battlepass_state(battlepass_id).ok_or(Error::<T>::BattlepassStateUnknown)?;
-		
+
 		Ok(current_state == state)
 	}
 
 	fn check_reward_state(reward_id: T::Hash, state: RewardState) -> Result<bool, DispatchError> {
 		let current_state = Self::get_reward_state(reward_id).ok_or(Error::<T>::RewardStateUnknown)?;
-		
+
 		Ok(current_state == state)
 	}
 
@@ -563,10 +563,10 @@ impl<T: Config> Pallet<T> {
 			return (0, None);
 		}
 	}
-	
+
 	fn do_create_battlepass(creator: T::AccountId, org_id: T::Hash, name: String<T>, cid: String<T>, collection_id: u32, price: u16, new_season:u32) -> Result<T::Hash, DispatchError> {
 		let battlepass: Battlepass<T::Hash, T::AccountId, String<T>> = Battlepass {
-			creator, 
+			creator,
 			org_id,
 			name,
 			cid,
@@ -607,7 +607,7 @@ impl<T: Config> Pallet<T> {
 	fn change_battlepass_state(org_id: T::Hash, battlepass_id: T::Hash, state: BattlepassState) -> DispatchResult {
 		let active_battlepass = if state == BattlepassState::ACTIVE { Some(battlepass_id) } else { None };
 
-		BattlepassStates::<T>::insert(&battlepass_id, state); 
+		BattlepassStates::<T>::insert(&battlepass_id, state);
 		BattlepassInfoByOrg::<T>::try_mutate(org_id, |info| -> Result<(), DispatchError> {
 			if let Some(inf) = info {
 				inf.active = active_battlepass;

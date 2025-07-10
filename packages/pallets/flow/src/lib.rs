@@ -6,7 +6,7 @@
 //
 // This file is part of GameDAO Protocol.
 // Copyright (C) 2018-2022 GameDAO AG.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 //! FLOW
 //! # Crowdfunding Campaign Factory + Treasury
@@ -111,7 +111,7 @@ pub mod pallet {
 			+ MultiReservableCurrency<Self::AccountId>;
 
 		type Control: ControlTrait<Self::AccountId, Self::Hash>;
-		
+
 		#[cfg(feature = "runtime-benchmarks")]
 		type ControlBenchmarkHelper: ControlBenchmarkingTrait<Self::AccountId, Self::Hash>;
 
@@ -551,7 +551,7 @@ impl<T: Config> Pallet<T> {
 				let contribution = CampaignContribution::<T>::get(campaign_id, contributor.clone());
 				T::Currency::unreserve(T::PaymentTokenId::get(), &contributor, contribution);
 			},
-			
+
 			_ => {},
 		}
 	}
@@ -580,7 +580,7 @@ impl<T: Config> Pallet<T> {
 				CampaignStates::<T>::insert(campaign_id, CampaignState::Succeeded);
 
 				Self::deposit_event(Event::Succeeded { campaign_id, campaign_balance: updated_balance, block_number });
-			}, 
+			},
 
 			CampaignState::Failed => {
 				// Unreserve Initial deposit
