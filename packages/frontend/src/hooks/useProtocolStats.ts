@@ -3,6 +3,30 @@
 import { useQuery } from '@apollo/client'
 import { GET_ORGANIZATIONS, GET_CAMPAIGNS, GET_PROPOSALS, GET_RECENT_ACTIVITIES } from '@/lib/queries'
 import { useState, useEffect } from 'react'
+// Safe BigInt conversion helper
+const safeBigInt = (value: any, fallback: string = '0'): bigint => {
+  if (value === null || value === undefined || value === '') {
+    return BigInt(fallback)
+  }
+  
+  const stringValue = String(value).trim()
+  if (stringValue === '' || stringValue === 'null' || stringValue === 'undefined') {
+    return BigInt(fallback)
+  }
+  
+  // Check if it's a valid number string
+  if (!/^\d+$/.test(stringValue)) {
+    console.warn(`Invalid BigInt value: "${value}", using fallback: ${fallback}`)
+    return BigInt(fallback)
+  }
+  
+  try {
+    return BigInt(stringValue)
+  } catch (error) {
+    console.warn(`BigInt conversion failed for: "${value}", using fallback: ${fallback}`)
+    return BigInt(fallback)
+  }
+}
 import { formatEther } from 'viem'
 
 export interface GlobalStats {
@@ -142,7 +166,7 @@ export function useProtocolStats(): ProtocolStats {
 
     // Calculate total raised across all campaigns
     const totalRaised = campaigns.reduce((sum: number, campaign: any) => {
-      return sum + parseFloat(formatEther(BigInt(campaign.raised || '0')))
+      return sum + parseFloat(formatEther(safeBigInt(campaign.raised)))
     }, 0)
 
     // Calculate active campaigns

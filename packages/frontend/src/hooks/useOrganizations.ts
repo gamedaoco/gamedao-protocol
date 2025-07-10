@@ -1,13 +1,14 @@
 'use client'
 
 import { useQuery } from '@apollo/client'
-import { useWriteContract } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_ORGANIZATIONS, GET_USER_ORGANIZATIONS } from '@/lib/queries'
 import { getScaffoldData, ScaffoldDAO } from '@/lib/scaffold-data'
 import { useEffect, useState, useMemo } from 'react'
 import { useAccount } from 'wagmi'
+import { useToast } from './use-toast'
 
 export interface Organization {
   id: string
@@ -26,8 +27,13 @@ export interface Organization {
 
 export interface CreateOrgParams {
   name: string
+  metadataURI?: string
+  orgType: number
   accessModel: number
+  feeModel: number
   memberLimit: number
+  membershipFee: string
+  gameStakeRequired: string
 }
 
 // Utility functions - moved to top to avoid temporal dead zone
@@ -71,6 +77,7 @@ export function useOrganizations() {
   const { contracts, isConnected } = useGameDAO()
   const { address } = useAccount()
   const [scaffoldOrgs, setScaffoldOrgs] = useState<Organization[]>([])
+  const toast = useToast()
 
   // Fetch organizations from subgraph
   const { data, loading, error, refetch } = useQuery(GET_ORGANIZATIONS, {
@@ -80,7 +87,7 @@ export function useOrganizations() {
   })
 
   // Fetch user's organizations from subgraph
-  const { data: userOrgsData, loading: userOrgsLoading } = useQuery(GET_USER_ORGANIZATIONS, {
+  const { data: userOrgsData, loading: userOrgsLoading, refetch: refetchUserOrgs } = useQuery(GET_USER_ORGANIZATIONS, {
     variables: { user: address },
     skip: !address,
     pollInterval: 30000,
@@ -113,9 +120,101 @@ export function useOrganizations() {
   const {
     writeContract: createOrg,
     isPending: isCreating,
-    isSuccess: createSuccess,
-    error: createError
+    data: createTxHash,
+    error: createError,
+    reset: resetCreate
   } = useWriteContract()
+
+  // Wait for create transaction confirmation
+  const {
+    isLoading: isConfirming,
+    isSuccess: createSuccess,
+    error: confirmError
+  } = useWaitForTransactionReceipt({
+    hash: createTxHash,
+  })
+
+  // Contract write for joining organization
+  const {
+    writeContract: joinOrg,
+    isPending: isJoining,
+    data: joinTxHash,
+    error: joinError,
+    reset: resetJoin
+  } = useWriteContract()
+
+  // Wait for join transaction confirmation
+  const {
+    isLoading: isJoinConfirming,
+    isSuccess: joinSuccess,
+    error: joinConfirmError
+  } = useWaitForTransactionReceipt({
+    hash: joinTxHash,
+  })
+
+  // Handle transaction pending state
+  useEffect(() => {
+    if (createTxHash && isCreating) {
+      toast.loading('Creating organization... Please wait for confirmation.')
+    }
+  }, [createTxHash, isCreating, toast])
+
+  useEffect(() => {
+    if (joinTxHash && isJoining) {
+      toast.loading('Joining organization... Please wait for confirmation.')
+    }
+  }, [joinTxHash, isJoining, toast])
+
+  // Handle transaction errors
+  useEffect(() => {
+    if (createError || confirmError) {
+      const error = createError || confirmError
+      console.error('❌ Organization creation failed:', error)
+      // Remove automatic toast - let the component handle error display
+      // toast.error('Failed to create organization. Please try again.')
+    }
+  }, [createError, confirmError])
+
+  useEffect(() => {
+    if (joinError || joinConfirmError) {
+      const error = joinError || joinConfirmError
+      console.error('❌ Organization join failed:', error)
+      toast.error('Failed to join organization. Please try again.')
+    }
+  }, [joinError, joinConfirmError, toast])
+
+  // Refetch data after successful transactions
+  useEffect(() => {
+    if (createSuccess) {
+      console.log('✅ Organization creation confirmed on-chain!')
+      // Dismiss any loading toasts
+      toast.dismiss()
+      // Refetch data to show the new organization
+      refetch()
+      if (address) {
+        refetchUserOrgs()
+      }
+      // Reset the transaction state
+      setTimeout(() => resetCreate(), 1000)
+      toast.success('Organization created successfully!')
+    }
+  }, [createSuccess, refetch, refetchUserOrgs, address, resetCreate, toast])
+
+  useEffect(() => {
+    if (joinSuccess) {
+      console.log('✅ Organization join confirmed on-chain!')
+      // Dismiss any loading toasts
+      toast.dismiss()
+      // Refetch data to show updated membership
+      refetch()
+      if (address) {
+        refetchUserOrgs()
+      }
+      // Reset the transaction state
+      setTimeout(() => resetJoin(), 1000)
+      toast.success('Organization joined successfully!')
+    }
+  }, [joinSuccess, refetch, refetchUserOrgs, address, resetJoin, toast])
 
   // Transform subgraph data to match our interface, fallback to scaffold data
   const organizations: Organization[] = data?.organizations?.map((org: any) => ({
@@ -141,25 +240,75 @@ export function useOrganizations() {
     joinedAt: member.joinedAt,
   })) || []
 
-  // Contract write for joining organization
-  const {
-    writeContract: joinOrg,
-    isPending: isJoining,
-    isSuccess: joinSuccess,
-    error: joinError
-  } = useWriteContract()
-
   const createOrganization = async (params: CreateOrgParams) => {
     if (!isConnected) {
       throw new Error('Wallet not connected')
     }
 
-    return createOrg({
-      address: contracts.CONTROL,
-      abi: ABIS.CONTROL,
-      functionName: 'createOrganization',
-      args: [params.name, params.accessModel, params.memberLimit],
+    console.log('🔧 Creating organization with processed params:', {
+      name: params.name,
+      metadataURI: params.metadataURI || '',
+      orgType: params.orgType,
+      accessModel: params.accessModel,
+      feeModel: params.feeModel,
+      memberLimit: params.memberLimit,
+      membershipFee: params.membershipFee,
+      gameStakeRequired: params.gameStakeRequired,
     })
+
+    // Helper function to safely convert to BigInt
+    const safeBigInt = (value: string | number, fallback = '0'): bigint => {
+      if (value === null || value === undefined || value === '') {
+        return BigInt(fallback)
+      }
+
+      const stringValue = String(value).trim()
+      if (stringValue === '' || stringValue === 'null' || stringValue === 'undefined') {
+        return BigInt(fallback)
+      }
+
+      // Check for invalid patterns
+      if (!/^\d+$/.test(stringValue)) {
+        console.warn(`Invalid BigInt value: "${value}", using fallback: ${fallback}`)
+        return BigInt(fallback)
+      }
+
+      try {
+        return BigInt(stringValue)
+      } catch (error) {
+        console.warn(`BigInt conversion failed for: "${value}", using fallback: ${fallback}`)
+        return BigInt(fallback)
+      }
+    }
+
+    const membershipFeeBigInt = safeBigInt(params.membershipFee, '0')
+    const gameStakeRequiredBigInt = safeBigInt(params.gameStakeRequired, '0')
+
+    console.log('🔧 BigInt conversions:', {
+      membershipFee: `${params.membershipFee} -> ${membershipFeeBigInt}`,
+      gameStakeRequired: `${params.gameStakeRequired} -> ${gameStakeRequiredBigInt}`,
+    })
+
+    try {
+      return createOrg({
+        address: contracts.CONTROL,
+        abi: ABIS.CONTROL,
+        functionName: 'createOrganization',
+        args: [
+          params.name,
+          params.metadataURI || '',
+          params.orgType,
+          params.accessModel,
+          params.feeModel,
+          Number(params.memberLimit), // Ensure it's a proper number for uint32
+          membershipFeeBigInt,
+          gameStakeRequiredBigInt,
+        ],
+      })
+    } catch (error) {
+      console.error('❌ Contract call failed:', error)
+      throw error
+    }
   }
 
   const joinOrganization = async (organizationId: string) => {
@@ -174,8 +323,6 @@ export function useOrganizations() {
       args: [organizationId, address],
     })
   }
-
-
 
   // Calculate stats
   const stats = {
@@ -195,16 +342,17 @@ export function useOrganizations() {
     // Actions
     createOrganization,
     joinOrganization,
+    resetCreate,
 
     // Status - show loading only if we have no data at all
     isLoading: loading && organizations.length === 0,
     isLoadingUserOrgs: userOrgsLoading,
-    isCreating,
+    isCreating: isCreating || isConfirming,
     createSuccess,
-    createError,
-    isJoining,
+    createError: createError || confirmError,
+    isJoining: isJoining || isJoinConfirming,
     joinSuccess,
-    joinError,
+    joinError: joinError || joinConfirmError,
     error: error && organizations.length === 0 ? error : null, // Hide error if we have scaffold data
 
     // Utils
@@ -212,6 +360,11 @@ export function useOrganizations() {
     getStateString,
 
     // Refetch
-    refetch,
+    refetch: () => {
+      refetch()
+      if (address) {
+        refetchUserOrgs()
+      }
+    },
   }
 }

@@ -3,6 +3,7 @@
 import { Web3Provider } from '@/providers/web3-provider'
 import { ThemeProvider } from '@/providers/theme-provider'
 import { ApolloProviderWrapper } from '@/providers/apollo-provider'
+import { ToastProvider } from '@/providers/toast-provider'
 import { AppLayout } from '@/components/layout/app-layout'
 
 interface ProvidersProps {
@@ -22,6 +23,7 @@ export function Providers({ children }: ProvidersProps) {
           <AppLayout>
             {children}
           </AppLayout>
+          <ToastProvider />
         </Web3Provider>
       </ApolloProviderWrapper>
     </ThemeProvider>
