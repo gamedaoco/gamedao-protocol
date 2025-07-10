@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useAccount } from 'wagmi'
-import { parseUnits, formatEther } from 'viem'
+import { parseUnits } from 'viem'
 import { Plus, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
