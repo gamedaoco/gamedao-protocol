@@ -7,8 +7,8 @@
   "flow": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
   "signal": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
   "sense": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-  "testOrgId": "0x4d605d1a2810a2135628ca0b66fa16eb86b4e38b2e72b1df09d1f1764a92f921",
+  "testOrgId": "0x19af770489870daf076951d30619f147e9b7fc5dd11dae3cc07bc10d2d90ffca",
   "testTreasury": "0xd8058efe0198ae9dD7D563e1b4938Dcbc86A1F81",
-  "testCampaignId": "0xc7179fc9878dd2cb310c312b44d8655e7caf027f43171ee0e4589cf421612d75",
-  "testProposalId": "0xcda586d69e82a979b08df8ede65132c29e4f6d5ebaa39a733a82ad67d38eb389"
+  "testCampaignId": "0xe1fe96e0700a4760abb82538e2ec2fa280c362cc42dcac6c62b02cd4ba65c352",
+  "testProposalId": "0x59ecb33a26d7352bdb1136ec50d9aa79d92cebc8b03d32f98cb3f23d3219ba52"
 }

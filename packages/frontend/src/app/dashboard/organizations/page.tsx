@@ -1,28 +1,30 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useAccount } from 'wagmi'
-import { Users, Calendar, Coins, ExternalLink, Plus } from 'lucide-react'
+import { Users, ExternalLink, Plus } from 'lucide-react'
 import Link from 'next/link'
+
+interface Organization {
+  id: string
+  name: string
+  description: string
+  creator?: string
+  members?: string[]
+}
 
 export default function DashboardOrganizationsPage() {
   const { address, isConnected } = useAccount()
   const { contracts } = useGameDAO()
 
-  const [myOrganizations, setMyOrganizations] = useState<any[]>([])
+  const [myOrganizations, setMyOrganizations] = useState<Organization[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    if (isConnected && contracts && address) {
-      loadMyOrganizations()
-    }
-  }, [isConnected, contracts, address])
-
-  const loadMyOrganizations = async () => {
+  const loadMyOrganizations = useCallback(async () => {
     if (!contracts || !address) return
 
     setIsLoading(true)
@@ -33,7 +35,7 @@ export default function DashboardOrganizationsPage() {
         const data = await response.json()
 
         // Filter organizations where user is a member
-        const userOrgs = data.daos?.filter((dao: any) =>
+        const userOrgs = data.daos?.filter((dao: Organization) =>
           dao.members?.some((member: string) =>
             member.toLowerCase() === address.toLowerCase()
           )
@@ -46,7 +48,13 @@ export default function DashboardOrganizationsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [contracts, address])
+
+  useEffect(() => {
+    if (isConnected && contracts && address) {
+      loadMyOrganizations()
+    }
+  }, [isConnected, contracts, address, loadMyOrganizations])
 
   if (!isConnected) {
     return (
@@ -114,7 +122,7 @@ export default function DashboardOrganizationsPage() {
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h2 className="text-2xl font-bold mb-4">No Organizations Yet</h2>
               <p className="text-muted-foreground mb-6">
-                You're not a member of any organizations yet. Join existing ones or create your own!
+                You&apos;re not a member of any organizations yet. Join existing ones or create your own!
               </p>
               <div className="flex gap-4 justify-center">
                 <Link href="/control">
