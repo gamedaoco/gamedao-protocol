@@ -43,7 +43,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
       const orgMembers = getDAOMembers(organization.id)
       setMembers(orgMembers)
     }
-  }, [organization?.id])
+  }, [organization])
 
   // Handle leaving organization (for now, just show alert - TODO: implement contract call)
   const handleLeaveOrganization = () => {

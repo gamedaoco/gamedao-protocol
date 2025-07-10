@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,12 +14,18 @@ import { parseUnits } from 'viem'
 import { Plus, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
+interface Organization {
+  id: string
+  name: string
+  description: string
+}
+
 export default function CreateCampaignPage() {
   const router = useRouter()
   const { address, isConnected } = useAccount()
   const { flow, control, usdc } = useGameDAO()
 
-  const [organizations, setOrganizations] = useState<any[]>([])
+  const [organizations, setOrganizations] = useState<Organization[]>([])
   const [formData, setFormData] = useState({
     organizationId: '',
     title: '',
@@ -43,18 +49,14 @@ export default function CreateCampaignPage() {
     }
   }, [usdc])
 
-  useEffect(() => {
-    loadOrganizations()
-  }, [control, address])
-
-  const loadOrganizations = async () => {
+  const loadOrganizations = useCallback(async () => {
     if (!control || !address) return
 
     setIsLoading(true)
     try {
       // Get all organizations
       const allOrgs = await control.read.getAllOrganizations()
-      const orgData = []
+      const orgData: Organization[] = []
 
       for (const orgId of allOrgs) {
         try {
@@ -79,7 +81,11 @@ export default function CreateCampaignPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [control, address])
+
+  useEffect(() => {
+    loadOrganizations()
+  }, [loadOrganizations])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

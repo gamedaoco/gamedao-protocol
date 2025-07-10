@@ -391,7 +391,7 @@ export default function CreateOrganizationPage() {
             <CardHeader>
               <CardTitle>Social Links</CardTitle>
               <CardDescription>
-                Connect your organization's social media presence
+                Connect your organization&apos;s social media presence
               </CardDescription>
             </CardHeader>
             <CardContent>
