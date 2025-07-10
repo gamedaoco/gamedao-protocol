@@ -10,7 +10,7 @@ import { useReputation } from '@/hooks/useReputation'
 
 export default function SensePage() {
   const { isConnected } = useGameDAO()
-  const { profiles, stats, isLoading, error, userProfile, getTopProfiles } = useReputation()
+  const { stats, isLoading, error, userProfile, getTopProfiles } = useReputation()
 
   const topProfiles = getTopProfiles(5)
 

@@ -18,7 +18,7 @@ export default function CreateProfilePage() {
   const { address, isConnected } = useAccount()
   const { sense, control } = useGameDAO()
 
-  const [organizations, setOrganizations] = useState<any[]>([])
+  const [organizations, setOrganizations] = useState<Array<{id: string, name: string, description: string}>>([])
   const [formData, setFormData] = useState({
     organizationId: '',
     username: '',
@@ -40,52 +40,52 @@ export default function CreateProfilePage() {
   ]
 
   useEffect(() => {
-    loadOrganizations()
-  }, [control, address])
+    const loadOrganizations = async () => {
+      if (!control || !address) return
 
-  const loadOrganizations = async () => {
-    if (!control || !address) return
+      setIsLoading(true)
+      try {
+        // Get all organizations
+        const allOrgs = await control.read.getAllOrganizations()
+        const orgData = []
 
-    setIsLoading(true)
-    try {
-      // Get all organizations
-      const allOrgs = await control.read.getAllOrganizations()
-      const orgData = []
+        for (const orgId of allOrgs) {
+          try {
+            const org = await control.read.getOrganization([orgId])
+            const isMember = await control.read.isMemberActive([orgId, address])
 
-      for (const orgId of allOrgs) {
-        try {
-          const org = await control.read.getOrganization([orgId])
-          const isMember = await control.read.isMemberActive([orgId, address])
-
-          if (isMember) {
-            // Check if user already has a profile in this org
-            try {
-              const existingProfile = await sense?.read.getProfileByOwner([orgId, address])
-              if (existingProfile && existingProfile.owner !== '0x0000000000000000000000000000000000000000') {
-                continue // Skip if profile already exists
+            if (isMember) {
+              // Check if user already has a profile in this org
+              try {
+                const existingProfile = await sense?.read.getProfileByOwner([orgId, address])
+                if (existingProfile && existingProfile.owner !== '0x0000000000000000000000000000000000000000') {
+                  continue // Skip if profile already exists
+                }
+              } catch {
+                // No existing profile, add to list
               }
-            } catch {
-              // No existing profile, add to list
+
+              orgData.push({
+                id: orgId,
+                name: org.name,
+                description: org.description
+              })
             }
-
-            orgData.push({
-              id: orgId,
-              name: org.name,
-              description: org.description
-            })
+          } catch (error) {
+            console.error('Error loading organization:', error)
           }
-        } catch (error) {
-          console.error('Error loading organization:', error)
         }
-      }
 
-      setOrganizations(orgData)
-    } catch (error) {
-      console.error('Failed to load organizations:', error)
-    } finally {
-      setIsLoading(false)
+        setOrganizations(orgData)
+      } catch (error) {
+        console.error('Failed to load organizations:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }
+
+    loadOrganizations()
+  }, [control, address, sense])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
