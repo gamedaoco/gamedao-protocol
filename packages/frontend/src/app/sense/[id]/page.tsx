@@ -35,6 +35,26 @@ import {
 } from 'lucide-react'
 import { formatAddress } from '@/lib/utils'
 
+interface ProfileData {
+  address: string
+  username: string | null
+  displayName: string | null
+  bio: string | null
+  location: string | null
+  website: string | null
+  twitter: string | null
+  github: string | null
+  verified: boolean
+  xp: number
+  level: number
+  reputation: number
+  trust: number
+  followers: number
+  following: number
+  joinedAt: string | null
+  profileCreated: boolean
+}
+
 interface ProfilePageProps {
   params: { id: string } | Promise<{ id: string }>
 }
@@ -43,17 +63,16 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const resolvedParams = params instanceof Promise ? use(params) : params
   const { id } = resolvedParams
 
-  const { address: connectedAddress, isConnected } = useAccount()
+  const { address: connectedAddress } = useAccount()
   const [isEditing, setIsEditing] = useState(false)
-  const [profileData, setProfileData] = useState<any>(null)
-  const [editData, setEditData] = useState<any>({})
+  const [profileData, setProfileData] = useState<ProfileData | null>(null)
+  const [editData, setEditData] = useState<Partial<ProfileData>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [copied, setCopied] = useState(false)
 
   // Determine if the ID is an address or username
   const isAddress = id.startsWith('0x') && id.length === 42
   const profileAddress = isAddress ? id : null
-  const profileUsername = !isAddress ? id : null
 
   // Check if connected user owns this profile
   const isOwner = connectedAddress && (
@@ -151,7 +170,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const achievements = [
     { id: 1, name: 'First DAO Creator', description: 'Created your first organization', icon: '🏛️', rarity: 'common', earned: true },
     { id: 2, name: 'Campaign Master', description: 'Successfully funded 5 campaigns', icon: '🎯', rarity: 'rare', earned: true },
-    { id: 3, name: 'Community Builder', description: 'Gained 100+ followers', icon: '👥', rarity: 'epic', earned: profileData?.followers >= 100 },
+    { id: 3, name: 'Community Builder', description: 'Gained 100+ followers', icon: '👥', rarity: 'epic', earned: (profileData?.followers || 0) >= 100 },
     { id: 4, name: 'Governance Expert', description: 'Voted on 50+ proposals', icon: '🗳️', rarity: 'legendary', earned: true },
     { id: 5, name: 'Early Adopter', description: 'Joined in the first month', icon: '⚡', rarity: 'rare', earned: false },
     { id: 6, name: 'Social Butterfly', description: 'Connected with 50+ users', icon: '🦋', rarity: 'common', earned: false },
