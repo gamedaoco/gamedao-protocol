@@ -33,9 +33,9 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Event: From<Event<Self>>
-			+ IsType<<Self as frame_system::Config>::Event>
-			+ Into<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
+			+ Into<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
 
 		/// The maximum length of a name or symbol stored on-chain.
@@ -44,7 +44,6 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
 	/// Sense Entity of the account.
@@ -122,6 +121,7 @@ pub mod pallet {
 		/// Emits `EntityCreated` event when successful.
 		///
 		/// Weight: `O(1)`
+		#[pallet::call_index(0)]
 		#[pallet::weight(<T as Config>::WeightInfo::create_entity())]
 		pub fn create_entity(
 			origin: OriginFor<T>,
@@ -160,6 +160,7 @@ pub mod pallet {
 		/// Emits `PropertyUpdated` event when successful.
 		///
 		/// Weight: `O(1)`
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::update_property())]
 		pub fn update_property(
 			origin: OriginFor<T>,

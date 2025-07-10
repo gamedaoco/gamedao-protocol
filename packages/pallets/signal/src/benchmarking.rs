@@ -1,13 +1,13 @@
 #![cfg(feature = "runtime-benchmarks")]
 
+use super::*;
+use crate::Pallet as Signal;
+
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, whitelisted_caller};
 use frame_system::RawOrigin;
 use frame_support::{dispatch::DispatchError, traits::{Get, Hooks}, BoundedVec};
 use sp_runtime::traits::SaturatedConversion;
 use sp_std::vec::Vec;
-
-use crate::*;
-
 
 const SEED: u32 = 0;
 const DEPOSIT_AMOUNT: u128 = 10_000_000_000_000_000_000;
@@ -28,26 +28,27 @@ fn fund_accounts<T: Config>(account_ids: &Vec<T::AccountId>) -> Result<(), Dispa
 }
 
 fn create_org_campaign<T: Config>(caller: T::AccountId, contributors_count: u32, members: Option<Vec<T::AccountId>>) -> Result<(T::Hash, T::Hash), DispatchError> {
-	let org_id = T::Control::create_org(caller.clone())?;
+	let org_id = T::ControlBenchmarkHelper::create_org(caller.clone())?;
 	let treasury_account_id = T::Control::org_treasury_account(&org_id).unwrap();
 	fund_account::<T>(&treasury_account_id)?;
 	let now = frame_system::Pallet::<T>::block_number();
-	let campaign_id = T::Flow::create_campaign(&caller, &org_id, now)?;
+	let campaign_id = T::FlowBenchmarkHelper::create_campaign(&caller, &org_id, now)?;
 	let contributors: Vec<T::AccountId> = (0..contributors_count).collect::<Vec<u32>>().iter()
 		.map(|i| account("contributor", *i, SEED)).collect();
 	fund_accounts::<T>(&contributors)?;
-	T::Flow::create_contributions(&campaign_id, contributors)?;
+	T::FlowBenchmarkHelper::create_contributions(&campaign_id, contributors)?;
 	let current_block = frame_system::Pallet::<T>::block_number();
-	let mut expiry = current_block + 200_u32.into();
+	let mut expiry = current_block + 57_600_u32.into();
 	for _ in 0 .. 10 {
-		T::Flow::finalize_campaigns_by_block(expiry);
+		
+		T::FlowBenchmarkHelper::finalize_campaigns_by_block(expiry);
 		if T::Flow::is_campaign_succeeded(&campaign_id) {
 			break;
 		}
 		expiry = expiry + 1_u32.into();
 	}
 	if let Some(members) = members {
-		T::Control::fill_org_with_members(&org_id, members)?;
+		T::ControlBenchmarkHelper::fill_org_with_members(&org_id, members)?;
 	}
 	Ok((campaign_id, org_id))
 }
@@ -60,8 +61,9 @@ benchmarks! {
 		fund_account::<T>(&caller)?;
 		let (campaign_id, org_id) = create_org_campaign::<T>(caller.clone(), 10, None)?;
 		let bounded_str = BoundedVec::truncate_from((0..255).collect());
+		frame_system::Pallet::<T>::set_block_number(3u32.into());
 		let start = frame_system::Pallet::<T>::block_number();
-		let expiry = frame_system::Pallet::<T>::block_number() + 200_u32.into();
+		let expiry = frame_system::Pallet::<T>::block_number() + T::ProposalDurationLimits::get().0;
 		let deposit = T::MinProposalDeposit::get();
 		let amount: T::Balance = 10_000u32.saturated_into();
 		let currency = T::PaymentTokenId::get();
@@ -102,8 +104,9 @@ benchmarks! {
 		}
 		let (campaign_id, org_id) = create_org_campaign::<T>(proposer.clone(), 10, Some(members.clone()))?;
 		let bounded_str: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from((0..255).collect());
+		frame_system::Pallet::<T>::set_block_number(3u32.into());
 		let start = frame_system::Pallet::<T>::block_number();
-		let expiry = frame_system::Pallet::<T>::block_number() + 200_u32.into();
+		let expiry = frame_system::Pallet::<T>::block_number() + T::ProposalDurationLimits::get().0;
 		let deposit = T::MinProposalDeposit::get();
 		let amount: T::Balance = 10_000u32.saturated_into();
 		let currency_id = T::PaymentTokenId::get();
@@ -163,8 +166,9 @@ benchmarks! {
 		fund_account::<T>(&caller)?;
 		let (campaign_id, org_id) = create_org_campaign::<T>(caller.clone(), 10, None)?;
 		let bounded_str: BoundedVec<u8, T::StringLimit> = BoundedVec::truncate_from((0..255).collect());
-		let start = frame_system::Pallet::<T>::block_number() + 10_u32.into();
-		let expiry = frame_system::Pallet::<T>::block_number() + 200_u32.into();
+		frame_system::Pallet::<T>::set_block_number(3u32.into());
+		let start = frame_system::Pallet::<T>::block_number();
+		let expiry = frame_system::Pallet::<T>::block_number() + T::ProposalDurationLimits::get().0;
 		let deposit = T::MinProposalDeposit::get();
 		let amount: T::Balance = 10_000u32.saturated_into();
 		let currency_id = T::PaymentTokenId::get();
@@ -186,7 +190,7 @@ benchmarks! {
 				prop.campaign_id, prop.amount, prop.beneficiary, prop.currency_id,
 			)?;
 			// Ensure that proposal exists and Activated
-			assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Created);
+			assert!(ProposalStates::<T>::get(&proposal_id) == ProposalState::Active);
 		}
 
 	}: { Pallet::<T>::on_initialize(start); }
@@ -206,6 +210,6 @@ benchmarks! {
 		}
 	}
 
-	impl_benchmark_test_suite!(Signal, crate::tests::new_test_ext(), crate::tests::Test);
+	impl_benchmark_test_suite!(Signal, crate::mock::ExtBuilder::default().build(), crate::mock::Test);
 
 }

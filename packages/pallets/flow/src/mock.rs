@@ -1,6 +1,5 @@
 #![cfg(test)]
 
-use super::{FlowProtocol, FlowGovernance};
 use sp_std::{vec, vec::Vec, convert::{TryFrom, TryInto}};
 use frame_support::{
 	construct_runtime, parameter_types, PalletId,
@@ -53,7 +52,6 @@ pub const ALICE: AccountId = 11;
 pub const BOB: AccountId = 12;
 
 pub const GAMEDAO_TREASURY: AccountId = 13;
-pub const GAME3_TREASURY: AccountId = 14;
 
 pub const INIT_BALANCE: Balance = 100 * DOLLARS;
 
@@ -66,16 +64,16 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type Origin = Origin;
+	type RuntimeOrigin = RuntimeOrigin;
 	type Index = u64;
 	type BlockNumber = BlockNumber;
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	type Hash = Hash;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = sp_runtime::testing::Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type BlockWeights = ();
 	type BlockLength = ();
@@ -102,19 +100,17 @@ parameter_types! {
 }
 
 impl orml_tokens::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
 	type Amount = Amount;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type ExistentialDeposits = ExistentialDeposits;
-	type OnDust = ();
+	type CurrencyHooks = ();
 	type MaxLocks = ();
 	type MaxReserves = MaxReserves;
-	type OnNewTokenAccount = ();
-	type OnKilledTokenAccount = ();
-	type DustRemovalWhitelist = Nothing;
 	type ReserveIdentifier = ReserveIdentifier;
+	type DustRemovalWhitelist = Nothing;
 }
 
 parameter_types! {
@@ -124,7 +120,7 @@ parameter_types! {
 impl pallet_balances::Config for Test {
 	type Balance = Balance;
 	type DustRemoval = ();
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = frame_system::Pallet<Test>;
 	type MaxLocks = ();
@@ -151,7 +147,7 @@ impl gamedao_control::Config for Test {
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Currency = Currencies;
 	type MaxMembers = ConstU32<10000>;
 	type ProtocolTokenId = ProtocolTokenId;
@@ -166,19 +162,21 @@ parameter_types! {
 	pub const MaxCampaignsPerBlock: u32 = 2;
 	pub const MaxContributorsProcessing: u32 = 4;
 	pub const MinContribution: Balance = 1 * DOLLARS;
-	pub CampaignFee: Permill = Permill::from_rational(1u32, 10u32); // 10%
+	pub CampaignFee: Permill = Permill::from_rational(1u32, 15u32); // 15%
 	pub const GameDAOTreasury: AccountId = GAMEDAO_TREASURY;
 	pub const CampaignDurationLimits: (BlockNumber, BlockNumber) = (1 * DAYS, 100 * DAYS);
 	pub MinCampaignDeposit: Permill = Permill::from_rational(1u32, 10u32); // 10%
 }
 
 impl gamedao_flow::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
 	type WeightInfo = ();
 	type Currency = Currencies;
 	type Control = Control;
+	#[cfg(feature = "runtime-benchmarks")]
+	type ControlBenchmarkHelper = Control;
 	type GameDAOTreasury = GameDAOTreasury;
 	type MinNameLength = MinNameLength;
 	type MaxCampaignsPerBlock = MaxCampaignsPerBlock;
