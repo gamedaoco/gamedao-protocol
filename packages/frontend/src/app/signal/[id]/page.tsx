@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DetailPageLayout } from '@/components/layout/detail-page-layout'
-import { EntityCard } from '@/components/ui/entity-card'
+
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useProposals } from '@/hooks/useProposals'

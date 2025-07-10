@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useAccount } from 'wagmi'
 
-import { Plus, ArrowLeft, Upload, Image, FileText } from 'lucide-react'
+import { Plus, ArrowLeft, Upload, Image as ImageIcon, FileText } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { uploadOrganizationMetadata, uploadFileToIPFS } from '@/lib/ipfs'
 
@@ -264,7 +265,7 @@ export default function CreateOrganizationPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Image className="h-5 w-5" />
+                <ImageIcon className="h-5 w-5" />
                 Images
               </CardTitle>
               <CardDescription>
@@ -280,9 +281,11 @@ export default function CreateOrganizationPage() {
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                       {profileImagePreview ? (
                         <div className="space-y-2">
-                          <img
+                          <Image
                             src={profileImagePreview}
                             alt="Profile preview"
+                            width={96}
+                            height={96}
                             className="w-24 h-24 object-cover rounded-lg mx-auto"
                           />
                           <Button
@@ -335,9 +338,11 @@ export default function CreateOrganizationPage() {
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                       {bannerImagePreview ? (
                         <div className="space-y-2">
-                          <img
+                          <Image
                             src={bannerImagePreview}
                             alt="Banner preview"
+                            width={400}
+                            height={96}
                             className="w-full h-24 object-cover rounded-lg"
                           />
                           <Button

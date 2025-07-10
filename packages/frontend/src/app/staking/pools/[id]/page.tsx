@@ -2,18 +2,15 @@
 
 import { use } from 'react'
 import { DetailPageLayout } from '@/components/layout/detail-page-layout'
-import { ErrorBoundary, ErrorState } from '@/components/ui/error-boundary'
+import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { useStakingPools } from '@/hooks/use-staking-pools'
 import { StakingModal } from '@/components/staking/staking-modal'
-import { Coins, Users, TrendingUp, Clock, Shield, Zap, Target, Calendar, Activity, Share2, Heart } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
-import { formatEther } from 'viem'
+import { Coins, Users, TrendingUp, Clock, Shield, Target, Activity, Share2, Heart } from 'lucide-react'
 import { useState } from 'react'
 
 // Pool configurations
@@ -109,8 +106,6 @@ export default function StakingPoolDetailPage({ params }: StakingPoolDetailPageP
     userStake,
     config,
     isLoading,
-    stake,
-    unstake,
     claimRewards,
     isStaking,
     isUnstaking,
@@ -206,7 +201,7 @@ export default function StakingPoolDetailPage({ params }: StakingPoolDetailPageP
         metadata={[
           {
             label: 'APY',
-            value: `${pool.apyRate.toFixed(2)}%`,
+            value: `${(pool.apy || 0).toFixed(2)}%`,
             icon: <TrendingUp className="h-4 w-4" />
           },
           {
@@ -267,7 +262,7 @@ export default function StakingPoolDetailPage({ params }: StakingPoolDetailPageP
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Annual Percentage Yield</span>
-                    <span className="font-medium text-green-600">{pool.apyRate.toFixed(2)}%</span>
+                    <span className="font-medium text-green-600">{(pool.apy || 0).toFixed(2)}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Active Stakers</span>

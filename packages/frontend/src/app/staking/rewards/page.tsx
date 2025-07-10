@@ -162,7 +162,7 @@ export default function StakingRewardsPage() {
               <Coins className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Active Stakes</h3>
               <p className="text-muted-foreground mb-4">
-                You don't have any active stakes yet. Start staking to earn rewards!
+                You don&apos;t have any active stakes yet. Start staking to earn rewards!
               </p>
               <Button asChild>
                 <a href="/staking">Start Staking</a>
@@ -238,7 +238,7 @@ export default function StakingRewardsPage() {
                     <Button
                       className="w-full"
                       disabled={pendingRewards === 0 || isClaiming}
-                      onClick={() => claimRewards(userStake.pool as any)}
+                      onClick={() => claimRewards(userStake.pool as string)}
                     >
                       {isClaiming
                         ? 'Claiming...'

@@ -80,76 +80,75 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     connectedAddress.toLowerCase() === profileData?.address?.toLowerCase()
   )
 
-  // Mock function to resolve username to address
-  const resolveProfile = async (identifier: string) => {
-    // TODO: Replace with actual contract calls
-    const mockProfiles: { [key: string]: any } = {
-      'alice_gamer': {
-        address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-        username: 'alice_gamer',
-        displayName: 'Alice Cooper',
-        bio: 'Gaming enthusiast and DAO contributor building the future of decentralized gaming. Love RPGs and strategy games!',
-        location: 'San Francisco, CA',
-        website: 'https://alice-gaming.com',
-        twitter: 'alice_gamer',
-        github: 'alice-cooper',
-        verified: true,
-        xp: 2450,
-        level: 12,
-        reputation: 89,
-        trust: 94,
-        followers: 156,
-        following: 89,
-        joinedAt: '2024-01-15',
-        profileCreated: true,
-      },
-      '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266': {
-        address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-        username: 'alice_gamer',
-        displayName: 'Alice Cooper',
-        bio: 'Gaming enthusiast and DAO contributor building the future of decentralized gaming. Love RPGs and strategy games!',
-        location: 'San Francisco, CA',
-        website: 'https://alice-gaming.com',
-        twitter: 'alice_gamer',
-        github: 'alice-cooper',
-        verified: true,
-        xp: 2450,
-        level: 12,
-        reputation: 89,
-        trust: 94,
-        followers: 156,
-        following: 89,
-        joinedAt: '2024-01-15',
-        profileCreated: true,
-      }
-    }
-
-    // Default profile for any address
-    const defaultProfile = {
-      address: isAddress ? identifier : connectedAddress || '0x0000000000000000000000000000000000000000',
-      username: null,
-      displayName: null,
-      bio: null,
-      location: null,
-      website: null,
-      twitter: null,
-      github: null,
-      verified: false,
-      xp: 0,
-      level: 1,
-      reputation: 0,
-      trust: 0,
-      followers: 0,
-      following: 0,
-      joinedAt: null,
-      profileCreated: false,
-    }
-
-    return mockProfiles[identifier] || defaultProfile
-  }
-
   // Load profile data
   useEffect(() => {
+    const resolveProfile = async (identifier: string) => {
+      // TODO: Replace with actual contract calls
+      const mockProfiles: { [key: string]: ProfileData } = {
+        'alice_gamer': {
+          address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+          username: 'alice_gamer',
+          displayName: 'Alice Cooper',
+          bio: 'Gaming enthusiast and DAO contributor building the future of decentralized gaming. Love RPGs and strategy games!',
+          location: 'San Francisco, CA',
+          website: 'https://alice-gaming.com',
+          twitter: 'alice_gamer',
+          github: 'alice-cooper',
+          verified: true,
+          xp: 2450,
+          level: 12,
+          reputation: 89,
+          trust: 94,
+          followers: 156,
+          following: 89,
+          joinedAt: '2024-01-15',
+          profileCreated: true,
+        },
+        '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266': {
+          address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+          username: 'alice_gamer',
+          displayName: 'Alice Cooper',
+          bio: 'Gaming enthusiast and DAO contributor building the future of decentralized gaming. Love RPGs and strategy games!',
+          location: 'San Francisco, CA',
+          website: 'https://alice-gaming.com',
+          twitter: 'alice_gamer',
+          github: 'alice-cooper',
+          verified: true,
+          xp: 2450,
+          level: 12,
+          reputation: 89,
+          trust: 94,
+          followers: 156,
+          following: 89,
+          joinedAt: '2024-01-15',
+          profileCreated: true,
+        }
+      }
+
+      // Default profile for any address
+      const defaultProfile: ProfileData = {
+        address: isAddress ? identifier : connectedAddress || '0x0000000000000000000000000000000000000000',
+        username: null,
+        displayName: null,
+        bio: null,
+        location: null,
+        website: null,
+        twitter: null,
+        github: null,
+        verified: false,
+        xp: 0,
+        level: 1,
+        reputation: 0,
+        trust: 0,
+        followers: 0,
+        following: 0,
+        joinedAt: null,
+        profileCreated: false,
+      }
+
+      return mockProfiles[identifier] || defaultProfile
+    }
+
     const loadProfile = async () => {
       setIsLoading(true)
       try {
@@ -164,7 +163,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     }
 
     loadProfile()
-  }, [id])
+  }, [id, isAddress, connectedAddress])
 
   // Mock achievements and collectibles
   const achievements = [
@@ -204,7 +203,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const handleSaveProfile = async () => {
     try {
       // TODO: Implement profile update logic with contract calls
-      setProfileData({ ...profileData, ...editData, profileCreated: true })
+      if (profileData) {
+        setProfileData({ ...profileData, ...editData, profileCreated: true })
+      }
       setIsEditing(false)
     } catch (error) {
       console.error('Failed to save profile:', error)
@@ -212,7 +213,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   }
 
   const handleCancelEdit = () => {
-    setEditData(profileData)
+    if (profileData) {
+      setEditData(profileData)
+    }
     setIsEditing(false)
   }
 
@@ -257,7 +260,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Profile Not Found</h3>
                 <p className="text-muted-foreground">
-                  The profile you're looking for doesn't exist or hasn't been claimed yet.
+                  The profile you&apos;re looking for doesn&apos;t exist or hasn&apos;t been claimed yet.
                 </p>
               </div>
             </CardContent>
@@ -437,7 +440,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     value={editData.username || ''}
                     onChange={(e) => setEditData({ ...editData, username: e.target.value })}
                     placeholder="your_username"
-                    disabled={profileData.username} // Can't change once set
+                    disabled={!!profileData.username} // Can't change once set
                   />
                   {profileData.username && (
                     <p className="text-xs text-muted-foreground mt-1">
@@ -637,7 +640,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Profile Not Created</h3>
                 <p className="text-muted-foreground">
-                  This user hasn't created their profile yet.
+                  This user hasn&apos;t created their profile yet.
                 </p>
               </div>
             </CardContent>

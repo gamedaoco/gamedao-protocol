@@ -212,7 +212,7 @@ export default function SettingsPage() {
                     <div>
                       <p className="font-medium">Campaign Updates</p>
                       <p className="text-sm text-muted-foreground">
-                        Updates on campaigns you've contributed to
+                        Updates on campaigns you&apos;ve contributed to
                       </p>
                     </div>
                     <Button variant="outline" size="sm">
