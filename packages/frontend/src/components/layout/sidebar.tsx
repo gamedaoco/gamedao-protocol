@@ -9,6 +9,42 @@ import { cn } from '@/lib/utils'
 
 const navigation = [
   {
+    name: 'Organizations',
+    icon: '🏛️',
+    description: 'DAO Management',
+    badge: 'Active',
+    children: [
+      { name: 'All Organizations', href: '/control', icon: '🏢' },
+      { name: 'Create DAO', href: '/control/create', icon: '➕' },
+      { name: 'My Organizations', href: '/control/my-orgs', icon: '👥' },
+      { name: 'Treasury', href: '/control/treasury', icon: '💰' },
+    ]
+  },
+  {
+    name: 'Governance',
+    icon: '🗳️',
+    description: 'Proposals & Voting',
+    badge: 'Active',
+    children: [
+      { name: 'All Proposals', href: '/signal', icon: '📋' },
+      { name: 'Create Proposal', href: '/signal/create', icon: '✍️' },
+      { name: 'My Votes', href: '/signal/voting', icon: '🗳️' },
+      { name: 'Delegation', href: '/signal/delegation', icon: '🤝' },
+    ]
+  },
+  {
+    name: 'Campaigns',
+    icon: '💸',
+    description: 'Crowdfunding',
+    badge: 'Active',
+    children: [
+      { name: 'All Campaigns', href: '/flow', icon: '🎯' },
+      { name: 'Create Campaign', href: '/flow/create', icon: '🚀' },
+      { name: 'My Contributions', href: '/flow/contributions', icon: '💝' },
+      { name: 'Analytics', href: '/flow/analytics', icon: '📊' },
+    ]
+  },
+  {
     name: 'Staking',
     icon: '🪙',
     description: 'Earn Rewards',
@@ -21,51 +57,15 @@ const navigation = [
     ]
   },
   {
-    name: 'Control',
-    icon: '🏛️',
-    description: 'DAO Management',
-    badge: 'Active',
-    children: [
-      { name: 'Organizations', href: '/control', icon: '🏢' },
-      { name: 'Create DAO', href: '/control/create', icon: '➕' },
-      { name: 'Members', href: '/control/members', icon: '👥' },
-      { name: 'Treasury', href: '/control/treasury', icon: '💰' },
-    ]
-  },
-  {
-    name: 'Flow',
-    icon: '💸',
-    description: 'Crowdfunding',
-    badge: 'Active',
-    children: [
-      { name: 'Campaigns', href: '/flow', icon: '🎯' },
-      { name: 'Create Campaign', href: '/flow/create', icon: '🚀' },
-      { name: 'My Contributions', href: '/flow/contributions', icon: '💝' },
-      { name: 'Analytics', href: '/flow/analytics', icon: '📊' },
-    ]
-  },
-  {
-    name: 'Signal',
-    icon: '🗳️',
-    description: 'Governance',
-    badge: 'Active',
-    children: [
-      { name: 'Proposals', href: '/signal', icon: '📋' },
-      { name: 'Create Proposal', href: '/signal/create', icon: '✍️' },
-      { name: 'Voting', href: '/signal/voting', icon: '🗳️' },
-      { name: 'Delegation', href: '/signal/delegation', icon: '🤝' },
-    ]
-  },
-  {
-    name: 'Sense',
+    name: 'Profiles',
     icon: '👤',
     description: 'Identity & Reputation',
-    badge: 'Coming Soon',
+    badge: 'Active',
     children: [
-      { name: 'Profile', href: '/sense/profile', icon: '🆔' },
+      { name: 'My Profile', href: '/sense', icon: '🆔' },
+      { name: 'Create Profile', href: '/sense/create', icon: '➕' },
       { name: 'Achievements', href: '/sense/achievements', icon: '🏆' },
       { name: 'Reputation', href: '/sense/reputation', icon: '⭐' },
-      { name: 'Social', href: '/sense/social', icon: '🌐' },
     ]
   }
 ]

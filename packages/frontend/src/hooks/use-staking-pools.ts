@@ -9,6 +9,25 @@ import { GET_STAKING_POOLS, GET_USER_STAKES, GET_STAKING_STATS } from '@/lib/que
 import { useState, useEffect } from 'react'
 import { formatEther, parseEther } from 'viem'
 
+// Safe BigInt conversion helper
+const safeBigInt = (value: any, fallback: string = '0'): bigint => {
+  if (value === null || value === undefined || value === '') {
+    return BigInt(fallback)
+  }
+
+  const stringValue = String(value).trim()
+  if (stringValue === '' || stringValue === 'null' || stringValue === 'undefined') {
+    return BigInt(fallback)
+  }
+
+  try {
+    return BigInt(stringValue)
+  } catch (error) {
+    console.warn(`Invalid BigInt value: ${value}, using fallback: ${fallback}`)
+    return BigInt(fallback)
+  }
+}
+
 export interface StakingPool {
   id: string
   purpose: string
@@ -130,14 +149,14 @@ export function useStakingPools() {
   const stakingPools: StakingPool[] = poolsData?.stakingPools?.map((pool: any) => ({
     id: pool.id,
     purpose: pool.purpose || 'General Staking',
-    totalStaked: BigInt(pool.totalStaked || '0'),
+    totalStaked: safeBigInt(pool.totalStaked),
     rewardRate: parseFloat(pool.rewardRate) || 0,
-    totalRewardsDistributed: BigInt(pool.totalRewardsDistributed || '0'),
+    totalRewardsDistributed: safeBigInt(pool.totalRewardsDistributed),
     active: pool.active !== false,
     lastUpdateTime: parseInt(pool.lastUpdateTime) || Math.floor(Date.now() / 1000),
     stakersCount: parseInt(pool.stakersCount) || 0,
-    averageStakeAmount: BigInt(pool.averageStakeAmount || '0'),
-    totalRewardsClaimed: BigInt(pool.totalRewardsClaimed || '0'),
+    averageStakeAmount: safeBigInt(pool.averageStakeAmount),
+    totalRewardsClaimed: safeBigInt(pool.totalRewardsClaimed),
     apy: parseFloat(pool.rewardRate) || 0, // Simplified APY calculation
   })) || mockPools
 
@@ -151,20 +170,20 @@ export function useStakingPools() {
       rewardRate: parseFloat(stake.pool.rewardRate),
       active: stake.pool.active,
     },
-    amount: BigInt(stake.amount || '0'),
+    amount: safeBigInt(stake.amount),
     stakedAt: parseInt(stake.stakedAt) || 0,
     lastClaimTime: parseInt(stake.lastClaimTime) || 0,
     preferredStrategy: stake.preferredStrategy || 'COMPOUND',
-    pendingRewards: BigInt(stake.pendingRewards || '0'),
-    totalRewardsClaimed: BigInt(stake.totalRewardsClaimed || '0'),
+    pendingRewards: safeBigInt(stake.pendingRewards),
+    totalRewardsClaimed: safeBigInt(stake.totalRewardsClaimed),
   })) || []
 
   // Transform global stats
   const globalStats: StakingStats = statsData?.stakingStats ? {
-    totalStaked: BigInt(statsData.stakingStats.totalStaked || '0'),
-    totalRewardsDistributed: BigInt(statsData.stakingStats.totalRewardsDistributed || '0'),
-    totalRewardsClaimed: BigInt(statsData.stakingStats.totalRewardsClaimed || '0'),
-    totalSlashed: BigInt(statsData.stakingStats.totalSlashed || '0'),
+    totalStaked: safeBigInt(statsData.stakingStats.totalStaked),
+    totalRewardsDistributed: safeBigInt(statsData.stakingStats.totalRewardsDistributed),
+    totalRewardsClaimed: safeBigInt(statsData.stakingStats.totalRewardsClaimed),
+    totalSlashed: safeBigInt(statsData.stakingStats.totalSlashed),
     activeStakers: parseInt(statsData.stakingStats.activeStakers) || 0,
     totalStakingPools: parseInt(statsData.stakingStats.totalStakingPools) || 0,
     lastUpdated: parseInt(statsData.stakingStats.lastUpdated) || Math.floor(Date.now() / 1000),

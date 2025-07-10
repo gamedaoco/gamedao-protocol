@@ -302,7 +302,7 @@ graph-status:
 dev-full:
 	@echo "$(BLUE)🚀 Starting complete development environment...$(NC)"
 	@echo "$(CYAN)1️⃣  Starting Hardhat node (quiet mode)...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run node:quiet &
+	@cd $(CONTRACTS_DIR) && npm run node &
 	@sleep 3
 	@echo "$(CYAN)2️⃣  Deploying contracts...$(NC)"
 	@cd $(CONTRACTS_DIR) && npm run deploy:localhost
@@ -369,7 +369,9 @@ dev:
 dev-reset:
 	@echo "$(BLUE)🔄 Resetting development environment...$(NC)"
 	@echo "$(CYAN)1️⃣  Killing existing Hardhat processes...$(NC)"
-	@-lsof -ti:8545 | xargs kill -9 2>/dev/null || true
+	@-pkill -f "hardhat node" 2>/dev/null || true
+	@-pkill -f "node.*hardhat.*node" 2>/dev/null || true
+	@sleep 2
 	@echo "$(CYAN)2️⃣  Stopping GameDAO Graph services only...$(NC)"
 	@make graph-stop-safe || true
 	@echo "$(CYAN)3️⃣  Starting Hardhat node (quiet mode)...$(NC)"
@@ -458,7 +460,9 @@ send-tokens:
 dev-scaffold:
 	@echo "$(BLUE)🚀 Starting development environment with test data...$(NC)"
 	@echo "$(CYAN)1️⃣  Killing any existing Hardhat processes...$(NC)"
-	@-lsof -ti:8545 | xargs kill -9 2>/dev/null || true
+	@-pkill -f "hardhat node" 2>/dev/null || true
+	@-pkill -f "node.*hardhat.*node" 2>/dev/null || true
+	@sleep 2
 	@echo "$(CYAN)2️⃣  Stopping GameDAO Graph services only...$(NC)"
 	@make graph-stop-safe || true
 	@echo "$(CYAN)3️⃣  Starting Hardhat node (quiet mode)...$(NC)"

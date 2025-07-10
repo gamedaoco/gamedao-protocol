@@ -6,6 +6,7 @@ import { ArrowRight, Users, DollarSign, Vote, Zap, Target, Coins, Shield, Trophy
 import { useProtocolStats } from '@/hooks/useProtocolStats'
 import { useStakingPools } from '@/hooks/use-staking-pools'
 import { WalletConnection } from '@/components/wallet/wallet-connection'
+import { DebugWeb3Connection } from '@/components/debug-web3-connection'
 import { useRouter } from 'next/navigation'
 
 
@@ -20,6 +21,11 @@ export default function HomePage() {
 
   return (
     <div className="space-y-16">
+      {/* Debug Component - Remove after testing */}
+      <div className="flex justify-center pt-4">
+        <DebugWeb3Connection />
+      </div>
+
       {/* Hero Section */}
       <div className="text-center space-y-8 pt-8">
         <div className="space-y-4">

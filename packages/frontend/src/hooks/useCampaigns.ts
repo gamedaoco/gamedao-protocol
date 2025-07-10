@@ -6,6 +6,30 @@ import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_CAMPAIGNS, GET_USER_CONTRIBUTIONS } from '@/lib/queries'
 import { formatEther, parseEther } from 'viem'
+// Safe BigInt conversion helper
+const safeBigInt = (value: any, fallback: string = '0'): bigint => {
+  if (value === null || value === undefined || value === '') {
+    return BigInt(fallback)
+  }
+  
+  const stringValue = String(value).trim()
+  if (stringValue === '' || stringValue === 'null' || stringValue === 'undefined') {
+    return BigInt(fallback)
+  }
+  
+  // Check if it's a valid number string
+  if (!/^\d+$/.test(stringValue)) {
+    console.warn(`Invalid BigInt value: "${value}", using fallback: ${fallback}`)
+    return BigInt(fallback)
+  }
+  
+  try {
+    return BigInt(stringValue)
+  } catch (error) {
+    console.warn(`BigInt conversion failed for: "${value}", using fallback: ${fallback}`)
+    return BigInt(fallback)
+  }
+}
 import { useAccount } from 'wagmi'
 
 export interface Campaign {
@@ -78,9 +102,9 @@ export function useCampaigns() {
     title: camp.title || `Campaign ${camp.id.slice(0, 8)}`,
     description: camp.description || `Campaign created by ${camp.organization.name}`,
     flowType: camp.flowType || 'GRANT',
-    target: BigInt(camp.target || '0'),
-    deposit: BigInt(camp.deposit || '0'),
-    raised: BigInt(camp.raised || '0'),
+    target: safeBigInt(camp.target),
+    deposit: safeBigInt(camp.deposit),
+    raised: safeBigInt(camp.raised),
     contributorCount: parseInt(camp.contributorCount) || 0,
     state: camp.state || 'CREATED',
     expiry: parseInt(camp.expiry) || 0,
