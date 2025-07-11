@@ -27,7 +27,7 @@ export function handleCampaignCreated(event: CampaignCreated): void {
   campaign.organization = getOrganizationIdString(event.params.organizationId)
   campaign.creator = event.params.creator
   campaign.title = event.params.title
-  campaign.flowType = getFlowTypeString(event.params.flowType)
+  campaign.flowType = getFlowTypeString(BigInt.fromI32(event.params.flowType))
   campaign.target = event.params.target.toBigDecimal()
   campaign.deposit = BigDecimal.fromString("0")
   campaign.expiry = event.params.endTime
@@ -72,7 +72,7 @@ export function handleCampaignStateChanged(event: CampaignStateChanged): void {
   let campaign = Campaign.load(campaignId)
 
   if (campaign != null) {
-    campaign.state = getCampaignStateString(event.params.newState)
+    campaign.state = getCampaignStateString(BigInt.fromI32(event.params.newState))
     campaign.updatedAt = event.params.timestamp
     campaign.save()
   }
@@ -125,7 +125,7 @@ export function handleCampaignFinalized(event: CampaignFinalized): void {
   let campaign = Campaign.load(campaignId)
 
   if (campaign != null) {
-    campaign.state = getCampaignStateString(event.params.finalState)
+    campaign.state = getCampaignStateString(BigInt.fromI32(event.params.finalState))
     campaign.raised = event.params.totalRaised.toBigDecimal()
     campaign.contributorCount = event.params.contributorCount
     campaign.finalizedAt = event.params.timestamp
@@ -189,24 +189,26 @@ export function handleProtocolFeeCollected(event: ProtocolFeeCollected): void {
   protocolFee.save()
 }
 
-function getFlowTypeString(flowType: number): string {
-  if (flowType == 0) return "GRANT"
-  if (flowType == 1) return "RAISE"
-  if (flowType == 2) return "LEND"
-  if (flowType == 3) return "LOAN"
-  if (flowType == 4) return "SHARE"
-  if (flowType == 5) return "POOL"
+function getFlowTypeString(flowType: BigInt): string {
+  let typeInt = flowType.toI32()
+  if (typeInt == 0) return "GRANT"
+  if (typeInt == 1) return "RAISE"
+  if (typeInt == 2) return "LEND"
+  if (typeInt == 3) return "LOAN"
+  if (typeInt == 4) return "SHARE"
+  if (typeInt == 5) return "POOL"
   return "GRANT"
 }
 
-function getCampaignStateString(state: number): string {
-  if (state == 0) return "CREATED"
-  if (state == 1) return "ACTIVE"
-  if (state == 2) return "PAUSED"
-  if (state == 3) return "SUCCEEDED"
-  if (state == 4) return "FAILED"
-  if (state == 5) return "FINALIZED"
-  if (state == 6) return "CANCELLED"
+function getCampaignStateString(state: BigInt): string {
+  let stateInt = state.toI32()
+  if (stateInt == 0) return "CREATED"
+  if (stateInt == 1) return "ACTIVE"
+  if (stateInt == 2) return "PAUSED"
+  if (stateInt == 3) return "SUCCEEDED"
+  if (stateInt == 4) return "FAILED"
+  if (stateInt == 5) return "FINALIZED"
+  if (stateInt == 6) return "CANCELLED"
   return "CREATED"
 }
 

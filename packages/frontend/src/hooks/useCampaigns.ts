@@ -8,6 +8,7 @@ import { GET_CAMPAIGNS, GET_USER_CAMPAIGNS } from '@/lib/queries'
 import { useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { useToast } from './use-toast'
+import { toContractId } from '@/lib/id-utils'
 
 export interface Campaign {
   id: string
@@ -133,7 +134,7 @@ export function useCampaigns() {
         abi: ABIS.FLOW,
         functionName: 'createCampaign',
         args: [
-          params.organizationId,
+          toContractId(params.organizationId),
           params.title,
           params.metadataURI || '',
           params.flowType,
