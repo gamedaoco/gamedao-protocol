@@ -389,6 +389,35 @@ export const GET_USER_ORGANIZATIONS = gql`
   }
 `
 
+export const GET_USER_CAMPAIGNS = gql`
+  query GetUserCampaigns($user: Bytes!, $first: Int = 50) {
+    campaigns(
+      where: { creator: $user }
+      first: $first
+      orderBy: createdAt
+      orderDirection: desc
+    ) {
+      id
+      organization {
+        id
+        name
+      }
+      creator
+      flowType
+      title
+      description
+      target
+      deposit
+      raised
+      contributorCount
+      state
+      expiry
+      createdAt
+      updatedAt
+    }
+  }
+`
+
 export const GET_USER_CONTRIBUTIONS = gql`
   query GetUserContributions($user: Bytes!, $first: Int = 50) {
     contributions(

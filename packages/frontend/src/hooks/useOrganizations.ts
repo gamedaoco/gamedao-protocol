@@ -8,6 +8,7 @@ import { GET_ORGANIZATIONS, GET_USER_ORGANIZATIONS } from '@/lib/queries'
 import { useEffect, useState, useMemo } from 'react'
 import { useAccount } from 'wagmi'
 import { useToast } from './use-toast'
+import { extractOrganizationIdFromLogs, toContractId } from '@/lib/id-utils'
 
 
 export interface Organization {
@@ -180,26 +181,10 @@ export function useOrganizations() {
         console.log('🔍 Parsing transaction receipt for organization ID...')
         console.log('🔍 Transaction logs:', transactionReceipt.logs.length)
 
-        // Find the OrganizationCreated event in the logs
-        const organizationCreatedEvent = transactionReceipt.logs.find((log: any) => {
-          // Check if this log is from the Control contract
-          const isFromControlContract = log.address.toLowerCase() === contracts.CONTROL.toLowerCase()
-          console.log('🔍 Log from Control contract:', isFromControlContract, log.address)
-
-          // Check if this log has the expected number of topics for OrganizationCreated
-          const hasCorrectTopics = log.topics && log.topics.length === 4
-          console.log('🔍 Log has correct topics:', hasCorrectTopics, log.topics?.length)
-
-          return isFromControlContract && hasCorrectTopics
-        })
-
-        if (organizationCreatedEvent) {
-          // The first topic is the event signature, the second is the organization ID
-          const orgId = organizationCreatedEvent.topics[1]
+        const orgId = extractOrganizationIdFromLogs(transactionReceipt.logs, contracts.CONTROL)
+        if (orgId) {
           console.log('🎉 Found organization ID:', orgId)
-          if (orgId) {
-            setCreatedOrgId(orgId)
-          }
+          setCreatedOrgId(orgId)
         } else {
           console.warn('⚠️ OrganizationCreated event not found in transaction logs')
         }
@@ -300,7 +285,7 @@ export function useOrganizations() {
         address: contracts.CONTROL,
         abi: ABIS.CONTROL,
         functionName: 'addMember',
-        args: [organizationId, address],
+        args: [toContractId(organizationId), address],
       })
 
       console.log('🎉 Join organization transaction submitted:', result)

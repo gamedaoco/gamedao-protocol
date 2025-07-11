@@ -42,9 +42,9 @@ export function handleProposalCreated(event: ProposalCreated): void {
   proposal.proposer = memberId
   proposal.title = event.params.title
   proposal.description = '' // Will be updated if needed
-  proposal.proposalType = getProposalType(event.params.proposalType)
-  proposal.votingType = getVotingType(event.params.votingType)
-  proposal.votingPowerModel = getVotingPowerModel(event.params.votingPower)
+  proposal.proposalType = getProposalType(BigInt.fromI32(event.params.proposalType))
+  proposal.votingType = getVotingType(BigInt.fromI32(event.params.votingType))
+  proposal.votingPowerModel = getVotingPowerModel(BigInt.fromI32(event.params.votingPower))
   proposal.state = 'PENDING'
   proposal.startTime = event.params.startTime
   proposal.endTime = event.params.endTime
@@ -75,7 +75,7 @@ export function handleProposalStateChanged(event: ProposalStateChanged): void {
     return
   }
 
-  proposal.state = getProposalState(event.params.newState)
+  proposal.state = getProposalState(BigInt.fromI32(event.params.newState))
   proposal.updatedAt = event.block.timestamp
 
   proposal.save()
@@ -213,8 +213,9 @@ export function handleVotingPowerUndelegated(event: VotingPowerUndelegated): voi
 }
 
 // Helper functions
-function getProposalType(type: number): string {
-  switch (type) {
+function getProposalType(type: BigInt): string {
+  let typeInt = type.toI32()
+  switch (typeInt) {
     case 0: return 'SIMPLE'
     case 1: return 'PARAMETRIC'
     case 2: return 'TREASURY'
@@ -224,8 +225,9 @@ function getProposalType(type: number): string {
   }
 }
 
-function getVotingType(type: number): string {
-  switch (type) {
+function getVotingType(type: BigInt): string {
+  let typeInt = type.toI32()
+  switch (typeInt) {
     case 0: return 'RELATIVE'
     case 1: return 'ABSOLUTE'
     case 2: return 'SUPERMAJORITY'
@@ -234,8 +236,9 @@ function getVotingType(type: number): string {
   }
 }
 
-function getVotingPowerModel(model: number): string {
-  switch (model) {
+function getVotingPowerModel(model: BigInt): string {
+  let modelInt = model.toI32()
+  switch (modelInt) {
     case 0: return 'DEMOCRATIC'
     case 1: return 'TOKEN_WEIGHTED'
     case 2: return 'QUADRATIC'
@@ -244,8 +247,9 @@ function getVotingPowerModel(model: number): string {
   }
 }
 
-function getProposalState(state: number): string {
-  switch (state) {
+function getProposalState(state: BigInt): string {
+  let stateInt = state.toI32()
+  switch (stateInt) {
     case 0: return 'PENDING'
     case 1: return 'ACTIVE'
     case 2: return 'QUEUED'
