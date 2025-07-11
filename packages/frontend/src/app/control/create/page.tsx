@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,9 +9,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useGameDAO } from '@/hooks/useGameDAO'
+import { useOrganizations } from '@/hooks/useOrganizations'
 import { useAccount } from 'wagmi'
 
-import { Plus, ArrowLeft, Upload, Image as ImageIcon, FileText } from 'lucide-react'
+import { Plus, ArrowLeft, Upload, Image as ImageIcon, FileText, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
@@ -26,7 +27,8 @@ const MDEditor = dynamic(
 export default function CreateOrganizationPage() {
   const router = useRouter()
   const { isConnected } = useAccount()
-  const { contracts } = useGameDAO()
+  const { contracts, contractsValid, chainId } = useGameDAO()
+  const { createOrganization, isCreating, createSuccess, createError, createdOrgId } = useOrganizations()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -50,21 +52,58 @@ export default function CreateOrganizationPage() {
   const [profileImagePreview, setProfileImagePreview] = useState<string>('')
   const [bannerImagePreview, setBannerImagePreview] = useState<string>('')
 
-  const [isCreating, setIsCreating] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
 
+  console.log('🔍 Create page state:', {
+    isConnected,
+    contracts,
+    contractsValid,
+    chainId,
+    isCreating,
+    createSuccess,
+    createError: createError?.message,
+    createdOrgId,
+    profileImagePreview: !!profileImagePreview,
+    bannerImagePreview: !!bannerImagePreview,
+    profileImageLength: profileImagePreview?.length || 0,
+    bannerImageLength: bannerImagePreview?.length || 0,
+    renderTime: new Date().toISOString()
+  })
+
+  // Handle success state
+  useEffect(() => {
+    if (createSuccess && createdOrgId) {
+      console.log('🎉 Organization created successfully! Redirecting to:', createdOrgId)
+      // Redirect to the specific organization page
+      router.push(`/control/${createdOrgId}`)
+    } else if (createSuccess) {
+      console.log('🎉 Organization created successfully! Redirecting to control page...')
+      // Fallback to control page if no org ID
+      router.push('/control')
+    }
+  }, [createSuccess, createdOrgId, router])
+
   const handleImageUpload = (file: File, type: 'profile' | 'banner') => {
+    console.log('🖼️ Image upload triggered:', { fileName: file.name, fileSize: file.size, type })
+
     if (file) {
       const reader = new FileReader()
       reader.onload = (e) => {
         const preview = e.target?.result as string
+        console.log('🖼️ Image preview generated:', { type, previewLength: preview.length })
+
         if (type === 'profile') {
           setProfileImage(file)
           setProfileImagePreview(preview)
+          console.log('🖼️ Profile image set:', { hasFile: !!file, hasPreview: !!preview })
         } else {
           setBannerImage(file)
           setBannerImagePreview(preview)
+          console.log('🖼️ Banner image set:', { hasFile: !!file, hasPreview: !!preview })
         }
+      }
+      reader.onerror = (error) => {
+        console.error('❌ FileReader error:', error)
       }
       reader.readAsDataURL(file)
     }
@@ -72,9 +111,15 @@ export default function CreateOrganizationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isConnected || !contracts) return
+    console.log('📝 Form submitted!')
+    console.log('📋 Form data:', formData)
 
-    setIsCreating(true)
+    if (!isConnected || !contracts) {
+      console.error('❌ Prerequisites not met:', { isConnected, contracts })
+      return
+    }
+
+    console.log('✅ Prerequisites met, starting creation process...')
     setUploadProgress('Preparing metadata...')
 
     try {
@@ -84,20 +129,34 @@ export default function CreateOrganizationPage() {
 
       if (profileImage) {
         setUploadProgress('Uploading profile image to IPFS...')
-        const result = await uploadFileToIPFS(profileImage, {
-          name: `${formData.name} Profile Image`,
-          description: `Profile image for ${formData.name} organization`
-        })
-        profileImageUrl = result.url
+        console.log('📤 Uploading profile image:', profileImage)
+        try {
+          const result = await uploadFileToIPFS(profileImage, {
+            name: `${formData.name} Profile Image`,
+            description: `Profile image for ${formData.name} organization`
+          })
+          profileImageUrl = result.url
+          console.log('✅ Profile image uploaded:', result)
+        } catch (error) {
+          console.error('❌ Profile image upload failed:', error)
+          throw new Error(`Profile image upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
       }
 
       if (bannerImage) {
         setUploadProgress('Uploading banner image to IPFS...')
-        const result = await uploadFileToIPFS(bannerImage, {
-          name: `${formData.name} Banner Image`,
-          description: `Banner image for ${formData.name} organization`
-        })
-        bannerImageUrl = result.url
+        console.log('📤 Uploading banner image:', bannerImage)
+        try {
+          const result = await uploadFileToIPFS(bannerImage, {
+            name: `${formData.name} Banner Image`,
+            description: `Banner image for ${formData.name} organization`
+          })
+          bannerImageUrl = result.url
+          console.log('✅ Banner image uploaded:', result)
+        } catch (error) {
+          console.error('❌ Banner image upload failed:', error)
+          throw new Error(`Banner image upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
       }
 
       // Create metadata object
@@ -116,27 +175,52 @@ export default function CreateOrganizationPage() {
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
       }
 
+      console.log('📋 Created metadata object:', metadata)
+
       // Upload metadata to IPFS
       setUploadProgress('Uploading metadata to IPFS...')
-      const metadataResult = await uploadOrganizationMetadata(metadata)
+      console.log('📤 Uploading metadata to IPFS...')
+      try {
+        const metadataResult = await uploadOrganizationMetadata(metadata)
+        console.log('✅ Metadata uploaded:', metadataResult)
 
-      setUploadProgress('Creating organization on blockchain...')
+        setUploadProgress('Creating organization on blockchain...')
 
-      // Note: This would need to be implemented with proper contract calls
-      // For now, simulating the creation
-      console.log('Organization metadata uploaded to:', metadataResult.url)
-      console.log('Creating organization with metadata URI:', metadataResult.url)
+        // Use the actual hook to create organization
+        const contractParams = {
+          name: formData.name,
+          metadataURI: metadataResult.url,
+          orgType: parseInt(formData.orgType),
+          accessModel: parseInt(formData.accessModel),
+          feeModel: parseInt(formData.feeModel),
+          memberLimit: parseInt(formData.memberLimit),
+          membershipFee: formData.membershipFee,
+          gameStakeRequired: formData.stakeAmount,
+        }
 
-      // Simulate blockchain transaction
-      await new Promise(resolve => setTimeout(resolve, 2000))
+        console.log('📋 Final contract parameters:', contractParams)
 
-      // Redirect to organizations page
-      router.push('/control')
+        await createOrganization(contractParams)
+
+        console.log('✅ createOrganization call completed!')
+        // Success will be handled by the hook's effect
+        setUploadProgress('')
+      } catch (error) {
+        console.error('❌ Metadata upload failed:', error)
+        throw new Error(`Metadata upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
+
     } catch (error) {
-      console.error('Failed to create organization:', error)
+      console.error('❌ Failed to create organization:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('❌ Error details:', {
+        message: errorMessage,
+        error: error,
+        stack: error instanceof Error ? error.stack : undefined
+      })
       setUploadProgress('')
-    } finally {
-      setIsCreating(false)
+      // Show error message to user
+      alert(`Failed to create organization: ${errorMessage}`)
     }
   }
 
@@ -180,342 +264,409 @@ export default function CreateOrganizationPage() {
           </div>
         </div>
 
+        {/* Loading Overlay */}
+        {isCreating && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+              <div className="flex flex-col items-center space-y-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-2">Creating Organization</h3>
+                  <p className="text-muted-foreground text-sm">
+                    {uploadProgress || 'Please wait while we create your organization...'}
+                  </p>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-500"
+                    style={{
+                      width: uploadProgress.includes('blockchain') ? '100%' :
+                             uploadProgress.includes('metadata') ? '75%' :
+                             uploadProgress.includes('banner') ? '50%' :
+                             uploadProgress.includes('profile') ? '25%' : '10%'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Overlay */}
+        {createSuccess && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-2 text-green-800">Organization Created!</h3>
+                  <p className="text-muted-foreground text-sm">
+                    {createdOrgId ? 'Redirecting to your new organization...' : 'Redirecting to organizations page...'}
+                  </p>
+                </div>
+                <div className="w-full bg-green-200 rounded-full h-2">
+                  <div className="bg-green-600 h-2 rounded-full w-full animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Basic Information
-              </CardTitle>
-              <CardDescription>
-                Essential details about your organization
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Dimmed overlay for form during transaction */}
+          <div className={`${isCreating ? 'opacity-50 pointer-events-none' : ''} transition-opacity duration-300`}>
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Basic Information
+                </CardTitle>
+                <CardDescription>
+                  Essential details about your organization
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Organization Name *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      placeholder="Enter organization name"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      type="url"
+                      value={formData.website}
+                      onChange={(e) => handleInputChange('website', e.target.value)}
+                      placeholder="https://yourwebsite.com"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <Label htmlFor="name">Organization Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="Enter organization name"
+                  <Label htmlFor="description">Short Description *</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    placeholder="Brief description of your organization (max 200 characters)"
+                    rows={3}
+                    maxLength={200}
                     required
                   />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {formData.description.length}/200 characters
+                  </p>
                 </div>
 
                 <div>
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    type="url"
-                    value={formData.website}
-                    onChange={(e) => handleInputChange('website', e.target.value)}
-                    placeholder="https://yourwebsite.com"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="description">Short Description *</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Brief description of your organization (max 200 characters)"
-                  rows={3}
-                  maxLength={200}
-                  required
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  {formData.description.length}/200 characters
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="longDescription">Detailed Description</Label>
-                <div className="mt-2">
-                  <MDEditor
-                    value={formData.longDescription}
-                    onChange={(value) => handleInputChange('longDescription', value || '')}
-                    preview="edit"
-                    hideToolbar={false}
-                    data-color-mode="light"
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Use markdown to format your detailed description
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="tags">Tags</Label>
-                <Input
-                  id="tags"
-                  value={formData.tags}
-                  onChange={(e) => handleInputChange('tags', e.target.value)}
-                  placeholder="gaming, defi, nft, dao (comma-separated)"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Images */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ImageIcon className="h-5 w-5" />
-                Images
-              </CardTitle>
-              <CardDescription>
-                Upload profile and banner images for your organization
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Profile Image */}
-                <div>
-                  <Label>Profile Image</Label>
+                  <Label htmlFor="longDescription">Detailed Description</Label>
                   <div className="mt-2">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      {profileImagePreview ? (
-                        <div className="space-y-2">
-                          <Image
-                            src={profileImagePreview}
-                            alt="Profile preview"
-                            width={96}
-                            height={96}
-                            className="w-24 h-24 object-cover rounded-lg mx-auto"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setProfileImage(null)
-                              setProfileImagePreview('')
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Upload className="h-8 w-8 mx-auto text-gray-400" />
-                          <div>
+                    <MDEditor
+                      value={formData.longDescription}
+                      onChange={(value) => handleInputChange('longDescription', value || '')}
+                      preview="edit"
+                      hideToolbar={false}
+                      data-color-mode="light"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Use markdown to format your detailed description
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="tags">Tags</Label>
+                  <Input
+                    id="tags"
+                    value={formData.tags}
+                    onChange={(e) => handleInputChange('tags', e.target.value)}
+                    placeholder="gaming, defi, nft, dao (comma-separated)"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Images */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Images
+                </CardTitle>
+                <CardDescription>
+                  Upload profile and banner images for your organization
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Profile Image */}
+                  <div>
+                    <Label>Profile Image</Label>
+                    <div className="mt-2">
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        {profileImagePreview ? (
+                          <div className="space-y-2">
+                            <Image
+                              src={profileImagePreview}
+                              alt="Profile preview"
+                              width={96}
+                              height={96}
+                              className="w-24 h-24 object-cover rounded-lg mx-auto"
+                            />
                             <Button
                               type="button"
                               variant="outline"
-                              onClick={() => document.getElementById('profile-image')?.click()}
-                            >
-                              Choose Image
-                            </Button>
-                            <input
-                              id="profile-image"
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) handleImageUpload(file, 'profile')
+                              size="sm"
+                              onClick={() => {
+                                setProfileImage(null)
+                                setProfileImagePreview('')
                               }}
-                            />
+                            >
+                              Remove
+                            </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            Recommended: 400x400px, max 2MB
-                          </p>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="space-y-2">
+                            <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                            <div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => document.getElementById('profile-image')?.click()}
+                              >
+                                Choose Image
+                              </Button>
+                              <input
+                                id="profile-image"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  console.log('📁 Profile image input changed:', e.target.files)
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    console.log('📁 Profile image file selected:', { name: file.name, size: file.size, type: file.type })
+                                    handleImageUpload(file, 'profile')
+                                  } else {
+                                    console.log('📁 No profile image file selected')
+                                  }
+                                }}
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Recommended: 400x400px, max 2MB
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Banner Image */}
-                <div>
-                  <Label>Banner Image</Label>
-                  <div className="mt-2">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      {bannerImagePreview ? (
-                        <div className="space-y-2">
-                          <Image
-                            src={bannerImagePreview}
-                            alt="Banner preview"
-                            width={400}
-                            height={96}
-                            className="w-full h-24 object-cover rounded-lg"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setBannerImage(null)
-                              setBannerImagePreview('')
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Upload className="h-8 w-8 mx-auto text-gray-400" />
-                          <div>
+                  {/* Banner Image */}
+                  <div>
+                    <Label>Banner Image</Label>
+                    <div className="mt-2">
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        {bannerImagePreview ? (
+                          <div className="space-y-2">
+                            <Image
+                              src={bannerImagePreview}
+                              alt="Banner preview"
+                              width={400}
+                              height={96}
+                              className="w-full h-24 object-cover rounded-lg"
+                            />
                             <Button
                               type="button"
                               variant="outline"
-                              onClick={() => document.getElementById('banner-image')?.click()}
-                            >
-                              Choose Image
-                            </Button>
-                            <input
-                              id="banner-image"
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) handleImageUpload(file, 'banner')
+                              size="sm"
+                              onClick={() => {
+                                setBannerImage(null)
+                                setBannerImagePreview('')
                               }}
-                            />
+                            >
+                              Remove
+                            </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            Recommended: 1200x300px, max 5MB
-                          </p>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="space-y-2">
+                            <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                            <div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => document.getElementById('banner-image')?.click()}
+                              >
+                                Choose Image
+                              </Button>
+                              <input
+                                id="banner-image"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  console.log('📁 Banner image input changed:', e.target.files)
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    console.log('📁 Banner image file selected:', { name: file.name, size: file.size, type: file.type })
+                                    handleImageUpload(file, 'banner')
+                                  } else {
+                                    console.log('📁 No banner image file selected')
+                                  }
+                                }}
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Recommended: 1200x300px, max 5MB
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Social Links */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Social Links</CardTitle>
-              <CardDescription>
-                Connect your organization&apos;s social media presence
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="twitter">Twitter</Label>
-                  <Input
-                    id="twitter"
-                    value={formData.twitter}
-                    onChange={(e) => handleInputChange('twitter', e.target.value)}
-                    placeholder="@username"
-                  />
+            {/* Social Links */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Social Links</CardTitle>
+                <CardDescription>
+                  Connect your organization&apos;s social media presence
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="twitter">Twitter</Label>
+                    <Input
+                      id="twitter"
+                      value={formData.twitter}
+                      onChange={(e) => handleInputChange('twitter', e.target.value)}
+                      placeholder="@username"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="discord">Discord</Label>
+                    <Input
+                      id="discord"
+                      value={formData.discord}
+                      onChange={(e) => handleInputChange('discord', e.target.value)}
+                      placeholder="Discord server invite"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="github">GitHub</Label>
+                    <Input
+                      id="github"
+                      value={formData.github}
+                      onChange={(e) => handleInputChange('github', e.target.value)}
+                      placeholder="organization/repo"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Governance Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Governance Settings</CardTitle>
+                <CardDescription>
+                  Configure how your organization operates
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="accessModel">Access Model</Label>
+                    <Select value={formData.accessModel} onValueChange={(value) => handleInputChange('accessModel', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Open - Anyone can join</SelectItem>
+                        <SelectItem value="1">Invite - Invitation required</SelectItem>
+                        <SelectItem value="2">Voting - Members vote on new members</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="memberLimit">Member Limit</Label>
+                    <Input
+                      id="memberLimit"
+                      type="number"
+                      value={formData.memberLimit}
+                      onChange={(e) => handleInputChange('memberLimit', e.target.value)}
+                      placeholder="20"
+                      min="1"
+                      max="1000"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="feeModel">Fee Model</Label>
+                    <Select value={formData.feeModel} onValueChange={(value) => handleInputChange('feeModel', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">No Fees</SelectItem>
+                        <SelectItem value="1">Fixed Fee</SelectItem>
+                        <SelectItem value="2">Percentage Fee</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="membershipFee">Membership Fee (ETH)</Label>
+                    <Input
+                      id="membershipFee"
+                      type="number"
+                      step="0.001"
+                      value={formData.membershipFee}
+                      onChange={(e) => handleInputChange('membershipFee', e.target.value)}
+                      placeholder="0.0"
+                      min="0"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="discord">Discord</Label>
+                <div className="mt-4">
+                  <Label htmlFor="stakeAmount">GAME Token Stake *</Label>
                   <Input
-                    id="discord"
-                    value={formData.discord}
-                    onChange={(e) => handleInputChange('discord', e.target.value)}
-                    placeholder="Discord server invite"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="github">GitHub</Label>
-                  <Input
-                    id="github"
-                    value={formData.github}
-                    onChange={(e) => handleInputChange('github', e.target.value)}
-                    placeholder="organization/repo"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Governance Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Governance Settings</CardTitle>
-              <CardDescription>
-                Configure how your organization operates
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="accessModel">Access Model</Label>
-                  <Select value={formData.accessModel} onValueChange={(value) => handleInputChange('accessModel', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Open - Anyone can join</SelectItem>
-                      <SelectItem value="1">Invite - Invitation required</SelectItem>
-                      <SelectItem value="2">Voting - Members vote on new members</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="memberLimit">Member Limit</Label>
-                  <Input
-                    id="memberLimit"
+                    id="stakeAmount"
                     type="number"
-                    value={formData.memberLimit}
-                    onChange={(e) => handleInputChange('memberLimit', e.target.value)}
-                    placeholder="20"
-                    min="1"
-                    max="1000"
+                    value={formData.stakeAmount}
+                    onChange={(e) => handleInputChange('stakeAmount', e.target.value)}
+                    placeholder="1000"
+                    min="100"
+                    required
                   />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Minimum 100 GAME tokens required to create an organization
+                  </p>
                 </div>
-
-                <div>
-                  <Label htmlFor="feeModel">Fee Model</Label>
-                  <Select value={formData.feeModel} onValueChange={(value) => handleInputChange('feeModel', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">No Fees</SelectItem>
-                      <SelectItem value="1">Fixed Fee</SelectItem>
-                      <SelectItem value="2">Percentage Fee</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="membershipFee">Membership Fee (ETH)</Label>
-                  <Input
-                    id="membershipFee"
-                    type="number"
-                    step="0.001"
-                    value={formData.membershipFee}
-                    onChange={(e) => handleInputChange('membershipFee', e.target.value)}
-                    placeholder="0.0"
-                    min="0"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <Label htmlFor="stakeAmount">GAME Token Stake *</Label>
-                <Input
-                  id="stakeAmount"
-                  type="number"
-                  value={formData.stakeAmount}
-                  onChange={(e) => handleInputChange('stakeAmount', e.target.value)}
-                  placeholder="1000"
-                  min="100"
-                  required
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Minimum 100 GAME tokens required to create an organization
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Submit */}
           <div className="flex gap-4">
@@ -526,6 +677,7 @@ export default function CreateOrganizationPage() {
             >
               {isCreating ? (
                 <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {uploadProgress || 'Creating Organization...'}
                 </>
               ) : (
@@ -536,7 +688,13 @@ export default function CreateOrganizationPage() {
               )}
             </Button>
             <Link href="/control">
-              <Button type="button" variant="outline">Cancel</Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isCreating}
+              >
+                Cancel
+              </Button>
             </Link>
           </div>
         </form>

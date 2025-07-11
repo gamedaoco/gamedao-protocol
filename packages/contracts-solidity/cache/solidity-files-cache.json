@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/core/GameDAOModule.sol": {
-      "lastModificationDate": 1752130047186,
-      "contentHash": "8e932ab78dfed47bd8115037c079add8",
+      "lastModificationDate": 1752138978257,
+      "contentHash": "b613e8df3ee3a717c0b26fd004c9a446",
       "sourceName": "contracts/core/GameDAOModule.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -46,8 +46,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IGameDAOModule.sol": {
-      "lastModificationDate": 1750449113353,
-      "contentHash": "bed2ef03883e6e24a21508acedd31b8a",
+      "lastModificationDate": 1752138927826,
+      "contentHash": "f8e54566b7de9bfa1d70791be68b4498",
       "sourceName": "contracts/interfaces/IGameDAOModule.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -83,8 +83,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IGameDAORegistry.sol": {
-      "lastModificationDate": 1750446748531,
-      "contentHash": "ebb4aafe39fa731288180adf97ef97a6",
+      "lastModificationDate": 1752138931207,
+      "contentHash": "bf2478df030d2b960935eb29089e9eb1",
       "sourceName": "contracts/interfaces/IGameDAORegistry.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -502,8 +502,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Control/Control.sol": {
-      "lastModificationDate": 1752130047191,
-      "contentHash": "914f0189117593dda01bf5d7ca82fc88",
+      "lastModificationDate": 1752173273646,
+      "contentHash": "85a32fc2bfdc470dc11275973e339085",
       "sourceName": "contracts/modules/Control/Control.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -535,6 +535,7 @@
         "../../core/Treasury.sol",
         "../../interfaces/IControl.sol",
         "../../interfaces/IGameToken.sol",
+        "../../libraries/AlphanumericID.sol",
         "@openzeppelin/contracts/utils/structs/EnumerableSet.sol",
         "@openzeppelin/contracts/utils/Counters.sol",
         "@openzeppelin/contracts/security/ReentrancyGuard.sol"
@@ -547,8 +548,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IGameToken.sol": {
-      "lastModificationDate": 1752130047188,
-      "contentHash": "6fd3a798cfdc5afe7a052eb657e6009f",
+      "lastModificationDate": 1752138916908,
+      "contentHash": "b32a52dcd8cfef5d00f12acc4f1718dd",
       "sourceName": "contracts/interfaces/IGameToken.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -586,8 +587,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IControl.sol": {
-      "lastModificationDate": 1751153961265,
-      "contentHash": "123fada682566bf6165c927fca9c5a10",
+      "lastModificationDate": 1752173224871,
+      "contentHash": "d2239ec70d20b77555827859e28d27ce",
       "sourceName": "contracts/interfaces/IControl.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -623,8 +624,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/core/Treasury.sol": {
-      "lastModificationDate": 1752130047187,
-      "contentHash": "cc393051c41d1cb6e08a0a047ef9ca4f",
+      "lastModificationDate": 1752138974750,
+      "contentHash": "7f71369e1a2ddcfdc31764029ee20141",
       "sourceName": "contracts/core/Treasury.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -892,8 +893,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/core/GameDAORegistry.sol": {
-      "lastModificationDate": 1752130047186,
-      "contentHash": "f87dccadb03ecc1f82879f2cdfcd9070",
+      "lastModificationDate": 1752138988003,
+      "contentHash": "890c1aedc5ee4d5f74cf423cfd034d0f",
       "sourceName": "contracts/core/GameDAORegistry.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -936,8 +937,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IFlow.sol": {
-      "lastModificationDate": 1751154504743,
-      "contentHash": "73abd943a775420748a067441b0ae125",
+      "lastModificationDate": 1752173310222,
+      "contentHash": "5bc826062eec6edde8a27017623f5da9",
       "sourceName": "contracts/interfaces/IFlow.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -973,8 +974,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Flow/Flow.sol": {
-      "lastModificationDate": 1752130047191,
-      "contentHash": "61fc5567955a5cbabaecb0955254661a",
+      "lastModificationDate": 1752173360877,
+      "contentHash": "c8ec1adb48ec070d0ca96b3c50fe74c4",
       "sourceName": "contracts/modules/Flow/Flow.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1017,8 +1018,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Signal/Signal.sol": {
-      "lastModificationDate": 1752130047192,
-      "contentHash": "7b48e9dfc60d735cc1f2d8de07d9dc1e",
+      "lastModificationDate": 1752224537193,
+      "contentHash": "1dabd1307c50a8203d4679088ecbd620",
       "sourceName": "contracts/modules/Signal/Signal.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1061,8 +1062,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/ISignal.sol": {
-      "lastModificationDate": 1751155038828,
-      "contentHash": "b9de4d0717e389c5b913ad2e886e9eb2",
+      "lastModificationDate": 1752173440040,
+      "contentHash": "3c6f9dd547ff9d1674d5e1595bdb2e98",
       "sourceName": "contracts/interfaces/ISignal.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1098,8 +1099,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Sense/Sense.sol": {
-      "lastModificationDate": 1752130047192,
-      "contentHash": "8a8a7115ab27a23cbeb3e725a1ae9107",
+      "lastModificationDate": 1752224569255,
+      "contentHash": "49b469ce4986d035f404c795b1a644ec",
       "sourceName": "contracts/modules/Sense/Sense.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1141,8 +1142,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/ISense.sol": {
-      "lastModificationDate": 1751155076138,
-      "contentHash": "d045b5724581a64eb71893295c3b7b68",
+      "lastModificationDate": 1752173504299,
+      "contentHash": "85e5e4f99249025e67dd297045a0976c",
       "sourceName": "contracts/interfaces/ISense.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1215,8 +1216,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/mocks/MockGameToken.sol": {
-      "lastModificationDate": 1752130047190,
-      "contentHash": "84b1bb7ac12b8877e8d7732b8104e424",
+      "lastModificationDate": 1752138956722,
+      "contentHash": "c55ac1ee2ce74f3035a82226d069e067",
       "sourceName": "contracts/mocks/MockGameToken.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1256,8 +1257,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/mocks/MockUSDC.sol": {
-      "lastModificationDate": 1752130047191,
-      "contentHash": "6fd8a8971818681617df7a36069d80b8",
+      "lastModificationDate": 1752138952826,
+      "contentHash": "10f865013b1a2ccb53c29a76e6f1aa9d",
       "sourceName": "contracts/mocks/MockUSDC.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1296,8 +1297,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/staking/GameStaking.sol": {
-      "lastModificationDate": 1752130047192,
-      "contentHash": "31fa24692e4072e43f27d4204ac0fce9",
+      "lastModificationDate": 1752138938589,
+      "contentHash": "b6941c72b8996b6f2a1c219e1f9a1853",
       "sourceName": "contracts/staking/GameStaking.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -2142,6 +2143,82 @@
       ],
       "artifacts": [
         "MerkleProof"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/libraries/AlphanumericID.sol": {
+      "lastModificationDate": 1752173200862,
+      "contentHash": "7a11438ca39fcc65d8a6166d04c49e14",
+      "sourceName": "contracts/libraries/AlphanumericID.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "AlphanumericID"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/test/AlphanumericIDTest.sol": {
+      "lastModificationDate": 1752227527002,
+      "contentHash": "fef8d0930dcc9ec5e69404c2d7dbc2c0",
+      "sourceName": "contracts/test/AlphanumericIDTest.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../libraries/AlphanumericID.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "AlphanumericIDTest"
       ]
     }
   }

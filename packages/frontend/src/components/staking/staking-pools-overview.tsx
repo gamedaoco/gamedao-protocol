@@ -159,7 +159,7 @@ export function StakingPoolsOverview() {
                     <CardTitle className="text-lg">{config.title}</CardTitle>
                   </div>
                   <Badge variant="secondary" className="font-mono">
-                    {pool?.apyRate || 0}% APY
+                    {pool?.apy || 0}% APY
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{config.description}</p>
@@ -222,7 +222,7 @@ export function StakingPoolsOverview() {
                     size="sm"
                     className="flex-1"
                     disabled={!pool?.active}
-                    onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apyRate || 0, 'stake')}
+                                            onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apy || 0, 'stake')}
                   >
                     Stake
                   </Button>
@@ -232,7 +232,7 @@ export function StakingPoolsOverview() {
                       size="sm"
                       variant="outline"
                       className="flex-1"
-                      onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apyRate || 0, 'unstake')}
+                                              onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apy || 0, 'unstake')}
                     >
                       Unstake
                     </Button>

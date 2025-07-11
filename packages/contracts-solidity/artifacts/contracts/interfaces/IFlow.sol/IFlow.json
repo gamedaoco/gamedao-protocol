@@ -14,9 +14,9 @@
         },
         {
           "indexed": true,
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "indexed": true,
@@ -410,9 +410,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "internalType": "string",
@@ -484,9 +484,9 @@
           "type": "address"
         },
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "components": [
@@ -611,9 +611,9 @@
               "type": "uint256"
             },
             {
-              "internalType": "bytes32",
+              "internalType": "bytes8",
               "name": "organizationId",
-              "type": "bytes32"
+              "type": "bytes8"
             },
             {
               "internalType": "address",
@@ -783,9 +783,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         }
       ],
       "name": "getCampaignsByOrganization",

@@ -18,12 +18,13 @@ import {
   Member,
   GlobalStats
 } from "../generated/schema"
+import { getOrganizationIdString } from "./utils/ids"
 
 export function handleCampaignCreated(event: CampaignCreated): void {
   let campaignId = event.params.campaignId.toHex()
   let campaign = new Campaign(campaignId)
 
-  campaign.organization = event.params.organizationId.toHex()
+  campaign.organization = getOrganizationIdString(event.params.organizationId)
   campaign.creator = event.params.creator
   campaign.title = event.params.title
   campaign.flowType = getFlowTypeString(event.params.flowType)
@@ -188,7 +189,7 @@ export function handleProtocolFeeCollected(event: ProtocolFeeCollected): void {
   protocolFee.save()
 }
 
-function getFlowTypeString(flowType: i32): string {
+function getFlowTypeString(flowType: number): string {
   if (flowType == 0) return "GRANT"
   if (flowType == 1) return "RAISE"
   if (flowType == 2) return "LEND"
@@ -198,7 +199,7 @@ function getFlowTypeString(flowType: i32): string {
   return "GRANT"
 }
 
-function getCampaignStateString(state: i32): string {
+function getCampaignStateString(state: number): string {
   if (state == 0) return "CREATED"
   if (state == 1) return "ACTIVE"
   if (state == 2) return "PAUSED"

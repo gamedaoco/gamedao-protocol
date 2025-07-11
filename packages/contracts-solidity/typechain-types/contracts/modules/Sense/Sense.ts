@@ -1886,7 +1886,7 @@ export interface Sense extends BaseContract {
       PausedEvent.OutputObject
     >;
 
-    "ProfileCreated(bytes32,address,bytes32,string,uint256)": TypedContractEvent<
+    "ProfileCreated(bytes32,address,bytes8,string,uint256)": TypedContractEvent<
       ProfileCreatedEvent.InputTuple,
       ProfileCreatedEvent.OutputTuple,
       ProfileCreatedEvent.OutputObject
@@ -1919,7 +1919,7 @@ export interface Sense extends BaseContract {
       ProfileVerifiedEvent.OutputObject
     >;
 
-    "ReputationExported(bytes32,bytes32,bytes32,uint256)": TypedContractEvent<
+    "ReputationExported(bytes32,bytes8,bytes32,uint256)": TypedContractEvent<
       ReputationExportedEvent.InputTuple,
       ReputationExportedEvent.OutputTuple,
       ReputationExportedEvent.OutputObject
@@ -1930,7 +1930,7 @@ export interface Sense extends BaseContract {
       ReputationExportedEvent.OutputObject
     >;
 
-    "ReputationImported(bytes32,bytes32,uint256,uint256)": TypedContractEvent<
+    "ReputationImported(bytes32,bytes8,uint256,uint256)": TypedContractEvent<
       ReputationImportedEvent.InputTuple,
       ReputationImportedEvent.OutputTuple,
       ReputationImportedEvent.OutputObject

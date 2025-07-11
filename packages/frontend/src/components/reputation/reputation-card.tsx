@@ -52,8 +52,8 @@ export function ReputationCard() {
     return { level: 'New', color: 'text-gray-600 dark:text-gray-400' }
   }
 
-  const repLevel = getReputationLevel(userProfile?.reputation || 0)
-  const trustLevel = getTrustLevel(userProfile?.reputation || 0)
+  const repLevel = getReputationLevel(userProfile.reputation)
+  const trustLevel = getTrustLevel(userProfile.reputation)
 
   return (
     <Card className="w-56 bg-gradient-to-br from-background/50 to-muted/30 border-border/50 backdrop-blur-sm">
@@ -79,7 +79,9 @@ export function ReputationCard() {
               <span className="text-xs text-muted-foreground">XP</span>
             </div>
             <Badge variant="secondary" className="text-xs font-mono">
-              {userProfile?.experience.toLocaleString() || '0'}
+              <div className="text-2xl font-bold">
+                {userProfile.experience.toLocaleString()}
+              </div>
             </Badge>
           </div>
 
@@ -90,7 +92,9 @@ export function ReputationCard() {
               <span className="text-xs text-muted-foreground">REP</span>
             </div>
             <Badge variant="secondary" className="text-xs font-mono">
-              {userProfile?.reputation.toLocaleString() || '0'}
+              <div className="text-2xl font-bold">
+                {userProfile.reputation.toLocaleString()}
+              </div>
             </Badge>
           </div>
 
@@ -104,7 +108,9 @@ export function ReputationCard() {
               variant="secondary"
               className={cn("text-xs font-mono border-0", trustLevel.color)}
             >
-              {userProfile?.reputation?.toLocaleString() || '0'}%
+              <div className="text-2xl font-bold">
+                {userProfile.reputation.toLocaleString()}%
+              </div>
             </Badge>
           </div>
         </div>

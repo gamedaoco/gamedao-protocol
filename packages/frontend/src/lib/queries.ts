@@ -508,3 +508,79 @@ export const GET_RECENT_ACTIVITIES = gql`
     }
   }
 `
+
+// Indexing Status Queries
+export const GET_INDEXING_STATUS = gql`
+  query GetIndexingStatus {
+    subgraphIndexingStatus(id: "indexing-status") {
+      id
+      currentBlock
+      latestBlock
+      isFullySynced
+      totalBlocks
+      blocksRemaining
+      syncPercentage
+      blocksPerSecond
+      estimatedTimeToSync
+      lastUpdatedAt
+      lastUpdatedBlock
+      hasErrors
+      lastError
+      errorCount
+    }
+  }
+`
+
+export const GET_RECENT_BLOCKS = gql`
+  query GetRecentBlocks($first: Int = 10) {
+    blockInfos(
+      first: $first
+      orderBy: number
+      orderDirection: desc
+    ) {
+      id
+      number
+      timestamp
+      hash
+      processedAt
+      transactionCount
+      eventCount
+      organizationEvents
+      campaignEvents
+      proposalEvents
+      profileEvents
+      stakingEvents
+    }
+  }
+`
+
+export const GET_INDEXING_METRICS = gql`
+  query GetIndexingMetrics {
+    subgraphIndexingStatus(id: "indexing-status") {
+      id
+      currentBlock
+      latestBlock
+      isFullySynced
+      syncPercentage
+      blocksPerSecond
+      estimatedTimeToSync
+      hasErrors
+      lastError
+      lastUpdatedAt
+    }
+    blockInfos(
+      first: 5
+      orderBy: number
+      orderDirection: desc
+    ) {
+      number
+      timestamp
+      eventCount
+      organizationEvents
+      campaignEvents
+      proposalEvents
+      profileEvents
+      stakingEvents
+    }
+  }
+`

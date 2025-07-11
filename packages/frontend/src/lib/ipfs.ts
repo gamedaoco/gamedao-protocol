@@ -1,12 +1,35 @@
 // IPFS utility functions for storing content
-// Using a public IPFS gateway for development - in production, use your own IPFS node
+// Using Pinata for IPFS storage
 
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/'
 const IPFS_API_ENDPOINT = 'https://api.pinata.cloud/pinning/pinJSONToIPFS'
 const IPFS_FILE_ENDPOINT = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
 
-// For development, we'll use a mock IPFS service
-// In production, integrate with Pinata, Infura, or your own IPFS node
+// Get Pinata API credentials from environment
+const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY
+const PINATA_SECRET_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_KEY
+
+// Check if Pinata is configured
+const isPinataConfigured = Boolean(PINATA_API_KEY && PINATA_SECRET_KEY)
+
+console.log('🔍 IPFS Configuration:', {
+  isPinataConfigured,
+  hasApiKey: !!PINATA_API_KEY,
+  hasSecretKey: !!PINATA_SECRET_KEY,
+  apiKeyLength: PINATA_API_KEY?.length || 0,
+  secretKeyLength: PINATA_SECRET_KEY?.length || 0,
+  nodeEnv: process.env.NODE_ENV,
+  allEnvVars: Object.keys(process.env).filter(key => key.includes('PINATA'))
+})
+
+// Debug: Show all environment variables that start with NEXT_PUBLIC_PINATA
+console.log('🔍 All Pinata env vars:', {
+  NEXT_PUBLIC_PINATA_API_KEY: process.env.NEXT_PUBLIC_PINATA_API_KEY ? 'SET' : 'NOT SET',
+  NEXT_PUBLIC_PINATA_SECRET_KEY: process.env.NEXT_PUBLIC_PINATA_SECRET_KEY ? 'SET' : 'NOT SET',
+  // Show first few characters for debugging
+  apiKeyPreview: PINATA_API_KEY ? `${PINATA_API_KEY.substring(0, 8)}...` : 'NOT SET',
+  secretKeyPreview: PINATA_SECRET_KEY ? `${PINATA_SECRET_KEY.substring(0, 8)}...` : 'NOT SET'
+})
 
 interface IPFSUploadResult {
   hash: string
@@ -26,24 +49,78 @@ export async function uploadJSONToIPFS(
   data: any,
   metadata?: IPFSMetadata
 ): Promise<IPFSUploadResult> {
+  console.log('📤 Starting JSON upload to IPFS:', {
+    dataKeys: Object.keys(data),
+    metadata,
+    isPinataConfigured
+  })
+
   try {
-    // For development, simulate IPFS upload with local storage
-    const hash = generateMockHash(JSON.stringify(data))
-    const url = `ipfs://${hash}`
+    if (isPinataConfigured) {
+      console.log('🔄 Using Pinata API for JSON upload...')
 
-    // Store in localStorage for development
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`ipfs_${hash}`, JSON.stringify({
-        data,
-        metadata,
-        timestamp: Date.now()
-      }))
+      // Use real Pinata API
+      const response = await fetch(IPFS_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'pinata_api_key': PINATA_API_KEY!,
+          'pinata_secret_api_key': PINATA_SECRET_KEY!,
+        },
+        body: JSON.stringify({
+          pinataContent: data,
+          pinataMetadata: {
+            name: metadata?.name || 'GameDAO Content',
+            keyvalues: metadata || {}
+          }
+        })
+      })
+
+      console.log('📡 Pinata JSON response status:', response.status, response.statusText)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ Pinata JSON API error:', errorText)
+        console.error('❌ Response headers:', Object.fromEntries(response.headers.entries()))
+        throw new Error(`Pinata API error: ${response.statusText} - ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('✅ Pinata JSON upload successful:', result)
+
+      return {
+        hash: result.IpfsHash,
+        url: `ipfs://${result.IpfsHash}`
+      }
+    } else {
+      console.log('🔄 Using mock storage for JSON...')
+
+      // Fallback to mock storage for development
+      const hash = generateMockHash(JSON.stringify(data))
+      const url = `ipfs://${hash}`
+
+      console.log('✅ Mock JSON upload complete:', { hash, url })
+
+      // Store in localStorage for development
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`ipfs_${hash}`, JSON.stringify({
+          data,
+          metadata,
+          timestamp: Date.now()
+        }))
+      }
+
+      return { hash, url }
     }
-
-    return { hash, url }
   } catch (error) {
-    console.error('Failed to upload JSON to IPFS:', error)
-    throw new Error('IPFS upload failed')
+    console.error('❌ Failed to upload JSON to IPFS:', error)
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      type: typeof error,
+      error: error
+    })
+    throw new Error(`IPFS JSON upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
@@ -54,31 +131,101 @@ export async function uploadFileToIPFS(
   file: File,
   metadata?: IPFSMetadata
 ): Promise<IPFSUploadResult> {
+  console.log('📤 Starting file upload to IPFS:', {
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type,
+    metadata,
+    isPinataConfigured
+  })
+
   try {
-    // For development, simulate file upload
-    const hash = generateMockHash(file.name + file.size + file.lastModified)
-    const url = `ipfs://${hash}`
+    if (isPinataConfigured) {
+      console.log('🔄 Using Pinata API for file upload...')
 
-    // Store file info in localStorage for development
-    if (typeof window !== 'undefined') {
-      const reader = new FileReader()
-      reader.onload = () => {
-        localStorage.setItem(`ipfs_file_${hash}`, JSON.stringify({
+      // Use real Pinata API
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('pinataMetadata', JSON.stringify({
+        name: metadata?.name || file.name,
+        keyvalues: metadata || {}
+      }))
+
+      console.log('📡 Sending request to Pinata...')
+      console.log('📋 Request details:', {
+        endpoint: IPFS_FILE_ENDPOINT,
+        headers: {
+          'pinata_api_key': PINATA_API_KEY ? `${PINATA_API_KEY.substring(0, 8)}...` : 'NOT SET',
+          'pinata_secret_api_key': PINATA_SECRET_KEY ? `${PINATA_SECRET_KEY.substring(0, 8)}...` : 'NOT SET'
+        },
+        fileInfo: {
           name: file.name,
-          type: file.type,
           size: file.size,
-          data: reader.result,
-          metadata,
-          timestamp: Date.now()
-        }))
-      }
-      reader.readAsDataURL(file)
-    }
+          type: file.type
+        }
+      })
 
-    return { hash, url }
+      const response = await fetch(IPFS_FILE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'pinata_api_key': PINATA_API_KEY!,
+          'pinata_secret_api_key': PINATA_SECRET_KEY!,
+        },
+        body: formData
+      })
+
+      console.log('📡 Pinata response status:', response.status, response.statusText)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ Pinata API error:', errorText)
+        console.error('❌ Response headers:', Object.fromEntries(response.headers.entries()))
+        throw new Error(`Pinata API error: ${response.statusText} - ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('✅ Pinata upload successful:', result)
+
+      return {
+        hash: result.IpfsHash,
+        url: `ipfs://${result.IpfsHash}`
+      }
+    } else {
+      console.log('🔄 Using mock storage for development...')
+
+      // Fallback to mock storage for development
+      const hash = generateMockHash(file.name + file.size + file.lastModified)
+      const url = `ipfs://${hash}`
+
+      console.log('✅ Mock upload complete:', { hash, url })
+
+      // Store file info in localStorage for development
+      if (typeof window !== 'undefined') {
+        const reader = new FileReader()
+        reader.onload = () => {
+          localStorage.setItem(`ipfs_file_${hash}`, JSON.stringify({
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: reader.result,
+            metadata,
+            timestamp: Date.now()
+          }))
+        }
+        reader.readAsDataURL(file)
+      }
+
+      return { hash, url }
+    }
   } catch (error) {
-    console.error('Failed to upload file to IPFS:', error)
-    throw new Error('IPFS file upload failed')
+    console.error('❌ Failed to upload file to IPFS:', error)
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      type: typeof error,
+      error: error
+    })
+    throw new Error(`IPFS file upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
@@ -120,6 +267,8 @@ export async function uploadOrganizationMetadata(metadata: {
   }
   tags?: string[]
 }): Promise<IPFSUploadResult> {
+  console.log('📤 Starting organization metadata upload:', metadata)
+
   const data = {
     ...metadata,
     type: 'organization',
@@ -127,10 +276,15 @@ export async function uploadOrganizationMetadata(metadata: {
     created: new Date().toISOString()
   }
 
-  return uploadJSONToIPFS(data, {
+  console.log('📋 Final metadata to upload:', data)
+
+  const result = await uploadJSONToIPFS(data, {
     name: metadata.name,
     description: `Metadata for ${metadata.name} organization`
   })
+
+  console.log('✅ Organization metadata upload result:', result)
+  return result
 }
 
 /**

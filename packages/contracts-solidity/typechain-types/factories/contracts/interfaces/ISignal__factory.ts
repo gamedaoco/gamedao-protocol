@@ -82,9 +82,9 @@ const _abi = [
       },
       {
         indexed: true,
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         indexed: true,
@@ -310,9 +310,9 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         indexed: false,
@@ -592,9 +592,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         internalType: "string",
@@ -836,9 +836,9 @@ const _abi = [
             type: "bytes32",
           },
           {
-            internalType: "bytes32",
+            internalType: "bytes8",
             name: "organizationId",
-            type: "bytes32",
+            type: "bytes8",
           },
           {
             internalType: "address",
@@ -1070,9 +1070,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
     ],
     name: "getProposalsByOrganization",
@@ -1202,9 +1202,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
     ],
     name: "getVotingParameters",
@@ -1375,9 +1375,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         components: [
@@ -1471,9 +1471,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         internalType: "enum ISignal.ProposalType",

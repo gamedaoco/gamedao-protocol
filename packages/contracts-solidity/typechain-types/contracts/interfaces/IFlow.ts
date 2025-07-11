@@ -1077,7 +1077,7 @@ export interface IFlow extends BaseContract {
   >;
 
   filters: {
-    "CampaignCreated(bytes32,bytes32,address,string,uint8,uint256,uint256,uint256,uint256)": TypedContractEvent<
+    "CampaignCreated(bytes32,bytes8,address,string,uint8,uint256,uint256,uint256,uint256)": TypedContractEvent<
       CampaignCreatedEvent.InputTuple,
       CampaignCreatedEvent.OutputTuple,
       CampaignCreatedEvent.OutputObject

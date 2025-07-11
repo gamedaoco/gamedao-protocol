@@ -34,12 +34,11 @@ contract Signal is GameDAOModule, ISignal {
     mapping(bytes32 => Proposal) private _proposals;
     mapping(bytes32 => mapping(address => Vote)) private _votes;
     mapping(bytes32 => EnumerableSet.AddressSet) private _proposalVoters;
-    mapping(bytes32 => VotingParameters) private _votingParameters;
-    mapping(bytes32 => EnumerableSet.Bytes32Set) private _organizationProposals;
+    mapping(bytes8 => EnumerableSet.Bytes32Set) private _organizationProposals;
     mapping(ProposalState => EnumerableSet.Bytes32Set) private _proposalsByState;
-    mapping(address => mapping(address => Delegation)) private _delegations;
+    mapping(bytes8 => VotingParameters) private _votingParameters;
+    mapping(address => mapping(address => uint256)) private _delegatedVotingPower;
     mapping(address => EnumerableSet.AddressSet) private _delegators;
-    mapping(address => uint256) private _delegatedPower;
 
     EnumerableSet.Bytes32Set private _allProposals;
     uint256 private _proposalCounter;
@@ -56,15 +55,17 @@ contract Signal is GameDAOModule, ISignal {
     error VotingNotActive(bytes32 proposalId);
     error AlreadyVoted(bytes32 proposalId, address voter);
     error InsufficientVotingPower(address voter, uint256 required, uint256 available);
-    error QuorumNotReached(bytes32 proposalId);
+    error QuorumNotReached(bytes32 proposalId, uint256 required, uint256 actual);
     error ProposalNotPassed(bytes32 proposalId);
-    error ExecutionFailed(bytes32 proposalId);
+    error ExecutionFailed(bytes32 proposalId, string reason);
     error InvalidConvictionTime(uint256 convictionTime);
     error UnauthorizedProposalAccess(bytes32 proposalId, address caller);
-    error OrganizationNotFound(bytes32 organizationId);
+    error OrganizationNotFound(bytes8 organizationId);
     error InsufficientProposalThreshold(address proposer, uint256 required, uint256 available);
     error InvalidDelegation(address delegator, address delegatee);
     error DelegationNotFound(address delegator, address delegatee);
+    error InvalidVoteChoice(VoteChoice choice);
+    error MembershipRequired(bytes8 organizationId, address member);
 
     /**
      * @dev Constructor
@@ -108,7 +109,7 @@ contract Signal is GameDAOModule, ISignal {
      * @dev Create a new proposal
      */
     function createProposal(
-        bytes32 organizationId,
+        bytes8 organizationId,
         string memory title,
         string memory description,
         string memory metadataURI,
@@ -420,7 +421,7 @@ contract Signal is GameDAOModule, ISignal {
         emit ProposalExecuted(proposalId, success, returnData, block.timestamp);
 
         if (!success) {
-            revert ExecutionFailed(proposalId);
+            revert ExecutionFailed(proposalId, "Proposal execution failed");
         }
     }
 
@@ -437,15 +438,8 @@ contract Signal is GameDAOModule, ISignal {
             revert InvalidDelegation(_msgSender(), delegatee);
         }
 
-        Delegation storage delegation = _delegations[_msgSender()][delegatee];
-        delegation.delegator = _msgSender();
-        delegation.delegatee = delegatee;
-        delegation.amount += amount;
-        delegation.timestamp = block.timestamp;
-        delegation.active = true;
-
+        _delegatedVotingPower[_msgSender()][delegatee] += amount;
         _delegators[_msgSender()].add(delegatee);
-        _delegatedPower[_msgSender()] += amount;
 
         emit VotingPowerDelegated(_msgSender(), delegatee, amount, block.timestamp);
     }
@@ -459,16 +453,14 @@ contract Signal is GameDAOModule, ISignal {
         onlyInitialized
         whenNotPaused
     {
-        Delegation storage delegation = _delegations[_msgSender()][delegatee];
-        if (!delegation.active || delegation.amount < amount) {
+        uint256 currentDelegation = _delegatedVotingPower[_msgSender()][delegatee];
+        if (currentDelegation < amount) {
             revert DelegationNotFound(_msgSender(), delegatee);
         }
 
-        delegation.amount -= amount;
-        _delegatedPower[_msgSender()] -= amount;
+        _delegatedVotingPower[_msgSender()][delegatee] -= amount;
 
-        if (delegation.amount == 0) {
-            delegation.active = false;
+        if (_delegatedVotingPower[_msgSender()][delegatee] == 0) {
             _delegators[_msgSender()].remove(delegatee);
         }
 
@@ -517,7 +509,7 @@ contract Signal is GameDAOModule, ISignal {
      * @dev Set voting parameters for an organization
      */
     function setVotingParameters(
-        bytes32 organizationId,
+        bytes8 organizationId,
         VotingParameters memory params
     ) external override onlyRole(SIGNAL_ADMIN_ROLE) onlyInitialized whenNotPaused {
         _validateOrganization(organizationId);
@@ -629,7 +621,7 @@ contract Signal is GameDAOModule, ISignal {
     /**
      * @dev Validate organization exists through Control module
      */
-    function _validateOrganization(bytes32 organizationId) internal view {
+    function _validateOrganization(bytes8 organizationId) internal view {
         address controlModule = getModule(keccak256("CONTROL"));
         if (controlModule == address(0)) revert OrganizationNotFound(organizationId);
 
@@ -642,7 +634,7 @@ contract Signal is GameDAOModule, ISignal {
     /**
      * @dev Validate membership in organization
      */
-    function _validateMembership(bytes32 organizationId, address member) internal view {
+    function _validateMembership(bytes8 organizationId, address member) internal view {
         address controlModule = getModule(keccak256("CONTROL"));
         if (controlModule == address(0)) revert OrganizationNotFound(organizationId);
 
@@ -655,7 +647,7 @@ contract Signal is GameDAOModule, ISignal {
     /**
      * @dev Get voting parameters for organization
      */
-    function _getVotingParameters(bytes32 organizationId) internal view returns (VotingParameters memory) {
+    function _getVotingParameters(bytes8 organizationId) internal view returns (VotingParameters memory) {
         VotingParameters memory params = _votingParameters[organizationId];
 
         // Use default parameters if not set
@@ -670,7 +662,7 @@ contract Signal is GameDAOModule, ISignal {
      * @dev Calculate voting power for a voter
      */
     function _calculateVotingPower(
-        bytes32 organizationId,
+        bytes8 organizationId,
         address voter,
         VotingPower powerType
     ) internal view returns (uint256) {
@@ -712,7 +704,7 @@ contract Signal is GameDAOModule, ISignal {
         /**
      * @dev Calculate proposal threshold for organization
      */
-    function _calculateProposalThreshold(bytes32 organizationId, uint256 thresholdBasisPoints) internal view returns (uint256) {
+    function _calculateProposalThreshold(bytes8 organizationId, uint256 thresholdBasisPoints) internal view returns (uint256) {
         address controlModule = getModule(keccak256("CONTROL"));
         if (controlModule == address(0)) return 1;
 
@@ -806,7 +798,7 @@ contract Signal is GameDAOModule, ISignal {
         return (voterList, voteList);
     }
 
-    function getProposalsByOrganization(bytes32 organizationId)
+    function getProposalsByOrganization(bytes8 organizationId)
         external
         view
         override
@@ -828,7 +820,7 @@ contract Signal is GameDAOModule, ISignal {
         return _proposalsByState[ProposalState.Active].values();
     }
 
-    function getVotingParameters(bytes32 organizationId)
+    function getVotingParameters(bytes8 organizationId)
         external
         view
         override
@@ -848,7 +840,7 @@ contract Signal is GameDAOModule, ISignal {
     }
 
     function getDelegatedVotingPower(address delegator) external view override returns (uint256) {
-        return _delegatedPower[delegator];
+        return _delegatedVotingPower[delegator][_msgSender()];
     }
 
     function getDelegations(address delegator)
@@ -861,7 +853,13 @@ contract Signal is GameDAOModule, ISignal {
         Delegation[] memory delegations = new Delegation[](delegatees.length);
 
         for (uint256 i = 0; i < delegatees.length; i++) {
-            delegations[i] = _delegations[delegator][delegatees[i]];
+            delegations[i] = Delegation({
+                delegator: delegator,
+                delegatee: delegatees[i],
+                amount: _delegatedVotingPower[delegator][delegatees[i]],
+                timestamp: 0, // No timestamp for delegated power
+                active: true
+            });
         }
 
         return delegations;
@@ -949,7 +947,7 @@ contract Signal is GameDAOModule, ISignal {
     }
 
     function validateProposalParameters(
-        bytes32 organizationId,
+        bytes8 organizationId,
         ProposalType /* proposalType */,
         VotingType /* votingType */,
         VotingPower /* votingPower */,

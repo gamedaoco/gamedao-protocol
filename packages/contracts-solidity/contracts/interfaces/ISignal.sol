@@ -50,7 +50,7 @@ interface ISignal {
     struct Proposal {
         uint256 index;
         bytes32 proposalId;
-        bytes32 organizationId;
+        bytes8 organizationId;
         address proposer;
         string title;
         string description;
@@ -104,7 +104,7 @@ interface ISignal {
     // Events
     event ProposalCreated(
         bytes32 indexed proposalId,
-        bytes32 indexed organizationId,
+        bytes8 indexed organizationId,
         address indexed proposer,
         string title,
         ProposalType proposalType,
@@ -159,7 +159,7 @@ interface ISignal {
     );
 
     event VotingParametersUpdated(
-        bytes32 indexed organizationId,
+        bytes8 indexed organizationId,
         uint256 votingDelay,
         uint256 votingPeriod,
         uint256 executionDelay,
@@ -192,7 +192,7 @@ interface ISignal {
 
     // Core Functions
     function createProposal(
-        bytes32 organizationId,
+        bytes8 organizationId,
         string memory title,
         string memory description,
         string memory metadataURI,
@@ -238,7 +238,7 @@ interface ISignal {
 
     // Administrative Functions
     function setVotingParameters(
-        bytes32 organizationId,
+        bytes8 organizationId,
         VotingParameters memory params
     ) external;
 
@@ -262,7 +262,7 @@ interface ISignal {
         view
         returns (address[] memory voters, Vote[] memory votes);
 
-    function getProposalsByOrganization(bytes32 organizationId)
+    function getProposalsByOrganization(bytes8 organizationId)
         external
         view
         returns (bytes32[] memory);
@@ -277,7 +277,7 @@ interface ISignal {
         view
         returns (bytes32[] memory);
 
-    function getVotingParameters(bytes32 organizationId)
+    function getVotingParameters(bytes8 organizationId)
         external
         view
         returns (VotingParameters memory);
@@ -355,7 +355,7 @@ interface ISignal {
 
     // Utility Functions
     function validateProposalParameters(
-        bytes32 organizationId,
+        bytes8 organizationId,
         ProposalType proposalType,
         VotingType votingType,
         VotingPower votingPower,

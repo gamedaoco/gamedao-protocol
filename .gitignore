@@ -89,14 +89,6 @@ node_modules/
 .next
 out
 
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
-
 # Storybook build outputs
 .out
 .storybook-out

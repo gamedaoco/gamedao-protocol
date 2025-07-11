@@ -1475,7 +1475,7 @@ export interface ISignal extends BaseContract {
       ProposalCancelledEvent.OutputObject
     >;
 
-    "ProposalCreated(bytes32,bytes32,address,string,uint8,uint8,uint8,uint256,uint256,uint256)": TypedContractEvent<
+    "ProposalCreated(bytes32,bytes8,address,string,uint8,uint8,uint8,uint256,uint256,uint256)": TypedContractEvent<
       ProposalCreatedEvent.InputTuple,
       ProposalCreatedEvent.OutputTuple,
       ProposalCreatedEvent.OutputObject
@@ -1541,7 +1541,7 @@ export interface ISignal extends BaseContract {
       VoteCastEvent.OutputObject
     >;
 
-    "VotingParametersUpdated(bytes32,uint256,uint256,uint256,uint256,uint256,uint256)": TypedContractEvent<
+    "VotingParametersUpdated(bytes8,uint256,uint256,uint256,uint256,uint256,uint256)": TypedContractEvent<
       VotingParametersUpdatedEvent.InputTuple,
       VotingParametersUpdatedEvent.OutputTuple,
       VotingParametersUpdatedEvent.OutputObject

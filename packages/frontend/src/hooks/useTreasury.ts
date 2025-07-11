@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@apollo/client'
 import { useGameDAO } from './useGameDAO'
 import { gql } from '@apollo/client'
@@ -36,12 +36,16 @@ export interface TreasuryData {
   tokenCount: number
   dailyLimit: number
   todaySpent: number
-  tokens: TokenBalance[]
+  tokens: Array<{
+    symbol: string
+    balance: string
+    valueUSD: number
+    decimals: number
+  }>
 }
 
 export function useTreasury(organizationId?: string) {
   const { contracts, contractsValid } = useGameDAO()
-  const [treasury, setTreasury] = useState<TreasuryData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const { data, loading, error: queryError } = useQuery(GET_ORGANIZATION_TREASURY, {
@@ -51,21 +55,36 @@ export function useTreasury(organizationId?: string) {
     errorPolicy: 'ignore',
   })
 
-  useEffect(() => {
+  // Always return a defined treasury object with default values
+  const treasury: TreasuryData = useMemo(() => {
     if (!contractsValid || !organizationId) {
-      setTreasury(null)
-      setError(null)
-      return
+      return {
+        address: '0x0000000000000000000000000000000000000000',
+        totalValueUSD: 0,
+        change24h: 0,
+        tokenCount: 0,
+        dailyLimit: 0,
+        todaySpent: 0,
+        tokens: []
+      }
     }
 
     if (queryError && !data) {
       setError('Unable to load treasury data. Please check your connection.')
-      return
+      return {
+        address: '0x0000000000000000000000000000000000000000',
+        totalValueUSD: 0,
+        change24h: 0,
+        tokenCount: 0,
+        dailyLimit: 0,
+        todaySpent: 0,
+        tokens: []
+      }
     }
 
     if (data?.organization) {
       const org = data.organization
-      const treasuryData: TreasuryData = {
+      return {
         address: org.treasury || '0x0000000000000000000000000000000000000000',
         totalValueUSD: 0, // Would need token price data
         change24h: 0, // Would need historical data
@@ -74,10 +93,20 @@ export function useTreasury(organizationId?: string) {
         todaySpent: 0, // Would need spending tracking
         tokens: [] // Would need token balance data from contracts
       }
-      setTreasury(treasuryData)
-      setError(null)
-    } else if (!loading) {
+    }
+
+    if (!loading) {
       setError('Organization not found')
+    }
+
+    return {
+      address: '0x0000000000000000000000000000000000000000',
+      totalValueUSD: 0,
+      change24h: 0,
+      tokenCount: 0,
+      dailyLimit: 0,
+      todaySpent: 0,
+      tokens: []
     }
   }, [contractsValid, organizationId, data, loading, queryError])
 

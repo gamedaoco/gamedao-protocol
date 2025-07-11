@@ -1,244 +1,275 @@
 'use client'
 
 import { useQuery } from '@apollo/client'
-import { useReadContract, useWriteContract } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
-import { GET_CAMPAIGNS, GET_USER_CONTRIBUTIONS } from '@/lib/queries'
-import { formatEther, parseEther } from 'viem'
-// Safe BigInt conversion helper
-const safeBigInt = (value: any, fallback: string = '0'): bigint => {
-  if (value === null || value === undefined || value === '') {
-    return BigInt(fallback)
-  }
-  
-  const stringValue = String(value).trim()
-  if (stringValue === '' || stringValue === 'null' || stringValue === 'undefined') {
-    return BigInt(fallback)
-  }
-  
-  // Check if it's a valid number string
-  if (!/^\d+$/.test(stringValue)) {
-    console.warn(`Invalid BigInt value: "${value}", using fallback: ${fallback}`)
-    return BigInt(fallback)
-  }
-  
-  try {
-    return BigInt(stringValue)
-  } catch (error) {
-    console.warn(`BigInt conversion failed for: "${value}", using fallback: ${fallback}`)
-    return BigInt(fallback)
-  }
-}
+import { GET_CAMPAIGNS, GET_USER_CAMPAIGNS } from '@/lib/queries'
+import { useEffect } from 'react'
 import { useAccount } from 'wagmi'
+import { useToast } from './use-toast'
 
 export interface Campaign {
   id: string
-  organizationId: string
-  organizationName?: string
+  organization: {
+    id: string
+    name: string
+  }
   creator: string
   title: string
   description: string
-  flowType: string
-  target: bigint
-  deposit: bigint
-  raised: bigint
+  target: string
+  raised: string
   contributorCount: number
   state: string
+  flowType: string
   expiry: number
   createdAt: number
   updatedAt: number
 }
 
-export interface CampaignStats {
-  totalCampaigns: number
-  activeCampaigns: number
-  totalRaised: string
-  avgContribution: string
-  userContributions: number
+export interface CreateCampaignParams {
+  organizationId: string
+  title: string
+  description: string
+  metadataURI?: string
+  flowType: number
+  paymentToken: string
+  target: string
+  min: string
+  max: string
+  duration: number
+  autoFinalize: boolean
 }
 
 export function useCampaigns() {
   const { contracts, isConnected } = useGameDAO()
   const { address } = useAccount()
+  const toast = useToast()
 
   // Fetch campaigns from subgraph
   const { data, loading, error, refetch } = useQuery(GET_CAMPAIGNS, {
     variables: { first: 100, skip: 0 },
     pollInterval: 30000,
-    errorPolicy: 'all', // Show errors so we can debug
+    errorPolicy: 'ignore',
   })
 
-  // Fetch user's contributions from subgraph
-  const { data: userContribsData, loading: userContribsLoading } = useQuery(GET_USER_CONTRIBUTIONS, {
-    variables: { user: address, first: 50 },
+  // Fetch user's campaigns from subgraph
+  const { data: userCampaignsData, loading: userCampaignsLoading, refetch: refetchUserCampaigns } = useQuery(GET_USER_CAMPAIGNS, {
+    variables: { user: address },
     skip: !address,
     pollInterval: 30000,
-    errorPolicy: 'all',
+    errorPolicy: 'ignore',
   })
 
-  // Get campaign count from contract
-  const { data: campaignCount, refetch: refetchCount } = useReadContract({
-    address: contracts.FLOW,
-    abi: ABIS.FLOW,
-    functionName: 'getCampaignCount',
-    query: { enabled: isConnected },
+  // Contract write for creating campaign
+  const {
+    writeContract: createCampaign,
+    isPending: isCreating,
+    data: createTxHash,
+    error: createError,
+    reset: resetCreate
+  } = useWriteContract()
+
+  // Wait for create transaction confirmation
+  const {
+    isLoading: isConfirming,
+    isSuccess: createSuccess,
+    error: confirmError,
+  } = useWaitForTransactionReceipt({
+    hash: createTxHash,
   })
 
   // Contract write for contributing to campaign
   const {
-    writeContract: contribute,
+    writeContract: contributeToCampaign,
     isPending: isContributing,
-    isSuccess: contributeSuccess,
-    error: contributeError
+    data: contributeTxHash,
+    error: contributeError,
+    reset: resetContribute
   } = useWriteContract()
 
-  // Transform subgraph data to match our interface
-  const campaigns: Campaign[] = data?.campaigns?.map((camp: any) => ({
-    id: camp.id,
-    organizationId: camp.organization.id,
-    organizationName: camp.organization.name,
-    creator: camp.creator,
-    title: camp.title || `Campaign ${camp.id.slice(0, 8)}`,
-    description: camp.description || `Campaign created by ${camp.organization.name}`,
-    flowType: camp.flowType || 'GRANT',
-    target: safeBigInt(camp.target),
-    deposit: safeBigInt(camp.deposit),
-    raised: safeBigInt(camp.raised),
-    contributorCount: parseInt(camp.contributorCount) || 0,
-    state: camp.state || 'CREATED',
-    expiry: parseInt(camp.expiry) || 0,
-    createdAt: parseInt(camp.createdAt) || Math.floor(Date.now() / 1000),
-    updatedAt: parseInt(camp.updatedAt) || Math.floor(Date.now() / 1000),
-  })) || []
-
-  // Debug logging
-  console.log('🎯 Campaigns from subgraph:', {
-    subgraphCampaigns: data?.campaigns?.length || 0,
-    totalCampaigns: campaigns.length,
-    loading,
-    error: error?.message || 'No error'
+  // Wait for contribute transaction confirmation
+  const {
+    isLoading: isContributeConfirming,
+    isSuccess: contributeSuccess,
+    error: contributeConfirmError,
+  } = useWaitForTransactionReceipt({
+    hash: contributeTxHash,
   })
 
-  // Get user's contributions
-  const userContributions = userContribsData?.contributions || []
-
-  const contributeToCampaign = async (campaignId: string, amount: string, token: 'ETH' | 'USDC' = 'USDC') => {
-    if (!isConnected || !address) {
-      throw new Error('Wallet not connected')
+  const handleCreateCampaign = async (params: CreateCampaignParams) => {
+    if (!isConnected || !contracts.FLOW) {
+      throw new Error('Wallet not connected or contracts not loaded')
     }
 
-    const value = token === 'ETH' ? parseEther(amount) : BigInt(0)
-    const tokenAmount = token === 'USDC' ? parseEther(amount) : BigInt(0)
+    const safeBigInt = (value: string | number, fallback = '0'): bigint => {
+      try {
+        if (typeof value === 'number') {
+          return BigInt(value)
+        }
+        if (typeof value === 'string' && value.trim() !== '') {
+          const cleaned = value.replace(/[^0-9.]/g, '')
+          if (cleaned === '' || cleaned === '.') {
+            return BigInt(fallback)
+          }
+          if (cleaned.includes('.')) {
+            const [whole, decimal] = cleaned.split('.')
+            const paddedDecimal = decimal.padEnd(18, '0').slice(0, 18)
+            return BigInt(whole + paddedDecimal)
+          }
+          return BigInt(cleaned)
+        }
+        return BigInt(fallback)
+      } catch (error) {
+        console.warn('Failed to convert to BigInt:', value, error)
+        return BigInt(fallback)
+      }
+    }
 
-    return contribute({
-      address: contracts.FLOW,
-      abi: ABIS.FLOW,
-      functionName: 'contribute',
-      args: [campaignId, tokenAmount, ''],
-      value,
-    })
-  }
+    try {
+      const result = await createCampaign({
+        address: contracts.FLOW,
+        abi: ABIS.FLOW,
+        functionName: 'createCampaign',
+        args: [
+          params.organizationId,
+          params.title,
+          params.metadataURI || '',
+          params.flowType,
+          params.paymentToken,
+          safeBigInt(params.target),
+          safeBigInt(params.min),
+          safeBigInt(params.max),
+          params.duration,
+          params.autoFinalize,
+        ],
+      })
 
-  const getFlowTypeString = (flowType: string): string => {
-    switch (flowType?.toUpperCase()) {
-      case 'GRANT': return 'Grant'
-      case 'RAISE': return 'Fundraise'
-      case 'LEND': return 'Lending'
-      case 'LOAN': return 'Loan'
-      case 'SHARE': return 'Revenue Share'
-      case 'POOL': return 'Pool'
-      default: return 'Grant'
+      toast.loading('Creating campaign...')
+      return result
+    } catch (error) {
+      console.error('❌ Failed to create campaign:', error)
+      toast.error('Failed to create campaign')
+      throw error
     }
   }
 
-  const getStateString = (state: string): string => {
-    switch (state?.toUpperCase()) {
-      case 'CREATED': return 'Created'
-      case 'ACTIVE': return 'Active'
-      case 'PAUSED': return 'Paused'
-      case 'SUCCEEDED': return 'Succeeded'
-      case 'FAILED': return 'Failed'
-      case 'FINALIZED': return 'Finalized'
-      case 'CANCELLED': return 'Cancelled'
-      default: return 'Created'
+  const handleContribute = async (campaignId: string, amount: string) => {
+    if (!isConnected || !contracts.FLOW) {
+      throw new Error('Wallet not connected or contracts not loaded')
+    }
+
+    const safeBigInt = (value: string): bigint => {
+      try {
+        const cleaned = value.replace(/[^0-9.]/g, '')
+        if (cleaned.includes('.')) {
+          const [whole, decimal] = cleaned.split('.')
+          const paddedDecimal = decimal.padEnd(18, '0').slice(0, 18)
+          return BigInt(whole + paddedDecimal)
+        }
+        return BigInt(cleaned)
+      } catch (error) {
+        console.warn('Failed to convert to BigInt:', value, error)
+        return BigInt('0')
+      }
+    }
+
+    try {
+      const result = await contributeToCampaign({
+        address: contracts.FLOW,
+        abi: ABIS.FLOW,
+        functionName: 'contribute',
+        args: [campaignId, safeBigInt(amount)],
+      })
+
+      toast.loading('Contributing to campaign...')
+      return result
+    } catch (error) {
+      console.error('❌ Failed to contribute:', error)
+      toast.error('Failed to contribute')
+      throw error
     }
   }
 
-  const getProgress = (campaign: Campaign): number => {
-    if (campaign.target === BigInt(0)) return 0
-    return Number((campaign.raised * BigInt(100)) / campaign.target)
-  }
+  // Refetch data after successful transactions
+  useEffect(() => {
+    if (createSuccess) {
+      toast.dismiss()
+      refetch()
+      if (address) {
+        refetchUserCampaigns()
+      }
+      setTimeout(() => resetCreate(), 1000)
+      toast.success('Campaign created successfully!')
+    }
+  }, [createSuccess, refetch, refetchUserCampaigns, address, resetCreate, toast])
 
-  const getTimeRemaining = (campaign: Campaign): number => {
-    const now = Math.floor(Date.now() / 1000)
-    return Math.max(0, campaign.expiry - now)
-  }
+  useEffect(() => {
+    if (contributeSuccess) {
+      toast.dismiss()
+      refetch()
+      if (address) {
+        refetchUserCampaigns()
+      }
+      setTimeout(() => resetContribute(), 1000)
+      toast.success('Contribution successful!')
+    }
+  }, [contributeSuccess, refetch, refetchUserCampaigns, address, resetContribute, toast])
 
-  const formatAmount = (amount: bigint): string => {
-    return formatEther(amount)
-  }
+  // Transform subgraph data
+  const campaigns: Campaign[] = data?.campaigns?.map((campaign: any) => ({
+    id: campaign.id,
+    organization: campaign.organization,
+    creator: campaign.creator,
+    title: campaign.title,
+    description: campaign.description,
+    target: campaign.target,
+    raised: campaign.raised,
+    contributorCount: parseInt(campaign.contributorCount) || 0,
+    state: campaign.state,
+    flowType: campaign.flowType,
+    expiry: parseInt(campaign.expiry),
+    createdAt: parseInt(campaign.createdAt),
+    updatedAt: parseInt(campaign.updatedAt),
+  })) || []
 
-  const isActive = (campaign: Campaign): boolean => {
-    const now = Math.floor(Date.now() / 1000)
-    return campaign.state === 'ACTIVE' && campaign.expiry > now
-  }
-
-  const timeRemaining = (campaign: Campaign): string => {
-    const remaining = getTimeRemaining(campaign)
-    if (remaining <= 0) return 'Ended'
-
-    const days = Math.floor(remaining / 86400)
-    const hours = Math.floor((remaining % 86400) / 3600)
-
-    if (days > 0) return `${days}d ${hours}h`
-    return `${hours}h`
-  }
-
-  // Calculate stats
-  const totalRaised = campaigns.reduce((sum, camp) => sum + camp.raised, BigInt(0))
-  const activeCampaigns = campaigns.filter(camp => isActive(camp))
-  const avgContribution = campaigns.length > 0 ? totalRaised / BigInt(campaigns.length) : BigInt(0)
-
-  const stats: CampaignStats = {
-    totalCampaigns: campaigns.length,
-    activeCampaigns: activeCampaigns.length,
-    totalRaised: formatEther(totalRaised),
-    avgContribution: formatEther(avgContribution),
-    userContributions: userContributions.length,
-  }
+  // Transform user campaigns data
+  const userCampaigns: Campaign[] = userCampaignsData?.campaigns?.map((campaign: any) => ({
+    id: campaign.id,
+    organization: campaign.organization,
+    creator: campaign.creator,
+    title: campaign.title,
+    description: campaign.description,
+    target: campaign.target,
+    raised: campaign.raised,
+    contributorCount: parseInt(campaign.contributorCount) || 0,
+    state: campaign.state,
+    flowType: campaign.flowType,
+    expiry: parseInt(campaign.expiry),
+    createdAt: parseInt(campaign.createdAt),
+    updatedAt: parseInt(campaign.updatedAt),
+  })) || []
 
   return {
-    // Data
     campaigns,
-    userContributions,
-    campaignCount: campaignCount ? Number(campaignCount) : campaigns.length,
-    stats,
-
-    // Actions
-    contributeToCampaign,
-
-    // Status
+    userCampaigns,
     isLoading: loading,
-    isLoadingUserContribs: userContribsLoading,
-    isContributing,
-    contributeSuccess,
-    contributeError,
+    isUserCampaignsLoading: userCampaignsLoading,
     error,
+    refetch,
+    refetchUserCampaigns,
 
-    // Utils
-    getFlowTypeString,
-    getStateString,
-    getProgress,
-    getTimeRemaining,
-    formatAmount,
-    isActive,
-    timeRemaining,
+    // Campaign creation
+    createCampaign: handleCreateCampaign,
+    isCreating: isCreating || isConfirming,
+    createSuccess,
+    createError: createError || confirmError,
 
-    // Refetch
-    refetch: () => {
-      refetch()
-      refetchCount()
-    },
+    // Campaign contribution
+    contribute: handleContribute,
+    isContributing: isContributing || isContributeConfirming,
+    contributeSuccess,
+    contributeError: contributeError || contributeConfirmError,
   }
 }

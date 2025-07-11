@@ -30,10 +30,7 @@ interface IControl {
     enum MemberState {
         Inactive,
         Active,
-        Pending,     // Application pending approval
-        Kicked,
-        Banned,
-        Exited
+        Paused
     }
 
     enum OrgState {
@@ -44,66 +41,57 @@ interface IControl {
 
     // Structs
     struct Organization {
-        uint256 index;
-        address creator;
-        address prime;
+        bytes8 id;                    // 8-character alphanumeric ID as bytes8
         string name;
         string metadataURI;
+        address creator;
+        address treasury;
         OrgType orgType;
         AccessModel accessModel;
         FeeModel feeModel;
+        uint256 memberLimit;
+        uint256 memberCount;
+        uint256 totalCampaigns;
+        uint256 totalProposals;
         uint256 membershipFee;
-        address treasury;
-        uint32 memberLimit;
+        uint256 gameStakeRequired;
         OrgState state;
         uint256 createdAt;
         uint256 updatedAt;
     }
 
     struct Member {
+        address account;
         MemberState state;
         uint256 joinedAt;
-        uint256 totalContribution;
-        bytes32 role;
-        uint256 stakedAmount; // $GAME tokens staked
+        uint256 reputation;
+        uint256 stake;
     }
 
     // Events
     event OrganizationCreated(
-        bytes32 indexed orgId,
-        address indexed creator,
-        address indexed prime,
+        bytes8 indexed id,
         string name,
-        OrgType orgType,
-        uint256 timestamp
-    );
-
-    event OrganizationUpdated(
-        bytes32 indexed orgId,
-        address indexed prime,
-        OrgType orgType,
-        AccessModel accessModel,
-        uint32 memberLimit,
+        address indexed creator,
+        address indexed treasury,
         uint256 timestamp
     );
 
     event OrganizationStateChanged(
-        bytes32 indexed orgId,
+        bytes8 indexed id,
         OrgState oldState,
         OrgState newState,
         uint256 timestamp
     );
 
     event MemberAdded(
-        bytes32 indexed orgId,
+        bytes8 indexed organizationId,
         address indexed member,
-        MemberState state,
-        uint256 fee,
         uint256 timestamp
     );
 
     event MemberStateChanged(
-        bytes32 indexed orgId,
+        bytes8 indexed organizationId,
         address indexed member,
         MemberState oldState,
         MemberState newState,
@@ -111,105 +99,37 @@ interface IControl {
     );
 
     event MemberRemoved(
-        bytes32 indexed orgId,
+        bytes8 indexed organizationId,
         address indexed member,
         uint256 timestamp
     );
 
-    event TreasuryFundsSpent(
-        bytes32 indexed orgId,
-        address indexed beneficiary,
-        address indexed token,
-        uint256 amount,
-        string purpose,
-        uint256 timestamp
-    );
-
-    event MembershipFeeUpdated(
-        bytes32 indexed orgId,
-        uint256 oldFee,
-        uint256 newFee,
-        uint256 timestamp
-    );
-
-    // Core Functions
+    // Core functions
     function createOrganization(
         string memory name,
         string memory metadataURI,
         OrgType orgType,
         AccessModel accessModel,
         FeeModel feeModel,
-        uint32 memberLimit,
+        uint256 memberLimit,
         uint256 membershipFee,
         uint256 gameStakeRequired
-    ) external returns (bytes32 orgId);
+    ) external returns (bytes8);
 
-    function updateOrganization(
-        bytes32 orgId,
-        address newPrime,
-        OrgType orgType,
-        AccessModel accessModel,
-        uint32 memberLimit,
-        FeeModel feeModel,
-        uint256 membershipFee
-    ) external;
+    function addMember(bytes8 organizationId, address member) external;
+    function removeMember(bytes8 organizationId, address member) external;
+    function updateMemberState(bytes8 organizationId, address member, MemberState state) external;
+    function updateOrganizationState(bytes8 organizationId, OrgState state) external;
 
-    function setOrganizationState(bytes32 orgId, OrgState newState) external;
-
-    function join(address account, bytes32 orgId) external;
-
-    function addMember(bytes32 orgId, address member) external;
-
-    function updateMemberState(
-        bytes32 orgId,
-        address member,
-        MemberState newState
-    ) external;
-
-    function removeMember(bytes32 orgId, address member) external;
-
-    function spendTreasuryFunds(
-        bytes32 orgId,
-        address token,
-        address beneficiary,
-        uint256 amount,
-        string memory purpose
-    ) external;
-
-    // View Functions
-    function getOrganization(bytes32 orgId)
-        external
-        view
-        returns (Organization memory);
-
-    function getMember(bytes32 orgId, address member)
-        external
-        view
-        returns (Member memory);
-
-    function isOrganizationActive(bytes32 orgId) external view returns (bool);
-
-    function isMemberActive(bytes32 orgId, address member)
-        external
-        view
-        returns (bool);
-
+    // View functions
+    function getOrganization(bytes8 id) external view returns (Organization memory);
+    function getMember(bytes8 organizationId, address member) external view returns (Member memory);
+    function isMember(bytes8 organizationId, address member) external view returns (bool);
     function getOrganizationCount() external view returns (uint256);
-
-    function getMemberCount(bytes32 orgId) external view returns (uint256);
-
-    function getTreasuryAddress(bytes32 orgId) external view returns (address);
-
-    function getGameStakeRequired(bytes32 orgId) external view returns (uint256);
-
-    function hasRole(
-        bytes32 orgId,
-        address member,
-        bytes32 role
-    ) external view returns (bool);
-
-    function canJoinOrganization(bytes32 orgId, address member)
-        external
-        view
-        returns (bool);
+    function getAllOrganizations() external view returns (Organization[] memory);
+    function getOrganizationsByState(OrgState state) external view returns (Organization[] memory);
+    function getMemberCount(bytes8 organizationId) external view returns (uint256);
+    function getMembers(bytes8 organizationId) external view returns (address[] memory);
+    function isOrganizationActive(bytes8 organizationId) external view returns (bool);
+    function isMemberActive(bytes8 organizationId, address member) external view returns (bool);
 }

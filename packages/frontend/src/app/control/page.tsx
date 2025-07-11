@@ -6,12 +6,14 @@ import { useOrganizations } from '@/hooks/useOrganizations'
 import { useAccount } from 'wagmi'
 import { EntityCard } from '@/components/ui/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { CreateOrganizationModal } from '@/components/organization/create-organization-modal'
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function ControlPage() {
   const { isConnected } = useAccount()
+  const router = useRouter()
   const {
     organizations,
     isLoading,
@@ -21,15 +23,6 @@ export default function ControlPage() {
   } = useOrganizations()
 
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
-  const [showCreateModal, setShowCreateModal] = useState(false)
-
-  const handleCreateOrganization = () => {
-    if (!isConnected) {
-      alert('Please connect your wallet first')
-      return
-    }
-    setShowCreateModal(true)
-  }
 
   // Filter organizations based on selected filter
   const filteredOrganizations = organizations.filter(org => {
@@ -48,10 +41,12 @@ export default function ControlPage() {
             Manage and participate in gaming organizations and DAOs
           </p>
         </div>
-        <Button disabled={!isConnected} onClick={handleCreateOrganization} className="flex items-center space-x-2">
-          <Plus className="h-4 w-4" />
-          <span>Create Organization</span>
-        </Button>
+        <Link href="/control/create">
+          <Button disabled={!isConnected} className="flex items-center space-x-2">
+            <Plus className="h-4 w-4" />
+            <span>Create Organization</span>
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Overview */}
@@ -142,7 +137,26 @@ export default function ControlPage() {
               </Card>
             ))}
           </div>
-        ) : filteredOrganizations.length > 0 ? (
+        ) : filteredOrganizations.length === 0 && !isLoading && (
+          <EmptyState
+            type="organizations"
+            title={filter === 'all' ? 'No organizations found' : `No ${filter} organizations found`}
+            description={
+              filter === 'all'
+                ? 'Get started by creating your first gaming DAO or discover existing communities.'
+                : `There are currently no ${filter} organizations. Try changing your filter.`
+            }
+            primaryAction={{
+              label: 'Create Organization',
+              onClick: () => router.push('/control/create')
+            }}
+            secondaryAction={{
+              label: 'Clear Filter',
+              onClick: () => setFilter('all')
+            }}
+          />
+        )}
+        {filteredOrganizations.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                          {filteredOrganizations.map((org) => (
                <EntityCard
@@ -162,36 +176,8 @@ export default function ControlPage() {
                />
              ))}
           </div>
-        ) : (
-          <EmptyState
-            type="organizations"
-            title={filter === 'all' ? 'No organizations found' : `No ${filter} organizations found`}
-            description={
-              filter === 'all'
-                ? 'Get started by creating your first gaming DAO or discover existing communities.'
-                : `There are currently no ${filter} organizations. Try changing your filter.`
-            }
-            primaryAction={{
-              label: 'Create Organization',
-              onClick: handleCreateOrganization
-            }}
-            secondaryAction={{
-              label: 'Clear Filter',
-              onClick: () => setFilter('all')
-            }}
-          />
         )}
       </div>
-
-      {/* Create Organization Modal */}
-      <CreateOrganizationModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSuccess={() => {
-          // Refresh organizations list
-          window.location.reload()
-        }}
-      />
     </div>
   )
 }

@@ -1,17 +1,17 @@
 'use client'
 
 import { useQuery } from '@apollo/client'
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_ORGANIZATIONS, GET_USER_ORGANIZATIONS } from '@/lib/queries'
-import { getScaffoldData, ScaffoldDAO } from '@/lib/scaffold-data'
 import { useEffect, useState, useMemo } from 'react'
 import { useAccount } from 'wagmi'
 import { useToast } from './use-toast'
 
+
 export interface Organization {
-  id: string
+  id: string // 8-character alphanumeric ID from smart contract
   name: string
   creator: string
   treasury: string
@@ -25,6 +25,14 @@ export interface Organization {
   createdAt: number
 }
 
+export interface OrganizationStats {
+  totalOrganizations: number
+  totalMembers: number
+  totalTreasuries: number
+  activeOrganizations: number
+  totalValue: number
+}
+
 export interface CreateOrgParams {
   name: string
   metadataURI?: string
@@ -36,55 +44,70 @@ export interface CreateOrgParams {
   gameStakeRequired: string
 }
 
-// Utility functions - moved to top to avoid temporal dead zone
-const getAccessModelFromString = (accessModel: string): number => {
-  switch (accessModel?.toUpperCase()) {
-    case 'OPEN': return 0
-    case 'VOTING': return 1
-    case 'INVITE': return 2
+// Utility functions
+function getAccessModelFromString(accessModel: string | undefined): number {
+  if (!accessModel) return 0
+
+  switch (accessModel.toLowerCase()) {
+    case 'open': return 0
+    case 'voting': return 1
+    case 'invite': return 2
     default: return 0
   }
 }
 
-const getStateFromString = (state: string): number => {
-  switch (state?.toUpperCase()) {
-    case 'INACTIVE': return 0
-    case 'ACTIVE': return 1
-    case 'LOCKED': return 2
+function getStateFromString(state: string | undefined): number {
+  if (!state) return 1
+
+  switch (state.toLowerCase()) {
+    case 'inactive': return 0
+    case 'active': return 1
+    case 'locked': return 2
     default: return 1
-  }
-}
-
-const getAccessModelString = (accessModel: number): string => {
-  switch (accessModel) {
-    case 0: return 'Open'
-    case 1: return 'Voting'
-    case 2: return 'Invite'
-    default: return 'Unknown'
-  }
-}
-
-const getStateString = (state: number): string => {
-  switch (state) {
-    case 0: return 'Inactive'
-    case 1: return 'Active'
-    case 2: return 'Locked'
-    default: return 'Unknown'
   }
 }
 
 export function useOrganizations() {
   const { contracts, isConnected } = useGameDAO()
   const { address } = useAccount()
-  const [scaffoldOrgs, setScaffoldOrgs] = useState<Organization[]>([])
   const toast = useToast()
+  const [error, setError] = useState<string | null>(null)
 
   // Fetch organizations from subgraph
-  const { data, loading, error, refetch } = useQuery(GET_ORGANIZATIONS, {
-    variables: { first: 100, skip: 0 },
-    pollInterval: 30000, // Poll every 30 seconds
-    errorPolicy: 'ignore', // Don't throw errors, we'll use scaffold data as fallback
+  const { data: orgsData, loading: orgsLoading, error: orgsQueryError, refetch } = useQuery(GET_ORGANIZATIONS, {
+    variables: { first: 100 },
+    pollInterval: 60000,
+    errorPolicy: 'ignore',
   })
+
+  // Update error state
+  useEffect(() => {
+    if (orgsQueryError) {
+      setError(orgsQueryError.message)
+    } else {
+      setError(null)
+    }
+  }, [orgsQueryError])
+
+    // Transform organizations data
+  const organizations: Organization[] = useMemo(() => {
+    if (!orgsData?.organizations) return []
+
+    return orgsData.organizations.map((org: any) => ({
+      id: org.id, // Now comes directly as 8-character alphanumeric from smart contract
+      name: org.name || `Organization ${org.id}`,
+      creator: org.creator,
+      treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
+      accessModel: getAccessModelFromString(org.accessModel),
+      feeModel: 0, // Not in subgraph schema
+      memberLimit: parseInt(org.memberLimit) || 100,
+      memberCount: parseInt(org.memberCount) || 0,
+      totalCampaigns: parseInt(org.totalCampaigns) || 0,
+      totalProposals: parseInt(org.totalProposals) || 0,
+      state: getStateFromString(org.state),
+      createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
+    }))
+  }, [orgsData])
 
   // Fetch user's organizations from subgraph
   const { data: userOrgsData, loading: userOrgsLoading, refetch: refetchUserOrgs } = useQuery(GET_USER_ORGANIZATIONS, {
@@ -94,27 +117,25 @@ export function useOrganizations() {
     errorPolicy: 'ignore',
   })
 
-  // Load scaffold data as fallback
-  useEffect(() => {
-    const scaffoldData = getScaffoldData()
-    if (scaffoldData?.daos) {
-      const orgs: Organization[] = scaffoldData.daos.map((dao: ScaffoldDAO) => ({
-        id: dao.id,
-        name: dao.name,
-        creator: dao.creator,
-        treasury: dao.treasury,
-        accessModel: 0, // Default to Open
-        feeModel: 0,
-        memberLimit: 100,
-        memberCount: dao.members.length,
-        totalCampaigns: 0, // Will be calculated from campaigns
-        totalProposals: 0, // Will be calculated from proposals
-        state: 1, // Active
-        createdAt: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 86400 * 30), // Random time in last 30 days
-      }))
-      setScaffoldOrgs(orgs)
-    }
-  }, [])
+  // Transform user organizations data
+  const userOrganizations: Organization[] = useMemo(() => {
+    if (!userOrgsData?.organizations) return []
+
+    return userOrgsData.organizations.map((org: any) => ({
+      id: org.id, // Now comes directly as 8-character alphanumeric from smart contract
+      name: org.name || `Organization ${org.id}`,
+      creator: org.creator,
+      treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
+      accessModel: getAccessModelFromString(org.accessModel),
+      feeModel: 0,
+      memberLimit: parseInt(org.memberLimit) || 100,
+      memberCount: parseInt(org.memberCount) || 0,
+      totalCampaigns: parseInt(org.totalCampaigns) || 0,
+      totalProposals: parseInt(org.totalProposals) || 0,
+      state: getStateFromString(org.state),
+      createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
+    }))
+  }, [userOrgsData])
 
   // Contract write for creating organization
   const {
@@ -125,14 +146,68 @@ export function useOrganizations() {
     reset: resetCreate
   } = useWriteContract()
 
+  console.log('🔍 Transaction state:', {
+    isCreating,
+    createTxHash,
+    createError: createError?.message,
+    hasCreateTxHash: !!createTxHash
+  })
+
   // Wait for create transaction confirmation
   const {
     isLoading: isConfirming,
     isSuccess: createSuccess,
-    error: confirmError
+    error: confirmError,
+    data: transactionReceipt
   } = useWaitForTransactionReceipt({
     hash: createTxHash,
   })
+
+  console.log('🔍 Transaction confirmation state:', {
+    isConfirming,
+    createSuccess,
+    confirmError: confirmError?.message,
+    txHash: createTxHash,
+    hasReceipt: !!transactionReceipt
+  })
+
+  // Extract organization ID from transaction receipt
+  const [createdOrgId, setCreatedOrgId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (createSuccess && transactionReceipt && contracts.CONTROL) {
+      try {
+        console.log('🔍 Parsing transaction receipt for organization ID...')
+        console.log('🔍 Transaction logs:', transactionReceipt.logs.length)
+
+        // Find the OrganizationCreated event in the logs
+        const organizationCreatedEvent = transactionReceipt.logs.find((log: any) => {
+          // Check if this log is from the Control contract
+          const isFromControlContract = log.address.toLowerCase() === contracts.CONTROL.toLowerCase()
+          console.log('🔍 Log from Control contract:', isFromControlContract, log.address)
+
+          // Check if this log has the expected number of topics for OrganizationCreated
+          const hasCorrectTopics = log.topics && log.topics.length === 4
+          console.log('🔍 Log has correct topics:', hasCorrectTopics, log.topics?.length)
+
+          return isFromControlContract && hasCorrectTopics
+        })
+
+        if (organizationCreatedEvent) {
+          // The first topic is the event signature, the second is the organization ID
+          const orgId = organizationCreatedEvent.topics[1]
+          console.log('🎉 Found organization ID:', orgId)
+          if (orgId) {
+            setCreatedOrgId(orgId)
+          }
+        } else {
+          console.warn('⚠️ OrganizationCreated event not found in transaction logs')
+        }
+      } catch (error) {
+        console.error('❌ Error parsing transaction receipt:', error)
+      }
+    }
+  }, [createSuccess, transactionReceipt, contracts.CONTROL])
 
   // Contract write for joining organization
   const {
@@ -147,46 +222,101 @@ export function useOrganizations() {
   const {
     isLoading: isJoinConfirming,
     isSuccess: joinSuccess,
-    error: joinConfirmError
+    error: joinConfirmError,
   } = useWaitForTransactionReceipt({
     hash: joinTxHash,
   })
 
-  // Handle transaction pending state
-  useEffect(() => {
-    if (createTxHash && isCreating) {
-      toast.loading('Creating organization... Please wait for confirmation.')
+  const createOrganization = async (params: CreateOrgParams) => {
+    if (!isConnected || !contracts.CONTROL) {
+      throw new Error('Wallet not connected or contracts not loaded')
     }
-  }, [createTxHash, isCreating, toast])
 
-  useEffect(() => {
-    if (joinTxHash && isJoining) {
-      toast.loading('Joining organization... Please wait for confirmation.')
+    // Helper function to safely convert to BigInt
+    const safeBigInt = (value: string | number, fallback = '0'): bigint => {
+      try {
+        if (typeof value === 'number') {
+          return BigInt(value)
+        }
+        if (typeof value === 'string' && value.trim() !== '') {
+          // Remove any non-numeric characters except decimal point
+          const cleaned = value.replace(/[^0-9.]/g, '')
+          if (cleaned === '' || cleaned === '.') {
+            return BigInt(fallback)
+          }
+          // Handle decimal values by converting to wei (multiply by 10^18)
+          if (cleaned.includes('.')) {
+            const [whole, decimal] = cleaned.split('.')
+            const paddedDecimal = decimal.padEnd(18, '0').slice(0, 18)
+            return BigInt(whole + paddedDecimal)
+          }
+          return BigInt(cleaned)
+        }
+        return BigInt(fallback)
+      } catch (error) {
+        console.warn('Failed to convert to BigInt:', value, error)
+        return BigInt(fallback)
+      }
     }
-  }, [joinTxHash, isJoining, toast])
 
-  // Handle transaction errors
-  useEffect(() => {
-    if (createError || confirmError) {
-      const error = createError || confirmError
-      console.error('❌ Organization creation failed:', error)
-      // Remove automatic toast - let the component handle error display
-      // toast.error('Failed to create organization. Please try again.')
-    }
-  }, [createError, confirmError])
+    console.log('🔍 Creating organization with params:', params)
 
-  useEffect(() => {
-    if (joinError || joinConfirmError) {
-      const error = joinError || joinConfirmError
-      console.error('❌ Organization join failed:', error)
-      toast.error('Failed to join organization. Please try again.')
+    try {
+      const result = await createOrg({
+        address: contracts.CONTROL,
+        abi: ABIS.CONTROL,
+        functionName: 'createOrganization',
+        args: [
+          params.name,
+          params.metadataURI || '',
+          params.orgType,
+          params.accessModel,
+          params.feeModel,
+          params.memberLimit,
+          safeBigInt(params.membershipFee),
+          safeBigInt(params.gameStakeRequired),
+        ],
+      })
+
+      console.log('🎉 Organization creation transaction submitted:', result)
+      toast.loading('Creating organization...')
+      return result
+    } catch (error) {
+      console.error('❌ Failed to create organization:', error)
+      toast.error('Failed to create organization')
+      throw error
     }
-  }, [joinError, joinConfirmError, toast])
+  }
+
+  const joinOrganization = async (organizationId: string) => {
+    if (!isConnected || !contracts.CONTROL) {
+      throw new Error('Wallet not connected or contracts not loaded')
+    }
+
+    console.log('🔍 Joining organization:', organizationId)
+
+    try {
+      const result = await joinOrg({
+        address: contracts.CONTROL,
+        abi: ABIS.CONTROL,
+        functionName: 'addMember',
+        args: [organizationId, address],
+      })
+
+      console.log('🎉 Join organization transaction submitted:', result)
+      toast.loading('Joining organization...')
+      return result
+    } catch (error) {
+      console.error('❌ Failed to join organization:', error)
+      toast.error('Failed to join organization')
+      throw error
+    }
+  }
 
   // Refetch data after successful transactions
   useEffect(() => {
     if (createSuccess) {
-      console.log('✅ Organization creation confirmed on-chain!')
+      console.log('🎉 Organization created successfully!')
       // Dismiss any loading toasts
       toast.dismiss()
       // Refetch data to show the new organization
@@ -202,7 +332,6 @@ export function useOrganizations() {
 
   useEffect(() => {
     if (joinSuccess) {
-      console.log('✅ Organization join confirmed on-chain!')
       // Dismiss any loading toasts
       toast.dismiss()
       // Refetch data to show updated membership
@@ -216,155 +345,107 @@ export function useOrganizations() {
     }
   }, [joinSuccess, refetch, refetchUserOrgs, address, resetJoin, toast])
 
-  // Transform subgraph data to match our interface, fallback to scaffold data
-  const organizations: Organization[] = data?.organizations?.map((org: any) => ({
-    id: org.id,
-    name: org.name || `Organization ${org.id.slice(0, 8)}`,
-    creator: org.creator,
-    treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
-    accessModel: getAccessModelFromString(org.accessModel) || 0,
-    feeModel: 0, // Not in subgraph schema
-    memberLimit: parseInt(org.memberLimit) || 100,
-    memberCount: parseInt(org.memberCount) || 0,
-    totalCampaigns: parseInt(org.totalCampaigns) || 0,
-    totalProposals: parseInt(org.totalProposals) || 0,
-    state: getStateFromString(org.state) || 1,
-    createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
-  })) || scaffoldOrgs
-
-  // Get user's organizations from subgraph data
-  const userOrganizations = userOrgsData?.members?.map((member: any) => ({
-    ...member.organization,
-    memberRole: member.role,
-    memberState: member.state,
-    joinedAt: member.joinedAt,
-  })) || []
-
-  const createOrganization = async (params: CreateOrgParams) => {
-    if (!isConnected) {
-      throw new Error('Wallet not connected')
+  // Calculate stats from organizations data
+  const stats: OrganizationStats = useMemo(() => {
+    return {
+      totalOrganizations: organizations.length,
+      totalMembers: organizations.reduce((sum, org) => sum + org.memberCount, 0),
+      totalTreasuries: organizations.length, // Each org has one treasury
+      activeOrganizations: organizations.filter(org => org.state === 1).length,
+      totalValue: 0, // TODO: Calculate from treasury data
     }
-
-    console.log('🔧 Creating organization with processed params:', {
-      name: params.name,
-      metadataURI: params.metadataURI || '',
-      orgType: params.orgType,
-      accessModel: params.accessModel,
-      feeModel: params.feeModel,
-      memberLimit: params.memberLimit,
-      membershipFee: params.membershipFee,
-      gameStakeRequired: params.gameStakeRequired,
-    })
-
-    // Helper function to safely convert to BigInt
-    const safeBigInt = (value: string | number, fallback = '0'): bigint => {
-      if (value === null || value === undefined || value === '') {
-        return BigInt(fallback)
-      }
-
-      const stringValue = String(value).trim()
-      if (stringValue === '' || stringValue === 'null' || stringValue === 'undefined') {
-        return BigInt(fallback)
-      }
-
-      // Check for invalid patterns
-      if (!/^\d+$/.test(stringValue)) {
-        console.warn(`Invalid BigInt value: "${value}", using fallback: ${fallback}`)
-        return BigInt(fallback)
-      }
-
-      try {
-        return BigInt(stringValue)
-      } catch (error) {
-        console.warn(`BigInt conversion failed for: "${value}", using fallback: ${fallback}`)
-        return BigInt(fallback)
-      }
-    }
-
-    const membershipFeeBigInt = safeBigInt(params.membershipFee, '0')
-    const gameStakeRequiredBigInt = safeBigInt(params.gameStakeRequired, '0')
-
-    console.log('🔧 BigInt conversions:', {
-      membershipFee: `${params.membershipFee} -> ${membershipFeeBigInt}`,
-      gameStakeRequired: `${params.gameStakeRequired} -> ${gameStakeRequiredBigInt}`,
-    })
-
-    try {
-      return createOrg({
-        address: contracts.CONTROL,
-        abi: ABIS.CONTROL,
-        functionName: 'createOrganization',
-        args: [
-          params.name,
-          params.metadataURI || '',
-          params.orgType,
-          params.accessModel,
-          params.feeModel,
-          Number(params.memberLimit), // Ensure it's a proper number for uint32
-          membershipFeeBigInt,
-          gameStakeRequiredBigInt,
-        ],
-      })
-    } catch (error) {
-      console.error('❌ Contract call failed:', error)
-      throw error
-    }
-  }
-
-  const joinOrganization = async (organizationId: string) => {
-    if (!isConnected || !address) {
-      throw new Error('Wallet not connected')
-    }
-
-    return joinOrg({
-      address: contracts.CONTROL,
-      abi: ABIS.CONTROL,
-      functionName: 'addMember',
-      args: [organizationId, address],
-    })
-  }
-
-  // Calculate stats
-  const stats = {
-    totalOrganizations: organizations.length,
-    activeOrganizations: organizations.filter(org => org.state === 1).length,
-    totalMembers: organizations.reduce((sum, org) => sum + org.memberCount, 0),
-    userMemberships: userOrganizations.length,
-  }
+  }, [organizations])
 
   return {
-    // Data
     organizations,
     userOrganizations,
-    orgCount: organizations.length,
+    isLoading: orgsLoading,
+    isUserOrgsLoading: userOrgsLoading,
+    error,
+    refetch,
+    refetchUserOrgs,
     stats,
 
-    // Actions
+    // Organization creation
     createOrganization,
-    joinOrganization,
-    resetCreate,
-
-    // Status - show loading only if we have no data at all
-    isLoading: loading && organizations.length === 0,
-    isLoadingUserOrgs: userOrgsLoading,
     isCreating: isCreating || isConfirming,
     createSuccess,
     createError: createError || confirmError,
+    createdOrgId,
+
+    // Organization joining
+    joinOrganization,
     isJoining: isJoining || isJoinConfirming,
     joinSuccess,
     joinError: joinError || joinConfirmError,
-    error: error && organizations.length === 0 ? error : null, // Hide error if we have scaffold data
 
-    // Utils
-    getAccessModelString,
-    getStateString,
+    // Utility functions
+    getAccessModelFromString,
+    getStateFromString,
+  }
+}
 
-    // Refetch
-    refetch: () => {
-      refetch()
-      if (address) {
-        refetchUserOrgs()
-      }
-    },
+// Helper function to get organization by ID (accepts both formats)
+export function useOrganization(organizationId?: string) {
+  const { organizations, isLoading, error } = useOrganizations()
+
+    const organization = useMemo(() => {
+    if (!organizationId || !organizations.length) return null
+
+    // Find organization by ID
+    return organizations.find(org => org.id === organizationId) || null
+  }, [organizations, organizationId])
+
+  return {
+    organization,
+    isLoading,
+    error,
+  }
+}
+
+export function useUserOrganizations() {
+  const { address, contractsValid } = useGameDAO()
+  const [error, setError] = useState<string | null>(null)
+
+  const { data: userOrgsData, loading: userOrgsLoading, error: userOrgsQueryError } = useQuery(GET_USER_ORGANIZATIONS, {
+    variables: { user: address?.toLowerCase() || '' },
+    skip: !address || !contractsValid,
+    pollInterval: 60000,
+    errorPolicy: 'ignore',
+  })
+
+  // Transform user organizations data
+  const userOrganizations: Organization[] = useMemo(() => {
+    if (!userOrgsData?.organizations) return []
+
+    return userOrgsData.organizations.map((org: any) => ({
+      id: org.id, // Now comes directly as 8-character alphanumeric from smart contract
+      name: org.name || `Organization ${org.id}`,
+      creator: org.creator,
+      treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
+      accessModel: getAccessModelFromString(org.accessModel),
+      feeModel: 0,
+      memberLimit: parseInt(org.memberLimit) || 100,
+      memberCount: parseInt(org.memberCount) || 0,
+      totalCampaigns: parseInt(org.totalCampaigns) || 0,
+      totalProposals: parseInt(org.totalProposals) || 0,
+      state: getStateFromString(org.state),
+      createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
+    }))
+  }, [userOrgsData])
+
+  // Update error state
+  useEffect(() => {
+    if (userOrgsQueryError) {
+      setError(userOrgsQueryError.message)
+    } else {
+      setError(null)
+    }
+  }, [userOrgsQueryError])
+
+  return {
+    userOrganizations,
+    isLoading: userOrgsLoading,
+    error,
   }
 }

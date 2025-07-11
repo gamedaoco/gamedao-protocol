@@ -7,13 +7,14 @@ import {
   Organization,
   Member,
 } from '../generated/schema'
+import { getOrganizationIdString } from './utils/ids'
 
 export function handleProfileCreated(event: ProfileCreated): void {
   let profileId = event.params.profileId.toHexString()
   let profile = new Profile(profileId)
 
   // Load organization
-  let organizationId = event.params.organizationId.toHexString()
+  let organizationId = getOrganizationIdString(event.params.organizationId)
   let organization = Organization.load(organizationId)
   if (!organization) {
     log.warning('Organization not found, continuing with profile creation: {}', [organizationId])

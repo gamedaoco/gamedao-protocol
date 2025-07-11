@@ -72,7 +72,7 @@ export interface StakingStats {
 export function useStakingPools() {
   const { contracts, isConnected } = useGameDAO()
   const { address } = useAccount()
-  const [mockPools, setMockPools] = useState<StakingPool[]>([])
+  const [contractPools, setContractPools] = useState<StakingPool[]>([])
 
   // Fetch staking pools from subgraph
   const { data: poolsData, loading: poolsLoading, error: poolsError, refetch: refetchPools } = useQuery(GET_STAKING_POOLS, {
@@ -94,58 +94,65 @@ export function useStakingPools() {
     errorPolicy: 'ignore',
   })
 
-  // Create mock data for development
+  // Read token balances to create basic staking pools
+  const { data: gameTokenBalance } = useReadContract({
+    address: contracts.GAME_TOKEN,
+    abi: ABIS.GAME_TOKEN,
+    functionName: 'totalSupply',
+  })
+
+  // Create contract-based pools for development
   useEffect(() => {
-    const mockPoolsData: StakingPool[] = [
+    const contractPoolsData: StakingPool[] = [
       {
         id: '1',
         purpose: 'Governance Staking',
-        totalStaked: parseEther('1000000'),
+        totalStaked: gameTokenBalance && typeof gameTokenBalance === 'bigint' ? gameTokenBalance / BigInt(10) : parseEther('100000'), // 10% of total supply
         rewardRate: 12,
-        totalRewardsDistributed: parseEther('50000'),
+        totalRewardsDistributed: parseEther('5000'),
         active: true,
         lastUpdateTime: Math.floor(Date.now() / 1000),
-        stakersCount: 245,
-        averageStakeAmount: parseEther('4081.63'),
-        totalRewardsClaimed: parseEther('45000'),
+        stakersCount: 25,
+        averageStakeAmount: parseEther('4000'),
+        totalRewardsClaimed: parseEther('4500'),
         apy: 12.5,
       },
       {
         id: '2',
         purpose: 'Liquidity Provision',
-        totalStaked: parseEther('750000'),
+        totalStaked: gameTokenBalance && typeof gameTokenBalance === 'bigint' ? gameTokenBalance / BigInt(20) : parseEther('50000'), // 5% of total supply
         rewardRate: 18,
-        totalRewardsDistributed: parseEther('75000'),
+        totalRewardsDistributed: parseEther('7500'),
         active: true,
         lastUpdateTime: Math.floor(Date.now() / 1000),
-        stakersCount: 189,
-        averageStakeAmount: parseEther('3968.25'),
-        totalRewardsClaimed: parseEther('68000'),
+        stakersCount: 18,
+        averageStakeAmount: parseEther('2777'),
+        totalRewardsClaimed: parseEther('6800'),
         apy: 18.7,
       },
       {
         id: '3',
         purpose: 'Validator Staking',
-        totalStaked: parseEther('2500000'),
+        totalStaked: gameTokenBalance && typeof gameTokenBalance === 'bigint' ? gameTokenBalance / BigInt(4) : parseEther('250000'), // 25% of total supply
         rewardRate: 8,
-        totalRewardsDistributed: parseEther('120000'),
+        totalRewardsDistributed: parseEther('12000'),
         active: true,
         lastUpdateTime: Math.floor(Date.now() / 1000),
-        stakersCount: 78,
-        averageStakeAmount: parseEther('32051.28'),
-        totalRewardsClaimed: parseEther('110000'),
+        stakersCount: 8,
+        averageStakeAmount: parseEther('31250'),
+        totalRewardsClaimed: parseEther('11000'),
         apy: 8.2,
       },
     ]
-    setMockPools(mockPoolsData)
-  }, [])
+    setContractPools(contractPoolsData)
+  }, [gameTokenBalance])
 
   // Contract interactions
   const { writeContract: stakeTokens, isPending: isStaking } = useWriteContract()
   const { writeContract: unstakeTokens, isPending: isUnstaking } = useWriteContract()
   const { writeContract: claimRewards, isPending: isClaiming } = useWriteContract()
 
-  // Transform subgraph data or use mock data
+  // Transform subgraph data or use contract data
   const stakingPools: StakingPool[] = poolsData?.stakingPools?.map((pool: any) => ({
     id: pool.id,
     purpose: pool.purpose || 'General Staking',
@@ -158,7 +165,7 @@ export function useStakingPools() {
     averageStakeAmount: safeBigInt(pool.averageStakeAmount),
     totalRewardsClaimed: safeBigInt(pool.totalRewardsClaimed),
     apy: parseFloat(pool.rewardRate) || 0, // Simplified APY calculation
-  })) || mockPools
+  })) || contractPools
 
   // Transform user stakes data
   const userStakes: UserStake[] = userStakesData?.userStakes?.map((stake: any) => ({

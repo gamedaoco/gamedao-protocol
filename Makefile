@@ -17,6 +17,7 @@ CONTRACTS_DIR=packages/contracts-solidity
 FRONTEND_DIR=packages/frontend
 SUBGRAPH_DIR=packages/subgraph
 SHARED_DIR=packages/shared
+DATA_DIR=data/
 
 # Network configuration
 NETWORK?=localhost
@@ -374,6 +375,10 @@ dev-reset:
 	@sleep 2
 	@echo "$(CYAN)2️⃣  Stopping GameDAO Graph services only...$(NC)"
 	@make graph-stop-safe || true
+	@sleep 2
+	@echo "$(RED)2️⃣  Erasing database...$(NC)"
+	@rm -rf $(DATA_DIR)/postgres
+	@sleep 2
 	@echo "$(CYAN)3️⃣  Starting Hardhat node (quiet mode)...$(NC)"
 	@cd $(CONTRACTS_DIR) && npm run node:quiet &
 	@echo "$(YELLOW)⏳ Waiting for node to start...$(NC)"

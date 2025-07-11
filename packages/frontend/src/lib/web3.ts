@@ -1,5 +1,5 @@
 import { http, createConfig } from 'wagmi'
-import { mainnet, sepolia, hardhat } from 'wagmi/chains'
+import { mainnet, sepolia, hardhat, polygon } from 'wagmi/chains'
 import { injected, metaMask } from 'wagmi/connectors'
 import { getContractAddresses, logContractConfiguration, type ContractAddresses } from './contracts'
 
@@ -10,11 +10,65 @@ declare global {
   }
 }
 
+// Define Soneium networks
+export const soneiumMinato = {
+  id: 1946,
+  name: 'Soneium Minato Testnet',
+  network: 'soneium-minato',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc.minato.soneium.org'],
+    },
+    public: {
+      http: ['https://rpc.minato.soneium.org'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Soneium Explorer',
+      url: 'https://explorer-testnet.soneium.org',
+    },
+  },
+} as const
+
+export const soneium = {
+  id: 1868,
+  name: 'Soneium',
+  network: 'soneium',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc.soneium.org'],
+    },
+    public: {
+      http: ['https://rpc.soneium.org'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Soneium Explorer',
+      url: 'https://explorer.soneium.org',
+    },
+  },
+} as const
+
 // Supported chains for GameDAO
 export const supportedChains = [
   hardhat, // Local development
   sepolia, // Testnet
-  mainnet, // Production (when ready)
+  soneiumMinato, // Soneium Testnet
+  polygon, // Polygon Mainnet
+  soneium, // Soneium Mainnet
+  mainnet, // Ethereum Mainnet (when ready)
 ] as const
 
 // NOTE: Web3 configuration moved to Web3Provider to handle client-side only initialization
@@ -37,6 +91,27 @@ export const getChainConfig = (chainId: number) => {
         blockExplorer: 'https://sepolia.etherscan.io',
         subgraphUrl: 'https://api.thegraph.com/subgraphs/name/gamedao/protocol-sepolia',
         rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY',
+      }
+    case soneiumMinato.id:
+      return {
+        name: 'Soneium Minato Testnet',
+        blockExplorer: 'https://explorer-testnet.soneium.org',
+        subgraphUrl: 'https://api.thegraph.com/subgraphs/name/gamedao/protocol-soneium-testnet',
+        rpcUrl: 'https://rpc.minato.soneium.org',
+      }
+    case polygon.id:
+      return {
+        name: 'Polygon',
+        blockExplorer: 'https://polygonscan.com',
+        subgraphUrl: 'https://api.thegraph.com/subgraphs/name/gamedao/protocol-polygon',
+        rpcUrl: 'https://polygon-rpc.com',
+      }
+    case soneium.id:
+      return {
+        name: 'Soneium',
+        blockExplorer: 'https://explorer.soneium.org',
+        subgraphUrl: 'https://api.thegraph.com/subgraphs/name/gamedao/protocol-soneium',
+        rpcUrl: 'https://rpc.soneium.org',
       }
     case mainnet.id:
       return {
