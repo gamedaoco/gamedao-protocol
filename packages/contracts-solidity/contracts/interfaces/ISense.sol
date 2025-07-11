@@ -17,7 +17,7 @@ interface ISense {
     struct Profile {
         bytes32 profileId;
         address owner;
-        bytes32 organizationId;
+        bytes8 organizationId;
         string metadata; // IPFS hash for extended profile data
         uint256 createdAt;
         uint256 updatedAt;
@@ -97,7 +97,7 @@ interface ISense {
     struct ReputationExport {
         bytes32 sourceProfileId;
         address owner;
-        bytes32 sourceOrganizationId;
+        bytes8 sourceOrganizationId;
         ReputationData reputation;
         Achievement[] achievements;
         FeedbackSummary feedbackSummary;
@@ -159,7 +159,7 @@ interface ISense {
     event ProfileCreated(
         bytes32 indexed profileId,
         address indexed owner,
-        bytes32 indexed organizationId,
+        bytes8 indexed organizationId,
         string metadata,
         uint256 timestamp
     );
@@ -225,7 +225,7 @@ interface ISense {
      */
     event ReputationExported(
         bytes32 indexed profileId,
-        bytes32 indexed targetOrganizationId,
+        bytes8 indexed targetOrganizationId,
         bytes32 merkleRoot,
         uint256 timestamp
     );
@@ -235,7 +235,7 @@ interface ISense {
      */
     event ReputationImported(
         bytes32 indexed profileId,
-        bytes32 indexed sourceOrganizationId,
+        bytes8 indexed sourceOrganizationId,
         uint256 importedReputation,
         uint256 timestamp
     );
@@ -245,7 +245,7 @@ interface ISense {
     // =============================================================
 
     error ProfileNotFound(bytes32 profileId);
-    error ProfileAlreadyExists(address owner, bytes32 organizationId);
+    error ProfileAlreadyExists(address owner, bytes8 organizationId);
     error UnauthorizedProfileAccess(bytes32 profileId, address caller);
     error InvalidReputationDelta(int256 delta);
     error AchievementNotFound(bytes32 achievementId);
@@ -255,7 +255,7 @@ interface ISense {
     error InvalidVerificationLevel(VerificationLevel level);
     error ReputationExportFailed(bytes32 profileId);
     error InvalidImportProof(bytes32 profileId);
-    error OrganizationNotFound(bytes32 organizationId);
+    error OrganizationNotFound(bytes8 organizationId);
     error InsufficientPermissions(address caller, string action);
 
     // =============================================================
@@ -268,7 +268,7 @@ interface ISense {
      * @param metadata IPFS hash for extended profile data
      * @return profileId The unique identifier for the created profile
      */
-    function createProfile(bytes32 organizationId, string memory metadata)
+    function createProfile(bytes8 organizationId, string memory metadata)
         external
         returns (bytes32 profileId);
 
@@ -292,7 +292,7 @@ interface ISense {
      * @param organizationId The organization ID
      * @return profile The profile data
      */
-    function getProfileByOwner(address owner, bytes32 organizationId)
+    function getProfileByOwner(address owner, bytes8 organizationId)
         external
         view
         returns (Profile memory profile);
@@ -530,7 +530,7 @@ interface ISense {
      * @param organizationId The organization to query
      * @return profileIds Array of profile IDs
      */
-    function getProfilesByOrganization(bytes32 organizationId)
+    function getProfilesByOrganization(bytes8 organizationId)
         external
         view
         returns (bytes32[] memory profileIds);
@@ -547,7 +547,7 @@ interface ISense {
      * @param limit The maximum number of profiles to return
      * @return profileIds Array of profile IDs sorted by reputation
      */
-    function getTopProfiles(bytes32 organizationId, uint256 limit)
+    function getTopProfiles(bytes8 organizationId, uint256 limit)
         external
         view
         returns (bytes32[] memory profileIds);

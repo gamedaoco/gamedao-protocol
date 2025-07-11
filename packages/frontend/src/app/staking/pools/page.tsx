@@ -153,7 +153,7 @@ export default function StakingPoolsPage() {
                     <div>
                       <CardTitle className="text-xl">{config.title}</CardTitle>
                       <Badge variant="secondary" className="font-mono mt-1">
-                        {pool?.apyRate || 0}% APY
+                        {pool?.apy || 0}% APY
                       </Badge>
                     </div>
                   </div>
@@ -246,7 +246,7 @@ export default function StakingPoolsPage() {
                   <Button
                     className="flex-1"
                     disabled={!pool?.active}
-                    onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apyRate || 0, 'stake')}
+                    onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apy || 0, 'stake')}
                   >
                     Stake GAME
                   </Button>
@@ -255,7 +255,7 @@ export default function StakingPoolsPage() {
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apyRate || 0, 'unstake')}
+                      onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apy || 0, 'unstake')}
                     >
                       Unstake
                     </Button>

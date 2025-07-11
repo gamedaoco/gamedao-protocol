@@ -14,27 +14,15 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
       {
         indexed: true,
         internalType: "address",
         name: "member",
         type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "enum IControl.MemberState",
-        name: "state",
-        type: "uint8",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "fee",
-        type: "uint256",
       },
       {
         indexed: false,
@@ -51,9 +39,9 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
       {
         indexed: true,
@@ -76,9 +64,9 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
       {
         indexed: true,
@@ -113,40 +101,15 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "id",
+        type: "bytes8",
       },
       {
         indexed: false,
-        internalType: "uint256",
-        name: "oldFee",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "newFee",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "MembershipFeeUpdated",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "string",
+        name: "name",
+        type: "string",
       },
       {
         indexed: true,
@@ -157,20 +120,8 @@ const _abi = [
       {
         indexed: true,
         internalType: "address",
-        name: "prime",
+        name: "treasury",
         type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "name",
-        type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "enum IControl.OrgType",
-        name: "orgType",
-        type: "uint8",
       },
       {
         indexed: false,
@@ -187,9 +138,9 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "id",
+        type: "bytes8",
       },
       {
         indexed: false,
@@ -214,97 +165,11 @@ const _abi = [
     type: "event",
   },
   {
-    anonymous: false,
     inputs: [
       {
-        indexed: true,
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "prime",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "enum IControl.OrgType",
-        name: "orgType",
-        type: "uint8",
-      },
-      {
-        indexed: false,
-        internalType: "enum IControl.AccessModel",
-        name: "accessModel",
-        type: "uint8",
-      },
-      {
-        indexed: false,
-        internalType: "uint32",
-        name: "memberLimit",
-        type: "uint32",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "OrganizationUpdated",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "beneficiary",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "purpose",
-        type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "TreasuryFundsSpent",
-    type: "event",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
       {
         internalType: "address",
@@ -315,30 +180,6 @@ const _abi = [
     name: "addMember",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
-      },
-      {
-        internalType: "address",
-        name: "member",
-        type: "address",
-      },
-    ],
-    name: "canJoinOrganization",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
     type: "function",
   },
   {
@@ -369,9 +210,9 @@ const _abi = [
         type: "uint8",
       },
       {
-        internalType: "uint32",
+        internalType: "uint256",
         name: "memberLimit",
-        type: "uint32",
+        type: "uint256",
       },
       {
         internalType: "uint256",
@@ -387,129 +228,24 @@ const _abi = [
     name: "createOrganization",
     outputs: [
       {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "",
+        type: "bytes8",
       },
     ],
     stateMutability: "nonpayable",
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
-      },
-    ],
-    name: "getGameStakeRequired",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
-      },
-      {
-        internalType: "address",
-        name: "member",
-        type: "address",
-      },
-    ],
-    name: "getMember",
+    inputs: [],
+    name: "getAllOrganizations",
     outputs: [
       {
         components: [
           {
-            internalType: "enum IControl.MemberState",
-            name: "state",
-            type: "uint8",
-          },
-          {
-            internalType: "uint256",
-            name: "joinedAt",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "totalContribution",
-            type: "uint256",
-          },
-          {
-            internalType: "bytes32",
-            name: "role",
-            type: "bytes32",
-          },
-          {
-            internalType: "uint256",
-            name: "stakedAmount",
-            type: "uint256",
-          },
-        ],
-        internalType: "struct IControl.Member",
-        name: "",
-        type: "tuple",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
-      },
-    ],
-    name: "getMemberCount",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
-      },
-    ],
-    name: "getOrganization",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
-          },
-          {
-            internalType: "address",
-            name: "creator",
-            type: "address",
-          },
-          {
-            internalType: "address",
-            name: "prime",
-            type: "address",
+            internalType: "bytes8",
+            name: "id",
+            type: "bytes8",
           },
           {
             internalType: "string",
@@ -520,6 +256,16 @@ const _abi = [
             internalType: "string",
             name: "metadataURI",
             type: "string",
+          },
+          {
+            internalType: "address",
+            name: "creator",
+            type: "address",
+          },
+          {
+            internalType: "address",
+            name: "treasury",
+            type: "address",
           },
           {
             internalType: "enum IControl.OrgType",
@@ -538,8 +284,178 @@ const _abi = [
           },
           {
             internalType: "uint256",
+            name: "memberLimit",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "memberCount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "totalCampaigns",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "totalProposals",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
             name: "membershipFee",
             type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "gameStakeRequired",
+            type: "uint256",
+          },
+          {
+            internalType: "enum IControl.OrgState",
+            name: "state",
+            type: "uint8",
+          },
+          {
+            internalType: "uint256",
+            name: "createdAt",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "updatedAt",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct IControl.Organization[]",
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
+      },
+      {
+        internalType: "address",
+        name: "member",
+        type: "address",
+      },
+    ],
+    name: "getMember",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "address",
+            name: "account",
+            type: "address",
+          },
+          {
+            internalType: "enum IControl.MemberState",
+            name: "state",
+            type: "uint8",
+          },
+          {
+            internalType: "uint256",
+            name: "joinedAt",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "reputation",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "stake",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct IControl.Member",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
+      },
+    ],
+    name: "getMemberCount",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
+      },
+    ],
+    name: "getMembers",
+    outputs: [
+      {
+        internalType: "address[]",
+        name: "",
+        type: "address[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "id",
+        type: "bytes8",
+      },
+    ],
+    name: "getOrganization",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "bytes8",
+            name: "id",
+            type: "bytes8",
+          },
+          {
+            internalType: "string",
+            name: "name",
+            type: "string",
+          },
+          {
+            internalType: "string",
+            name: "metadataURI",
+            type: "string",
+          },
+          {
+            internalType: "address",
+            name: "creator",
+            type: "address",
           },
           {
             internalType: "address",
@@ -547,9 +463,49 @@ const _abi = [
             type: "address",
           },
           {
-            internalType: "uint32",
+            internalType: "enum IControl.OrgType",
+            name: "orgType",
+            type: "uint8",
+          },
+          {
+            internalType: "enum IControl.AccessModel",
+            name: "accessModel",
+            type: "uint8",
+          },
+          {
+            internalType: "enum IControl.FeeModel",
+            name: "feeModel",
+            type: "uint8",
+          },
+          {
+            internalType: "uint256",
             name: "memberLimit",
-            type: "uint32",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "memberCount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "totalCampaigns",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "totalProposals",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "membershipFee",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "gameStakeRequired",
+            type: "uint256",
           },
           {
             internalType: "enum IControl.OrgState",
@@ -591,17 +547,104 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "enum IControl.OrgState",
+        name: "state",
+        type: "uint8",
       },
     ],
-    name: "getTreasuryAddress",
+    name: "getOrganizationsByState",
     outputs: [
       {
-        internalType: "address",
+        components: [
+          {
+            internalType: "bytes8",
+            name: "id",
+            type: "bytes8",
+          },
+          {
+            internalType: "string",
+            name: "name",
+            type: "string",
+          },
+          {
+            internalType: "string",
+            name: "metadataURI",
+            type: "string",
+          },
+          {
+            internalType: "address",
+            name: "creator",
+            type: "address",
+          },
+          {
+            internalType: "address",
+            name: "treasury",
+            type: "address",
+          },
+          {
+            internalType: "enum IControl.OrgType",
+            name: "orgType",
+            type: "uint8",
+          },
+          {
+            internalType: "enum IControl.AccessModel",
+            name: "accessModel",
+            type: "uint8",
+          },
+          {
+            internalType: "enum IControl.FeeModel",
+            name: "feeModel",
+            type: "uint8",
+          },
+          {
+            internalType: "uint256",
+            name: "memberLimit",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "memberCount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "totalCampaigns",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "totalProposals",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "membershipFee",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "gameStakeRequired",
+            type: "uint256",
+          },
+          {
+            internalType: "enum IControl.OrgState",
+            name: "state",
+            type: "uint8",
+          },
+          {
+            internalType: "uint256",
+            name: "createdAt",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "updatedAt",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct IControl.Organization[]",
         name: "",
-        type: "address",
+        type: "tuple[]",
       },
     ],
     stateMutability: "view",
@@ -610,22 +653,17 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
       {
         internalType: "address",
         name: "member",
         type: "address",
       },
-      {
-        internalType: "bytes32",
-        name: "role",
-        type: "bytes32",
-      },
     ],
-    name: "hasRole",
+    name: "isMember",
     outputs: [
       {
         internalType: "bool",
@@ -639,9 +677,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
       {
         internalType: "address",
@@ -663,9 +701,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
     ],
     name: "isOrganizationActive",
@@ -682,27 +720,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-      {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
-      },
-    ],
-    name: "join",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
       {
         internalType: "address",
@@ -718,60 +738,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
-      },
-      {
-        internalType: "enum IControl.OrgState",
-        name: "newState",
-        type: "uint8",
-      },
-    ],
-    name: "setOrganizationState",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
-      },
-      {
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "beneficiary",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
-      },
-      {
-        internalType: "string",
-        name: "purpose",
-        type: "string",
-      },
-    ],
-    name: "spendTreasuryFunds",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
       {
         internalType: "address",
@@ -780,7 +749,7 @@ const _abi = [
       },
       {
         internalType: "enum IControl.MemberState",
-        name: "newState",
+        name: "state",
         type: "uint8",
       },
     ],
@@ -792,42 +761,17 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "orgId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
       {
-        internalType: "address",
-        name: "newPrime",
-        type: "address",
-      },
-      {
-        internalType: "enum IControl.OrgType",
-        name: "orgType",
+        internalType: "enum IControl.OrgState",
+        name: "state",
         type: "uint8",
-      },
-      {
-        internalType: "enum IControl.AccessModel",
-        name: "accessModel",
-        type: "uint8",
-      },
-      {
-        internalType: "uint32",
-        name: "memberLimit",
-        type: "uint32",
-      },
-      {
-        internalType: "enum IControl.FeeModel",
-        name: "feeModel",
-        type: "uint8",
-      },
-      {
-        internalType: "uint256",
-        name: "membershipFee",
-        type: "uint256",
       },
     ],
-    name: "updateOrganization",
+    name: "updateOrganizationState",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",

@@ -76,9 +76,9 @@
         },
         {
           "indexed": true,
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "indexed": true,
@@ -304,9 +304,9 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "indexed": false,
@@ -586,9 +586,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "internalType": "string",
@@ -830,9 +830,9 @@
               "type": "bytes32"
             },
             {
-              "internalType": "bytes32",
+              "internalType": "bytes8",
               "name": "organizationId",
-              "type": "bytes32"
+              "type": "bytes8"
             },
             {
               "internalType": "address",
@@ -1064,9 +1064,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         }
       ],
       "name": "getProposalsByOrganization",
@@ -1196,9 +1196,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         }
       ],
       "name": "getVotingParameters",
@@ -1369,9 +1369,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "components": [
@@ -1465,9 +1465,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "internalType": "enum ISignal.ProposalType",

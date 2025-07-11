@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAccount } from 'wagmi'
 import { useQuery } from '@apollo/client'
 import { useGameDAO } from './useGameDAO'
@@ -61,7 +61,6 @@ export interface PortfolioData {
 export function usePortfolio() {
   const { address } = useAccount()
   const { contractsValid } = useGameDAO()
-  const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const { data, loading, error: queryError } = useQuery(GET_USER_PORTFOLIO, {
@@ -71,16 +70,37 @@ export function usePortfolio() {
     errorPolicy: 'ignore',
   })
 
-  useEffect(() => {
+  // Always return a defined portfolio object with default values
+  const portfolio: PortfolioData = useMemo(() => {
     if (!address || !contractsValid) {
-      setPortfolio(null)
-      setError(null)
-      return
+      return {
+        totalValueUSD: 0,
+        change24h: 0,
+        tokenCount: 0,
+        tokens: [],
+        participation: {
+          organizations: 0,
+          campaigns: 0,
+          proposals: 0,
+          votes: 0
+        }
+      }
     }
 
     if (queryError && !data) {
       setError('Unable to load portfolio data. Please check your connection.')
-      return
+      return {
+        totalValueUSD: 0,
+        change24h: 0,
+        tokenCount: 0,
+        tokens: [],
+        participation: {
+          organizations: 0,
+          campaigns: 0,
+          proposals: 0,
+          votes: 0
+        }
+      }
     }
 
     if (data?.members && data.members.length > 0) {
@@ -99,7 +119,7 @@ export function usePortfolio() {
         if (member.votes) allVotes.push(...member.votes)
       })
 
-      const portfolioData: PortfolioData = {
+      return {
         totalValueUSD: 0, // Would need token price data
         change24h: 0, // Would need historical price data
         tokenCount: 0, // Would need token balance data
@@ -111,23 +131,20 @@ export function usePortfolio() {
           votes: allVotes.length
         }
       }
-      setPortfolio(portfolioData)
-      setError(null)
-    } else if (!loading) {
-      // User not found in subgraph - they haven't interacted with the protocol yet
-      setPortfolio({
-        totalValueUSD: 0,
-        change24h: 0,
-        tokenCount: 0,
-        tokens: [],
-        participation: {
-          organizations: 0,
-          campaigns: 0,
-          proposals: 0,
-          votes: 0
-        }
-      })
-      setError(null)
+    }
+
+    // User not found in subgraph - they haven't interacted with the protocol yet
+    return {
+      totalValueUSD: 0,
+      change24h: 0,
+      tokenCount: 0,
+      tokens: [],
+      participation: {
+        organizations: 0,
+        campaigns: 0,
+        proposals: 0,
+        votes: 0
+      }
     }
   }, [address, contractsValid, data, loading, queryError])
 

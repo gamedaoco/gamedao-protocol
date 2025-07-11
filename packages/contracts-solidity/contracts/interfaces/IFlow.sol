@@ -37,7 +37,7 @@ interface IFlow {
     // Structs
     struct Campaign {
         uint256 index;
-        bytes32 organizationId;
+        bytes8 organizationId;
         address creator;
         address admin;
         string title;
@@ -77,7 +77,7 @@ interface IFlow {
     // Events
     event CampaignCreated(
         bytes32 indexed campaignId,
-        bytes32 indexed organizationId,
+        bytes8 indexed organizationId,
         address indexed creator,
         string title,
         FlowType flowType,
@@ -160,13 +160,13 @@ interface IFlow {
     // Core Functions
     function createCampaignWithParams(
         address creator,
-        bytes32 organizationId,
+        bytes8 organizationId,
         CampaignParams memory params
     ) external returns (bytes32 campaignId);
 
     // Legacy function - maintained for backward compatibility
     function createCampaign(
-        bytes32 organizationId,
+        bytes8 organizationId,
         string memory title,
         string memory description,
         string memory metadataURI,
@@ -231,7 +231,7 @@ interface IFlow {
         view
         returns (address[] memory);
 
-    function getCampaignsByOrganization(bytes32 organizationId)
+    function getCampaignsByOrganization(bytes8 organizationId)
         external
         view
         returns (bytes32[] memory);

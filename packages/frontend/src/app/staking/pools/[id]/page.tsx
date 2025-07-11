@@ -74,7 +74,7 @@ function useStakingPool(id: string) {
   // Convert id to pool purpose
   const poolPurpose = id.toUpperCase() as PoolPurpose
   const pool = pools?.find(p => p.purpose === poolPurpose)
-  const userStake = userStakes?.find(s => s?.pool === poolPurpose)
+  const userStake = userStakes?.find(s => s?.pool?.purpose === poolPurpose)
   const config = POOL_CONFIGS[poolPurpose]
 
   return {
@@ -405,7 +405,7 @@ export default function StakingPoolDetailPage({ params }: StakingPoolDetailPageP
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">APY</p>
-                      <p className="text-3xl font-bold text-green-600">{pool.apyRate.toFixed(2)}%</p>
+                      <p className="text-3xl font-bold text-green-600">{(pool.apy || 0).toFixed(2)}%</p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-green-600" />
                   </div>
@@ -465,7 +465,7 @@ export default function StakingPoolDetailPage({ params }: StakingPoolDetailPageP
                         </div>
                         <div>
                           <span className="text-sm font-medium">Reward Rate</span>
-                          <p className="text-sm text-muted-foreground">{pool.apyRate.toFixed(2)}% APY</p>
+                          <p className="text-sm text-muted-foreground">{(pool.apy || 0).toFixed(2)}% APY</p>
                         </div>
                         <div>
                           <span className="text-sm font-medium">Status</span>
@@ -577,7 +577,7 @@ export default function StakingPoolDetailPage({ params }: StakingPoolDetailPageP
         onClose={closeStakingModal}
         poolPurpose={id.toUpperCase() as any}
         poolTitle={config.title}
-        poolApy={pool.apyRate}
+        poolApy={pool.apy || 0}
         mode={stakingModal.mode}
       />
     </ErrorBoundary>

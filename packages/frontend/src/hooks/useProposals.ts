@@ -276,7 +276,8 @@ export function useProposal(proposalId: string) {
     errorPolicy: 'ignore',
   })
 
-  const proposal = data?.proposal ? {
+  // Always return a defined proposal object with default values
+  const proposal: Proposal = data?.proposal ? {
     id: data.proposal.id,
     title: data.proposal.title,
     description: data.proposal.description,
@@ -292,12 +293,25 @@ export function useProposal(proposalId: string) {
     totalVotes: parseInt(data.proposal.totalVotes),
     quorum: parseInt(data.proposal.quorum),
     threshold: parseInt(data.proposal.threshold),
-    executedAt: data.proposal.executedAt ? parseInt(data.proposal.executedAt) : null,
-    executionSuccess: data.proposal.executionSuccess,
     createdAt: parseInt(data.proposal.createdAt),
     updatedAt: parseInt(data.proposal.updatedAt),
-    votes: data.proposal.votes || [],
-  } : null
+  } : {
+    id: proposalId || '',
+    title: '',
+    description: '',
+    organization: { id: '', name: '' },
+    proposer: { id: '', address: '' },
+    proposalType: 'SIMPLE',
+    votingType: 'SIMPLE',
+    state: 'PENDING',
+    startTime: 0,
+    endTime: 0,
+    votesFor: 0,
+    votesAgainst: 0,
+    totalVotes: 0,
+    createdAt: 0,
+    updatedAt: 0,
+  }
 
   return {
     proposal,

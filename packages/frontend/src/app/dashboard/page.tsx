@@ -12,6 +12,8 @@ import { ReputationCard } from '@/components/reputation/reputation-card'
 import { formatDistanceToNow } from 'date-fns'
 import { Trophy, Award, Target, ExternalLink, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { CompactIndexingStatus } from '@/components/indexing-status'
+import Link from 'next/link'
 
 export default function DashboardPage() {
   const { isConnected, address } = useAccount()
@@ -63,7 +65,7 @@ export default function DashboardPage() {
               <CardTitle>Total Organizations</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{globalStats.totalOrganizations}</div>
+              <div className="text-2xl font-bold">{isLoading ? '...' : globalStats.totalOrganizations}</div>
               <p className="text-muted-foreground text-sm">
                 Active gaming DAOs
               </p>
@@ -75,7 +77,7 @@ export default function DashboardPage() {
               <CardTitle>Total Members</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{globalStats.totalMembers}</div>
+              <div className="text-2xl font-bold">{isLoading ? '...' : globalStats.totalMembers}</div>
               <p className="text-muted-foreground text-sm">
                 Community participants
               </p>
@@ -87,7 +89,7 @@ export default function DashboardPage() {
               <CardTitle>Total Raised</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${parseFloat(globalStats.totalRaised || '0').toFixed(2)}</div>
+              <div className="text-2xl font-bold">${isLoading ? '0.00' : parseFloat(globalStats.totalRaised).toFixed(2)}</div>
               <p className="text-muted-foreground text-sm">
                 Across all campaigns
               </p>
@@ -101,11 +103,23 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Your GameDAO overview and activity center
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome to GameDAO Protocol
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <CompactIndexingStatus />
+          {isConnected && (
+            <Button asChild>
+              <Link href="/control/create">
+                Create Organization
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Key Metrics */}
@@ -122,7 +136,7 @@ export default function DashboardPage() {
             <CardTitle>Organizations</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{globalStats.totalOrganizations}</div>
+            <div className="text-2xl font-bold">{isLoading ? '...' : globalStats.totalOrganizations}</div>
             <p className="text-muted-foreground text-sm">Total DAOs</p>
           </CardContent>
         </Card>
@@ -132,7 +146,7 @@ export default function DashboardPage() {
             <CardTitle>Campaigns</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{globalStats.totalCampaigns}</div>
+            <div className="text-2xl font-bold">{isLoading ? '...' : globalStats.totalCampaigns}</div>
             <p className="text-muted-foreground text-sm">Active funding</p>
           </CardContent>
         </Card>
@@ -142,7 +156,7 @@ export default function DashboardPage() {
             <CardTitle>Proposals</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{globalStats.totalProposals}</div>
+            <div className="text-2xl font-bold">{isLoading ? '...' : globalStats.totalProposals}</div>
             <p className="text-muted-foreground text-sm">Governance votes</p>
           </CardContent>
         </Card>
@@ -152,7 +166,7 @@ export default function DashboardPage() {
             <CardTitle>Total Raised</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${parseFloat(globalStats.totalRaised || '0').toFixed(2)}</div>
+            <div className="text-2xl font-bold">${isLoading ? '0.00' : parseFloat(globalStats.totalRaised).toFixed(2)}</div>
             <p className="text-muted-foreground text-sm">Community funded</p>
           </CardContent>
         </Card>

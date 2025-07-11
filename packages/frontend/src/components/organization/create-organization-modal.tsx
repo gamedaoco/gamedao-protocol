@@ -120,21 +120,80 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         userAddress: address
       })
 
-      await createOrganization({
+      setUploadProgress('Preparing metadata...')
+
+      // Upload images to IPFS first
+      let profileImageUrl = ''
+      let bannerImageUrl = ''
+
+      if (profileImage) {
+        setUploadProgress('Uploading profile image to IPFS...')
+        console.log('📤 Uploading profile image:', profileImage)
+        const result = await uploadFileToIPFS(profileImage, {
+          name: `${formData.name} Profile Image`,
+          description: `Profile image for ${formData.name} organization`
+        })
+        profileImageUrl = result.url
+        console.log('✅ Profile image uploaded:', result)
+      }
+
+      if (bannerImage) {
+        setUploadProgress('Uploading banner image to IPFS...')
+        console.log('📤 Uploading banner image:', bannerImage)
+        const result = await uploadFileToIPFS(bannerImage, {
+          name: `${formData.name} Banner Image`,
+          description: `Banner image for ${formData.name} organization`
+        })
+        bannerImageUrl = result.url
+        console.log('✅ Banner image uploaded:', result)
+      }
+
+      // Create metadata object
+      const metadata = {
         name: formData.name,
-        metadataURI: '', // TODO: Upload to IPFS and use real metadata URI
+        description: formData.description,
+        profileImage: profileImageUrl,
+        bannerImage: bannerImageUrl,
+        website: formData.website,
+        social: {
+          twitter: formData.twitter,
+          discord: formData.discord,
+          github: formData.github
+        },
+        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
+      }
+
+      console.log('📋 Created metadata object:', metadata)
+
+      // Upload metadata to IPFS
+      setUploadProgress('Uploading metadata to IPFS...')
+      console.log('📤 Uploading metadata to IPFS...')
+      const metadataResult = await uploadOrganizationMetadata(metadata)
+      console.log('✅ Metadata uploaded:', metadataResult)
+
+      setUploadProgress('Creating organization on blockchain...')
+
+      const contractParams = {
+        name: formData.name,
+        metadataURI: metadataResult.url,
         orgType: formData.orgType,
         accessModel: formData.accessModel,
         feeModel: formData.feeModel,
         memberLimit: formData.memberLimit,
         membershipFee: formData.membershipFee,
         gameStakeRequired: formData.gameStakeRequired,
-      })
+      }
+
+      console.log('📋 Final contract parameters:', contractParams)
+
+      await createOrganization(contractParams)
 
       console.log('✅ Organization creation transaction submitted')
+      setUploadProgress('')
 
     } catch (error) {
       console.error('❌ Failed to create organization:', error)
+      setUploadProgress('')
 
       // Show user-friendly error message
       if (error instanceof Error) {
@@ -778,7 +837,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                 <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
                   <span className="text-sm text-blue-800">
-                    Transaction submitted. Please wait for confirmation...
+                    {uploadProgress || 'Transaction submitted. Please wait for confirmation...'}
                   </span>
                 </div>
               )}

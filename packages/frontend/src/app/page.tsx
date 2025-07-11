@@ -94,7 +94,7 @@ export default function HomePage() {
                 {isLoading ? (
                   <div className="h-8 w-16 bg-green-200 dark:bg-green-800 rounded animate-pulse"></div>
                 ) : (
-                  globalStats.totalMembers.toLocaleString()
+                  (globalStats.totalMembers).toLocaleString()
                 )}
               </div>
               <p className="text-sm text-green-600 dark:text-green-400 mt-1">
@@ -136,7 +136,7 @@ export default function HomePage() {
                 {isLoading ? (
                   <div className="h-8 w-16 bg-orange-200 dark:bg-orange-800 rounded animate-pulse"></div>
                 ) : (
-                  globalStats.totalAchievements.toLocaleString()
+                  (globalStats.totalAchievements).toLocaleString()
                 )}
               </div>
               <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">

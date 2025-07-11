@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useGameDAO } from './useGameDAO'
 
 export interface UserProfile {
@@ -17,16 +17,30 @@ export interface UserProfile {
 
 export function useUserRegistration() {
   const { address, isConnected, contracts } = useGameDAO()
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Always return a defined userProfile object with default values
+  const userProfile: UserProfile = useMemo(() => {
+    if (!address || !isConnected) {
+      return {
+        address: '',
+        isRegistered: false,
+        profile: undefined
+      }
+    }
+
+    return {
+      address,
+      isRegistered: false, // TODO: Query subgraph for actual registration status
+      profile: undefined
+    }
+  }, [address, isConnected])
 
   // Check if user is registered when address changes
   useEffect(() => {
     if (address && isConnected) {
       checkUserRegistration()
-    } else {
-      setUserProfile(null)
     }
   }, [address, isConnected])
 
@@ -41,17 +55,8 @@ export function useUserRegistration() {
       // For now, simulate the check
       const isRegistered = false // await queryUserProfile(address)
 
-      setUserProfile({
-        address,
-        isRegistered,
-        profile: isRegistered ? {
-          name: 'GameDAO User',
-          bio: 'Gaming enthusiast',
-          avatar: '',
-          reputation: 100,
-          achievements: []
-        } : undefined
-      })
+      // Note: We don't need to setState here since we're using useMemo
+      // The userProfile will be recalculated when dependencies change
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to check registration')
     } finally {
@@ -59,7 +64,7 @@ export function useUserRegistration() {
     }
   }
 
-  const registerUser = async (profileData: { name: string; bio: string; avatar?: string }) => {
+  const registerUser = async (profileData: { name: string; bio: string; avatar: string }) => {
     if (!address || !isConnected) {
       throw new Error('Wallet not connected')
     }
@@ -68,28 +73,12 @@ export function useUserRegistration() {
     setError(null)
 
     try {
-      // TODO: Call Sense module to register user
-      // For now, simulate registration
-      console.log('Registering user:', { address, ...profileData })
-
-      // Update local state
-      setUserProfile({
-        address,
-        isRegistered: true,
-        profile: {
-          name: profileData.name,
-          bio: profileData.bio,
-          avatar: profileData.avatar || '',
-          reputation: 100,
-          achievements: []
-        }
-      })
-
-      return true
+      // TODO: Implement user registration via contract
+      console.log('Registering user:', profileData)
+      // await registerUserProfile(address, profileData)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed'
-      setError(errorMessage)
-      throw new Error(errorMessage)
+      setError(err instanceof Error ? err.message : 'Failed to register user')
+      throw err
     } finally {
       setIsLoading(false)
     }
@@ -101,6 +90,5 @@ export function useUserRegistration() {
     error,
     registerUser,
     checkUserRegistration,
-    needsRegistration: isConnected && userProfile && !userProfile.isRegistered,
   }
 }

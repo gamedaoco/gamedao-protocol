@@ -28,7 +28,7 @@ contract Flow is GameDAOModule, IFlow {
     mapping(bytes32 => mapping(address => Contribution)) private _contributions;
     mapping(bytes32 => EnumerableSet.AddressSet) private _campaignContributors;
     mapping(bytes32 => mapping(address => FlowReward)) private _rewards;
-    mapping(bytes32 => EnumerableSet.Bytes32Set) private _organizationCampaigns;
+    mapping(bytes8 => EnumerableSet.Bytes32Set) private _organizationCampaigns;
     mapping(FlowState => EnumerableSet.Bytes32Set) private _campaignsByState;
 
     EnumerableSet.Bytes32Set private _allCampaigns;
@@ -51,7 +51,7 @@ contract Flow is GameDAOModule, IFlow {
     error ContributionAlreadyRefunded(bytes32 campaignId, address contributor);
     error RewardsAlreadyClaimed(bytes32 campaignId, address contributor, address token);
     error InsufficientRewardBalance(bytes32 campaignId, address token);
-    error OrganizationNotFound(bytes32 organizationId);
+    error OrganizationNotFound(bytes8 organizationId);
 
     /**
      * @dev Constructor
@@ -86,7 +86,7 @@ contract Flow is GameDAOModule, IFlow {
      * @dev Create a new campaign
      */
     function createCampaign(
-        bytes32 organizationId,
+        bytes8 organizationId,
         string memory title,
         string memory description,
         string memory metadataURI,
@@ -166,7 +166,7 @@ contract Flow is GameDAOModule, IFlow {
      */
     function createCampaignWithParams(
         address creator,
-        bytes32 organizationId,
+        bytes8 organizationId,
         CampaignParams memory params
     ) external override onlyInitialized whenNotPaused nonReentrant returns (bytes32 campaignId) {
         // Validate organization exists through Control module
@@ -621,7 +621,7 @@ contract Flow is GameDAOModule, IFlow {
     /**
      * @dev Validate organization exists through Control module
      */
-    function _validateOrganization(bytes32 organizationId) internal view {
+    function _validateOrganization(bytes8 organizationId) internal view {
         address controlModule = getModule(keccak256("CONTROL"));
         if (controlModule == address(0)) revert OrganizationNotFound(organizationId);
 
@@ -654,7 +654,7 @@ contract Flow is GameDAOModule, IFlow {
         return _campaignContributors[campaignId].values();
     }
 
-    function getCampaignsByOrganization(bytes32 organizationId)
+    function getCampaignsByOrganization(bytes8 organizationId)
         external
         view
         override

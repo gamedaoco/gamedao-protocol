@@ -90,6 +90,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ISignal__factory>;
     getContractFactory(
+      name: "AlphanumericID",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.AlphanumericID__factory>;
+    getContractFactory(
       name: "MockGameToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.MockGameToken__factory>;
@@ -117,6 +121,10 @@ declare module "hardhat/types/runtime" {
       name: "GameStaking",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.GameStaking__factory>;
+    getContractFactory(
+      name: "AlphanumericIDTest",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.AlphanumericIDTest__factory>;
 
     getContractAt(
       name: "AccessControl",
@@ -214,6 +222,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.ISignal>;
     getContractAt(
+      name: "AlphanumericID",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.AlphanumericID>;
+    getContractAt(
       name: "MockGameToken",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -248,6 +261,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.GameStaking>;
+    getContractAt(
+      name: "AlphanumericIDTest",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.AlphanumericIDTest>;
 
     deployContract(
       name: "AccessControl",
@@ -326,6 +344,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ISignal>;
     deployContract(
+      name: "AlphanumericID",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.AlphanumericID>;
+    deployContract(
       name: "MockGameToken",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.MockGameToken>;
@@ -353,6 +375,10 @@ declare module "hardhat/types/runtime" {
       name: "GameStaking",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.GameStaking>;
+    deployContract(
+      name: "AlphanumericIDTest",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.AlphanumericIDTest>;
 
     deployContract(
       name: "AccessControl",
@@ -450,6 +476,11 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ISignal>;
     deployContract(
+      name: "AlphanumericID",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.AlphanumericID>;
+    deployContract(
       name: "MockGameToken",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -484,6 +515,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.GameStaking>;
+    deployContract(
+      name: "AlphanumericIDTest",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.AlphanumericIDTest>;
 
     // default types
     getContractFactory(

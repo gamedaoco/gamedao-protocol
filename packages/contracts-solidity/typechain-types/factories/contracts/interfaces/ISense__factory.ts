@@ -99,9 +99,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
     ],
     name: "OrganizationNotFound",
@@ -115,9 +115,9 @@ const _abi = [
         type: "address",
       },
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
     ],
     name: "ProfileAlreadyExists",
@@ -280,9 +280,9 @@ const _abi = [
       },
       {
         indexed: true,
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         indexed: false,
@@ -367,9 +367,9 @@ const _abi = [
       },
       {
         indexed: true,
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "targetOrganizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         indexed: false,
@@ -398,9 +398,9 @@ const _abi = [
       },
       {
         indexed: true,
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "sourceOrganizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         indexed: false,
@@ -513,9 +513,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         internalType: "string",
@@ -557,9 +557,9 @@ const _abi = [
             type: "address",
           },
           {
-            internalType: "bytes32",
+            internalType: "bytes8",
             name: "sourceOrganizationId",
-            type: "bytes32",
+            type: "bytes8",
           },
           {
             components: [
@@ -1012,9 +1012,9 @@ const _abi = [
             type: "address",
           },
           {
-            internalType: "bytes32",
+            internalType: "bytes8",
             name: "organizationId",
-            type: "bytes32",
+            type: "bytes8",
           },
           {
             internalType: "string",
@@ -1058,9 +1058,9 @@ const _abi = [
         type: "address",
       },
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
     ],
     name: "getProfileByOwner",
@@ -1078,9 +1078,9 @@ const _abi = [
             type: "address",
           },
           {
-            internalType: "bytes32",
+            internalType: "bytes8",
             name: "organizationId",
-            type: "bytes32",
+            type: "bytes8",
           },
           {
             internalType: "string",
@@ -1132,9 +1132,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
     ],
     name: "getProfilesByOrganization",
@@ -1258,9 +1258,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "organizationId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         internalType: "uint256",
@@ -1421,9 +1421,9 @@ const _abi = [
             type: "address",
           },
           {
-            internalType: "bytes32",
+            internalType: "bytes8",
             name: "sourceOrganizationId",
-            type: "bytes32",
+            type: "bytes8",
           },
           {
             components: [

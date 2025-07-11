@@ -93,9 +93,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         }
       ],
       "name": "OrganizationNotFound",
@@ -109,9 +109,9 @@
           "type": "address"
         },
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         }
       ],
       "name": "ProfileAlreadyExists",
@@ -274,9 +274,9 @@
         },
         {
           "indexed": true,
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "indexed": false,
@@ -361,9 +361,9 @@
         },
         {
           "indexed": true,
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "targetOrganizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "indexed": false,
@@ -392,9 +392,9 @@
         },
         {
           "indexed": true,
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "sourceOrganizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "indexed": false,
@@ -507,9 +507,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "internalType": "string",
@@ -551,9 +551,9 @@
               "type": "address"
             },
             {
-              "internalType": "bytes32",
+              "internalType": "bytes8",
               "name": "sourceOrganizationId",
-              "type": "bytes32"
+              "type": "bytes8"
             },
             {
               "components": [
@@ -1006,9 +1006,9 @@
               "type": "address"
             },
             {
-              "internalType": "bytes32",
+              "internalType": "bytes8",
               "name": "organizationId",
-              "type": "bytes32"
+              "type": "bytes8"
             },
             {
               "internalType": "string",
@@ -1052,9 +1052,9 @@
           "type": "address"
         },
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         }
       ],
       "name": "getProfileByOwner",
@@ -1072,9 +1072,9 @@
               "type": "address"
             },
             {
-              "internalType": "bytes32",
+              "internalType": "bytes8",
               "name": "organizationId",
-              "type": "bytes32"
+              "type": "bytes8"
             },
             {
               "internalType": "string",
@@ -1126,9 +1126,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         }
       ],
       "name": "getProfilesByOrganization",
@@ -1252,9 +1252,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bytes8",
           "name": "organizationId",
-          "type": "bytes32"
+          "type": "bytes8"
         },
         {
           "internalType": "uint256",
@@ -1415,9 +1415,9 @@
               "type": "address"
             },
             {
-              "internalType": "bytes32",
+              "internalType": "bytes8",
               "name": "sourceOrganizationId",
-              "type": "bytes32"
+              "type": "bytes8"
             },
             {
               "components": [

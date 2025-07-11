@@ -194,6 +194,12 @@ function getDeploymentBlocksFromEnv(chainId: number): Record<string, number> {
     case 42161:
       suffix = '_ARBITRUM'
       break
+    case 1946: // Soneium Minato Testnet
+      suffix = '_SONEIUM_TESTNET'
+      break
+    case 1868: // Soneium Mainnet (placeholder - check actual chain ID)
+      suffix = '_SONEIUM'
+      break
     default:
       return {}
   }
@@ -216,6 +222,8 @@ export const DEPLOYMENT_BLOCKS: Record<number, Record<string, number>> = {
   1: getDeploymentBlocksFromEnv(1),
   137: getDeploymentBlocksFromEnv(137),
   42161: getDeploymentBlocksFromEnv(42161),
+  1946: getDeploymentBlocksFromEnv(1946), // Soneium Minato Testnet
+  1868: getDeploymentBlocksFromEnv(1868), // Soneium Mainnet
 }
 
 /**

@@ -15,13 +15,14 @@ import {
   Organization,
   Member,
 } from '../generated/schema'
+import { getOrganizationIdString } from './utils/ids'
 
 export function handleProposalCreated(event: ProposalCreated): void {
   let proposalId = event.params.proposalId.toHexString()
   let proposal = new Proposal(proposalId)
 
   // Load organization
-  let organizationId = event.params.organizationId.toHexString()
+  let organizationId = getOrganizationIdString(event.params.organizationId)
   let organization = Organization.load(organizationId)
   if (!organization) {
     log.error('Organization not found: {}', [organizationId])
@@ -212,7 +213,7 @@ export function handleVotingPowerUndelegated(event: VotingPowerUndelegated): voi
 }
 
 // Helper functions
-function getProposalType(type: i32): string {
+function getProposalType(type: number): string {
   switch (type) {
     case 0: return 'SIMPLE'
     case 1: return 'PARAMETRIC'
@@ -223,7 +224,7 @@ function getProposalType(type: i32): string {
   }
 }
 
-function getVotingType(type: i32): string {
+function getVotingType(type: number): string {
   switch (type) {
     case 0: return 'RELATIVE'
     case 1: return 'ABSOLUTE'
@@ -233,7 +234,7 @@ function getVotingType(type: i32): string {
   }
 }
 
-function getVotingPowerModel(model: i32): string {
+function getVotingPowerModel(model: number): string {
   switch (model) {
     case 0: return 'DEMOCRATIC'
     case 1: return 'TOKEN_WEIGHTED'
@@ -243,7 +244,7 @@ function getVotingPowerModel(model: i32): string {
   }
 }
 
-function getProposalState(state: i32): string {
+function getProposalState(state: number): string {
   switch (state) {
     case 0: return 'PENDING'
     case 1: return 'ACTIVE'

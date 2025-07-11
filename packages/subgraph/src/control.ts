@@ -13,9 +13,14 @@ import {
   Member,
   Treasury
 } from "../generated/schema"
+import { updateIndexingStatus } from "./utils/indexing"
+import { getOrganizationIdString } from "./utils/ids"
 
 export function handleOrganizationCreated(event: OrganizationCreated): void {
-  let orgId = event.params.orgId.toHex()
+  // Track indexing progress
+  updateIndexingStatus(event.block, 'OrganizationCreated')
+
+  let orgId = getOrganizationIdString(event.params.orgId)
 
   let organization = new Organization(orgId)
   organization.creator = event.params.creator
@@ -64,7 +69,10 @@ export function handleOrganizationCreated(event: OrganizationCreated): void {
 }
 
 export function handleOrganizationUpdated(event: OrganizationUpdated): void {
-  let orgId = event.params.orgId.toHex()
+  // Track indexing progress
+  updateIndexingStatus(event.block, 'OrganizationUpdated')
+
+  let orgId = getOrganizationIdString(event.params.orgId)
   let organization = Organization.load(orgId)
 
   if (organization) {
@@ -77,7 +85,10 @@ export function handleOrganizationUpdated(event: OrganizationUpdated): void {
 }
 
 export function handleOrganizationStateChanged(event: OrganizationStateChanged): void {
-  let orgId = event.params.orgId.toHex()
+  // Track indexing progress
+  updateIndexingStatus(event.block, 'OrganizationStateChanged')
+
+  let orgId = getOrganizationIdString(event.params.orgId)
   let organization = Organization.load(orgId)
 
   if (organization) {
@@ -89,7 +100,10 @@ export function handleOrganizationStateChanged(event: OrganizationStateChanged):
 }
 
 export function handleMemberAdded(event: MemberAdded): void {
-  let orgId = event.params.orgId.toHex()
+  // Track indexing progress
+  updateIndexingStatus(event.block, 'MemberAdded')
+
+  let orgId = getOrganizationIdString(event.params.orgId)
   let memberId = orgId + "-" + event.params.member.toHex()
 
   let member = new Member(memberId)
@@ -113,7 +127,7 @@ export function handleMemberAdded(event: MemberAdded): void {
 }
 
 export function handleMemberRemoved(event: MemberRemoved): void {
-  let orgId = event.params.orgId.toHex()
+  let orgId = getOrganizationIdString(event.params.orgId)
   let memberId = orgId + "-" + event.params.member.toHex()
 
   let member = Member.load(memberId)
@@ -134,7 +148,7 @@ export function handleMemberRemoved(event: MemberRemoved): void {
 }
 
 export function handleMemberStateChanged(event: MemberStateChanged): void {
-  let orgId = event.params.orgId.toHex()
+  let orgId = getOrganizationIdString(event.params.orgId)
   let memberId = orgId + "-" + event.params.member.toHex()
 
   let member = Member.load(memberId)
@@ -152,7 +166,7 @@ export function handleMemberStateChanged(event: MemberStateChanged): void {
 }
 
 export function handleMembershipFeeUpdated(event: MembershipFeeUpdated): void {
-  let orgId = event.params.orgId.toHex()
+  let orgId = getOrganizationIdString(event.params.orgId)
   let organization = Organization.load(orgId)
 
   if (organization) {

@@ -38,7 +38,7 @@ async function main() {
   // 2. Deploy Control Module
   console.log("🏛️ Deploying Control Module...");
   const ControlFactory = await ethers.getContractFactory("Control");
-  const control = await ControlFactory.deploy();
+  const control = await ControlFactory.deploy(gameTokenAddress);
   await control.waitForDeployment();
   const controlAddress = await control.getAddress();
   console.log("✅ Control Module deployed to:", controlAddress);
@@ -125,10 +125,9 @@ async function main() {
   console.log("✅ GameStaking Contract deployed to:", gameStakingAddress);
   console.log("");
 
-  // 7. Configure GAME Token Integration
-  console.log("🎮 Configuring GAME Token Integration...");
-  await control.setGameToken(gameTokenAddress);
-  console.log("✅ GAME Token set in Control module");
+  // 7. GAME Token Integration (already configured in constructor)
+  console.log("🎮 GAME Token Integration...");
+  console.log("✅ GAME Token configured in Control module constructor");
   console.log("");
 
       // 8. Distribute Test Tokens

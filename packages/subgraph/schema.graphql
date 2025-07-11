@@ -60,7 +60,7 @@ enum MemberState {
 }
 
 type Organization @entity {
-  id: ID! # organization ID (bytes32)
+  id: ID! # organization ID (8-character alphanumeric string)
   creator: Bytes! # creator address
   prime: Bytes! # prime member address
   treasury: Treasury! # treasury contract
@@ -181,7 +181,7 @@ enum CampaignState {
 }
 
 type Campaign @entity {
-  id: ID! # campaign ID (bytes32)
+  id: ID! # campaign ID (bytes32 hash)
   organization: Organization!
   creator: Bytes!
   flowType: FlowType!
@@ -296,7 +296,7 @@ enum ProposalState {
 }
 
 type Proposal @entity {
-  id: ID! # proposal ID (bytes32)
+  id: ID! # proposal ID (bytes32 hash)
   organization: Organization!
   proposer: Member!
 
@@ -364,7 +364,7 @@ enum VerificationLevel {
 }
 
 type Profile @entity {
-  id: ID! # profile ID (bytes32)
+  id: ID! # profile ID (bytes32 hash)
   organization: Organization!
   owner: Member!
   username: String!
@@ -418,7 +418,7 @@ enum FeedbackType {
 }
 
 type Feedback @entity {
-  id: ID! # feedback ID (bytes32)
+  id: ID! # feedback ID (bytes32 hash)
   target: Profile!
   author: Profile!
   feedbackType: FeedbackType!
@@ -595,4 +595,54 @@ type StakingStats @entity {
   activeStakers: BigInt!
   totalStakingPools: BigInt!
   lastUpdated: BigInt!
+}
+
+# ===== INDEXING STATUS =====
+
+type SubgraphIndexingStatus @entity {
+  id: ID! # "indexing-status"
+
+  # Current indexing state
+  currentBlock: BigInt! # Last processed block number
+  latestBlock: BigInt! # Latest block on the network (when last checked)
+  isFullySynced: Boolean! # Whether subgraph is caught up
+
+  # Indexing progress
+  totalBlocks: BigInt! # Total blocks to process
+  blocksRemaining: BigInt! # Blocks remaining to process
+  syncPercentage: BigDecimal! # Percentage synced (0-100)
+
+  # Performance metrics
+  blocksPerSecond: BigDecimal! # Average blocks processed per second
+  estimatedTimeToSync: BigInt! # Estimated seconds until fully synced
+
+  # Last update info
+  lastUpdatedAt: BigInt! # Timestamp of last update
+  lastUpdatedBlock: BigInt! # Block number when last updated
+
+  # Error tracking
+  hasErrors: Boolean! # Whether there are any indexing errors
+  lastError: String # Last error message (if any)
+  errorCount: BigInt! # Total number of errors encountered
+}
+
+# ===== BLOCK TRACKING =====
+
+type BlockInfo @entity {
+  id: ID! # block number as string
+  number: BigInt! # block number
+  timestamp: BigInt! # block timestamp
+  hash: Bytes! # block hash
+
+  # Processing info
+  processedAt: BigInt! # when this block was processed by subgraph
+  transactionCount: BigInt! # number of transactions in block
+  eventCount: BigInt! # number of relevant events processed
+
+  # Module activity in this block
+  organizationEvents: BigInt! # control module events
+  campaignEvents: BigInt! # flow module events
+  proposalEvents: BigInt! # signal module events
+  profileEvents: BigInt! # sense module events
+  stakingEvents: BigInt! # staking module events
 }

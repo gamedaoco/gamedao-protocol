@@ -172,14 +172,15 @@ export default function StakingRewardsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {userStakes.filter((stake): stake is NonNullable<typeof stake> => stake !== null).map((userStake) => {
-              const config = POOL_CONFIGS[userStake.pool as keyof typeof POOL_CONFIGS]
-              const pool = pools.find(p => p.purpose === userStake.pool)
+              const poolPurpose = userStake.pool.purpose.toUpperCase().replace(' ', '_') as keyof typeof POOL_CONFIGS
+              const config = POOL_CONFIGS[poolPurpose] || POOL_CONFIGS.GOVERNANCE
+              const pool = pools.find(p => p.purpose === userStake.pool.purpose)
               const Icon = config.icon
               const pendingRewards = Number(userStake.pendingRewards || 0)
               const stakedAmount = Number(userStake.amount || 0)
 
               return (
-                <Card key={userStake.pool} className="relative overflow-hidden">
+                <Card key={userStake.pool.id} className="relative overflow-hidden">
                   <div className={`absolute top-0 left-0 right-0 h-1 ${config.color}`} />
 
                   <CardHeader>
@@ -189,7 +190,7 @@ export default function StakingRewardsPage() {
                         <CardTitle className="text-lg">{config.title}</CardTitle>
                       </div>
                       <Badge variant="secondary" className="font-mono">
-                        {pool?.apyRate || 0}% APY
+                        {pool?.apy || 0}% APY
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{config.description}</p>
@@ -215,7 +216,7 @@ export default function StakingRewardsPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Daily Rewards</span>
                         <span className="font-medium">
-                          {((stakedAmount / 1e18) * (pool?.apyRate || 0) / 100 / 365).toFixed(4)} GAME
+                          {((stakedAmount / 1e18) * (pool?.apy || 0) / 100 / 365).toFixed(4)} GAME
                         </span>
                       </div>
                     </div>
@@ -238,7 +239,7 @@ export default function StakingRewardsPage() {
                     <Button
                       className="w-full"
                       disabled={pendingRewards === 0 || isClaiming}
-                      onClick={() => claimRewards(userStake.pool as string)}
+                      onClick={() => claimRewards(userStake.pool.id)}
                     >
                       {isClaiming
                         ? 'Claiming...'

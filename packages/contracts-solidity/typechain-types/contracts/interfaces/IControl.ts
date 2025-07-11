@@ -24,75 +24,84 @@ import type {
 } from "../../common";
 
 export declare namespace IControl {
-  export type MemberStruct = {
-    state: BigNumberish;
-    joinedAt: BigNumberish;
-    totalContribution: BigNumberish;
-    role: BytesLike;
-    stakedAmount: BigNumberish;
-  };
-
-  export type MemberStructOutput = [
-    state: bigint,
-    joinedAt: bigint,
-    totalContribution: bigint,
-    role: string,
-    stakedAmount: bigint
-  ] & {
-    state: bigint;
-    joinedAt: bigint;
-    totalContribution: bigint;
-    role: string;
-    stakedAmount: bigint;
-  };
-
   export type OrganizationStruct = {
-    index: BigNumberish;
-    creator: AddressLike;
-    prime: AddressLike;
+    id: BytesLike;
     name: string;
     metadataURI: string;
+    creator: AddressLike;
+    treasury: AddressLike;
     orgType: BigNumberish;
     accessModel: BigNumberish;
     feeModel: BigNumberish;
-    membershipFee: BigNumberish;
-    treasury: AddressLike;
     memberLimit: BigNumberish;
+    memberCount: BigNumberish;
+    totalCampaigns: BigNumberish;
+    totalProposals: BigNumberish;
+    membershipFee: BigNumberish;
+    gameStakeRequired: BigNumberish;
     state: BigNumberish;
     createdAt: BigNumberish;
     updatedAt: BigNumberish;
   };
 
   export type OrganizationStructOutput = [
-    index: bigint,
-    creator: string,
-    prime: string,
+    id: string,
     name: string,
     metadataURI: string,
+    creator: string,
+    treasury: string,
     orgType: bigint,
     accessModel: bigint,
     feeModel: bigint,
-    membershipFee: bigint,
-    treasury: string,
     memberLimit: bigint,
+    memberCount: bigint,
+    totalCampaigns: bigint,
+    totalProposals: bigint,
+    membershipFee: bigint,
+    gameStakeRequired: bigint,
     state: bigint,
     createdAt: bigint,
     updatedAt: bigint
   ] & {
-    index: bigint;
-    creator: string;
-    prime: string;
+    id: string;
     name: string;
     metadataURI: string;
+    creator: string;
+    treasury: string;
     orgType: bigint;
     accessModel: bigint;
     feeModel: bigint;
-    membershipFee: bigint;
-    treasury: string;
     memberLimit: bigint;
+    memberCount: bigint;
+    totalCampaigns: bigint;
+    totalProposals: bigint;
+    membershipFee: bigint;
+    gameStakeRequired: bigint;
     state: bigint;
     createdAt: bigint;
     updatedAt: bigint;
+  };
+
+  export type MemberStruct = {
+    account: AddressLike;
+    state: BigNumberish;
+    joinedAt: BigNumberish;
+    reputation: BigNumberish;
+    stake: BigNumberish;
+  };
+
+  export type MemberStructOutput = [
+    account: string,
+    state: bigint,
+    joinedAt: bigint,
+    reputation: bigint,
+    stake: bigint
+  ] & {
+    account: string;
+    state: bigint;
+    joinedAt: bigint;
+    reputation: bigint;
+    stake: bigint;
   };
 }
 
@@ -100,23 +109,20 @@ export interface IControlInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "addMember"
-      | "canJoinOrganization"
       | "createOrganization"
-      | "getGameStakeRequired"
+      | "getAllOrganizations"
       | "getMember"
       | "getMemberCount"
+      | "getMembers"
       | "getOrganization"
       | "getOrganizationCount"
-      | "getTreasuryAddress"
-      | "hasRole"
+      | "getOrganizationsByState"
+      | "isMember"
       | "isMemberActive"
       | "isOrganizationActive"
-      | "join"
       | "removeMember"
-      | "setOrganizationState"
-      | "spendTreasuryFunds"
       | "updateMemberState"
-      | "updateOrganization"
+      | "updateOrganizationState"
   ): FunctionFragment;
 
   getEvent(
@@ -124,19 +130,12 @@ export interface IControlInterface extends Interface {
       | "MemberAdded"
       | "MemberRemoved"
       | "MemberStateChanged"
-      | "MembershipFeeUpdated"
       | "OrganizationCreated"
       | "OrganizationStateChanged"
-      | "OrganizationUpdated"
-      | "TreasuryFundsSpent"
   ): EventFragment;
 
   encodeFunctionData(
     functionFragment: "addMember",
-    values: [BytesLike, AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "canJoinOrganization",
     values: [BytesLike, AddressLike]
   ): string;
   encodeFunctionData(
@@ -153,8 +152,8 @@ export interface IControlInterface extends Interface {
     ]
   ): string;
   encodeFunctionData(
-    functionFragment: "getGameStakeRequired",
-    values: [BytesLike]
+    functionFragment: "getAllOrganizations",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getMember",
@@ -162,6 +161,10 @@ export interface IControlInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getMemberCount",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getMembers",
     values: [BytesLike]
   ): string;
   encodeFunctionData(
@@ -173,12 +176,12 @@ export interface IControlInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "getTreasuryAddress",
-    values: [BytesLike]
+    functionFragment: "getOrganizationsByState",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "hasRole",
-    values: [BytesLike, AddressLike, BytesLike]
+    functionFragment: "isMember",
+    values: [BytesLike, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "isMemberActive",
@@ -189,49 +192,25 @@ export interface IControlInterface extends Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "join",
-    values: [AddressLike, BytesLike]
-  ): string;
-  encodeFunctionData(
     functionFragment: "removeMember",
     values: [BytesLike, AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setOrganizationState",
-    values: [BytesLike, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "spendTreasuryFunds",
-    values: [BytesLike, AddressLike, AddressLike, BigNumberish, string]
   ): string;
   encodeFunctionData(
     functionFragment: "updateMemberState",
     values: [BytesLike, AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "updateOrganization",
-    values: [
-      BytesLike,
-      AddressLike,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish
-    ]
+    functionFragment: "updateOrganizationState",
+    values: [BytesLike, BigNumberish]
   ): string;
 
   decodeFunctionResult(functionFragment: "addMember", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "canJoinOrganization",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "createOrganization",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getGameStakeRequired",
+    functionFragment: "getAllOrganizations",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getMember", data: BytesLike): Result;
@@ -239,6 +218,7 @@ export interface IControlInterface extends Interface {
     functionFragment: "getMemberCount",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "getMembers", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getOrganization",
     data: BytesLike
@@ -248,10 +228,10 @@ export interface IControlInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getTreasuryAddress",
+    functionFragment: "getOrganizationsByState",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "hasRole", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "isMember", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "isMemberActive",
     data: BytesLike
@@ -260,17 +240,8 @@ export interface IControlInterface extends Interface {
     functionFragment: "isOrganizationActive",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "join", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "removeMember",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setOrganizationState",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "spendTreasuryFunds",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -278,31 +249,25 @@ export interface IControlInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "updateOrganization",
+    functionFragment: "updateOrganizationState",
     data: BytesLike
   ): Result;
 }
 
 export namespace MemberAddedEvent {
   export type InputTuple = [
-    orgId: BytesLike,
+    organizationId: BytesLike,
     member: AddressLike,
-    state: BigNumberish,
-    fee: BigNumberish,
     timestamp: BigNumberish
   ];
   export type OutputTuple = [
-    orgId: string,
+    organizationId: string,
     member: string,
-    state: bigint,
-    fee: bigint,
     timestamp: bigint
   ];
   export interface OutputObject {
-    orgId: string;
+    organizationId: string;
     member: string;
-    state: bigint;
-    fee: bigint;
     timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -313,13 +278,17 @@ export namespace MemberAddedEvent {
 
 export namespace MemberRemovedEvent {
   export type InputTuple = [
-    orgId: BytesLike,
+    organizationId: BytesLike,
     member: AddressLike,
     timestamp: BigNumberish
   ];
-  export type OutputTuple = [orgId: string, member: string, timestamp: bigint];
+  export type OutputTuple = [
+    organizationId: string,
+    member: string,
+    timestamp: bigint
+  ];
   export interface OutputObject {
-    orgId: string;
+    organizationId: string;
     member: string;
     timestamp: bigint;
   }
@@ -331,21 +300,21 @@ export namespace MemberRemovedEvent {
 
 export namespace MemberStateChangedEvent {
   export type InputTuple = [
-    orgId: BytesLike,
+    organizationId: BytesLike,
     member: AddressLike,
     oldState: BigNumberish,
     newState: BigNumberish,
     timestamp: BigNumberish
   ];
   export type OutputTuple = [
-    orgId: string,
+    organizationId: string,
     member: string,
     oldState: bigint,
     newState: bigint,
     timestamp: bigint
   ];
   export interface OutputObject {
-    orgId: string;
+    organizationId: string;
     member: string;
     oldState: bigint;
     newState: bigint;
@@ -357,54 +326,26 @@ export namespace MemberStateChangedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace MembershipFeeUpdatedEvent {
-  export type InputTuple = [
-    orgId: BytesLike,
-    oldFee: BigNumberish,
-    newFee: BigNumberish,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    orgId: string,
-    oldFee: bigint,
-    newFee: bigint,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    orgId: string;
-    oldFee: bigint;
-    newFee: bigint;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
 export namespace OrganizationCreatedEvent {
   export type InputTuple = [
-    orgId: BytesLike,
-    creator: AddressLike,
-    prime: AddressLike,
+    id: BytesLike,
     name: string,
-    orgType: BigNumberish,
+    creator: AddressLike,
+    treasury: AddressLike,
     timestamp: BigNumberish
   ];
   export type OutputTuple = [
-    orgId: string,
-    creator: string,
-    prime: string,
+    id: string,
     name: string,
-    orgType: bigint,
+    creator: string,
+    treasury: string,
     timestamp: bigint
   ];
   export interface OutputObject {
-    orgId: string;
-    creator: string;
-    prime: string;
+    id: string;
     name: string;
-    orgType: bigint;
+    creator: string;
+    treasury: string;
     timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -415,83 +356,21 @@ export namespace OrganizationCreatedEvent {
 
 export namespace OrganizationStateChangedEvent {
   export type InputTuple = [
-    orgId: BytesLike,
+    id: BytesLike,
     oldState: BigNumberish,
     newState: BigNumberish,
     timestamp: BigNumberish
   ];
   export type OutputTuple = [
-    orgId: string,
+    id: string,
     oldState: bigint,
     newState: bigint,
     timestamp: bigint
   ];
   export interface OutputObject {
-    orgId: string;
+    id: string;
     oldState: bigint;
     newState: bigint;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace OrganizationUpdatedEvent {
-  export type InputTuple = [
-    orgId: BytesLike,
-    prime: AddressLike,
-    orgType: BigNumberish,
-    accessModel: BigNumberish,
-    memberLimit: BigNumberish,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    orgId: string,
-    prime: string,
-    orgType: bigint,
-    accessModel: bigint,
-    memberLimit: bigint,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    orgId: string;
-    prime: string;
-    orgType: bigint;
-    accessModel: bigint;
-    memberLimit: bigint;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace TreasuryFundsSpentEvent {
-  export type InputTuple = [
-    orgId: BytesLike,
-    beneficiary: AddressLike,
-    token: AddressLike,
-    amount: BigNumberish,
-    purpose: string,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    orgId: string,
-    beneficiary: string,
-    token: string,
-    amount: bigint,
-    purpose: string,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    orgId: string;
-    beneficiary: string;
-    token: string;
-    amount: bigint;
-    purpose: string;
     timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -546,15 +425,9 @@ export interface IControl extends BaseContract {
   ): Promise<this>;
 
   addMember: TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike],
+    [organizationId: BytesLike, member: AddressLike],
     [void],
     "nonpayable"
-  >;
-
-  canJoinOrganization: TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike],
-    [boolean],
-    "view"
   >;
 
   createOrganization: TypedContractMethod<
@@ -572,94 +445,76 @@ export interface IControl extends BaseContract {
     "nonpayable"
   >;
 
-  getGameStakeRequired: TypedContractMethod<
-    [orgId: BytesLike],
-    [bigint],
+  getAllOrganizations: TypedContractMethod<
+    [],
+    [IControl.OrganizationStructOutput[]],
     "view"
   >;
 
   getMember: TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike],
+    [organizationId: BytesLike, member: AddressLike],
     [IControl.MemberStructOutput],
     "view"
   >;
 
-  getMemberCount: TypedContractMethod<[orgId: BytesLike], [bigint], "view">;
+  getMemberCount: TypedContractMethod<
+    [organizationId: BytesLike],
+    [bigint],
+    "view"
+  >;
+
+  getMembers: TypedContractMethod<
+    [organizationId: BytesLike],
+    [string[]],
+    "view"
+  >;
 
   getOrganization: TypedContractMethod<
-    [orgId: BytesLike],
+    [id: BytesLike],
     [IControl.OrganizationStructOutput],
     "view"
   >;
 
   getOrganizationCount: TypedContractMethod<[], [bigint], "view">;
 
-  getTreasuryAddress: TypedContractMethod<[orgId: BytesLike], [string], "view">;
+  getOrganizationsByState: TypedContractMethod<
+    [state: BigNumberish],
+    [IControl.OrganizationStructOutput[]],
+    "view"
+  >;
 
-  hasRole: TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike, role: BytesLike],
+  isMember: TypedContractMethod<
+    [organizationId: BytesLike, member: AddressLike],
     [boolean],
     "view"
   >;
 
   isMemberActive: TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike],
+    [organizationId: BytesLike, member: AddressLike],
     [boolean],
     "view"
   >;
 
   isOrganizationActive: TypedContractMethod<
-    [orgId: BytesLike],
+    [organizationId: BytesLike],
     [boolean],
     "view"
   >;
 
-  join: TypedContractMethod<
-    [account: AddressLike, orgId: BytesLike],
-    [void],
-    "nonpayable"
-  >;
-
   removeMember: TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike],
-    [void],
-    "nonpayable"
-  >;
-
-  setOrganizationState: TypedContractMethod<
-    [orgId: BytesLike, newState: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
-
-  spendTreasuryFunds: TypedContractMethod<
-    [
-      orgId: BytesLike,
-      token: AddressLike,
-      beneficiary: AddressLike,
-      amount: BigNumberish,
-      purpose: string
-    ],
+    [organizationId: BytesLike, member: AddressLike],
     [void],
     "nonpayable"
   >;
 
   updateMemberState: TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike, newState: BigNumberish],
+    [organizationId: BytesLike, member: AddressLike, state: BigNumberish],
     [void],
     "nonpayable"
   >;
 
-  updateOrganization: TypedContractMethod<
-    [
-      orgId: BytesLike,
-      newPrime: AddressLike,
-      orgType: BigNumberish,
-      accessModel: BigNumberish,
-      memberLimit: BigNumberish,
-      feeModel: BigNumberish,
-      membershipFee: BigNumberish
-    ],
+  updateOrganizationState: TypedContractMethod<
+    [organizationId: BytesLike, state: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -671,16 +526,9 @@ export interface IControl extends BaseContract {
   getFunction(
     nameOrSignature: "addMember"
   ): TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike],
+    [organizationId: BytesLike, member: AddressLike],
     [void],
     "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "canJoinOrganization"
-  ): TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike],
-    [boolean],
-    "view"
   >;
   getFunction(
     nameOrSignature: "createOrganization"
@@ -699,22 +547,25 @@ export interface IControl extends BaseContract {
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "getGameStakeRequired"
-  ): TypedContractMethod<[orgId: BytesLike], [bigint], "view">;
+    nameOrSignature: "getAllOrganizations"
+  ): TypedContractMethod<[], [IControl.OrganizationStructOutput[]], "view">;
   getFunction(
     nameOrSignature: "getMember"
   ): TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike],
+    [organizationId: BytesLike, member: AddressLike],
     [IControl.MemberStructOutput],
     "view"
   >;
   getFunction(
     nameOrSignature: "getMemberCount"
-  ): TypedContractMethod<[orgId: BytesLike], [bigint], "view">;
+  ): TypedContractMethod<[organizationId: BytesLike], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "getMembers"
+  ): TypedContractMethod<[organizationId: BytesLike], [string[]], "view">;
   getFunction(
     nameOrSignature: "getOrganization"
   ): TypedContractMethod<
-    [orgId: BytesLike],
+    [id: BytesLike],
     [IControl.OrganizationStructOutput],
     "view"
   >;
@@ -722,78 +573,47 @@ export interface IControl extends BaseContract {
     nameOrSignature: "getOrganizationCount"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
-    nameOrSignature: "getTreasuryAddress"
-  ): TypedContractMethod<[orgId: BytesLike], [string], "view">;
-  getFunction(
-    nameOrSignature: "hasRole"
+    nameOrSignature: "getOrganizationsByState"
   ): TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike, role: BytesLike],
+    [state: BigNumberish],
+    [IControl.OrganizationStructOutput[]],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "isMember"
+  ): TypedContractMethod<
+    [organizationId: BytesLike, member: AddressLike],
     [boolean],
     "view"
   >;
   getFunction(
     nameOrSignature: "isMemberActive"
   ): TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike],
+    [organizationId: BytesLike, member: AddressLike],
     [boolean],
     "view"
   >;
   getFunction(
     nameOrSignature: "isOrganizationActive"
-  ): TypedContractMethod<[orgId: BytesLike], [boolean], "view">;
-  getFunction(
-    nameOrSignature: "join"
-  ): TypedContractMethod<
-    [account: AddressLike, orgId: BytesLike],
-    [void],
-    "nonpayable"
-  >;
+  ): TypedContractMethod<[organizationId: BytesLike], [boolean], "view">;
   getFunction(
     nameOrSignature: "removeMember"
   ): TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike],
-    [void],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "setOrganizationState"
-  ): TypedContractMethod<
-    [orgId: BytesLike, newState: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "spendTreasuryFunds"
-  ): TypedContractMethod<
-    [
-      orgId: BytesLike,
-      token: AddressLike,
-      beneficiary: AddressLike,
-      amount: BigNumberish,
-      purpose: string
-    ],
+    [organizationId: BytesLike, member: AddressLike],
     [void],
     "nonpayable"
   >;
   getFunction(
     nameOrSignature: "updateMemberState"
   ): TypedContractMethod<
-    [orgId: BytesLike, member: AddressLike, newState: BigNumberish],
+    [organizationId: BytesLike, member: AddressLike, state: BigNumberish],
     [void],
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "updateOrganization"
+    nameOrSignature: "updateOrganizationState"
   ): TypedContractMethod<
-    [
-      orgId: BytesLike,
-      newPrime: AddressLike,
-      orgType: BigNumberish,
-      accessModel: BigNumberish,
-      memberLimit: BigNumberish,
-      feeModel: BigNumberish,
-      membershipFee: BigNumberish
-    ],
+    [organizationId: BytesLike, state: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -820,13 +640,6 @@ export interface IControl extends BaseContract {
     MemberStateChangedEvent.OutputObject
   >;
   getEvent(
-    key: "MembershipFeeUpdated"
-  ): TypedContractEvent<
-    MembershipFeeUpdatedEvent.InputTuple,
-    MembershipFeeUpdatedEvent.OutputTuple,
-    MembershipFeeUpdatedEvent.OutputObject
-  >;
-  getEvent(
     key: "OrganizationCreated"
   ): TypedContractEvent<
     OrganizationCreatedEvent.InputTuple,
@@ -840,23 +653,9 @@ export interface IControl extends BaseContract {
     OrganizationStateChangedEvent.OutputTuple,
     OrganizationStateChangedEvent.OutputObject
   >;
-  getEvent(
-    key: "OrganizationUpdated"
-  ): TypedContractEvent<
-    OrganizationUpdatedEvent.InputTuple,
-    OrganizationUpdatedEvent.OutputTuple,
-    OrganizationUpdatedEvent.OutputObject
-  >;
-  getEvent(
-    key: "TreasuryFundsSpent"
-  ): TypedContractEvent<
-    TreasuryFundsSpentEvent.InputTuple,
-    TreasuryFundsSpentEvent.OutputTuple,
-    TreasuryFundsSpentEvent.OutputObject
-  >;
 
   filters: {
-    "MemberAdded(bytes32,address,uint8,uint256,uint256)": TypedContractEvent<
+    "MemberAdded(bytes8,address,uint256)": TypedContractEvent<
       MemberAddedEvent.InputTuple,
       MemberAddedEvent.OutputTuple,
       MemberAddedEvent.OutputObject
@@ -867,7 +666,7 @@ export interface IControl extends BaseContract {
       MemberAddedEvent.OutputObject
     >;
 
-    "MemberRemoved(bytes32,address,uint256)": TypedContractEvent<
+    "MemberRemoved(bytes8,address,uint256)": TypedContractEvent<
       MemberRemovedEvent.InputTuple,
       MemberRemovedEvent.OutputTuple,
       MemberRemovedEvent.OutputObject
@@ -878,7 +677,7 @@ export interface IControl extends BaseContract {
       MemberRemovedEvent.OutputObject
     >;
 
-    "MemberStateChanged(bytes32,address,uint8,uint8,uint256)": TypedContractEvent<
+    "MemberStateChanged(bytes8,address,uint8,uint8,uint256)": TypedContractEvent<
       MemberStateChangedEvent.InputTuple,
       MemberStateChangedEvent.OutputTuple,
       MemberStateChangedEvent.OutputObject
@@ -889,18 +688,7 @@ export interface IControl extends BaseContract {
       MemberStateChangedEvent.OutputObject
     >;
 
-    "MembershipFeeUpdated(bytes32,uint256,uint256,uint256)": TypedContractEvent<
-      MembershipFeeUpdatedEvent.InputTuple,
-      MembershipFeeUpdatedEvent.OutputTuple,
-      MembershipFeeUpdatedEvent.OutputObject
-    >;
-    MembershipFeeUpdated: TypedContractEvent<
-      MembershipFeeUpdatedEvent.InputTuple,
-      MembershipFeeUpdatedEvent.OutputTuple,
-      MembershipFeeUpdatedEvent.OutputObject
-    >;
-
-    "OrganizationCreated(bytes32,address,address,string,uint8,uint256)": TypedContractEvent<
+    "OrganizationCreated(bytes8,string,address,address,uint256)": TypedContractEvent<
       OrganizationCreatedEvent.InputTuple,
       OrganizationCreatedEvent.OutputTuple,
       OrganizationCreatedEvent.OutputObject
@@ -911,7 +699,7 @@ export interface IControl extends BaseContract {
       OrganizationCreatedEvent.OutputObject
     >;
 
-    "OrganizationStateChanged(bytes32,uint8,uint8,uint256)": TypedContractEvent<
+    "OrganizationStateChanged(bytes8,uint8,uint8,uint256)": TypedContractEvent<
       OrganizationStateChangedEvent.InputTuple,
       OrganizationStateChangedEvent.OutputTuple,
       OrganizationStateChangedEvent.OutputObject
@@ -920,28 +708,6 @@ export interface IControl extends BaseContract {
       OrganizationStateChangedEvent.InputTuple,
       OrganizationStateChangedEvent.OutputTuple,
       OrganizationStateChangedEvent.OutputObject
-    >;
-
-    "OrganizationUpdated(bytes32,address,uint8,uint8,uint32,uint256)": TypedContractEvent<
-      OrganizationUpdatedEvent.InputTuple,
-      OrganizationUpdatedEvent.OutputTuple,
-      OrganizationUpdatedEvent.OutputObject
-    >;
-    OrganizationUpdated: TypedContractEvent<
-      OrganizationUpdatedEvent.InputTuple,
-      OrganizationUpdatedEvent.OutputTuple,
-      OrganizationUpdatedEvent.OutputObject
-    >;
-
-    "TreasuryFundsSpent(bytes32,address,address,uint256,string,uint256)": TypedContractEvent<
-      TreasuryFundsSpentEvent.InputTuple,
-      TreasuryFundsSpentEvent.OutputTuple,
-      TreasuryFundsSpentEvent.OutputObject
-    >;
-    TreasuryFundsSpent: TypedContractEvent<
-      TreasuryFundsSpentEvent.InputTuple,
-      TreasuryFundsSpentEvent.OutputTuple,
-      TreasuryFundsSpentEvent.OutputObject
     >;
   };
 }

@@ -39,9 +39,9 @@ contract Sense is ISense, GameDAOModule {
 
     // Profile storage
     mapping(bytes32 => Profile) private _profiles;
-    mapping(address => mapping(bytes32 => bytes32)) private _ownerToProfile; // owner -> orgId -> profileId
+    mapping(address => mapping(bytes8 => bytes32)) private _ownerToProfile; // owner -> orgId -> profileId
     EnumerableSet.Bytes32Set private _allProfiles;
-    mapping(bytes32 => EnumerableSet.Bytes32Set) private _organizationProfiles; // orgId -> profileIds
+    mapping(bytes8 => EnumerableSet.Bytes32Set) private _organizationProfiles; // orgId -> profileIds
 
     // Reputation storage
     mapping(bytes32 => ReputationData) private _reputations;
@@ -106,7 +106,7 @@ contract Sense is ISense, GameDAOModule {
     /**
      * @dev Create a new user profile
      */
-    function createProfile(bytes32 organizationId, string memory metadata)
+    function createProfile(bytes8 organizationId, string memory metadata)
         external
         override
         onlyInitialized
@@ -202,7 +202,7 @@ contract Sense is ISense, GameDAOModule {
     /**
      * @dev Get profile by owner and organization
      */
-    function getProfileByOwner(address owner, bytes32 organizationId)
+    function getProfileByOwner(address owner, bytes8 organizationId)
         external
         view
         override
@@ -780,7 +780,7 @@ contract Sense is ISense, GameDAOModule {
     /**
      * @dev Get profiles by organization
      */
-    function getProfilesByOrganization(bytes32 organizationId)
+    function getProfilesByOrganization(bytes8 organizationId)
         external
         view
         override
@@ -799,7 +799,7 @@ contract Sense is ISense, GameDAOModule {
     /**
      * @dev Get top profiles by reputation
      */
-    function getTopProfiles(bytes32 organizationId, uint256 limit)
+    function getTopProfiles(bytes8 organizationId, uint256 limit)
         external
         view
         override
@@ -807,7 +807,7 @@ contract Sense is ISense, GameDAOModule {
     {
         bytes32[] memory candidates;
 
-        if (organizationId == bytes32(0)) {
+        if (organizationId == bytes8(0)) {
             candidates = _allProfiles.values();
         } else {
             candidates = _organizationProfiles[organizationId].values();
@@ -968,7 +968,7 @@ contract Sense is ISense, GameDAOModule {
     /**
      * @dev Validate organization exists through Control module
      */
-    function _validateOrganization(bytes32 organizationId) internal view {
+    function _validateOrganization(bytes8 organizationId) internal view {
         address controlModule = getModule(keccak256("CONTROL"));
         if (controlModule == address(0)) revert OrganizationNotFound(organizationId);
 
