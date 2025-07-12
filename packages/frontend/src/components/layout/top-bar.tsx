@@ -6,6 +6,7 @@ import { useGameDAO } from '@/hooks/useGameDAO'
 import { ModeToggle } from '@/components/mode-toggle'
 import { WalletConnection } from '@/components/wallet/wallet-connection'
 import { WalletBalanceDropdown } from '@/components/wallet/wallet-balance-dropdown'
+import { NotificationBell } from '@/components/notifications/notification-bell'
 import { Button } from '@/components/ui/button'
 
 export function TopBar() {
@@ -40,28 +41,28 @@ export function TopBar() {
         {/* Navigation - Left aligned after logo */}
         <nav className="flex items-center space-x-6 text-sm mr-auto">
           <Link
-            href="/staking"
-            className={getNavClasses('/staking')}
-          >
-            Staking
-          </Link>
-          <Link
             href="/control"
             className={getNavClasses('/control')}
           >
             Organizations
           </Link>
           <Link
-            href="/flow"
-            className={getNavClasses('/flow')}
-          >
-            Campaigns
-          </Link>
-          <Link
             href="/signal"
             className={getNavClasses('/signal')}
           >
             Governance
+          </Link>
+          <Link
+            href="/staking"
+            className={getNavClasses('/staking')}
+          >
+            Staking
+          </Link>
+          <Link
+            href="/flow"
+            className={getNavClasses('/flow')}
+          >
+            Campaigns
           </Link>
           <Link
             href="/sense"
@@ -75,12 +76,15 @@ export function TopBar() {
         <div className="flex items-center space-x-4">
           {/* Dashboard - only show when connected */}
           {isConnected && (
-            <Link
-              href="/dashboard"
-              className={getNavClasses('/dashboard')}
-            >
-              Dashboard
-            </Link>
+            <div className="flex items-center space-x-2">
+              <Link
+                href="/dashboard"
+                className={getNavClasses('/dashboard')}
+              >
+                Dashboard
+              </Link>
+              <NotificationBell />
+            </div>
           )}
 
           {/* Wallet - show balance dropdown if connected, connect button if not */}
