@@ -6,6 +6,7 @@ export const GET_ORGANIZATIONS = gql`
       id
       name
       creator
+      metadataURI
       treasury {
         id
         address
@@ -33,6 +34,7 @@ export const GET_ORGANIZATION_BY_ID = gql`
       name
       creator
       prime
+      metadataURI
       treasury {
         id
         address

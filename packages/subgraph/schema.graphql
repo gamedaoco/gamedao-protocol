@@ -65,6 +65,7 @@ type Organization @entity {
   prime: Bytes! # prime member address
   treasury: Treasury! # treasury contract
   name: String! # organization name
+  metadataURI: String # IPFS URI for organization metadata
   orgType: String! # organization type (INDIVIDUAL, COMPANY, etc.)
   accessModel: AccessModel! # access control model
   state: OrganizationState! # current state

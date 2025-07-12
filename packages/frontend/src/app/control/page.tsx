@@ -3,11 +3,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useOrganizations } from '@/hooks/useOrganizations'
+import { useOrganizationsMetadata } from '@/hooks/useOrganizationMetadata'
 import { useAccount } from 'wagmi'
 import { EntityCard } from '@/components/ui/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Plus, Users, CreditCard, Shield } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -18,7 +19,6 @@ export default function ControlPage() {
     organizations,
     isLoading,
     stats,
-    getStateString,
     getAccessModelString
   } = useOrganizations()
 
@@ -30,6 +30,16 @@ export default function ControlPage() {
     if (filter === 'inactive') return org.state !== 1
     return true
   })
+
+  // Extract metadata URIs for fetching organization metadata
+  const metadataURIs = useMemo(() =>
+    filteredOrganizations
+      .map(org => org.metadataURI)
+      .filter(Boolean) as string[]
+  , [filteredOrganizations])
+
+  // Fetch metadata for all organizations
+  const metadataResults = useOrganizationsMetadata(metadataURIs)
 
   return (
     <div className="space-y-6">
@@ -158,23 +168,48 @@ export default function ControlPage() {
         )}
         {filteredOrganizations.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                         {filteredOrganizations.map((org) => (
-               <EntityCard
-                 key={org.id}
-                 entity={{
-                   id: org.id,
-                   name: org.name,
-                   description: `${getStateString(org.state)} • ${getAccessModelString(org.accessModel)}`,
-                   status: getStateString(org.state),
-                   memberCount: org.memberCount,
-                   treasury: org.treasury,
-                   accessModel: org.accessModel,
-                   createdAt: org.createdAt
-                 }}
-                 variant="organization"
-                 href={`/control/${org.id}`}
-               />
-             ))}
+            {filteredOrganizations.map((org) => {
+              const metadata = org.metadataURI ? metadataResults[org.metadataURI] : null
+              const bannerImage = metadata?.bannerImageUrl || undefined
+
+              return (
+                <EntityCard
+                  key={org.id}
+                  id={org.id}
+                  title={org.name}
+                  description={`${getAccessModelString(org.accessModel)} organization with ${org.memberCount} members`}
+                  banner={bannerImage}
+                  icon={<Users className="h-5 w-5" />}
+                  iconColor="bg-blue-500"
+                  type="Organization"
+                  status={org.state === 1 ? 'active' : 'pending'}
+                  primaryMetric={{
+                    label: 'Members',
+                    value: org.memberCount,
+                    icon: <Users className="h-4 w-4" />
+                  }}
+                  secondaryMetrics={[
+                    {
+                      label: 'Membership Fee',
+                      value: org.membershipFee > 0 ? `${org.membershipFee} GAME` : 'Free',
+                      icon: <CreditCard className="h-4 w-4" />
+                    },
+                    {
+                      label: 'Access Model',
+                      value: getAccessModelString(org.accessModel),
+                      icon: <Shield className="h-4 w-4" />
+                    }
+                  ]}
+                  tags={[
+                    org.state === 1 ? 'Active' : 'Inactive',
+                    `${org.totalCampaigns} Campaigns`,
+                    `${org.totalProposals} Proposals`
+                  ]}
+                  onClick={() => router.push(`/control/${org.id}`)}
+                  variant="default"
+                />
+              )
+            })}
           </div>
         )}
       </div>
