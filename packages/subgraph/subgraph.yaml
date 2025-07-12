@@ -55,20 +55,16 @@ dataSources:
         - name: Treasury
           file: ./abis/Treasury.json
       eventHandlers:
-        - event: OrganizationCreated(indexed bytes32,indexed address,indexed address,string,uint8,uint256)
+        - event: OrganizationCreated(indexed bytes8,string,indexed address,indexed address,uint256)
           handler: handleOrganizationCreated
-        - event: OrganizationUpdated(indexed bytes32,indexed address,uint8,uint8,uint32,uint256)
-          handler: handleOrganizationUpdated
-        - event: OrganizationStateChanged(indexed bytes32,uint8,uint8,uint256)
+        - event: OrganizationStateChanged(indexed bytes8,uint8,uint8,uint256)
           handler: handleOrganizationStateChanged
-        - event: MemberAdded(indexed bytes32,indexed address,uint8,uint256,uint256)
+        - event: MemberAdded(indexed bytes8,indexed address,uint256)
           handler: handleMemberAdded
-        - event: MemberRemoved(indexed bytes32,indexed address,uint256)
+        - event: MemberRemoved(indexed bytes8,indexed address,uint256)
           handler: handleMemberRemoved
-        - event: MemberStateChanged(indexed bytes32,indexed address,uint8,uint8,uint256)
+        - event: MemberStateChanged(indexed bytes8,indexed address,uint8,uint8,uint256)
           handler: handleMemberStateChanged
-        - event: MembershipFeeUpdated(indexed bytes32,uint256,uint256,uint256)
-          handler: handleMembershipFeeUpdated
       file: ./src/control.ts
 
   # Flow Module - Crowdfunding & Campaigns
@@ -92,7 +88,7 @@ dataSources:
         - name: Flow
           file: ./abis/Flow.json
       eventHandlers:
-        - event: CampaignCreated(indexed bytes32,indexed bytes32,indexed address,string,uint8,uint256,uint256,uint256,uint256)
+        - event: CampaignCreated(indexed bytes32,indexed bytes8,indexed address,string,uint8,uint256,uint256,uint256,uint256)
           handler: handleCampaignCreated
         - event: CampaignUpdated(indexed bytes32,string,string,uint256,uint256,uint256,uint256,uint256)
           handler: handleCampaignUpdated
@@ -130,7 +126,7 @@ dataSources:
         - name: Signal
           file: ./abis/Signal.json
       eventHandlers:
-        - event: ProposalCreated(indexed bytes32,indexed bytes32,indexed address,string,uint8,uint8,uint8,uint256,uint256,uint256)
+        - event: ProposalCreated(indexed bytes32,indexed bytes8,indexed address,string,uint8,uint8,uint8,uint256,uint256,uint256)
           handler: handleProposalCreated
         - event: ProposalStateChanged(indexed bytes32,uint8,uint8,uint256)
           handler: handleProposalStateChanged
@@ -167,7 +163,7 @@ dataSources:
         - name: Sense
           file: ./abis/Sense.json
       eventHandlers:
-        - event: ProfileCreated(indexed bytes32,indexed address,indexed bytes32,string,uint256)
+        - event: ProfileCreated(indexed bytes32,indexed address,indexed bytes8,string,uint256)
           handler: handleProfileCreated
       file: ./src/sense.ts
 

@@ -9,7 +9,7 @@
     "deploy": "graph deploy",
     "create-local": "graph create --node http://localhost:8020/ gamedao/protocol",
     "remove-local": "graph remove --node http://localhost:8020/ gamedao/protocol",
-    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 gamedao/protocol",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 gamedao/protocol --version-label v1.0.0",
     "test": "graph test",
     "prepare": "npm run codegen && npm run build"
   },

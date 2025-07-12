@@ -376,18 +376,18 @@ dev-reset:
 	@echo "$(CYAN)2️⃣  Stopping GameDAO Graph services only...$(NC)"
 	@make graph-stop-safe || true
 	@sleep 2
-	@echo "$(RED)2️⃣  Erasing database...$(NC)"
+	@echo "$(RED)3️⃣  Erasing database...$(NC)"
 	@rm -rf $(DATA_DIR)/postgres
 	@sleep 2
-	@echo "$(CYAN)3️⃣  Starting Hardhat node (quiet mode)...$(NC)"
+	@echo "$(CYAN)4️⃣  Starting Hardhat node (quiet mode)...$(NC)"
 	@cd $(CONTRACTS_DIR) && npm run node:quiet &
 	@echo "$(YELLOW)⏳ Waiting for node to start...$(NC)"
 	@sleep 5
-	@echo "$(CYAN)4️⃣  Deploying contracts...$(NC)"
+	@echo "$(CYAN)5️⃣  Deploying contracts...$(NC)"
 	@cd $(CONTRACTS_DIR) && npm run deploy:localhost
-	@echo "$(CYAN)5️⃣  Starting Graph node...$(NC)"
+	@echo "$(CYAN)6️⃣  Starting Graph node...$(NC)"
 	@make graph-node
-	@echo "$(CYAN)6️⃣  Deploying subgraph...$(NC)"
+	@echo "$(CYAN)7️⃣  Deploying subgraph...$(NC)"
 	@make graph-deploy
 	@echo "$(GREEN)✅ Development environment reset complete!$(NC)"
 	@echo "$(CYAN)💡 Ready for development with fresh blockchain and subgraph!$(NC)"

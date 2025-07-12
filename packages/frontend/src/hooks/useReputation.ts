@@ -128,6 +128,13 @@ export function useReputation() {
       updatedAt: 0,
     }
 
+  // Get top profiles by reputation
+  const getTopProfiles = (limit: number = 10): Profile[] => {
+    return profiles
+      .sort((a, b) => b.reputation - a.reputation)
+      .slice(0, limit)
+  }
+
   return {
     profiles,
     userProfile,
@@ -135,5 +142,7 @@ export function useReputation() {
     isLoading: profilesLoading,
     error: profilesError,
     refetch: refetchProfiles,
+    getTopProfiles,
+    stats: reputationStats, // Alias for backward compatibility
   }
 }

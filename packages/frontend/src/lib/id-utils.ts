@@ -122,9 +122,16 @@ export function extractOrganizationIdFromLogs(logs: any[], contractAddress: stri
     })
 
     if (organizationCreatedEvent) {
-      // The second topic contains the organization ID (bytes8)
-      const orgIdBytes8 = organizationCreatedEvent.topics[1]
-      if (orgIdBytes8) {
+      // The second topic contains the organization ID (bytes8 but padded to 32 bytes)
+      const orgIdBytes32 = organizationCreatedEvent.topics[1]
+      if (orgIdBytes32) {
+        // Extract only the first 8 bytes (16 hex chars) from the 32-byte value
+        const orgIdBytes8 = orgIdBytes32.slice(0, 18) // 0x + 16 hex chars = 18 total
+        console.log('🔍 Extracted organization ID:', {
+          original: orgIdBytes32,
+          extracted: orgIdBytes8,
+          alphanumeric: bytes8ToAlphanumericString(orgIdBytes8)
+        })
         return bytes8ToAlphanumericString(orgIdBytes8)
       }
     }

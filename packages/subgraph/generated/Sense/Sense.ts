@@ -1176,7 +1176,7 @@ export class Sense extends ethereum.SmartContract {
   createProfile(organizationId: Bytes, metadata: string): Bytes {
     let result = super.call(
       "createProfile",
-      "createProfile(bytes32,string):(bytes32)",
+      "createProfile(bytes8,string):(bytes32)",
       [
         ethereum.Value.fromFixedBytes(organizationId),
         ethereum.Value.fromString(metadata)
@@ -1192,7 +1192,7 @@ export class Sense extends ethereum.SmartContract {
   ): ethereum.CallResult<Bytes> {
     let result = super.tryCall(
       "createProfile",
-      "createProfile(bytes32,string):(bytes32)",
+      "createProfile(bytes8,string):(bytes32)",
       [
         ethereum.Value.fromFixedBytes(organizationId),
         ethereum.Value.fromString(metadata)
@@ -1210,7 +1210,7 @@ export class Sense extends ethereum.SmartContract {
   ): Sense__exportReputationResultExportDataStruct {
     let result = super.call(
       "exportReputation",
-      "exportReputation(bytes32):((bytes32,address,bytes32,(uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,bytes32,string,string,string,bytes,uint256,address,uint256)[],(uint256,uint256,uint256,uint256,uint256,uint256),uint256,bytes32))",
+      "exportReputation(bytes32):((bytes32,address,bytes8,(uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,bytes32,string,string,string,bytes,uint256,address,uint256)[],(uint256,uint256,uint256,uint256,uint256,uint256),uint256,bytes32))",
       [ethereum.Value.fromFixedBytes(profileId)]
     );
 
@@ -1224,7 +1224,7 @@ export class Sense extends ethereum.SmartContract {
   ): ethereum.CallResult<Sense__exportReputationResultExportDataStruct> {
     let result = super.tryCall(
       "exportReputation",
-      "exportReputation(bytes32):((bytes32,address,bytes32,(uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,bytes32,string,string,string,bytes,uint256,address,uint256)[],(uint256,uint256,uint256,uint256,uint256,uint256),uint256,bytes32))",
+      "exportReputation(bytes32):((bytes32,address,bytes8,(uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,bytes32,string,string,string,bytes,uint256,address,uint256)[],(uint256,uint256,uint256,uint256,uint256,uint256),uint256,bytes32))",
       [ethereum.Value.fromFixedBytes(profileId)]
     );
     if (result.reverted) {
@@ -1423,7 +1423,7 @@ export class Sense extends ethereum.SmartContract {
   getProfile(profileId: Bytes): Sense__getProfileResultProfileStruct {
     let result = super.call(
       "getProfile",
-      "getProfile(bytes32):((bytes32,address,bytes32,string,uint256,uint256,bool,bool))",
+      "getProfile(bytes32):((bytes32,address,bytes8,string,uint256,uint256,bool,bool))",
       [ethereum.Value.fromFixedBytes(profileId)]
     );
 
@@ -1437,7 +1437,7 @@ export class Sense extends ethereum.SmartContract {
   ): ethereum.CallResult<Sense__getProfileResultProfileStruct> {
     let result = super.tryCall(
       "getProfile",
-      "getProfile(bytes32):((bytes32,address,bytes32,string,uint256,uint256,bool,bool))",
+      "getProfile(bytes32):((bytes32,address,bytes8,string,uint256,uint256,bool,bool))",
       [ethereum.Value.fromFixedBytes(profileId)]
     );
     if (result.reverted) {
@@ -1455,7 +1455,7 @@ export class Sense extends ethereum.SmartContract {
   ): Sense__getProfileByOwnerResultProfileStruct {
     let result = super.call(
       "getProfileByOwner",
-      "getProfileByOwner(address,bytes32):((bytes32,address,bytes32,string,uint256,uint256,bool,bool))",
+      "getProfileByOwner(address,bytes8):((bytes32,address,bytes8,string,uint256,uint256,bool,bool))",
       [
         ethereum.Value.fromAddress(owner),
         ethereum.Value.fromFixedBytes(organizationId)
@@ -1473,7 +1473,7 @@ export class Sense extends ethereum.SmartContract {
   ): ethereum.CallResult<Sense__getProfileByOwnerResultProfileStruct> {
     let result = super.tryCall(
       "getProfileByOwner",
-      "getProfileByOwner(address,bytes32):((bytes32,address,bytes32,string,uint256,uint256,bool,bool))",
+      "getProfileByOwner(address,bytes8):((bytes32,address,bytes8,string,uint256,uint256,bool,bool))",
       [
         ethereum.Value.fromAddress(owner),
         ethereum.Value.fromFixedBytes(organizationId)
@@ -1516,7 +1516,7 @@ export class Sense extends ethereum.SmartContract {
   getProfilesByOrganization(organizationId: Bytes): Array<Bytes> {
     let result = super.call(
       "getProfilesByOrganization",
-      "getProfilesByOrganization(bytes32):(bytes32[])",
+      "getProfilesByOrganization(bytes8):(bytes32[])",
       [ethereum.Value.fromFixedBytes(organizationId)]
     );
 
@@ -1528,7 +1528,7 @@ export class Sense extends ethereum.SmartContract {
   ): ethereum.CallResult<Array<Bytes>> {
     let result = super.tryCall(
       "getProfilesByOrganization",
-      "getProfilesByOrganization(bytes32):(bytes32[])",
+      "getProfilesByOrganization(bytes8):(bytes32[])",
       [ethereum.Value.fromFixedBytes(organizationId)]
     );
     if (result.reverted) {
@@ -1622,7 +1622,7 @@ export class Sense extends ethereum.SmartContract {
   getTopProfiles(organizationId: Bytes, limit: BigInt): Array<Bytes> {
     let result = super.call(
       "getTopProfiles",
-      "getTopProfiles(bytes32,uint256):(bytes32[])",
+      "getTopProfiles(bytes8,uint256):(bytes32[])",
       [
         ethereum.Value.fromFixedBytes(organizationId),
         ethereum.Value.fromUnsignedBigInt(limit)
@@ -1638,7 +1638,7 @@ export class Sense extends ethereum.SmartContract {
   ): ethereum.CallResult<Array<Bytes>> {
     let result = super.tryCall(
       "getTopProfiles",
-      "getTopProfiles(bytes32,uint256):(bytes32[])",
+      "getTopProfiles(bytes8,uint256):(bytes32[])",
       [
         ethereum.Value.fromFixedBytes(organizationId),
         ethereum.Value.fromUnsignedBigInt(limit)
@@ -2034,6 +2034,72 @@ export class GrantAchievementCall__Outputs {
 
   constructor(call: GrantAchievementCall) {
     this._call = call;
+  }
+}
+
+export class GrantAchievementWithParamsCall extends ethereum.Call {
+  get inputs(): GrantAchievementWithParamsCall__Inputs {
+    return new GrantAchievementWithParamsCall__Inputs(this);
+  }
+
+  get outputs(): GrantAchievementWithParamsCall__Outputs {
+    return new GrantAchievementWithParamsCall__Outputs(this);
+  }
+}
+
+export class GrantAchievementWithParamsCall__Inputs {
+  _call: GrantAchievementWithParamsCall;
+
+  constructor(call: GrantAchievementWithParamsCall) {
+    this._call = call;
+  }
+
+  get granter(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get profileId(): Bytes {
+    return this._call.inputValues[1].value.toBytes();
+  }
+
+  get params(): GrantAchievementWithParamsCallParamsStruct {
+    return changetype<GrantAchievementWithParamsCallParamsStruct>(
+      this._call.inputValues[2].value.toTuple()
+    );
+  }
+}
+
+export class GrantAchievementWithParamsCall__Outputs {
+  _call: GrantAchievementWithParamsCall;
+
+  constructor(call: GrantAchievementWithParamsCall) {
+    this._call = call;
+  }
+}
+
+export class GrantAchievementWithParamsCallParamsStruct extends ethereum.Tuple {
+  get achievementId(): Bytes {
+    return this[0].toBytes();
+  }
+
+  get name(): string {
+    return this[1].toString();
+  }
+
+  get description(): string {
+    return this[2].toString();
+  }
+
+  get category(): string {
+    return this[3].toString();
+  }
+
+  get points(): BigInt {
+    return this[4].toBigInt();
+  }
+
+  get data(): Bytes {
+    return this[5].toBytes();
   }
 }
 

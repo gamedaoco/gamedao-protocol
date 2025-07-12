@@ -2,6 +2,43 @@ import { ethers } from "hardhat"
 import fs from "fs"
 import path from "path"
 
+// ID conversion utilities (matching frontend utils)
+function bytes8ToAlphanumericString(bytes8Hex: string): string {
+  // Remove 0x prefix if present
+  let hex = bytes8Hex.startsWith('0x') ? bytes8Hex.slice(2) : bytes8Hex
+
+  // Ensure it's exactly 16 characters (8 bytes)
+  if (hex.length !== 16) {
+    console.warn('Invalid bytes8 hex length:', hex.length, 'for', bytes8Hex)
+    return bytes8Hex // Return as-is if invalid
+  }
+
+  // Convert each pair of hex characters to ASCII character
+  let result = ''
+  for (let i = 0; i < 16; i += 2) {
+    const byte = parseInt(hex.slice(i, i + 2), 16)
+    result += String.fromCharCode(byte)
+  }
+
+  return result
+}
+
+function alphanumericStringToBytes8(alphanumericId: string): string {
+  if (alphanumericId.length !== 8) {
+    console.warn('Invalid alphanumeric ID length:', alphanumericId.length, 'for', alphanumericId)
+    return alphanumericId // Return as-is if invalid
+  }
+
+  // Convert each character to hex
+  let hex = ''
+  for (let i = 0; i < 8; i++) {
+    const charCode = alphanumericId.charCodeAt(i)
+    hex += charCode.toString(16).padStart(2, '0')
+  }
+
+  return '0x' + hex
+}
+
 // Configuration
 const CONFIG = {
   users: 12,
@@ -146,70 +183,7 @@ async function main() {
     console.log(`  ${profile.avatar} ${profile.name} (${user.address.slice(0, 8)}...)`)
   }
 
-  // Create user profiles
-  console.log("\n👤 Creating user profiles...")
 
-  for (let i = 0; i < userAccounts.length; i++) {
-    const user = userAccounts[i]
-    const profile = USERS[i % USERS.length]
-
-    // Find the user's organization (if they're a member of any)
-    const userOrg = result.daos.find(dao => dao.members.includes(user.address))
-    const orgId = userOrg ? userOrg.id : (result.daos[0]?.id || "0x0000000000000000000000000000000000000000000000000000000000000000")
-
-    try {
-      const tx = await sense.connect(user).createProfile(
-        orgId,
-        profile.name,
-        `ipfs://QmProfile${i}` // Mock IPFS metadata URI
-      )
-
-      const receipt = await tx.wait()
-      if (!receipt) continue
-
-      // Parse event
-      const event = receipt.logs.find(log => {
-        try {
-          const parsed = sense.interface.parseLog(log as any)
-          return parsed?.name === 'ProfileCreated'
-        } catch {
-          return false
-        }
-      })
-
-      if (event) {
-        const parsedEvent = sense.interface.parseLog(event as any)
-        const profileId = parsedEvent?.args[0]
-
-        // Add some reputation points
-        const experiencePoints = Math.floor(Math.random() * 500) + 100 // 100-600 XP
-        const reputationPoints = Math.floor(Math.random() * 200) + 50  // 50-250 REP
-
-        try {
-          await sense.updateReputation(profileId, 0, experiencePoints, "Initial scaffolding experience")
-          await sense.updateReputation(profileId, 1, reputationPoints, "Initial scaffolding reputation")
-        } catch {
-          // Ignore reputation update errors
-        }
-
-        result.profiles.push({
-          id: profileId,
-          owner: user.address,
-          username: profile.name,
-          organizationId: orgId,
-          role: profile.role,
-          avatar: profile.avatar,
-          experience: experiencePoints,
-          reputation: reputationPoints,
-        })
-
-        console.log(`    ✅ ${profile.avatar} ${profile.name} profile created`)
-      }
-
-    } catch (error) {
-      console.log(`    ❌ Failed to create profile for ${profile.name}`)
-    }
-  }
 
   // Create DAOs
   console.log("\n🏛️  Creating DAOs...")
@@ -287,6 +261,7 @@ async function main() {
 
       result.daos.push({
         id: orgId,
+        idAlphanumeric: bytes8ToAlphanumericString(orgId),
         name: template.name,
         description: template.desc,
         members,
@@ -298,6 +273,71 @@ async function main() {
 
     } catch (error) {
       console.log(`    ❌ Failed to create ${template.name}`)
+    }
+  }
+
+  // Create user profiles (after DAOs are created)
+  console.log("\n👤 Creating user profiles...")
+
+  for (let i = 0; i < userAccounts.length; i++) {
+    const user = userAccounts[i]
+    const profile = USERS[i % USERS.length]
+
+    // Find the user's organization (if they're a member of any)
+    const userOrg = result.daos.find(dao => dao.members.includes(user.address))
+    const orgId = userOrg ? userOrg.id : (result.daos[0]?.id || "0x0000000000000000")
+
+    try {
+      const tx = await sense.connect(user).createProfile(
+        orgId,
+        `ipfs://QmProfile${i}` // Mock IPFS metadata URI
+      )
+
+      const receipt = await tx.wait()
+      if (!receipt) continue
+
+      // Parse event
+      const event = receipt.logs.find(log => {
+        try {
+          const parsed = sense.interface.parseLog(log as any)
+          return parsed?.name === 'ProfileCreated'
+        } catch {
+          return false
+        }
+      })
+
+      if (event) {
+        const parsedEvent = sense.interface.parseLog(event as any)
+        const profileId = parsedEvent?.args[0]
+
+        // Add some reputation points
+        const experiencePoints = Math.floor(Math.random() * 500) + 100 // 100-600 XP
+        const reputationPoints = Math.floor(Math.random() * 200) + 50  // 50-250 REP
+
+        try {
+          await sense.updateReputation(profileId, 0, experiencePoints, "Initial scaffolding experience")
+          await sense.updateReputation(profileId, 1, reputationPoints, "Initial scaffolding reputation")
+        } catch {
+          // Ignore reputation update errors
+        }
+
+        result.profiles.push({
+          id: profileId,
+          owner: user.address,
+          username: profile.name,
+          organizationId: orgId,
+          organizationIdAlphanumeric: bytes8ToAlphanumericString(orgId),
+          role: profile.role,
+          avatar: profile.avatar,
+          experience: experiencePoints,
+          reputation: reputationPoints,
+        })
+
+        console.log(`    ✅ ${profile.avatar} ${profile.name} profile created`)
+      }
+
+    } catch (error) {
+      console.log(`    ❌ Failed to create profile for ${profile.name}`)
     }
   }
 
@@ -381,6 +421,7 @@ async function main() {
           id: campaignId,
           title: template.title,
           daoId: dao.id,
+          daoIdAlphanumeric: bytes8ToAlphanumericString(dao.id),
           daoName: dao.name,
           target: template.target,
           creator: creator.address,
@@ -465,6 +506,7 @@ async function main() {
           id: proposalId,
           title,
           daoId: dao.id,
+          daoIdAlphanumeric: bytes8ToAlphanumericString(dao.id),
           daoName: dao.name,
           proposer: proposer.address,
         })

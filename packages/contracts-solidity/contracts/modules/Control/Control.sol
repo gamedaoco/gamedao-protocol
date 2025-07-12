@@ -40,6 +40,10 @@ contract Control is GameDAOModule, IControl {
     // Organization state mappings
     mapping(OrgState => mapping(bytes8 => bool)) private _organizationsByState;
 
+    // Staking tracking
+    mapping(bytes8 => uint256) private _organizationStakes;
+    mapping(bytes8 => address) private _organizationStakers;
+
     // Game token interface
     IGameToken public gameToken;
 
@@ -96,6 +100,14 @@ contract Control is GameDAOModule, IControl {
     ) external override validMemberLimit(memberLimit) returns (bytes8) {
         require(bytes(name).length > 0, "Organization name cannot be empty");
 
+        // Handle GAME token staking requirement
+        if (gameStakeRequired > 0) {
+            require(
+                gameToken.transferFrom(msg.sender, address(this), gameStakeRequired),
+                "GAME token stake transfer failed"
+            );
+        }
+
         // Generate unique 8-character alphanumeric ID
         _organizationCounter.increment();
         uint256 orgIndex = _organizationCounter.current();
@@ -135,6 +147,12 @@ contract Control is GameDAOModule, IControl {
         _organizationExists[orgId] = true;
         _organizationIds.push(orgId);
         _organizationsByState[OrgState.Active][orgId] = true;
+
+        // Track staking
+        if (gameStakeRequired > 0) {
+            _organizationStakes[orgId] = gameStakeRequired;
+            _organizationStakers[orgId] = msg.sender;
+        }
 
         // Add creator as first member
         _addMemberInternal(orgId, msg.sender);

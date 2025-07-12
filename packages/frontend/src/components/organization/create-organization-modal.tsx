@@ -63,7 +63,7 @@ const FEE_MODELS = [
 
 export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOrganizationModalProps) {
   const { address, isConnected } = useAccount()
-  const { createOrganization, isCreating, createSuccess, createError, resetCreate } = useOrganizations()
+  const { createOrganization, isCreating, createSuccess, createError } = useOrganizations()
   const { ethBalance, gameBalance, usdcBalance, hasBalance } = useTokenBalances()
   const { contracts } = useGameDAO()
 
@@ -285,7 +285,6 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
   useEffect(() => {
     if (isOpen) {
       // Reset form and clear any previous errors
-      resetCreate()
       setFormData({
         name: '',
         description: '',
@@ -303,7 +302,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
       })
       setStep('basic')
     }
-  }, [isOpen, resetCreate])
+  }, [isOpen])
 
     const isFormValid = () => {
     // Step-specific validation
@@ -692,18 +691,18 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
 
               {formData.feeModel !== 0 && (
                 <div>
-                  <Label htmlFor="membershipFee">Membership Fee (USDC)</Label>
+                  <Label htmlFor="membershipFee">Membership Fee (GAME)</Label>
                   <Input
                     id="membershipFee"
                     type="number"
                     min="0"
-                    step="0.01"
+                    step="1"
                     value={formData.membershipFee}
                     onChange={(e) => setFormData(prev => ({ ...prev, membershipFee: e.target.value }))}
                     className="mt-1"
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    Fee required to join the organization
+                    GAME tokens required to join the organization
                   </p>
                 </div>
               )}

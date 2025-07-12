@@ -9,6 +9,7 @@ import { useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { useToast } from './use-toast'
 import { toContractId } from '@/lib/id-utils'
+import { useTokenApproval } from './useTokenApproval'
 
 export interface Campaign {
   id: string
@@ -41,12 +42,23 @@ export interface CreateCampaignParams {
   max: string
   duration: number
   autoFinalize: boolean
+  gameDeposit?: string // Added for GAME token deposit
 }
 
 export function useCampaigns() {
   const { contracts, isConnected } = useGameDAO()
   const { address } = useAccount()
   const toast = useToast()
+
+  // Add token approval hook
+  const {
+    handleApproval: handleTokenApproval,
+    isApproving: isTokenApproving,
+    isApprovalConfirming: isTokenApprovalConfirming,
+    approvalSuccess: tokenApprovalSuccess,
+    approvalError: tokenApprovalError,
+    safeBigInt
+  } = useTokenApproval()
 
   // Fetch campaigns from subgraph
   const { data, loading, error, refetch } = useQuery(GET_CAMPAIGNS, {
@@ -104,31 +116,35 @@ export function useCampaigns() {
       throw new Error('Wallet not connected or contracts not loaded')
     }
 
-    const safeBigInt = (value: string | number, fallback = '0'): bigint => {
-      try {
-        if (typeof value === 'number') {
-          return BigInt(value)
-        }
-        if (typeof value === 'string' && value.trim() !== '') {
-          const cleaned = value.replace(/[^0-9.]/g, '')
-          if (cleaned === '' || cleaned === '.') {
-            return BigInt(fallback)
-          }
-          if (cleaned.includes('.')) {
-            const [whole, decimal] = cleaned.split('.')
-            const paddedDecimal = decimal.padEnd(18, '0').slice(0, 18)
-            return BigInt(whole + paddedDecimal)
-          }
-          return BigInt(cleaned)
-        }
-        return BigInt(fallback)
-      } catch (error) {
-        console.warn('Failed to convert to BigInt:', value, error)
-        return BigInt(fallback)
-      }
-    }
+    // Check if GAME token approval is needed for campaign creation
+    // Most campaigns will require a GAME token deposit/stake
+    const gameDepositAmount = params.gameDeposit || '1000' // Default 1000 GAME tokens
 
     try {
+      console.log('🔍 Creating campaign with GAME token approval:', {
+        organizationId: params.organizationId,
+        title: params.title,
+        gameDeposit: gameDepositAmount
+      })
+
+             // Handle GAME token approval first if needed
+       if (gameDepositAmount && parseFloat(gameDepositAmount) > 0) {
+         console.log('🔍 GAME token deposit required:', gameDepositAmount)
+
+         const approvalNeeded = await handleTokenApproval({
+           token: 'GAME',
+           spender: contracts.FLOW,
+           amount: gameDepositAmount,
+           purpose: 'campaign creation'
+         })
+
+         if (!approvalNeeded) {
+           // Approval is pending, campaign creation will be handled after approval
+           return
+         }
+       }
+
+      // Proceed with campaign creation
       const result = await createCampaign({
         address: contracts.FLOW,
         abi: ABIS.FLOW,
@@ -136,6 +152,7 @@ export function useCampaigns() {
         args: [
           toContractId(params.organizationId),
           params.title,
+          params.description || '',
           params.metadataURI || '',
           params.flowType,
           params.paymentToken,
@@ -156,32 +173,37 @@ export function useCampaigns() {
     }
   }
 
-  const handleContribute = async (campaignId: string, amount: string) => {
+  const handleContribute = async (campaignId: string, amount: string, token: 'USDC' | 'GAME' = 'USDC') => {
     if (!isConnected || !contracts.FLOW) {
       throw new Error('Wallet not connected or contracts not loaded')
     }
 
-    const safeBigInt = (value: string): bigint => {
-      try {
-        const cleaned = value.replace(/[^0-9.]/g, '')
-        if (cleaned.includes('.')) {
-          const [whole, decimal] = cleaned.split('.')
-          const paddedDecimal = decimal.padEnd(18, '0').slice(0, 18)
-          return BigInt(whole + paddedDecimal)
-        }
-        return BigInt(cleaned)
-      } catch (error) {
-        console.warn('Failed to convert to BigInt:', value, error)
-        return BigInt('0')
-      }
-    }
-
     try {
+      console.log('🔍 Contributing to campaign with token approval:', {
+        campaignId,
+        amount,
+        token
+      })
+
+      // Handle token approval first
+      const approvalNeeded = await handleTokenApproval({
+        token,
+        spender: contracts.FLOW,
+        amount,
+        purpose: 'campaign contribution'
+      })
+
+      if (!approvalNeeded) {
+        // Approval is pending, contribution will be handled after approval
+        return
+      }
+
+      // Proceed with contribution
       const result = await contributeToCampaign({
         address: contracts.FLOW,
         abi: ABIS.FLOW,
         functionName: 'contribute',
-        args: [campaignId, safeBigInt(amount)],
+        args: [campaignId, safeBigInt(amount), ''],
       })
 
       toast.loading('Contributing to campaign...')
@@ -252,6 +274,72 @@ export function useCampaigns() {
     updatedAt: parseInt(campaign.updatedAt),
   })) || []
 
+  // Utility functions
+  const getFlowTypeString = (flowType: string): string => {
+    switch (flowType?.toUpperCase()) {
+      case 'GRANT': return 'Grant'
+      case 'RAISE': return 'Raise'
+      case 'LEND': return 'Lend'
+      case 'LOAN': return 'Loan'
+      case 'SHARE': return 'Share'
+      case 'POOL': return 'Pool'
+      default: return 'Grant'
+    }
+  }
+
+  const getStateString = (state: string): string => {
+    switch (state?.toUpperCase()) {
+      case 'CREATED': return 'Created'
+      case 'ACTIVE': return 'Active'
+      case 'PAUSED': return 'Paused'
+      case 'SUCCEEDED': return 'Succeeded'
+      case 'FAILED': return 'Failed'
+      case 'LOCKED': return 'Locked'
+      case 'FINALIZED': return 'Finalized'
+      default: return 'Created'
+    }
+  }
+
+  const getProgress = (campaign: Campaign): number => {
+    const target = parseFloat(campaign.target)
+    const raised = parseFloat(campaign.raised)
+    return target > 0 ? Math.min((raised / target) * 100, 100) : 0
+  }
+
+  const formatAmount = (amount: string, decimals: number = 18): string => {
+    try {
+      const num = parseFloat(amount)
+      if (num === 0) return '0'
+
+      // Convert from wei to ether equivalent
+      const divisor = Math.pow(10, decimals)
+      const formatted = (num / divisor).toFixed(2)
+
+      // Remove trailing zeros
+      return parseFloat(formatted).toString()
+    } catch (error) {
+      return '0'
+    }
+  }
+
+  const isActive = (campaign: Campaign): boolean => {
+    const now = Math.floor(Date.now() / 1000)
+    return campaign.state === 'ACTIVE' && campaign.expiry > now
+  }
+
+  const timeRemaining = (campaign: Campaign): string => {
+    const now = Math.floor(Date.now() / 1000)
+    const remaining = Math.max(0, campaign.expiry - now)
+
+    if (remaining <= 0) return 'Ended'
+
+    const days = Math.floor(remaining / 86400)
+    const hours = Math.floor((remaining % 86400) / 3600)
+
+    if (days > 0) return `${days}d ${hours}h`
+    return `${hours}h`
+  }
+
   return {
     campaigns,
     userCampaigns,
@@ -263,14 +351,22 @@ export function useCampaigns() {
 
     // Campaign creation
     createCampaign: handleCreateCampaign,
-    isCreating: isCreating || isConfirming,
+    isCreating: isCreating || isConfirming || isTokenApproving || isTokenApprovalConfirming,
     createSuccess,
-    createError: createError || confirmError,
+    createError: createError || confirmError || tokenApprovalError,
 
     // Campaign contribution
     contribute: handleContribute,
     isContributing: isContributing || isContributeConfirming,
     contributeSuccess,
     contributeError: contributeError || contributeConfirmError,
+
+    // Utility functions
+    getFlowTypeString,
+    getStateString,
+    getProgress,
+    formatAmount,
+    isActive,
+    timeRemaining,
   }
 }

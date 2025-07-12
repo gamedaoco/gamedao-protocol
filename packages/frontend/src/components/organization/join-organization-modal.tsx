@@ -7,10 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useOrganizations, Organization } from '@/hooks/useOrganizations'
-import { useAccount, useWriteContract } from 'wagmi'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatAddress } from '@/lib/utils'
 import { ABIS } from '@/lib/abis'
 import { useGameDAO } from '@/hooks/useGameDAO'
+import { useGameTokenApproval } from '@/hooks/useGameTokenApproval'
+import { useToast } from '@/hooks/use-toast'
+import { useMembership } from '@/hooks/useMembership'
 import { AlertCircle, Users, Shield, CreditCard, CheckCircle, Clock, UserPlus } from 'lucide-react'
 
 interface JoinOrganizationModalProps {
@@ -23,18 +26,47 @@ interface JoinOrganizationModalProps {
 export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess }: JoinOrganizationModalProps) {
   const { address, isConnected } = useAccount()
   const { contracts } = useGameDAO()
-  const { getAccessModelString, refetch } = useOrganizations()
+  const { refetch } = useOrganizations()
+  const toast = useToast()
+
+  // Check if user is already a member
+  const { isMember, isLoading: membershipLoading } = useMembership(organization.id)
 
   const [isJoining, setIsJoining] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
   const [joinSuccess, setJoinSuccess] = useState(false)
+  const [pendingJoin, setPendingJoin] = useState(false)
+
+  // Game token approval hook
+  const {
+    handleApproval,
+    isApproving,
+    isApprovalConfirming,
+    approvalSuccess,
+    approvalError,
+    pendingApproval,
+    safeBigInt
+  } = useGameTokenApproval()
 
   const {
     writeContract: joinOrganization,
     isPending: isWritePending,
-    isSuccess: writeSuccess,
-    error: writeError
+    data: joinTxHash,
+    error: writeError,
+    reset: resetJoin
   } = useWriteContract()
+
+  // Wait for join transaction confirmation
+  const {
+    isLoading: isJoinConfirming,
+    isSuccess: joinTxSuccess,
+    error: joinConfirmError,
+  } = useWaitForTransactionReceipt({
+    hash: joinTxHash,
+  })
+
+  // Get membership fee from organization (this should come from organization data)
+  const membershipFee = organization.membershipFee || 0
 
   const handleJoin = async () => {
     if (!address || !organization) return
@@ -47,17 +79,29 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
         organizationId: organization.id,
         organizationName: organization.name,
         userAddress: address,
-        contractAddress: contracts.CONTROL
+        contractAddress: contracts.CONTROL,
+        membershipFee
       })
 
-      joinOrganization({
-        address: contracts.CONTROL,
-        abi: ABIS.CONTROL,
-        functionName: 'addMember',
-        args: [organization.id, address],
-      })
+      // If there's a membership fee, handle GAME token approval first
+      if (membershipFee > 0) {
+        console.log('🔍 Membership fee detected:', membershipFee)
 
-      console.log('✅ Join transaction submitted, waiting for confirmation...')
+        const approvalNeeded = await handleApproval({
+          spender: contracts.CONTROL,
+          amount: membershipFee,
+          purpose: 'organization membership'
+        })
+
+        if (!approvalNeeded) {
+          // Approval is pending, join will be handled after approval
+          setPendingJoin(true)
+          return
+        }
+      }
+
+      // Proceed with joining
+      await proceedWithJoin()
 
     } catch (error: any) {
       console.error('❌ Failed to join organization:', error)
@@ -66,12 +110,45 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
     }
   }
 
+  const proceedWithJoin = async () => {
+    try {
+      toast.loading('Joining organization...')
+
+      const result = await joinOrganization({
+        address: contracts.CONTROL,
+        abi: ABIS.CONTROL,
+        functionName: 'addMember',
+        args: [organization.id, address],
+      })
+
+      console.log('✅ Join transaction submitted, waiting for confirmation...', result)
+      setPendingJoin(false)
+
+    } catch (error: any) {
+      console.error('❌ Failed to join organization:', error)
+      setJoinError(error.message || 'Failed to join organization')
+      setIsJoining(false)
+      setPendingJoin(false)
+      toast.error('Failed to join organization')
+    }
+  }
+
+  // Handle approval success - automatically proceed with join
+  useEffect(() => {
+    if (approvalSuccess && pendingJoin) {
+      console.log('✅ GAME token approval confirmed, proceeding with join...')
+      proceedWithJoin()
+    }
+  }, [approvalSuccess, pendingJoin])
+
   // Handle transaction success
   useEffect(() => {
-    if (writeSuccess) {
+    if (joinTxSuccess) {
       console.log('🎉 Successfully joined organization!')
       setJoinSuccess(true)
       setIsJoining(false)
+      toast.dismiss()
+      toast.success('Successfully joined organization!')
 
       // Wait a moment then refetch data and close
       setTimeout(() => {
@@ -81,18 +158,33 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
 
         // Reset state
         setJoinSuccess(false)
+        resetJoin()
       }, 2000)
     }
-  }, [writeSuccess, refetch, onSuccess, onClose])
+  }, [joinTxSuccess, refetch, onSuccess, onClose, resetJoin, toast])
 
   // Handle transaction error
   useEffect(() => {
-    if (writeError) {
-      console.error('❌ Transaction failed:', writeError)
-      setJoinError(writeError.message || 'Transaction failed')
+    if (writeError || joinConfirmError) {
+      const error = writeError || joinConfirmError
+      console.error('❌ Transaction failed:', error)
+      setJoinError(error?.message || 'Transaction failed')
       setIsJoining(false)
+      setPendingJoin(false)
+      toast.dismiss()
+      toast.error('Failed to join organization')
     }
-  }, [writeError])
+  }, [writeError, joinConfirmError, toast])
+
+  // Handle approval error
+  useEffect(() => {
+    if (approvalError) {
+      console.error('❌ Approval failed:', approvalError)
+      setJoinError(approvalError.message || 'Approval failed')
+      setIsJoining(false)
+      setPendingJoin(false)
+    }
+  }, [approvalError])
 
   const getAccessModelDescription = (accessModel: number) => {
     switch (accessModel) {
@@ -128,7 +220,7 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
   }
 
   const accessInfo = getAccessModelDescription(organization.accessModel)
-  const canJoin = organization.accessModel === 0 && isConnected // Only open organizations can be joined directly and wallet must be connected
+  const canJoin = organization.accessModel === 0 && isConnected && !isMember // Only open organizations can be joined directly, wallet must be connected, and user must not be a member
   const isActive = organization.state === 1
 
   if (joinSuccess) {
@@ -193,6 +285,12 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
                     {organization.memberLimit === 0 ? 'Unlimited' : organization.memberLimit}
                   </span>
                 </div>
+                <div>
+                  <span className="font-medium">Membership Fee:</span>
+                  <span className="ml-2">
+                    {membershipFee > 0 ? `${membershipFee} GAME` : 'Free'}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -231,7 +329,9 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Membership Fee:</span>
-                <Badge variant="outline">Free</Badge>
+                <Badge variant="outline">
+                  {membershipFee > 0 ? `${membershipFee} GAME` : 'Free'}
+                </Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">GAME Stake Required:</span>
@@ -261,6 +361,18 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
                 <AlertCircle className="h-4 w-4 text-orange-600" />
                 <span className="text-sm text-orange-800">
                   Please connect your wallet to join this organization.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Already a member message */}
+          {isMember && (
+            <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <span className="text-sm text-green-800">
+                  You are already a member of this organization!
                 </span>
               </div>
             </div>
@@ -312,18 +424,18 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
 
             <Button
               onClick={handleJoin}
-              disabled={!canJoin || !isActive || isJoining || isWritePending || !isConnected}
+              disabled={!canJoin || !isActive || isJoining || isWritePending || isJoinConfirming || isApproving || isApprovalConfirming || !isConnected}
               className="flex-1"
             >
-              {isJoining || isWritePending ? (
+              {isJoining || isWritePending || isJoinConfirming || isApproving || isApprovalConfirming ? (
                 <>
                   <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Joining...
+                  {isApproving || isApprovalConfirming ? 'Approving...' : 'Joining...'}
                 </>
               ) : !isConnected ? (
                 'Connect Wallet'
               ) : organization.accessModel === 0 ? (
-                'Join Now'
+                membershipFee > 0 ? 'Join (Approve + Join)' : 'Join Now'
               ) : organization.accessModel === 1 ? (
                 'Apply to Join'
               ) : (
@@ -341,3 +453,4 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
     </Dialog>
   )
 }
+

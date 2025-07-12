@@ -22,6 +22,7 @@ export interface Organization {
   memberCount: number
   totalCampaigns: number
   totalProposals: number
+  membershipFee: number
   state: number
   createdAt: number
 }
@@ -105,6 +106,7 @@ export function useOrganizations() {
       memberCount: parseInt(org.memberCount) || 0,
       totalCampaigns: parseInt(org.totalCampaigns) || 0,
       totalProposals: parseInt(org.totalProposals) || 0,
+      membershipFee: parseInt(org.membershipFee) || 0,
       state: getStateFromString(org.state),
       createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
     }))
@@ -367,6 +369,22 @@ export function useOrganizations() {
     // Utility functions
     getAccessModelFromString,
     getStateFromString,
+    getStateString: (state: number): string => {
+      switch (state) {
+        case 0: return 'Inactive'
+        case 1: return 'Active'
+        case 2: return 'Suspended'
+        default: return 'Unknown'
+      }
+    },
+    getAccessModelString: (accessModel: number): string => {
+      switch (accessModel) {
+        case 0: return 'Open'
+        case 1: return 'Voting Required'
+        case 2: return 'Invite Only'
+        default: return 'Unknown'
+      }
+    },
   }
 }
 
@@ -414,6 +432,7 @@ export function useUserOrganizations() {
       memberCount: parseInt(org.memberCount) || 0,
       totalCampaigns: parseInt(org.totalCampaigns) || 0,
       totalProposals: parseInt(org.totalProposals) || 0,
+      membershipFee: parseInt(org.membershipFee) || 0,
       state: getStateFromString(org.state),
       createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
     }))

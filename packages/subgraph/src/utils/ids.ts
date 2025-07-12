@@ -1,40 +1,37 @@
 import { Bytes } from "@graphprotocol/graph-ts"
 
 /**
- * Convert bytes8 organization ID to 8-character alphanumeric string
- * The bytes8 value contains the Base36 encoded characters
+ * Convert bytes8 organization ID to alphanumeric string for use as entity ID
+ * @param orgIdBytes8 - The bytes8 organization ID from the contract
+ * @returns 8-character alphanumeric string
  */
-export function bytes8ToAlphanumericString(bytes8: Bytes): string {
-  // Convert bytes to string by interpreting each byte as a character
-  let result = ""
+export function getOrganizationIdString(orgIdBytes8: Bytes): string {
+  // Convert bytes directly to ASCII characters
+  let result = ''
   for (let i = 0; i < 8; i++) {
-    let byte = bytes8[i]
-    // Convert byte to character (ASCII)
-    result += String.fromCharCode(byte)
+    const byteValue = orgIdBytes8[i]
+    result += String.fromCharCode(byteValue)
   }
   return result
 }
 
 /**
- * Convert hex string to bytes8 format for organization ID processing
+ * Convert alphanumeric string back to bytes8 (if needed)
+ * @param alphanumericId - 8-character alphanumeric string
+ * @returns Bytes8 representation
  */
-export function hexToBytes8(hex: string): Bytes {
-  // Remove 0x prefix if present
-  if (hex.startsWith("0x")) {
-    hex = hex.slice(2)
+export function alphanumericStringToBytes8(alphanumericId: string): Bytes {
+  if (alphanumericId.length !== 8) {
+    // Invalid length, return empty bytes
+    return Bytes.fromHexString("0x0000000000000000")
   }
 
-  // Ensure it's exactly 16 characters (8 bytes)
-  if (hex.length !== 16) {
-    throw new Error("Invalid hex string length for bytes8")
+  // Convert each character to hex
+  let hex = ''
+  for (let i = 0; i < 8; i++) {
+    const charCode = alphanumericId.charCodeAt(i)
+    hex += charCode.toString(16).padStart(2, '0')
   }
 
-  return Bytes.fromHexString("0x" + hex)
-}
-
-/**
- * Get organization ID as string from bytes8 parameter
- */
-export function getOrganizationIdString(orgIdBytes: Bytes): string {
-  return bytes8ToAlphanumericString(orgIdBytes)
+  return Bytes.fromHexString('0x' + hex)
 }

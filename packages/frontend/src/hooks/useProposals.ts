@@ -7,6 +7,7 @@ import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_PROPOSALS, GET_PROPOSAL_BY_ID, GET_USER_VOTES } from '@/lib/queries'
 import { useState, useMemo, useEffect } from 'react'
+import { useTokenApproval } from './useTokenApproval'
 
 
 export interface Proposal {
@@ -47,6 +48,15 @@ export function useProposals(organizationId?: string) {
   const { contracts, isConnected } = useGameDAO()
   const [isVoting, setIsVoting] = useState(false)
   const { writeContract } = useWriteContract()
+
+  // Add token approval hook for GAME token deposits
+  const {
+    handleApproval: handleTokenApproval,
+    isApproving: isTokenApproving,
+    isApprovalConfirming: isTokenApprovalConfirming,
+    approvalSuccess: tokenApprovalSuccess,
+    approvalError: tokenApprovalError
+  } = useTokenApproval()
   // Fetch proposals from subgraph
   const { data, loading, error, refetch } = useQuery(GET_PROPOSALS, {
     variables: { first: 100, skip: 0 },
@@ -151,12 +161,39 @@ export function useProposals(organizationId?: string) {
     proposalType: number
     votingType: number
     votingPeriod: number
+    gameDeposit?: string // GAME token deposit for proposal creation
   }) => {
     if (!isConnected || !address) {
       throw new Error('Wallet not connected')
     }
 
     try {
+      console.log('🔍 Creating proposal with GAME token approval:', {
+        organizationId: proposalData.organizationId,
+        title: proposalData.title,
+        gameDeposit: proposalData.gameDeposit
+      })
+
+      // Handle GAME token approval for proposal deposits if needed
+      const gameDepositAmount = proposalData.gameDeposit || '100' // Default 100 GAME tokens for proposal creation
+
+      if (gameDepositAmount && parseFloat(gameDepositAmount) > 0) {
+        console.log('🔍 GAME token deposit required for proposal:', gameDepositAmount)
+
+        const approvalNeeded = await handleTokenApproval({
+          token: 'GAME',
+          spender: contracts.SIGNAL,
+          amount: gameDepositAmount,
+          purpose: 'proposal creation'
+        })
+
+        if (!approvalNeeded) {
+          // Approval is pending, proposal creation will be handled after approval
+          return
+        }
+      }
+
+      // Proceed with proposal creation
       await writeContract({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
@@ -165,9 +202,13 @@ export function useProposals(organizationId?: string) {
           proposalData.organizationId,
           proposalData.title,
           proposalData.description,
+          '', // metadataURI
           proposalData.proposalType,
           proposalData.votingType,
+          1, // votingPower (TokenWeighted)
           proposalData.votingPeriod,
+          '0x', // executionData
+          '0x0000000000000000000000000000000000000000', // targetContract
         ],
       })
 
@@ -249,7 +290,8 @@ export function useProposals(organizationId?: string) {
     isLoading: loading && filteredProposals.length === 0,
     isLoadingUserVotes: userVotesLoading,
     isVoting,
-    error: error && filteredProposals.length === 0 ? error : null,
+    isCreatingProposal: isTokenApproving || isTokenApprovalConfirming,
+    error: error && filteredProposals.length === 0 ? error : tokenApprovalError,
 
     // Utils
     getProposalTypeString,

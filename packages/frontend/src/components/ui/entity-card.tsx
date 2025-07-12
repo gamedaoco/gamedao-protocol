@@ -1,496 +1,385 @@
 'use client'
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
-import Link from 'next/link'
 import { ReactNode } from 'react'
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import {
+  Users,
+  Target,
+  TrendingUp,
+  Calendar,
+  Coins,
+  Shield,
+  Star,
+  ChevronRight,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  XCircle
+} from "lucide-react"
 
-// Base entity interface that all entities should extend
-interface BaseEntity {
+export interface EntityCardProps {
+  // Core properties
   id: string
-  name?: string
-  title?: string
+  title: string
   description?: string
-  image?: string // IPFS hash or URL
-  status?: string
-  createdAt?: number
-}
 
-// Specific entity interfaces
-interface OrganizationEntity extends BaseEntity {
-  memberCount: number
-  treasury?: string
-  accessModel?: number
-}
+  // Visual properties
+  banner?: string // Background image URL
+  icon?: ReactNode // Custom icon
+  iconColor?: string // Icon background color
 
-interface CampaignEntity extends BaseEntity {
-  target: bigint | string
-  raised: bigint | string
-  contributors?: number
-  endTime?: number
-  organizationName?: string
-}
+  // Status and metadata
+  status?: 'active' | 'pending' | 'completed' | 'failed' | 'cancelled'
+  type?: string // Entity type (organization, campaign, proposal, etc.)
 
-interface ProposalEntity extends BaseEntity {
-  votes?: {
-    for: number
-    against: number
-    abstain: number
+  // Metrics and stats
+  primaryMetric?: {
+    label: string
+    value: string | number
+    icon?: ReactNode
   }
-  timeLeft?: string
-  organizationName?: string
-  proposer?: string
-}
+  secondaryMetrics?: Array<{
+    label: string
+    value: string | number
+    icon?: ReactNode
+  }>
 
-interface ProfileEntity extends BaseEntity {
-  address: string
-  reputation?: number
-  achievements?: number
-  role?: string
-  avatar?: string // IPFS hash
-}
+  // Progress and timing
+  progress?: number // 0-100
+  timeRemaining?: string
+  deadline?: Date
 
-interface StakingPoolEntity extends BaseEntity {
-  totalStaked: string
-  apy: number
-  stakersCount: number
-  purpose: string
-}
-
-type EntityType =
-  | OrganizationEntity
-  | CampaignEntity
-  | ProposalEntity
-  | ProfileEntity
-  | StakingPoolEntity
-
-interface EntityCardProps {
-  entity: EntityType
-  variant: 'organization' | 'campaign' | 'proposal' | 'profile' | 'pool'
-  layout?: 'default' | 'compact' | 'detailed'
-  href?: string
-  actions?: ReactNode
-  className?: string
-  loading?: boolean
-  onAction?: (action: string, entity: EntityType) => void
-}
-
-// Helper function to get IPFS URL
-function getIPFSUrl(hash?: string): string | undefined {
-  if (!hash) return undefined
-  if (hash.startsWith('http')) return hash
-  return `https://ipfs.io/ipfs/${hash}`
-}
-
-// Helper function to format large numbers
-function formatNumber(num: number | bigint | string): string {
-  const value = typeof num === 'bigint' ? Number(num) : typeof num === 'string' ? parseFloat(num) : num
-  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
-  if (value >= 1000) return `${(value / 1000).toFixed(1)}K`
-  return value.toString()
-}
-
-// Helper function to get status color
-function getStatusColor(status?: string): string {
-  switch (status?.toLowerCase()) {
-    case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-    case 'inactive': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-    case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-    case 'completed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-    case 'failed': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-    default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+  // Actions
+  onClick?: () => void
+  primaryAction?: {
+    label: string
+    onClick: () => void
+    variant?: 'default' | 'secondary' | 'outline' | 'destructive'
+    loading?: boolean
   }
+  secondaryAction?: {
+    label: string
+    onClick: () => void
+    variant?: 'default' | 'secondary' | 'outline' | 'destructive'
+  }
+
+  // Layout
+  variant?: 'default' | 'compact' | 'detailed'
+  aspectRatio?: '16:9' | '4:3' | 'square'
+
+  // Additional content
+  tags?: string[]
+  footer?: ReactNode
 }
 
-// Loading skeleton component
-function EntityCardSkeleton({ variant, layout }: { variant: EntityCardProps['variant'], layout: EntityCardProps['layout'] }) {
-  const isProfile = variant === 'profile'
-  const isCompact = layout === 'compact'
+const statusIcons = {
+  active: <CheckCircle className="h-4 w-4 text-green-500" />,
+  pending: <Clock className="h-4 w-4 text-yellow-500" />,
+  completed: <CheckCircle className="h-4 w-4 text-green-500" />,
+  failed: <XCircle className="h-4 w-4 text-red-500" />,
+  cancelled: <XCircle className="h-4 w-4 text-gray-500" />,
+}
+
+const statusColors = {
+  active: 'bg-green-100 text-green-800 border-green-200',
+  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  completed: 'bg-green-100 text-green-800 border-green-200',
+  failed: 'bg-red-100 text-red-800 border-red-200',
+  cancelled: 'bg-gray-100 text-gray-800 border-gray-200',
+}
+
+export function EntityCard({
+  id,
+  title,
+  description,
+  banner,
+  icon,
+  iconColor = 'bg-blue-500',
+  status,
+  type,
+  primaryMetric,
+  secondaryMetrics = [],
+  progress,
+  timeRemaining,
+  deadline,
+  onClick,
+  primaryAction,
+  secondaryAction,
+  variant = 'default',
+  aspectRatio = '16:9',
+  tags = [],
+  footer
+}: EntityCardProps) {
+
+  const aspectRatioClasses = {
+    '16:9': 'aspect-[16/9]',
+    '4:3': 'aspect-[4/3]',
+    'square': 'aspect-square'
+  }
+
+  const cardClasses = cn(
+    "group relative overflow-hidden transition-all duration-200 hover:shadow-lg",
+    onClick && "cursor-pointer hover:scale-[1.02]",
+    variant === 'compact' && "h-auto",
+    variant === 'detailed' && "min-h-[300px]"
+  )
 
   return (
-    <Card className={cn(
-      'animate-pulse',
-      isProfile && 'aspect-[3/4]',
-      isCompact && 'h-32'
-    )}>
-      <CardHeader className={cn('pb-2', isCompact && 'pb-1')}>
-        <div className="flex items-start gap-3">
-          {isProfile ? (
-            <Skeleton className="w-16 h-16 rounded-full" />
-          ) : (
-            <Skeleton className="w-12 h-12 rounded-lg" />
-          )}
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className={cn('space-y-2', isCompact && 'py-2')}>
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-2/3" />
-        {!isCompact && (
-          <>
-            <div className="flex gap-2 mt-3">
-              <Skeleton className="h-6 w-16" />
-              <Skeleton className="h-6 w-20" />
-            </div>
-            <Skeleton className="h-8 w-full mt-4" />
-          </>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// Profile card component (visual-first design)
-function ProfileCard({
-  entity,
-  layout = 'default',
-  href,
-  actions,
-  className,
-  onAction
-}: Omit<EntityCardProps, 'variant'> & { entity: ProfileEntity }) {
-  const avatarUrl = getIPFSUrl(entity.avatar || entity.image)
-  const isCompact = layout === 'compact'
-
-  const cardContent = (
-    <Card className={cn(
-      'group hover:shadow-lg transition-all duration-200 cursor-pointer',
-      !isCompact && 'aspect-[3/4]',
-      isCompact && 'h-20 flex-row',
-      className
-    )}>
-      {/* Visual-first layout with gradient background */}
+    <Card className={cardClasses} onClick={onClick}>
+      {/* Banner Background */}
       <div className={cn(
-        'relative overflow-hidden',
-        !isCompact && 'h-32 bg-gradient-to-br from-purple-500 to-pink-500',
-        isCompact && 'w-20 bg-gradient-to-br from-purple-500 to-pink-500'
+        "relative overflow-hidden",
+        aspectRatioClasses[aspectRatio]
       )}>
-        {/* Avatar positioned over gradient */}
-        <div className={cn(
-          'absolute flex items-center justify-center',
-          !isCompact && 'bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2',
-          isCompact && 'inset-0'
-        )}>
-          <Avatar className={cn(!isCompact && 'w-16 h-16 border-4 border-white', isCompact && 'w-12 h-12')}>
-            <AvatarImage src={avatarUrl} alt={entity.name || entity.address} />
-            <AvatarFallback className="bg-white text-purple-600 font-semibold">
-              {(entity.name || entity.address).slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-        </div>
-      </div>
-
-      <CardContent className={cn(
-        'flex-1',
-        !isCompact && 'pt-10 text-center',
-        isCompact && 'py-2 px-3 flex items-center justify-between'
-      )}>
-        <div className={cn(!isCompact && 'space-y-2', isCompact && 'flex-1')}>
-          {/* Name and role */}
-          <div>
-            <h3 className={cn(
-              'font-semibold truncate',
-              !isCompact && 'text-lg',
-              isCompact && 'text-sm'
-            )}>
-              {entity.name || `${entity.address.slice(0, 6)}...${entity.address.slice(-4)}`}
-            </h3>
-            {entity.role && (
-              <p className={cn(
-                'text-muted-foreground',
-                !isCompact && 'text-sm',
-                isCompact && 'text-xs'
-              )}>
-                {entity.role}
-              </p>
-            )}
-          </div>
-
-          {/* Reputation score */}
-          {entity.reputation !== undefined && (
-            <div className={cn(
-              'flex items-center justify-center gap-1',
-              isCompact && 'justify-start'
-            )}>
-              <span className="text-yellow-500">⭐</span>
-              <span className={cn(
-                'font-medium',
-                !isCompact && 'text-lg',
-                isCompact && 'text-sm'
-              )}>
-                {formatNumber(entity.reputation)}
-              </span>
-            </div>
-          )}
-
-          {/* Achievements count */}
-          {entity.achievements !== undefined && !isCompact && (
-            <div className="text-sm text-muted-foreground">
-              {entity.achievements} achievements
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        {(actions || !isCompact) && (
-          <div className={cn(
-            'flex gap-2',
-            !isCompact && 'mt-4 justify-center',
-            isCompact && 'ml-2'
-          )}>
-            {actions || (
-              <Button
-                size={isCompact ? 'sm' : 'default'}
-                variant="outline"
-                onClick={(e) => {
-                  e.preventDefault()
-                  onAction?.('view', entity)
-                }}
-              >
-                View
-              </Button>
-            )}
-          </div>
+        {banner && (
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${banner})` }}
+          />
         )}
-      </CardContent>
-    </Card>
-  )
 
-  return href ? (
-    <Link href={href} className="block">
-      {cardContent}
-    </Link>
-  ) : cardContent
-}
+        {/* Gradient Overlay */}
+        <div className={cn(
+          "absolute inset-0",
+          banner
+            ? "bg-gradient-to-t from-black/60 via-black/20 to-transparent"
+            : "bg-gradient-to-br from-blue-500 to-purple-600"
+        )} />
 
-// Standard entity card component (content-first design)
-function StandardEntityCard({
-  entity,
-  variant,
-  layout = 'default',
-  href,
-  actions,
-  className,
-  onAction
-}: Omit<EntityCardProps, 'variant'> & {
-  entity: OrganizationEntity | CampaignEntity | ProposalEntity | StakingPoolEntity
-  variant: 'organization' | 'campaign' | 'proposal' | 'pool'
-}) {
-  const isCompact = layout === 'compact'
-  const imageUrl = getIPFSUrl(entity.image)
+        {/* Header Content */}
+        <CardHeader className="relative z-10 pb-2">
+          <div className="flex items-start justify-between">
+            {/* Icon and Type */}
+            <div className="flex items-center space-x-3">
+              {icon && (
+                <div className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-lg text-white shadow-lg",
+                  iconColor
+                )}>
+                  {icon}
+                </div>
+              )}
 
-  // Get variant-specific colors and data
-  const getVariantConfig = () => {
-    switch (variant) {
-      case 'organization':
-        const org = entity as OrganizationEntity
-        return {
-          color: 'blue',
-          primaryMetric: `${org.memberCount} members`,
-          secondaryMetric: undefined, // Remove treasury address display
-          icon: '🏛️'
-        }
-      case 'campaign':
-        const campaign = entity as CampaignEntity
-        const target = typeof campaign.target === 'bigint' ? Number(campaign.target) : parseFloat(campaign.target.toString())
-        const raised = typeof campaign.raised === 'bigint' ? Number(campaign.raised) : parseFloat(campaign.raised.toString())
-        const progress = target > 0 ? Math.round((raised / target) * 100) : 0
-        return {
-          color: 'green',
-          primaryMetric: `${progress}% funded`,
-          secondaryMetric: campaign.contributors ? `${campaign.contributors} contributors` : undefined,
-          icon: '🎯'
-        }
-      case 'proposal':
-        const proposal = entity as ProposalEntity
-        const totalVotes = proposal.votes ? proposal.votes.for + proposal.votes.against + proposal.votes.abstain : 0
-        return {
-          color: 'purple',
-          primaryMetric: totalVotes > 0 ? `${totalVotes} votes` : 'No votes yet',
-          secondaryMetric: proposal.timeLeft || undefined,
-          icon: '🗳️'
-        }
-      case 'pool':
-        const pool = entity as StakingPoolEntity
-        return {
-          color: 'red',
-          primaryMetric: `${pool.apy}% APY`,
-          secondaryMetric: `${formatNumber(pool.totalStaked)} staked`,
-          icon: '🪙'
-        }
-      default:
-        return { color: 'gray', primaryMetric: '', icon: '📄' }
-    }
-  }
+              {type && (
+                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                  {type}
+                </Badge>
+              )}
+            </div>
 
-  const config = getVariantConfig()
-
-  const cardContent = (
-    <Card className={cn(
-      'group hover:shadow-lg transition-all duration-200 cursor-pointer',
-      isCompact && 'h-32',
-      !isCompact && variant === 'organization' && 'aspect-[3/4]', // Portrait format for organizations
-      className
-    )}>
-      <CardHeader className={cn('pb-3', isCompact && 'pb-2')}>
-        <div className="flex items-start gap-3">
-          {/* Entity visual */}
-          <div className={cn(
-            'flex-shrink-0 rounded-lg flex items-center justify-center text-white',
-            !isCompact && 'w-12 h-12',
-            isCompact && 'w-10 h-10',
-            config.color === 'blue' && 'bg-blue-500',
-            config.color === 'green' && 'bg-green-500',
-            config.color === 'purple' && 'bg-purple-500',
-            config.color === 'red' && 'bg-red-500',
-            config.color === 'gray' && 'bg-gray-500'
-          )}>
-            {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={entity.name || entity.title || ''}
-                className="w-full h-full object-cover rounded-lg"
-              />
-            ) : (
-              <span className="text-lg">{config.icon}</span>
-            )}
-          </div>
-
-          {/* Entity info */}
-          <div className="flex-1 min-w-0">
-            <h3 className={cn(
-              'font-semibold truncate',
-              !isCompact && 'text-lg',
-              isCompact && 'text-base'
-            )}>
-              {entity.name || entity.title}
-            </h3>
-
-            {/* Organization name for campaigns/proposals */}
-            {'organizationName' in entity && entity.organizationName && (
-              <p className="text-sm text-muted-foreground truncate">
-                {entity.organizationName}
-              </p>
-            )}
-
-            {/* Status badge */}
-            {entity.status && (
-              <Badge
-                variant="secondary"
-                className={cn(
-                  'mt-1 text-xs',
-                  getStatusColor(entity.status)
-                )}
-              >
-                {entity.status}
+            {/* Status */}
+            {status && (
+              <Badge className={cn(
+                "flex items-center space-x-1",
+                statusColors[status]
+              )}>
+                {statusIcons[status]}
+                <span className="capitalize">{status}</span>
               </Badge>
             )}
           </div>
-        </div>
-      </CardHeader>
 
-      <CardContent className={cn('space-y-3', isCompact && 'py-2 space-y-2')}>
-        {/* Description */}
-        {entity.description && !isCompact && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {entity.description}
-          </p>
+          {/* Title */}
+          <h3 className={cn(
+            "font-semibold leading-tight",
+            banner ? "text-white" : "text-white",
+            variant === 'compact' ? "text-lg" : "text-xl"
+          )}>
+            {title}
+          </h3>
+
+          {/* Description */}
+          {description && variant !== 'compact' && (
+            <p className={cn(
+              "text-sm leading-relaxed",
+              banner ? "text-white/90" : "text-white/90"
+            )}>
+              {description}
+            </p>
+          )}
+        </CardHeader>
+      </div>
+
+      {/* Content Area */}
+      <CardContent className="space-y-4">
+        {/* Primary Metric */}
+        {primaryMetric && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-muted-foreground">
+              {primaryMetric.icon}
+              <span className="text-sm">{primaryMetric.label}</span>
+            </div>
+            <span className="font-semibold">{primaryMetric.value}</span>
+          </div>
         )}
 
-        {/* Metrics */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">{config.primaryMetric}</span>
-          {config.secondaryMetric && (
-            <span className="text-muted-foreground">{config.secondaryMetric}</span>
-          )}
-        </div>
+        {/* Progress Bar */}
+        {progress !== undefined && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-medium">{progress}%</span>
+            </div>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Secondary Metrics */}
+        {secondaryMetrics.length > 0 && (
+          <div className="grid grid-cols-2 gap-4">
+            {secondaryMetrics.map((metric, index) => (
+              <div key={index} className="text-center">
+                <div className="flex items-center justify-center space-x-1 text-muted-foreground mb-1">
+                  {metric.icon}
+                  <span className="text-xs">{metric.label}</span>
+                </div>
+                <div className="font-semibold text-sm">{metric.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Time Remaining */}
+        {timeRemaining && (
+          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            <span>{timeRemaining} remaining</span>
+          </div>
+        )}
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {tags.map((tag, index) => (
+              <Badge key={index} variant="outline" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
 
         {/* Actions */}
-        {!isCompact && (
-          <div className="flex gap-2 pt-2">
-            {actions || (
+        {(primaryAction || secondaryAction) && (
+          <div className="flex space-x-2 pt-2">
+            {primaryAction && (
               <Button
                 size="sm"
-                variant="outline"
-                className="flex-1"
+                variant={primaryAction.variant || 'default'}
                 onClick={(e) => {
-                  e.preventDefault()
-                  onAction?.('view', entity)
+                  e.stopPropagation()
+                  primaryAction.onClick()
                 }}
+                disabled={primaryAction.loading}
+                className="flex-1"
               >
-                View Details
+                {primaryAction.loading ? 'Loading...' : primaryAction.label}
               </Button>
             )}
+
+            {secondaryAction && (
+              <Button
+                size="sm"
+                variant={secondaryAction.variant || 'outline'}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  secondaryAction.onClick()
+                }}
+                className="flex-1"
+              >
+                {secondaryAction.label}
+              </Button>
+            )}
+
+            {onClick && !primaryAction && (
+              <Button size="sm" variant="ghost" className="ml-auto">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        {footer && (
+          <div className="pt-2 border-t">
+            {footer}
           </div>
         )}
       </CardContent>
     </Card>
   )
-
-  return href ? (
-    <Link href={href} className="block">
-      {cardContent}
-    </Link>
-  ) : cardContent
 }
 
-// Main EntityCard component
-export function EntityCard({
-  entity,
-  variant,
-  layout = 'default',
-  href,
-  actions,
-  className,
-  loading = false,
-  onAction
-}: EntityCardProps) {
-  // Show loading skeleton
-  if (loading) {
-    return <EntityCardSkeleton variant={variant} layout={layout} />
+// Preset configurations for different GameDAO entities
+export const EntityCardPresets = {
+  organization: {
+    icon: <Users className="h-5 w-5" />,
+    iconColor: 'bg-blue-500',
+    type: 'Organization'
+  },
+
+  campaign: {
+    icon: <Target className="h-5 w-5" />,
+    iconColor: 'bg-green-500',
+    type: 'Campaign'
+  },
+
+  proposal: {
+    icon: <TrendingUp className="h-5 w-5" />,
+    iconColor: 'bg-purple-500',
+    type: 'Proposal'
+  },
+
+  stakingPool: {
+    icon: <Coins className="h-5 w-5" />,
+    iconColor: 'bg-yellow-500',
+    type: 'Staking Pool'
+  },
+
+  profile: {
+    icon: <Shield className="h-5 w-5" />,
+    iconColor: 'bg-indigo-500',
+    type: 'Profile'
+  },
+
+  achievement: {
+    icon: <Star className="h-5 w-5" />,
+    iconColor: 'bg-orange-500',
+    type: 'Achievement'
+  }
+}
+
+// Grid container component
+export function EntityCardGrid({
+  children,
+  columns = 3,
+  className
+}: {
+  children: ReactNode
+  columns?: 1 | 2 | 3 | 4
+  className?: string
+}) {
+  const gridClasses = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-1 md:grid-cols-2',
+    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
   }
 
-  // Render profile card with visual-first design
-  if (variant === 'profile') {
-    return (
-      <ProfileCard
-        entity={entity as ProfileEntity}
-        layout={layout}
-        href={href}
-        actions={actions}
-        className={className}
-        onAction={onAction}
-      />
-    )
-  }
-
-  // Render standard entity card with content-first design
   return (
-    <StandardEntityCard
-      entity={entity as OrganizationEntity | CampaignEntity | ProposalEntity | StakingPoolEntity}
-      variant={variant}
-      layout={layout}
-      href={href}
-      actions={actions}
-      className={className}
-      onAction={onAction}
-    />
+    <div className={cn(
+      "grid gap-6",
+      gridClasses[columns],
+      className
+    )}>
+      {children}
+    </div>
   )
-}
-
-// Export types for use in other components
-export type {
-  EntityType,
-  OrganizationEntity,
-  CampaignEntity,
-  ProposalEntity,
-  ProfileEntity,
-  StakingPoolEntity
 }
