@@ -14,10 +14,10 @@ export interface MembershipStatus {
   }
 }
 
-export function useMembership(organizationId: string): MembershipStatus {
+export function useMembership(organizationId: string): MembershipStatus & { refetch: () => void } {
   const { address } = useAccount()
 
-  const { data, loading, error } = useQuery(CHECK_MEMBERSHIP, {
+  const { data, loading, error, refetch } = useQuery(CHECK_MEMBERSHIP, {
     variables: {
       organizationId,
       userAddress: address?.toLowerCase()
@@ -25,7 +25,7 @@ export function useMembership(organizationId: string): MembershipStatus {
     skip: !address || !organizationId,
     errorPolicy: 'all',
     notifyOnNetworkStatusChange: false,
-    fetchPolicy: 'cache-first',
+    fetchPolicy: 'cache-and-network',
   })
 
   const isMember = data?.members && data.members.length > 0
@@ -35,7 +35,8 @@ export function useMembership(organizationId: string): MembershipStatus {
     isMember,
     isLoading: loading,
     error,
-    memberData
+    memberData,
+    refetch
   }
 }
 
