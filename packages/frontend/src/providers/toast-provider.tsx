@@ -5,10 +5,10 @@ import { Toaster } from 'react-hot-toast'
 export function ToastProvider() {
   return (
     <Toaster
-      position="top-right"
+      position="bottom-center"
       toastOptions={{
         // Default options
-        duration: 4000,
+        duration: 5000,
         style: {
           background: 'hsl(var(--card))',
           color: 'hsl(var(--card-foreground))',
@@ -16,10 +16,12 @@ export function ToastProvider() {
           borderRadius: '8px',
           fontSize: '14px',
           fontWeight: '500',
+          minWidth: '300px',
+          maxWidth: '500px',
         },
         // Success toast
         success: {
-          duration: 4000,
+          duration: 5000,
           iconTheme: {
             primary: 'hsl(var(--primary))',
             secondary: 'hsl(var(--primary-foreground))',
@@ -27,7 +29,7 @@ export function ToastProvider() {
         },
         // Error toast
         error: {
-          duration: 6000,
+          duration: 5000,
           iconTheme: {
             primary: 'hsl(var(--destructive))',
             secondary: 'hsl(var(--destructive-foreground))',

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi'
 import { useAccount } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { useToast } from './use-toast'
+import { parseTokenAmount } from '@/lib/tokenUtils'
+import { readContract } from 'viem/actions'
 
 export interface GameTokenApprovalParams {
   spender: string
@@ -24,6 +26,7 @@ export function useGameTokenApproval() {
   const { address } = useAccount()
   const { contracts } = useGameDAO()
   const toast = useToast()
+  const publicClient = usePublicClient()
 
   const [pendingApproval, setPendingApproval] = useState<GameTokenApprovalParams | null>(null)
 
@@ -45,29 +48,9 @@ export function useGameTokenApproval() {
     hash: approveTxHash,
   })
 
-  // Helper function to safely convert to BigInt
+  // Helper function to safely convert GAME token amounts to BigInt
   const safeBigInt = (value: string | number, fallback = '0'): bigint => {
-    try {
-      if (typeof value === 'number') {
-        return BigInt(value)
-      }
-      if (typeof value === 'string' && value.trim() !== '') {
-        const cleaned = value.replace(/[^0-9.]/g, '')
-        if (cleaned === '' || cleaned === '.') {
-          return BigInt(fallback)
-        }
-        if (cleaned.includes('.')) {
-          const [whole, decimal] = cleaned.split('.')
-          const paddedDecimal = decimal.padEnd(18, '0').slice(0, 18)
-          return BigInt(whole + paddedDecimal)
-        }
-        return BigInt(cleaned)
-      }
-      return BigInt(fallback)
-    } catch (error) {
-      console.warn('Failed to convert to BigInt:', value, error)
-      return BigInt(fallback)
-    }
+    return parseTokenAmount(value, 'GAME', fallback)
   }
 
   // Function to get current allowance for a specific spender
@@ -91,13 +74,39 @@ export function useGameTokenApproval() {
     if (amountBigInt === BigInt(0)) return false
 
     try {
-      // We need to make a direct contract call since we can't use hooks conditionally
-      // This is a simplified check - in a real app you'd want to use a proper contract read
       console.log('🔍 Checking approval needed for:', { spender, amount: amountBigInt.toString() })
 
-      // For now, assume approval is needed if amount > 0
-      // This will be handled by the actual approval transaction
-      return true
+      // Check if we have a public client available
+      if (!publicClient) {
+        console.warn('No public client available, assuming approval needed')
+        return true
+      }
+
+      // Read current allowance from the contract
+      const currentAllowance = await readContract(publicClient, {
+        address: contracts.GAME_TOKEN,
+        abi: ABIS.GAME_TOKEN,
+        functionName: 'allowance',
+        args: [address, spender],
+      }) as bigint
+
+      console.log('🔍 Current GAME allowance:', {
+        spender,
+        currentAllowance: currentAllowance.toString(),
+        requiredAmount: amountBigInt.toString(),
+        needsApproval: currentAllowance < amountBigInt
+      })
+
+      // Check if current allowance is sufficient
+      const needsApproval = currentAllowance < amountBigInt
+
+      if (!needsApproval) {
+        console.log(`✅ GAME token allowance already sufficient: ${currentAllowance.toString()} >= ${amountBigInt.toString()}`)
+      } else {
+        console.log(`❌ GAME token approval needed: ${currentAllowance.toString()} < ${amountBigInt.toString()}`)
+      }
+
+      return needsApproval
     } catch (error) {
       console.error('Error checking approval:', error)
       return true // Assume approval needed if we can't check

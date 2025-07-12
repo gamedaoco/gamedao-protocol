@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi'
 import { useAccount } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { useToast } from './use-toast'
+import { readContract } from 'viem/actions'
 
 export interface TokenApprovalParams {
   token: 'GAME' | 'USDC'
@@ -16,6 +17,7 @@ export function useTokenApproval() {
   const { address } = useAccount()
   const { contracts } = useGameDAO()
   const toast = useToast()
+  const publicClient = usePublicClient()
 
   const [pendingApproval, setPendingApproval] = useState<TokenApprovalParams | null>(null)
 
@@ -101,9 +103,38 @@ export function useTokenApproval() {
     try {
       console.log('🔍 Checking approval needed for:', { token, spender, amount: amountBigInt.toString() })
 
-      // For now, assume approval is needed if amount > 0
-      // In a real implementation, you'd check the current allowance
-      return true
+      // Check if we have a public client available
+      if (!publicClient) {
+        console.warn('No public client available, assuming approval needed')
+        return true
+      }
+
+      // Read current allowance from the contract
+      const currentAllowance = await readContract(publicClient, {
+        address: tokenAddress,
+        abi: getTokenABI(token),
+        functionName: 'allowance',
+        args: [address, spender],
+      }) as bigint
+
+      console.log('🔍 Current allowance:', {
+        token,
+        spender,
+        currentAllowance: currentAllowance.toString(),
+        requiredAmount: amountBigInt.toString(),
+        needsApproval: currentAllowance < amountBigInt
+      })
+
+      // Check if current allowance is sufficient
+      const needsApproval = currentAllowance < amountBigInt
+
+      if (!needsApproval) {
+        console.log(`✅ ${token} token allowance already sufficient: ${currentAllowance.toString()} >= ${amountBigInt.toString()}`)
+      } else {
+        console.log(`❌ ${token} token approval needed: ${currentAllowance.toString()} < ${amountBigInt.toString()}`)
+      }
+
+      return needsApproval
     } catch (error) {
       console.error('Error checking approval:', error)
       return true // Assume approval needed if we can't check
