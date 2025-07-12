@@ -9,12 +9,14 @@ import { useEffect, useState, useMemo } from 'react'
 import { useAccount } from 'wagmi'
 import { useToast } from './use-toast'
 import { extractOrganizationIdFromLogs, toContractId } from '@/lib/id-utils'
+import { parseTokenAmount } from '@/lib/tokenUtils'
 
 
 export interface Organization {
   id: string // 8-character alphanumeric ID from smart contract
   name: string
   creator: string
+  metadataURI?: string
   treasury: string
   accessModel: number
   feeModel: number
@@ -99,6 +101,7 @@ export function useOrganizations() {
       id: org.id, // Now comes directly as 8-character alphanumeric from smart contract
       name: org.name || `Organization ${org.id}`,
       creator: org.creator,
+      metadataURI: org.metadataURI,
       treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
       accessModel: getAccessModelFromString(org.accessModel),
       feeModel: 0, // Not in subgraph schema
@@ -128,6 +131,7 @@ export function useOrganizations() {
       id: org.id, // Now comes directly as 8-character alphanumeric from smart contract
       name: org.name || `Organization ${org.id}`,
       creator: org.creator,
+      metadataURI: org.metadataURI,
       treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
       accessModel: getAccessModelFromString(org.accessModel),
       feeModel: 0,
@@ -219,31 +223,9 @@ export function useOrganizations() {
       throw new Error('Wallet not connected or contracts not loaded')
     }
 
-    // Helper function to safely convert to BigInt
+    // Helper function to safely convert GAME token amounts to BigInt
     const safeBigInt = (value: string | number, fallback = '0'): bigint => {
-      try {
-        if (typeof value === 'number') {
-          return BigInt(value)
-        }
-        if (typeof value === 'string' && value.trim() !== '') {
-          // Remove any non-numeric characters except decimal point
-          const cleaned = value.replace(/[^0-9.]/g, '')
-          if (cleaned === '' || cleaned === '.') {
-            return BigInt(fallback)
-          }
-          // Handle decimal values by converting to wei (multiply by 10^18)
-          if (cleaned.includes('.')) {
-            const [whole, decimal] = cleaned.split('.')
-            const paddedDecimal = decimal.padEnd(18, '0').slice(0, 18)
-            return BigInt(whole + paddedDecimal)
-          }
-          return BigInt(cleaned)
-        }
-        return BigInt(fallback)
-      } catch (error) {
-        console.warn('Failed to convert to BigInt:', value, error)
-        return BigInt(fallback)
-      }
+      return parseTokenAmount(value, 'GAME', fallback)
     }
 
     console.log('🔍 Creating organization with params:', params)
@@ -425,6 +407,7 @@ export function useUserOrganizations() {
       id: org.id, // Now comes directly as 8-character alphanumeric from smart contract
       name: org.name || `Organization ${org.id}`,
       creator: org.creator,
+      metadataURI: org.metadataURI,
       treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
       accessModel: getAccessModelFromString(org.accessModel),
       feeModel: 0,

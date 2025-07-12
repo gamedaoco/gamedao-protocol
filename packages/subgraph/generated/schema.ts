@@ -480,6 +480,23 @@ export class Organization extends Entity {
     this.set("name", Value.fromString(value));
   }
 
+  get metadataURI(): string | null {
+    let value = this.get("metadataURI");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set metadataURI(value: string | null) {
+    if (!value) {
+      this.unset("metadataURI");
+    } else {
+      this.set("metadataURI", Value.fromString(<string>value));
+    }
+  }
+
   get orgType(): string {
     let value = this.get("orgType");
     if (!value || value.kind == ValueKind.NULL) {

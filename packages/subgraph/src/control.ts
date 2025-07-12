@@ -59,6 +59,7 @@ export function handleOrganizationCreated(event: OrganizationCreated): void {
   let orgData = controlContract.getOrganization(event.params.id)
 
   // Map the organization data from contract
+  organization.metadataURI = orgData.metadataURI
   organization.orgType = mapOrgType(orgData.orgType)
   organization.state = mapOrgState(orgData.state)
   organization.accessModel = mapAccessModel(orgData.accessModel)
