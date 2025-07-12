@@ -1,18 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useOrganizations } from '@/hooks/useOrganizations'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { Loader } from '@/components/ui/loader'
 import { DetailPageLayout } from '@/components/layout/detail-page-layout'
 import { JoinOrganizationModal } from '@/components/organization/join-organization-modal'
+import { MemberList } from '@/components/organization/MemberList'
 import { Badge } from '@/components/ui/badge'
 import { formatAddress } from '@/lib/utils'
-import { Eye, EyeOff } from 'lucide-react'
 import { useAccount } from 'wagmi'
+import { useOrganizationDetails } from '@/hooks/useOrganizationDetails'
 import { useMembership } from '@/hooks/useMembership'
 
 interface OrganizationDetailPageProps {
@@ -23,9 +23,11 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
   const { id } = params
 
   const { address } = useAccount()
-  const { organizations, isLoading, refetch } = useOrganizations()
+  const { organization, actualMemberCount, isLoading, refetch } = useOrganizationDetails(id)
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
-  const [showAllMembers, setShowAllMembers] = useState(false)
+
+  // Check if current user is a member (always call hooks at top level)
+  const { isMember } = useMembership(id)
 
   // Validate params
   if (!id) {
@@ -46,12 +48,6 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
       </DetailPageLayout>
     )
   }
-
-  // Find the organization
-  const organization = organizations.find((org) => org.id === id)
-
-  // Check if current user is a member (only if organization exists)
-  const { isMember, isLoading: membershipLoading, memberData } = useMembership(organization?.id || '')
 
   // Handle leaving organization (for now, just show alert - TODO: implement contract call)
   const handleLeaveOrganization = () => {
@@ -102,7 +98,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
     )
   }
 
-  const isActive = organization.state === 1
+  const isActive = useMemo(() => organization?.state === 1, [organization?.state])
 
   return (
     <ErrorBoundary>
@@ -165,7 +161,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {organization.memberCount || 0}
+                  {actualMemberCount || 0}
                 </div>
                 {address && isMember && (
                   <p className="text-sm text-green-600 dark:text-green-400 mt-1">
@@ -214,7 +210,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                 <div>
                   <h4 className="font-medium mb-2">Treasury</h4>
                   <p className="text-muted-foreground font-mono text-sm">
-                    {formatAddress(organization.treasury)}
+                    {formatAddress(organization.treasury.address)}
                   </p>
                 </div>
 
@@ -262,40 +258,12 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
           </Card>
 
           {/* Members Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Members ({organization.memberCount || 0})
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAllMembers(!showAllMembers)}
-                >
-                  {showAllMembers ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  {showAllMembers ? 'Hide' : 'Show'} All
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {organization.memberCount === 0 ? (
-                <EmptyState
-                  title="No members yet"
-                  description="This organization doesn't have any members yet."
-                />
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Member list will be loaded from the subgraph in a future update.
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">
-                      {organization.memberCount} {organization.memberCount === 1 ? 'member' : 'members'}
-                    </Badge>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <MemberList
+            members={organization.members || []}
+            memberCount={actualMemberCount}
+            currentUserAddress={address}
+            showTitle={true}
+          />
 
           {/* Activity Section */}
           <Card>
@@ -322,15 +290,21 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
         </div>
 
         {/* Join Organization Modal */}
-        <JoinOrganizationModal
-          isOpen={isJoinModalOpen}
-          onClose={() => setIsJoinModalOpen(false)}
-          organization={organization}
-          onSuccess={() => {
-            setIsJoinModalOpen(false)
-            refetch()
-          }}
-        />
+        {organization && (
+          <JoinOrganizationModal
+            isOpen={isJoinModalOpen}
+            onClose={() => setIsJoinModalOpen(false)}
+            organization={{
+              ...organization,
+              treasury: organization.treasury.address,
+              feeModel: 0 // Default feeModel for compatibility
+            }}
+            onSuccess={() => {
+              setIsJoinModalOpen(false)
+              refetch()
+            }}
+          />
+        )}
       </DetailPageLayout>
     </ErrorBoundary>
   )

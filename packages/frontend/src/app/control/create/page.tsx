@@ -9,15 +9,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useGameDAO } from '@/hooks/useGameDAO'
-import { useOrganizations } from '@/hooks/useOrganizations'
-import { useGameTokenApproval } from '@/hooks/useGameTokenApproval'
+import { useOrganizationCreation } from '@/hooks/useOrganizationCreation'
 import { useAccount } from 'wagmi'
 
 import { Plus, ArrowLeft, Upload, Image as ImageIcon, FileText, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
-import { uploadOrganizationMetadata, uploadFileToIPFS } from '@/lib/ipfs'
+
 
 // Dynamically import markdown editor to avoid SSR issues
 const MDEditor = dynamic(
@@ -29,8 +28,16 @@ export default function CreateOrganizationPage() {
   const router = useRouter()
   const { isConnected } = useAccount()
   const { contracts, contractsValid, chainId } = useGameDAO()
-  const { createOrganization, isCreating, createSuccess, createError, createdOrgId } = useOrganizations()
-  const { requestApproval, isApproving, isApprovalConfirming, approvalSuccess, approvalError } = useGameTokenApproval()
+  const {
+    createOrganizationWithApproval,
+    isCreating,
+    isApproving,
+    progress,
+    currentStep,
+    error: creationError,
+    createdOrgId,
+    resetState
+  } = useOrganizationCreation()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -54,9 +61,10 @@ export default function CreateOrganizationPage() {
   const [profileImagePreview, setProfileImagePreview] = useState<string>('')
   const [bannerImagePreview, setBannerImagePreview] = useState<string>('')
 
-  const [uploadProgress, setUploadProgress] = useState('')
-  const [approvalCompleted, setApprovalCompleted] = useState(false)
-  const [pendingOrgCreation, setPendingOrgCreation] = useState<any>(null)
+  // These states are now managed by the useOrganizationCreation hook
+  const uploadProgress = progress
+  const isApprovalConfirming = isApproving
+  const createSuccess = currentStep === 'success'
 
   console.log('🔍 Create page state:', {
     isConnected,
@@ -64,13 +72,11 @@ export default function CreateOrganizationPage() {
     contractsValid,
     chainId,
     isCreating,
-    createSuccess,
-    createError: createError?.message,
+    currentStep,
+    creationError: creationError,
     createdOrgId,
     isApproving,
-    isApprovalConfirming,
-    approvalSuccess,
-    approvalError: approvalError?.message,
+    progress,
     profileImagePreview: !!profileImagePreview,
     bannerImagePreview: !!bannerImagePreview,
     profileImageLength: profileImagePreview?.length || 0,
@@ -78,60 +84,23 @@ export default function CreateOrganizationPage() {
     renderTime: new Date().toISOString()
   })
 
-  // Handle approval success
+  // Handle success state - redirect after transaction is confirmed
   useEffect(() => {
-    if (approvalSuccess && !approvalCompleted) {
-      console.log('✅ GAME token approval confirmed! Proceeding with organization creation...')
-      setApprovalCompleted(true)
-      setUploadProgress('Creating organization on blockchain...')
-
-      // Proceed with organization creation
-      if (pendingOrgCreation) {
-        createOrganization(pendingOrgCreation)
-          .then(() => {
-            console.log('✅ Organization creation initiated after approval')
-            setUploadProgress('Waiting for transaction confirmation...')
-            setPendingOrgCreation(null)
-          })
-          .catch((error) => {
-            console.error('❌ Organization creation failed after approval:', error)
-            setUploadProgress('')
-            alert(`Failed to create organization: ${error instanceof Error ? error.message : 'Unknown error'}`)
-          })
-      }
-    }
-  }, [approvalSuccess, approvalCompleted, pendingOrgCreation, createOrganization])
-
-  // Handle success state - only redirect after transaction is confirmed
-  useEffect(() => {
-    if (createSuccess && createdOrgId) {
+    if (currentStep === 'success' && createdOrgId) {
       console.log('🎉 Organization created successfully! Redirecting to:', createdOrgId)
-      setUploadProgress('Organization created successfully! Redirecting...')
 
       // Add a small delay to show success message before redirect
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         // Reset states
-        setApprovalCompleted(false)
-        setPendingOrgCreation(null)
-        setUploadProgress('')
+        resetState()
         // Redirect to the specific organization page
         router.push(`/control/${createdOrgId}`)
       }, 2000)
-    } else if (createSuccess) {
-      console.log('🎉 Organization created successfully! Redirecting to control page...')
-      setUploadProgress('Organization created successfully! Redirecting...')
 
-      // Add a small delay to show success message before redirect
-      setTimeout(() => {
-        // Reset states
-        setApprovalCompleted(false)
-        setPendingOrgCreation(null)
-        setUploadProgress('')
-        // Fallback to control page if no org ID
-        router.push('/control')
-      }, 2000)
+      // Cleanup timeout on unmount
+      return () => clearTimeout(timeoutId)
     }
-  }, [createSuccess, createdOrgId, router])
+  }, [currentStep, createdOrgId, router])
 
   const handleImageUpload = (file: File, type: 'profile' | 'banner') => {
     console.log('🖼️ Image upload triggered:', { fileName: file.name, fileSize: file.size, type })
@@ -169,128 +138,28 @@ export default function CreateOrganizationPage() {
       return
     }
 
-    console.log('✅ Prerequisites met, starting creation process...')
-    setUploadProgress('Preparing metadata...')
-
     try {
-      // Upload images to IPFS first
-      let profileImageUrl = ''
-      let bannerImageUrl = ''
-
-      if (profileImage) {
-        setUploadProgress('Uploading profile image to IPFS...')
-        console.log('📤 Uploading profile image:', profileImage)
-        try {
-          const result = await uploadFileToIPFS(profileImage, {
-            name: `${formData.name} Profile Image`,
-            description: `Profile image for ${formData.name} organization`
-          })
-          profileImageUrl = result.url
-          console.log('✅ Profile image uploaded:', result)
-        } catch (error) {
-          console.error('❌ Profile image upload failed:', error)
-          throw new Error(`Profile image upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-        }
-      }
-
-      if (bannerImage) {
-        setUploadProgress('Uploading banner image to IPFS...')
-        console.log('📤 Uploading banner image:', bannerImage)
-        try {
-          const result = await uploadFileToIPFS(bannerImage, {
-            name: `${formData.name} Banner Image`,
-            description: `Banner image for ${formData.name} organization`
-          })
-          bannerImageUrl = result.url
-          console.log('✅ Banner image uploaded:', result)
-        } catch (error) {
-          console.error('❌ Banner image upload failed:', error)
-          throw new Error(`Banner image upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-        }
-      }
-
-      // Create metadata object
-      const metadata = {
+      await createOrganizationWithApproval({
         name: formData.name,
         description: formData.description,
         longDescription: formData.longDescription,
-        profileImage: profileImageUrl,
-        bannerImage: bannerImageUrl,
         website: formData.website,
-        social: {
-          twitter: formData.twitter,
-          discord: formData.discord,
-          github: formData.github
-        },
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
-      }
-
-      console.log('📋 Created metadata object:', metadata)
-
-      // Upload metadata to IPFS
-      setUploadProgress('Uploading metadata to IPFS...')
-      console.log('📤 Uploading metadata to IPFS...')
-      try {
-        const metadataResult = await uploadOrganizationMetadata(metadata)
-        console.log('✅ Metadata uploaded:', metadataResult)
-
-        // Prepare contract parameters
-        const contractParams = {
-          name: formData.name,
-          metadataURI: metadataResult.url,
-          orgType: parseInt(formData.orgType),
-          accessModel: parseInt(formData.accessModel),
-          feeModel: parseInt(formData.feeModel),
-          memberLimit: parseInt(formData.memberLimit),
-          membershipFee: formData.membershipFee,
-          gameStakeRequired: formData.stakeAmount,
-        }
-
-        console.log('📋 Final contract parameters:', contractParams)
-
-        // Check if GAME token approval is needed
-        const stakeAmount = parseInt(formData.stakeAmount)
-        if (stakeAmount > 0) {
-          setUploadProgress('Approving GAME token...')
-          console.log('📤 Requesting GAME token approval...')
-
-          // Store the organization parameters to create after approval
-          setPendingOrgCreation(contractParams)
-
-          try {
-            await requestApproval({
-              spender: contracts.CONTROL,
-              amount: formData.stakeAmount,
-              purpose: 'organization creation'
-            })
-            console.log('✅ GAME token approval requested!')
-            // Organization creation will continue in the approval success effect
-          } catch (error) {
-            console.error('❌ GAME token approval failed:', error)
-            throw new Error(`GAME token approval failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-          }
-        } else {
-          // No approval needed, create organization directly
-          setUploadProgress('Creating organization on blockchain...')
-          await createOrganization(contractParams)
-          console.log('✅ createOrganization call completed!')
-          setUploadProgress('Waiting for transaction confirmation...')
-        }
-      } catch (error) {
-        console.error('❌ Metadata upload failed:', error)
-        throw new Error(`Metadata upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      }
-
+        twitter: formData.twitter,
+        discord: formData.discord,
+        github: formData.github,
+        tags: formData.tags,
+        orgType: parseInt(formData.orgType),
+        accessModel: parseInt(formData.accessModel),
+        feeModel: parseInt(formData.feeModel),
+        memberLimit: parseInt(formData.memberLimit),
+        membershipFee: formData.membershipFee,
+        stakeAmount: formData.stakeAmount,
+        profileImage: profileImage || undefined,
+        bannerImage: bannerImage || undefined,
+      })
     } catch (error) {
       console.error('❌ Failed to create organization:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      console.error('❌ Error details:', {
-        message: errorMessage,
-        error: error,
-        stack: error instanceof Error ? error.stack : undefined
-      })
-      setUploadProgress('')
-      // Show error message to user
       alert(`Failed to create organization: ${errorMessage}`)
     }
   }
@@ -317,7 +186,33 @@ export default function CreateOrganizationPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 relative">
+      {/* Fullscreen dimmed overlay during creation process */}
+      {(isCreating || isApproving || isApprovalConfirming || currentStep === 'success') && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-center">
+              <div className="mb-4">
+                <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">
+                {currentStep === 'success' ? 'Organization Created!' : 'Creating Organization'}
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {currentStep === 'success'
+                  ? 'Redirecting to your new organization...'
+                  : uploadProgress || 'Please wait while we process your request...'}
+              </p>
+              {currentStep === 'success' && (
+                <div className="text-green-600 dark:text-green-400 font-medium">
+                  ✅ Success! Redirecting in 2 seconds...
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
