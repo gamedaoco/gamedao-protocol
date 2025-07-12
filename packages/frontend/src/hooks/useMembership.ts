@@ -24,6 +24,8 @@ export function useMembership(organizationId: string): MembershipStatus {
     },
     skip: !address || !organizationId,
     errorPolicy: 'all',
+    notifyOnNetworkStatusChange: false,
+    fetchPolicy: 'cache-first',
   })
 
   const isMember = data?.members && data.members.length > 0
