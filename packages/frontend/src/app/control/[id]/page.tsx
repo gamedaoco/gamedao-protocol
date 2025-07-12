@@ -26,7 +26,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
   const { address } = useAccount()
   const { organization, actualMemberCount, isLoading, refetch } = useOrganizationDetails(id)
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
-  const { isMember } = useMembership(id)
+  const { isMember, refetch: refetchMembership } = useMembership(id)
   const isActive = useMemo(() => organization?.state === 1, [organization?.state])
 
   // Handle leaving organization (for now, just show alert - TODO: implement contract call)
@@ -300,6 +300,17 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
             onSuccess={() => {
               setIsJoinModalOpen(false)
               refetch()
+              refetchMembership()
+
+              // Refetch membership status again after a delay to ensure subgraph indexing
+              setTimeout(() => {
+                refetchMembership()
+              }, 3000)
+
+              // And once more after a longer delay
+              setTimeout(() => {
+                refetchMembership()
+              }, 8000)
             }}
           />
         )}

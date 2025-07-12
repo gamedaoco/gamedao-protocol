@@ -160,12 +160,16 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
       setTimeout(() => {
         refetch()
         if (onSuccess) onSuccess()
-        onClose()
 
         // Reset state
         setJoinSuccess(false)
         resetJoin()
-      }, 2000)
+
+        // Close modal after a short delay to show success state
+        setTimeout(() => {
+          onClose()
+        }, 1000)
+      }, 1000)
     }
   }, [joinTxSuccess, refetch, onSuccess, onClose, resetJoin, toast])
 
