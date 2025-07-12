@@ -82,6 +82,8 @@ export function useOrganizations() {
     variables: { first: 100 },
     pollInterval: 60000,
     errorPolicy: 'ignore',
+    notifyOnNetworkStatusChange: false,
+    fetchPolicy: 'cache-and-network',
   })
 
   // Update error state
@@ -113,7 +115,7 @@ export function useOrganizations() {
       state: getStateFromString(org.state),
       createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
     }))
-  }, [orgsData])
+  }, [orgsData?.organizations])
 
   // Fetch user's organizations from subgraph
   const { data: userOrgsData, loading: userOrgsLoading, refetch: refetchUserOrgs } = useQuery(GET_USER_ORGANIZATIONS, {
@@ -121,6 +123,8 @@ export function useOrganizations() {
     skip: !address,
     pollInterval: 30000,
     errorPolicy: 'ignore',
+    notifyOnNetworkStatusChange: false,
+    fetchPolicy: 'cache-first',
   })
 
   // Transform user organizations data
@@ -142,7 +146,7 @@ export function useOrganizations() {
       state: getStateFromString(org.state),
       createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
     }))
-  }, [userOrgsData])
+  }, [userOrgsData?.organizations])
 
   // Contract write for creating organization
   const {
