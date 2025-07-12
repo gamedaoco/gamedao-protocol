@@ -14,6 +14,7 @@ import { useGameDAO } from '@/hooks/useGameDAO'
 import { useGameTokenApproval } from '@/hooks/useGameTokenApproval'
 import { useToast } from '@/hooks/use-toast'
 import { useMembership } from '@/hooks/useMembership'
+import { toContractId } from '@/lib/id-utils'
 import { AlertCircle, Users, Shield, CreditCard, CheckCircle, Clock, UserPlus } from 'lucide-react'
 
 interface JoinOrganizationModalProps {
@@ -114,11 +115,16 @@ export function JoinOrganizationModal({ isOpen, onClose, organization, onSuccess
     try {
       toast.loading('Joining organization...')
 
+      console.log('🔍 Converting organization ID for contract call:', {
+        originalId: organization.id,
+        contractId: toContractId(organization.id)
+      })
+
       const result = await joinOrganization({
         address: contracts.CONTROL,
         abi: ABIS.CONTROL,
         functionName: 'addMember',
-        args: [organization.id, address],
+        args: [toContractId(organization.id), address],
       })
 
       console.log('✅ Join transaction submitted, waiting for confirmation...', result)
