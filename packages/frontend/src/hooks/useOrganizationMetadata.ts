@@ -82,20 +82,27 @@ export function useOrganizationMetadata(metadataURI?: string): UseOrganizationMe
 export function useOrganizationsMetadata(metadataURIs: string[]): Record<string, UseOrganizationMetadataResult> {
   const [results, setResults] = useState<Record<string, UseOrganizationMetadataResult>>({})
 
+  // Create a stable string representation of the URIs for comparison
+  const urisString = metadataURIs.join(',')
+
   useEffect(() => {
     async function fetchAllMetadata() {
+      const uris = metadataURIs.filter(Boolean)
+      if (uris.length === 0) {
+        setResults({})
+        return
+      }
+
       const newResults: Record<string, UseOrganizationMetadataResult> = {}
 
       // Initialize all results with loading state
-      metadataURIs.forEach(uri => {
-        if (uri) {
-          newResults[uri] = {
-            metadata: null,
-            isLoading: true,
-            error: null,
-            bannerImageUrl: null,
-            profileImageUrl: null
-          }
+      uris.forEach(uri => {
+        newResults[uri] = {
+          metadata: null,
+          isLoading: true,
+          error: null,
+          bannerImageUrl: null,
+          profileImageUrl: null
         }
       })
 
@@ -103,9 +110,7 @@ export function useOrganizationsMetadata(metadataURIs: string[]): Record<string,
 
       // Fetch metadata for each URI
       await Promise.allSettled(
-        metadataURIs.map(async (uri) => {
-          if (!uri) return
-
+        uris.map(async (uri) => {
           try {
             console.log('📤 Fetching organization metadata from IPFS:', uri)
             const data = await getFromIPFS(uri)
@@ -141,10 +146,8 @@ export function useOrganizationsMetadata(metadataURIs: string[]): Record<string,
       )
     }
 
-    if (metadataURIs.length > 0) {
-      fetchAllMetadata()
-    }
-  }, [metadataURIs])
+    fetchAllMetadata()
+  }, [urisString]) // Use stable string instead of array reference
 
   return results
 }

@@ -25,11 +25,13 @@ export default function ControlPage() {
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
 
   // Filter organizations based on selected filter
-  const filteredOrganizations = organizations.filter(org => {
-    if (filter === 'active') return org.state === 1
-    if (filter === 'inactive') return org.state !== 1
-    return true
-  })
+  const filteredOrganizations = useMemo(() => {
+    return organizations.filter(org => {
+      if (filter === 'active') return org.state === 1
+      if (filter === 'inactive') return org.state !== 1
+      return true
+    })
+  }, [organizations, filter])
 
   // Extract metadata URIs for fetching organization metadata
   const metadataURIs = useMemo(() =>

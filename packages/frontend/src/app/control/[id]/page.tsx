@@ -22,14 +22,28 @@ interface OrganizationDetailPageProps {
 export default function OrganizationDetailPage({ params }: OrganizationDetailPageProps) {
   const { id } = params
 
+  // All hooks must be called at the top level before any conditional logic
   const { address } = useAccount()
   const { organization, actualMemberCount, isLoading, refetch } = useOrganizationDetails(id)
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
-
-  // Check if current user is a member (always call hooks at top level)
   const { isMember } = useMembership(id)
+  const isActive = useMemo(() => organization?.state === 1, [organization?.state])
 
-  // Validate params
+  // Handle leaving organization (for now, just show alert - TODO: implement contract call)
+  const handleLeaveOrganization = () => {
+    if (!organization || !address) return
+
+    // TODO: Implement actual contract call to leave organization
+    // For now, just show confirmation
+    const confirmed = window.confirm(`Are you sure you want to leave ${organization.name}?`)
+    if (confirmed) {
+      console.log('🚪 Leaving organization:', organization.name)
+      // This would call the contract's removeMember function
+      alert('Leave functionality will be implemented with contract integration')
+    }
+  }
+
+  // Validate params after all hooks are called
   if (!id) {
     return (
       <DetailPageLayout
@@ -47,20 +61,6 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
         />
       </DetailPageLayout>
     )
-  }
-
-  // Handle leaving organization (for now, just show alert - TODO: implement contract call)
-  const handleLeaveOrganization = () => {
-    if (!organization || !address) return
-
-    // TODO: Implement actual contract call to leave organization
-    // For now, just show confirmation
-    const confirmed = window.confirm(`Are you sure you want to leave ${organization.name}?`)
-    if (confirmed) {
-      console.log('🚪 Leaving organization:', organization.name)
-      // This would call the contract's removeMember function
-      alert('Leave functionality will be implemented with contract integration')
-    }
   }
 
   if (isLoading) {
@@ -97,8 +97,6 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
       </DetailPageLayout>
     )
   }
-
-  const isActive = useMemo(() => organization?.state === 1, [organization?.state])
 
   return (
     <ErrorBoundary>
