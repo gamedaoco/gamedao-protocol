@@ -14,6 +14,7 @@ export const GET_ORGANIZATIONS = gql`
       accessModel
       state
       memberLimit
+      membershipFee
       memberCount
       totalCampaigns
       totalProposals
@@ -382,6 +383,21 @@ export const GET_USER_ORGANIZATIONS = gql`
         state
         createdAt
       }
+      state
+      role
+      joinedAt
+    }
+  }
+`
+
+export const CHECK_MEMBERSHIP = gql`
+  query CheckMembership($organizationId: String!, $userAddress: Bytes!) {
+    members(where: {
+      organization: $organizationId,
+      address: $userAddress,
+      state: ACTIVE
+    }) {
+      id
       state
       role
       joinedAt

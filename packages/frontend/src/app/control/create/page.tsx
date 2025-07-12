@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useOrganizations } from '@/hooks/useOrganizations'
+import { useGameTokenApproval } from '@/hooks/useGameTokenApproval'
 import { useAccount } from 'wagmi'
 
 import { Plus, ArrowLeft, Upload, Image as ImageIcon, FileText, Loader2 } from 'lucide-react'
@@ -29,6 +30,7 @@ export default function CreateOrganizationPage() {
   const { isConnected } = useAccount()
   const { contracts, contractsValid, chainId } = useGameDAO()
   const { createOrganization, isCreating, createSuccess, createError, createdOrgId } = useOrganizations()
+  const { requestApproval, isApproving, isApprovalConfirming, approvalSuccess, approvalError } = useGameTokenApproval()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -53,6 +55,8 @@ export default function CreateOrganizationPage() {
   const [bannerImagePreview, setBannerImagePreview] = useState<string>('')
 
   const [uploadProgress, setUploadProgress] = useState('')
+  const [approvalCompleted, setApprovalCompleted] = useState(false)
+  const [pendingOrgCreation, setPendingOrgCreation] = useState<any>(null)
 
   console.log('🔍 Create page state:', {
     isConnected,
@@ -63,6 +67,10 @@ export default function CreateOrganizationPage() {
     createSuccess,
     createError: createError?.message,
     createdOrgId,
+    isApproving,
+    isApprovalConfirming,
+    approvalSuccess,
+    approvalError: approvalError?.message,
     profileImagePreview: !!profileImagePreview,
     bannerImagePreview: !!bannerImagePreview,
     profileImageLength: profileImagePreview?.length || 0,
@@ -70,16 +78,58 @@ export default function CreateOrganizationPage() {
     renderTime: new Date().toISOString()
   })
 
-  // Handle success state
+  // Handle approval success
+  useEffect(() => {
+    if (approvalSuccess && !approvalCompleted) {
+      console.log('✅ GAME token approval confirmed! Proceeding with organization creation...')
+      setApprovalCompleted(true)
+      setUploadProgress('Creating organization on blockchain...')
+
+      // Proceed with organization creation
+      if (pendingOrgCreation) {
+        createOrganization(pendingOrgCreation)
+          .then(() => {
+            console.log('✅ Organization creation initiated after approval')
+            setUploadProgress('Waiting for transaction confirmation...')
+            setPendingOrgCreation(null)
+          })
+          .catch((error) => {
+            console.error('❌ Organization creation failed after approval:', error)
+            setUploadProgress('')
+            alert(`Failed to create organization: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          })
+      }
+    }
+  }, [approvalSuccess, approvalCompleted, pendingOrgCreation, createOrganization])
+
+  // Handle success state - only redirect after transaction is confirmed
   useEffect(() => {
     if (createSuccess && createdOrgId) {
       console.log('🎉 Organization created successfully! Redirecting to:', createdOrgId)
-      // Redirect to the specific organization page
-      router.push(`/control/${createdOrgId}`)
+      setUploadProgress('Organization created successfully! Redirecting...')
+
+      // Add a small delay to show success message before redirect
+      setTimeout(() => {
+        // Reset states
+        setApprovalCompleted(false)
+        setPendingOrgCreation(null)
+        setUploadProgress('')
+        // Redirect to the specific organization page
+        router.push(`/control/${createdOrgId}`)
+      }, 2000)
     } else if (createSuccess) {
       console.log('🎉 Organization created successfully! Redirecting to control page...')
-      // Fallback to control page if no org ID
-      router.push('/control')
+      setUploadProgress('Organization created successfully! Redirecting...')
+
+      // Add a small delay to show success message before redirect
+      setTimeout(() => {
+        // Reset states
+        setApprovalCompleted(false)
+        setPendingOrgCreation(null)
+        setUploadProgress('')
+        // Fallback to control page if no org ID
+        router.push('/control')
+      }, 2000)
     }
   }, [createSuccess, createdOrgId, router])
 
@@ -184,9 +234,7 @@ export default function CreateOrganizationPage() {
         const metadataResult = await uploadOrganizationMetadata(metadata)
         console.log('✅ Metadata uploaded:', metadataResult)
 
-        setUploadProgress('Creating organization on blockchain...')
-
-        // Use the actual hook to create organization
+        // Prepare contract parameters
         const contractParams = {
           name: formData.name,
           metadataURI: metadataResult.url,
@@ -200,11 +248,34 @@ export default function CreateOrganizationPage() {
 
         console.log('📋 Final contract parameters:', contractParams)
 
-        await createOrganization(contractParams)
+        // Check if GAME token approval is needed
+        const stakeAmount = parseInt(formData.stakeAmount)
+        if (stakeAmount > 0) {
+          setUploadProgress('Approving GAME token...')
+          console.log('📤 Requesting GAME token approval...')
 
-        console.log('✅ createOrganization call completed!')
-        // Success will be handled by the hook's effect
-        setUploadProgress('')
+          // Store the organization parameters to create after approval
+          setPendingOrgCreation(contractParams)
+
+          try {
+            await requestApproval({
+              spender: contracts.CONTROL,
+              amount: formData.stakeAmount,
+              purpose: 'organization creation'
+            })
+            console.log('✅ GAME token approval requested!')
+            // Organization creation will continue in the approval success effect
+          } catch (error) {
+            console.error('❌ GAME token approval failed:', error)
+            throw new Error(`GAME token approval failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          }
+        } else {
+          // No approval needed, create organization directly
+          setUploadProgress('Creating organization on blockchain...')
+          await createOrganization(contractParams)
+          console.log('✅ createOrganization call completed!')
+          setUploadProgress('Waiting for transaction confirmation...')
+        }
       } catch (error) {
         console.error('❌ Metadata upload failed:', error)
         throw new Error(`Metadata upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -265,7 +336,7 @@ export default function CreateOrganizationPage() {
         </div>
 
         {/* Loading Overlay */}
-        {isCreating && (
+        {(isCreating || isApproving || isApprovalConfirming) && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
               <div className="flex flex-col items-center space-y-4">
@@ -280,7 +351,10 @@ export default function CreateOrganizationPage() {
                   <div
                     className="bg-primary h-2 rounded-full transition-all duration-500"
                     style={{
-                      width: uploadProgress.includes('blockchain') ? '100%' :
+                      width: uploadProgress.includes('Redirecting') ? '100%' :
+                             uploadProgress.includes('confirmation') ? '95%' :
+                             uploadProgress.includes('blockchain') ? '85%' :
+                             uploadProgress.includes('Approving') ? '80%' :
                              uploadProgress.includes('metadata') ? '75%' :
                              uploadProgress.includes('banner') ? '50%' :
                              uploadProgress.includes('profile') ? '25%' : '10%'
@@ -318,7 +392,7 @@ export default function CreateOrganizationPage() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Dimmed overlay for form during transaction */}
-          <div className={`${isCreating ? 'opacity-50 pointer-events-none' : ''} transition-opacity duration-300`}>
+          <div className={`${(isCreating || isApproving || isApprovalConfirming) ? 'opacity-50 pointer-events-none' : ''} transition-opacity duration-300`}>
             {/* Basic Information */}
             <Card>
               <CardHeader>
@@ -636,16 +710,19 @@ export default function CreateOrganizationPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="membershipFee">Membership Fee (ETH)</Label>
+                    <Label htmlFor="membershipFee">Membership Fee (GAME)</Label>
                     <Input
                       id="membershipFee"
                       type="number"
-                      step="0.001"
+                      step="1"
                       value={formData.membershipFee}
                       onChange={(e) => handleInputChange('membershipFee', e.target.value)}
-                      placeholder="0.0"
+                      placeholder="0"
                       min="0"
                     />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      GAME tokens required to join the organization
+                    </p>
                   </div>
                 </div>
 
@@ -672,10 +749,10 @@ export default function CreateOrganizationPage() {
           <div className="flex gap-4">
             <Button
               type="submit"
-              disabled={isCreating || !formData.name || !formData.description}
+              disabled={isCreating || isApproving || isApprovalConfirming || !formData.name || !formData.description}
               className="flex-1"
             >
-              {isCreating ? (
+              {(isCreating || isApproving || isApprovalConfirming) ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {uploadProgress || 'Creating Organization...'}
@@ -691,7 +768,7 @@ export default function CreateOrganizationPage() {
               <Button
                 type="button"
                 variant="outline"
-                disabled={isCreating}
+                disabled={isCreating || isApproving || isApprovalConfirming}
               >
                 Cancel
               </Button>

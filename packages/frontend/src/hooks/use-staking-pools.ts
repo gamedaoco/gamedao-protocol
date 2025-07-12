@@ -8,6 +8,7 @@ import { ABIS } from '@/lib/abis'
 import { GET_STAKING_POOLS, GET_USER_STAKES, GET_STAKING_STATS } from '@/lib/queries'
 import { useState, useEffect } from 'react'
 import { formatEther, parseEther } from 'viem'
+import { useTokenApproval } from './useTokenApproval'
 
 // Safe BigInt conversion helper
 const safeBigInt = (value: any, fallback: string = '0'): bigint => {
@@ -73,6 +74,16 @@ export function useStakingPools() {
   const { contracts, isConnected } = useGameDAO()
   const { address } = useAccount()
   const [contractPools, setContractPools] = useState<StakingPool[]>([])
+
+  // Add token approval hook
+  const {
+    handleApproval: handleTokenApproval,
+    isApproving: isTokenApproving,
+    isApprovalConfirming: isTokenApprovalConfirming,
+    approvalSuccess: tokenApprovalSuccess,
+    approvalError: tokenApprovalError,
+    safeBigInt: tokenSafeBigInt
+  } = useTokenApproval()
 
   // Fetch staking pools from subgraph
   const { data: poolsData, loading: poolsLoading, error: poolsError, refetch: refetchPools } = useQuery(GET_STAKING_POOLS, {
@@ -210,12 +221,36 @@ export function useStakingPools() {
       throw new Error('Wallet not connected')
     }
 
-    return stakeTokens({
-      address: contracts.STAKING,
-      abi: ABIS.STAKING,
-      functionName: 'stake',
-      args: [poolId, parseEther(amount)],
-    })
+    try {
+      console.log('🔍 Staking GAME tokens with approval:', {
+        poolId,
+        amount
+      })
+
+      // Handle GAME token approval first
+      const approvalNeeded = await handleTokenApproval({
+        token: 'GAME',
+        spender: contracts.STAKING,
+        amount,
+        purpose: 'staking'
+      })
+
+      if (!approvalNeeded) {
+        // Approval is pending, staking will be handled after approval
+        return
+      }
+
+      // Proceed with staking
+      return stakeTokens({
+        address: contracts.STAKING,
+        abi: ABIS.STAKING,
+        functionName: 'stake',
+        args: [poolId, parseEther(amount)],
+      })
+    } catch (error) {
+      console.error('❌ Failed to stake tokens:', error)
+      throw error
+    }
   }
 
   // Unstake tokens function
@@ -315,10 +350,10 @@ export function useStakingPools() {
     isLoading: poolsLoading && stakingPools.length === 0,
     isLoadingUserStakes: userStakesLoading,
     isLoadingStats: statsLoading,
-    isStaking,
+    isStaking: isStaking || isTokenApproving || isTokenApprovalConfirming,
     isUnstaking,
     isClaiming,
-    error: poolsError && stakingPools.length === 0 ? poolsError : null,
+    error: poolsError && stakingPools.length === 0 ? poolsError : tokenApprovalError,
 
     // Utils
     formatStakeAmount,

@@ -502,8 +502,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Control/Control.sol": {
-      "lastModificationDate": 1752173273646,
-      "contentHash": "85a32fc2bfdc470dc11275973e339085",
+      "lastModificationDate": 1752318494829,
+      "contentHash": "2c751225ecb367397aa32756aa8acad3",
       "sourceName": "contracts/modules/Control/Control.sol",
       "solcConfig": {
         "version": "0.8.20",

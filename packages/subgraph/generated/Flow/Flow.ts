@@ -458,6 +458,48 @@ export class Unpaused__Params {
   }
 }
 
+export class Flow__createCampaignWithParamsInputParamsStruct extends ethereum.Tuple {
+  get title(): string {
+    return this[0].toString();
+  }
+
+  get description(): string {
+    return this[1].toString();
+  }
+
+  get metadataURI(): string {
+    return this[2].toString();
+  }
+
+  get flowType(): i32 {
+    return this[3].toI32();
+  }
+
+  get paymentToken(): Address {
+    return this[4].toAddress();
+  }
+
+  get target(): BigInt {
+    return this[5].toBigInt();
+  }
+
+  get min(): BigInt {
+    return this[6].toBigInt();
+  }
+
+  get max(): BigInt {
+    return this[7].toBigInt();
+  }
+
+  get duration(): BigInt {
+    return this[8].toBigInt();
+  }
+
+  get autoFinalize(): boolean {
+    return this[9].toBoolean();
+  }
+}
+
 export class Flow__getCampaignResultValue0Struct extends ethereum.Tuple {
   get index(): BigInt {
     return this[0].toBigInt();
@@ -846,7 +888,7 @@ export class Flow extends ethereum.SmartContract {
   ): Bytes {
     let result = super.call(
       "createCampaign",
-      "createCampaign(bytes32,string,string,string,uint8,address,uint256,uint256,uint256,uint256,bool):(bytes32)",
+      "createCampaign(bytes8,string,string,string,uint8,address,uint256,uint256,uint256,uint256,bool):(bytes32)",
       [
         ethereum.Value.fromFixedBytes(organizationId),
         ethereum.Value.fromString(title),
@@ -880,7 +922,7 @@ export class Flow extends ethereum.SmartContract {
   ): ethereum.CallResult<Bytes> {
     let result = super.tryCall(
       "createCampaign",
-      "createCampaign(bytes32,string,string,string,uint8,address,uint256,uint256,uint256,uint256,bool):(bytes32)",
+      "createCampaign(bytes8,string,string,string,uint8,address,uint256,uint256,uint256,uint256,bool):(bytes32)",
       [
         ethereum.Value.fromFixedBytes(organizationId),
         ethereum.Value.fromString(title),
@@ -902,10 +944,49 @@ export class Flow extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
+  createCampaignWithParams(
+    creator: Address,
+    organizationId: Bytes,
+    params: Flow__createCampaignWithParamsInputParamsStruct
+  ): Bytes {
+    let result = super.call(
+      "createCampaignWithParams",
+      "createCampaignWithParams(address,bytes8,(string,string,string,uint8,address,uint256,uint256,uint256,uint256,bool)):(bytes32)",
+      [
+        ethereum.Value.fromAddress(creator),
+        ethereum.Value.fromFixedBytes(organizationId),
+        ethereum.Value.fromTuple(params)
+      ]
+    );
+
+    return result[0].toBytes();
+  }
+
+  try_createCampaignWithParams(
+    creator: Address,
+    organizationId: Bytes,
+    params: Flow__createCampaignWithParamsInputParamsStruct
+  ): ethereum.CallResult<Bytes> {
+    let result = super.tryCall(
+      "createCampaignWithParams",
+      "createCampaignWithParams(address,bytes8,(string,string,string,uint8,address,uint256,uint256,uint256,uint256,bool)):(bytes32)",
+      [
+        ethereum.Value.fromAddress(creator),
+        ethereum.Value.fromFixedBytes(organizationId),
+        ethereum.Value.fromTuple(params)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
+  }
+
   getCampaign(campaignId: Bytes): Flow__getCampaignResultValue0Struct {
     let result = super.call(
       "getCampaign",
-      "getCampaign(bytes32):((uint256,bytes32,address,address,string,string,string,uint8,uint8,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,uint256))",
+      "getCampaign(bytes32):((uint256,bytes8,address,address,string,string,string,uint8,uint8,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,uint256))",
       [ethereum.Value.fromFixedBytes(campaignId)]
     );
 
@@ -917,7 +998,7 @@ export class Flow extends ethereum.SmartContract {
   ): ethereum.CallResult<Flow__getCampaignResultValue0Struct> {
     let result = super.tryCall(
       "getCampaign",
-      "getCampaign(bytes32):((uint256,bytes32,address,address,string,string,string,uint8,uint8,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,uint256))",
+      "getCampaign(bytes32):((uint256,bytes8,address,address,string,string,string,uint8,uint8,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,uint256))",
       [ethereum.Value.fromFixedBytes(campaignId)]
     );
     if (result.reverted) {
@@ -1015,7 +1096,7 @@ export class Flow extends ethereum.SmartContract {
   getCampaignsByOrganization(organizationId: Bytes): Array<Bytes> {
     let result = super.call(
       "getCampaignsByOrganization",
-      "getCampaignsByOrganization(bytes32):(bytes32[])",
+      "getCampaignsByOrganization(bytes8):(bytes32[])",
       [ethereum.Value.fromFixedBytes(organizationId)]
     );
 
@@ -1027,7 +1108,7 @@ export class Flow extends ethereum.SmartContract {
   ): ethereum.CallResult<Array<Bytes>> {
     let result = super.tryCall(
       "getCampaignsByOrganization",
-      "getCampaignsByOrganization(bytes32):(bytes32[])",
+      "getCampaignsByOrganization(bytes8):(bytes32[])",
       [ethereum.Value.fromFixedBytes(organizationId)]
     );
     if (result.reverted) {
@@ -1527,6 +1608,92 @@ export class CreateCampaignCall__Outputs {
 
   get campaignId(): Bytes {
     return this._call.outputValues[0].value.toBytes();
+  }
+}
+
+export class CreateCampaignWithParamsCall extends ethereum.Call {
+  get inputs(): CreateCampaignWithParamsCall__Inputs {
+    return new CreateCampaignWithParamsCall__Inputs(this);
+  }
+
+  get outputs(): CreateCampaignWithParamsCall__Outputs {
+    return new CreateCampaignWithParamsCall__Outputs(this);
+  }
+}
+
+export class CreateCampaignWithParamsCall__Inputs {
+  _call: CreateCampaignWithParamsCall;
+
+  constructor(call: CreateCampaignWithParamsCall) {
+    this._call = call;
+  }
+
+  get creator(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get organizationId(): Bytes {
+    return this._call.inputValues[1].value.toBytes();
+  }
+
+  get params(): CreateCampaignWithParamsCallParamsStruct {
+    return changetype<CreateCampaignWithParamsCallParamsStruct>(
+      this._call.inputValues[2].value.toTuple()
+    );
+  }
+}
+
+export class CreateCampaignWithParamsCall__Outputs {
+  _call: CreateCampaignWithParamsCall;
+
+  constructor(call: CreateCampaignWithParamsCall) {
+    this._call = call;
+  }
+
+  get campaignId(): Bytes {
+    return this._call.outputValues[0].value.toBytes();
+  }
+}
+
+export class CreateCampaignWithParamsCallParamsStruct extends ethereum.Tuple {
+  get title(): string {
+    return this[0].toString();
+  }
+
+  get description(): string {
+    return this[1].toString();
+  }
+
+  get metadataURI(): string {
+    return this[2].toString();
+  }
+
+  get flowType(): i32 {
+    return this[3].toI32();
+  }
+
+  get paymentToken(): Address {
+    return this[4].toAddress();
+  }
+
+  get target(): BigInt {
+    return this[5].toBigInt();
+  }
+
+  get min(): BigInt {
+    return this[6].toBigInt();
+  }
+
+  get max(): BigInt {
+    return this[7].toBigInt();
+  }
+
+  get duration(): BigInt {
+    return this[8].toBigInt();
+  }
+
+  get autoFinalize(): boolean {
+    return this[9].toBoolean();
   }
 }
 

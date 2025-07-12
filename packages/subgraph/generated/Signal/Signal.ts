@@ -1252,7 +1252,7 @@ export class Signal extends ethereum.SmartContract {
   ): Bytes {
     let result = super.call(
       "createProposal",
-      "createProposal(bytes32,string,string,string,uint8,uint8,uint8,uint256,bytes,address):(bytes32)",
+      "createProposal(bytes8,string,string,string,uint8,uint8,uint8,uint256,bytes,address):(bytes32)",
       [
         ethereum.Value.fromFixedBytes(organizationId),
         ethereum.Value.fromString(title),
@@ -1284,7 +1284,7 @@ export class Signal extends ethereum.SmartContract {
   ): ethereum.CallResult<Bytes> {
     let result = super.tryCall(
       "createProposal",
-      "createProposal(bytes32,string,string,string,uint8,uint8,uint8,uint256,bytes,address):(bytes32)",
+      "createProposal(bytes8,string,string,string,uint8,uint8,uint8,uint256,bytes,address):(bytes32)",
       [
         ethereum.Value.fromFixedBytes(organizationId),
         ethereum.Value.fromString(title),
@@ -1460,7 +1460,7 @@ export class Signal extends ethereum.SmartContract {
   getProposal(proposalId: Bytes): Signal__getProposalResultValue0Struct {
     let result = super.call(
       "getProposal",
-      "getProposal(bytes32):((uint256,bytes32,bytes32,address,string,string,string,uint8,uint8,uint8,uint8,uint256,uint256,uint256,uint256,uint256,bytes,address,uint256,uint256,uint256,uint256,uint256,bool,bool))",
+      "getProposal(bytes32):((uint256,bytes32,bytes8,address,string,string,string,uint8,uint8,uint8,uint8,uint256,uint256,uint256,uint256,uint256,bytes,address,uint256,uint256,uint256,uint256,uint256,bool,bool))",
       [ethereum.Value.fromFixedBytes(proposalId)]
     );
 
@@ -1474,7 +1474,7 @@ export class Signal extends ethereum.SmartContract {
   ): ethereum.CallResult<Signal__getProposalResultValue0Struct> {
     let result = super.tryCall(
       "getProposal",
-      "getProposal(bytes32):((uint256,bytes32,bytes32,address,string,string,string,uint8,uint8,uint8,uint8,uint256,uint256,uint256,uint256,uint256,bytes,address,uint256,uint256,uint256,uint256,uint256,bool,bool))",
+      "getProposal(bytes32):((uint256,bytes32,bytes8,address,string,string,string,uint8,uint8,uint8,uint8,uint256,uint256,uint256,uint256,uint256,bytes,address,uint256,uint256,uint256,uint256,uint256,bool,bool))",
       [ethereum.Value.fromFixedBytes(proposalId)]
     );
     if (result.reverted) {
@@ -1584,7 +1584,7 @@ export class Signal extends ethereum.SmartContract {
   getProposalsByOrganization(organizationId: Bytes): Array<Bytes> {
     let result = super.call(
       "getProposalsByOrganization",
-      "getProposalsByOrganization(bytes32):(bytes32[])",
+      "getProposalsByOrganization(bytes8):(bytes32[])",
       [ethereum.Value.fromFixedBytes(organizationId)]
     );
 
@@ -1596,7 +1596,7 @@ export class Signal extends ethereum.SmartContract {
   ): ethereum.CallResult<Array<Bytes>> {
     let result = super.tryCall(
       "getProposalsByOrganization",
-      "getProposalsByOrganization(bytes32):(bytes32[])",
+      "getProposalsByOrganization(bytes8):(bytes32[])",
       [ethereum.Value.fromFixedBytes(organizationId)]
     );
     if (result.reverted) {
@@ -1738,7 +1738,7 @@ export class Signal extends ethereum.SmartContract {
   ): Signal__getVotingParametersResultValue0Struct {
     let result = super.call(
       "getVotingParameters",
-      "getVotingParameters(bytes32):((uint256,uint256,uint256,uint256,uint256,bool))",
+      "getVotingParameters(bytes8):((uint256,uint256,uint256,uint256,uint256,bool))",
       [ethereum.Value.fromFixedBytes(organizationId)]
     );
 
@@ -1752,7 +1752,7 @@ export class Signal extends ethereum.SmartContract {
   ): ethereum.CallResult<Signal__getVotingParametersResultValue0Struct> {
     let result = super.tryCall(
       "getVotingParameters",
-      "getVotingParameters(bytes32):((uint256,uint256,uint256,uint256,uint256,bool))",
+      "getVotingParameters(bytes8):((uint256,uint256,uint256,uint256,uint256,bool))",
       [ethereum.Value.fromFixedBytes(organizationId)]
     );
     if (result.reverted) {
@@ -1993,7 +1993,7 @@ export class Signal extends ethereum.SmartContract {
   ): boolean {
     let result = super.call(
       "validateProposalParameters",
-      "validateProposalParameters(bytes32,uint8,uint8,uint8,uint256):(bool)",
+      "validateProposalParameters(bytes8,uint8,uint8,uint8,uint256):(bool)",
       [
         ethereum.Value.fromFixedBytes(organizationId),
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(param1)),
@@ -2015,7 +2015,7 @@ export class Signal extends ethereum.SmartContract {
   ): ethereum.CallResult<boolean> {
     let result = super.tryCall(
       "validateProposalParameters",
-      "validateProposalParameters(bytes32,uint8,uint8,uint8,uint256):(bool)",
+      "validateProposalParameters(bytes8,uint8,uint8,uint8,uint256):(bool)",
       [
         ethereum.Value.fromFixedBytes(organizationId),
         ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(param1)),
