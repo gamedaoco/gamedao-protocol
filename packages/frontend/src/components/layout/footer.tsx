@@ -32,12 +32,16 @@ export function Footer() {
                 <Badge variant="secondary" className="text-xs">Active</Badge>
               </div>
               <div className="flex items-center space-x-2">
-                <span>💸 Flow</span>
+                <span>🗳️ Signal</span>
+                <Badge variant="outline" className="text-xs">Soon</Badge>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span>🪙 Staking</span>
                 <Badge variant="secondary" className="text-xs">Active</Badge>
               </div>
               <div className="flex items-center space-x-2">
-                <span>🗳️ Signal</span>
-                <Badge variant="outline" className="text-xs">Soon</Badge>
+                <span>💸 Flow</span>
+                <Badge variant="secondary" className="text-xs">Active</Badge>
               </div>
               <div className="flex items-center space-x-2">
                 <span>👤 Sense</span>
