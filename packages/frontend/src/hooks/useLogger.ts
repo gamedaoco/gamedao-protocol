@@ -31,9 +31,9 @@ export function useLogger(
 ): LoggerHook {
   const {
     category = 'ui',
-    enableLifecycleLogging = process.env.NODE_ENV === 'development',
-    enableStateChangeLogging = process.env.NODE_ENV === 'development',
-    enablePerformanceLogging = true
+    enableLifecycleLogging = false, // Disabled by default to reduce noise
+    enableStateChangeLogging = false, // Disabled by default to reduce noise
+    enablePerformanceLogging = false // Disabled by default to reduce noise
   } = options
 
   // Create logger instance (memoized)
@@ -67,11 +67,12 @@ export function useLogger(
     }
   }, [componentName, enableLifecycleLogging, enablePerformanceLogging])
 
-  // Track renders
+  // Track renders (only if explicitly enabled)
   useEffect(() => {
     renderCountRef.current++
 
-    if (enableLifecycleLogging && renderCountRef.current > 1) {
+    if (enableLifecycleLogging && renderCountRef.current > 1 && renderCountRef.current % 10 === 0) {
+      // Only log every 10th render to reduce noise
       dev.lifecycle(componentName, 'update', {
         renderCount: renderCountRef.current,
         timestamp: Date.now()

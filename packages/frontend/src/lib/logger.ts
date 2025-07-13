@@ -57,19 +57,30 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 
 // Default configuration
 const DEFAULT_CONFIG: LoggerConfig = {
-  level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
-  enabledCategories: ['app', 'auth', 'ipfs', 'blockchain', 'ui', 'api', 'performance', 'user', 'system', 'dev'],
+  level: process.env.NODE_ENV === 'production' ? 'warn' : 'info',
+  enabledCategories: process.env.NODE_ENV === 'production'
+    ? ['app', 'auth', 'system']
+    : ['app', 'auth', 'blockchain', 'user', 'system'],
   enableConsole: true,
   enableStorage: true,
   maxStorageEntries: 1000,
   enableRemoteLogging: false,
-  includeStackTrace: true,
+  includeStackTrace: process.env.NODE_ENV === 'development',
   includeUserContext: true,
   formatters: {
     console: defaultConsoleFormatter,
     storage: defaultStorageFormatter
   }
 }
+
+// Quick debug configuration - uncomment to enable verbose logging
+// To enable verbose logging, uncomment the lines below:
+/*
+if (process.env.NODE_ENV === 'development') {
+  DEFAULT_CONFIG.level = 'debug'
+  DEFAULT_CONFIG.enabledCategories = ['app', 'auth', 'ipfs', 'blockchain', 'ui', 'api', 'performance', 'user', 'system', 'dev']
+}
+*/
 
 // Global configuration
 let globalConfig: LoggerConfig = { ...DEFAULT_CONFIG }

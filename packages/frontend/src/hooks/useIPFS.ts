@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { getFromIPFS, uploadFileToIPFS, uploadJSONToIPFS } from '@/lib/ipfs'
+import { getFromIPFS, uploadFileToIPFS, uploadJSONToIPFS, getIPFSUrl } from '@/lib/ipfs'
 import { useIPFSLogger } from './useLogger'
 
 // Define the upload result type locally since it's not exported
@@ -85,7 +85,8 @@ class IPFSRequestQueue {
         .catch((error) => {
           // Handle rate limiting
           if (error.status === 429 || error.message?.includes('rate limit')) {
-            console.warn('IPFS rate limit detected, backing off...')
+            // Use console.warn for rate limiting to avoid logger flooding
+            console.warn('IPFS rate limit detected, backing off for 1 minute')
             this.rateLimitResetTime = Date.now() + 60000 // Back off for 1 minute
             // Re-queue the request with higher priority
             this.queue.unshift({ ...item, priority: item.priority + 1 })
@@ -345,75 +346,178 @@ export function useIPFSImage(
   hash?: string,
   options: UseIPFSImageOptions = {}
 ): UseIPFSImageResult {
-  const { fallbackUrl, preload = false, ...ipfsOptions } = options
+  const {
+    fallbackUrl = '/splash.png', // Default fallback to splash.png
+    preload = true,
+    retryAttempts = 2,
+    retryDelay = 1000,
+    cacheTTL = 300000, // 5 minutes
+    priority = 1
+  } = options
 
-  const [imageState, setImageState] = useState({
-    isImageLoaded: false,
-    imageError: false,
-    naturalWidth: 0,
-    naturalHeight: 0
-  })
+  const { logCacheHit, logCacheMiss, logDownload, logRateLimit } = useIPFSLogger('useIPFSImage')
 
-  const { data: imageUrl, isLoading, error, retry } = useIPFS<string>(
-    hash,
-    { ...ipfsOptions, priority: 1 } // Higher priority for images
-  )
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isImageLoaded, setIsImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
+  const [isFullyLoaded, setIsFullyLoaded] = useState(false)
+  const [naturalWidth, setNaturalWidth] = useState(0)
+  const [naturalHeight, setNaturalHeight] = useState(0)
 
-  const finalImageUrl = useMemo(() => {
-    if (imageUrl) return imageUrl
-    if (fallbackUrl) return fallbackUrl
-    return null
-  }, [imageUrl, fallbackUrl])
+  const imgRef = useRef<HTMLImageElement | null>(null)
 
-  // Preload image when URL is available
+  const loadImage = useCallback(async () => {
+    if (!hash) {
+      setImageUrl(fallbackUrl)
+      setIsLoading(false)
+      return
+    }
+
+    const cacheKey = `ipfs-image-${hash}`
+    const cached = ipfsCache.get(cacheKey)
+
+    if (cached && Date.now() - cached.timestamp < cacheTTL) {
+      logCacheHit(hash)
+      setImageUrl(cached.data)
+      setIsLoading(false)
+      return
+    }
+
+    logCacheMiss(hash)
+    setIsLoading(true)
+    setError(null)
+    setImageError(false)
+
+    try {
+      const startTime = Date.now()
+
+      // Try to get the IPFS URL with multiple gateway fallback
+      const ipfsUrl = getIPFSUrl(hash)
+
+      // Test if the image loads successfully
+      const testImage = new Image()
+      testImage.crossOrigin = 'anonymous'
+
+      const imageLoadPromise = new Promise<string>((resolve, reject) => {
+        testImage.onload = () => {
+          const duration = Date.now() - startTime
+          logDownload(hash, true, duration)
+
+          // Cache the successful URL
+          ipfsCache.set(cacheKey, { data: ipfsUrl, timestamp: Date.now(), ttl: cacheTTL })
+          resolve(ipfsUrl)
+        }
+
+        testImage.onerror = (e) => {
+          const duration = Date.now() - startTime
+          logDownload(hash, false, duration, new Error('Image failed to load'))
+
+          // Check if this is a CORS or rate limit error
+          if (e instanceof Event) {
+            // Try fallback image
+            console.warn(`🖼️ IPFS image failed to load: ${hash}, using fallback`)
+            resolve(fallbackUrl)
+          } else {
+            reject(new Error('Image load failed'))
+          }
+        }
+
+        testImage.src = ipfsUrl
+      })
+
+      // Add timeout for image loading
+      const timeoutPromise = new Promise<string>((_, reject) => {
+        setTimeout(() => reject(new Error('Image load timeout')), 15000)
+      })
+
+      const finalUrl = await Promise.race([imageLoadPromise, timeoutPromise])
+      setImageUrl(finalUrl)
+
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to load IPFS image'
+      setError(errorMessage)
+
+      // Check for rate limiting
+      if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+        logRateLimit(hash)
+      }
+
+      // Use fallback image on any error
+      console.warn(`🖼️ IPFS image error for ${hash}:`, errorMessage, 'using fallback')
+      setImageUrl(fallbackUrl)
+      setImageError(true)
+
+    } finally {
+      setIsLoading(false)
+    }
+  }, [hash, fallbackUrl, cacheTTL, logCacheHit, logCacheMiss, logDownload, logRateLimit])
+
+  const retry = useCallback(() => {
+    if (hash) {
+      ipfsCache.delete(`ipfs-image-${hash}`)
+      loadImage()
+    }
+  }, [hash, loadImage])
+
   useEffect(() => {
-    if (!finalImageUrl || !preload) return
+    if (preload) {
+      loadImage()
+    }
+  }, [loadImage, preload])
+
+  // Handle image loading events
+  useEffect(() => {
+    if (!imageUrl) return
 
     const img = new Image()
+    imgRef.current = img
 
     const handleLoad = () => {
-      setImageState(prev => ({
-        ...prev,
-        isImageLoaded: true,
-        imageError: false,
-        naturalWidth: img.naturalWidth,
-        naturalHeight: img.naturalHeight
-      }))
+      setIsImageLoaded(true)
+      setIsFullyLoaded(true)
+      setNaturalWidth(img.naturalWidth)
+      setNaturalHeight(img.naturalHeight)
+      setImageError(false)
     }
 
     const handleError = () => {
-      setImageState(prev => ({
-        ...prev,
-        isImageLoaded: false,
-        imageError: true
-      }))
+      setImageError(true)
+      setIsImageLoaded(false)
+      setIsFullyLoaded(false)
+
+      // If the main image fails and it's not already the fallback, try fallback
+      if (imageUrl !== fallbackUrl) {
+        console.warn(`🖼️ Image failed to load: ${imageUrl}, switching to fallback`)
+        setImageUrl(fallbackUrl)
+      }
     }
 
     img.addEventListener('load', handleLoad)
     img.addEventListener('error', handleError)
-
-    img.src = finalImageUrl
+    img.src = imageUrl
 
     return () => {
       img.removeEventListener('load', handleLoad)
       img.removeEventListener('error', handleError)
+      if (imgRef.current === img) {
+        imgRef.current = null
+      }
     }
-  }, [finalImageUrl, preload])
-
-  const isFullyLoaded = !isLoading && imageState.isImageLoaded && !imageState.imageError
-  const hasError = !!error || imageState.imageError
+  }, [imageUrl, fallbackUrl])
 
   return {
-    imageUrl: finalImageUrl,
+    imageUrl,
     isLoading,
     error,
-    isImageLoaded: imageState.isImageLoaded,
-    imageError: imageState.imageError,
+    isImageLoaded,
+    imageError,
     isFullyLoaded,
-    hasError,
+    hasError: !!error || imageError,
     retry,
-    naturalWidth: imageState.naturalWidth,
-    naturalHeight: imageState.naturalHeight
+    naturalWidth,
+    naturalHeight
   }
 }
 
