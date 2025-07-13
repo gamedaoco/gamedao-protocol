@@ -174,7 +174,7 @@ async function main() {
   // 5. Create a Test Organization
   console.log("🏗️ Creating test organization...");
   const createOrgTx = await control.createOrganization(
-    "GameDAO Test DAO",
+    "GameDAO",
     "ipfs://QmTestMetadata123",
     2, // DAO type
     0, // Open access
@@ -231,8 +231,8 @@ async function main() {
     console.log("💰 Testing Flow Module - Creating test campaign...");
     const createCampaignTx = await flow.createCampaign(
       orgId,
-      "GameDAO Test Campaign",
-      "A test crowdfunding campaign for GameDAO",
+      "GameDAO Core Campaign",
+      "Seedfunding campaign for GameDAO",
       "ipfs://QmTestCampaignMetadata",
       0, // Grant type
       usdcAddress, // USDC payments
@@ -291,8 +291,8 @@ async function main() {
       console.log("🗳️ Testing Signal Module - Creating governance proposal...");
       const createProposalTx = await signal.connect(testMember).createProposal(
         orgId,
-        "Test Governance Proposal",
-        "A test proposal to demonstrate governance functionality",
+        "Governance Proposal",
+        "A proposal to demonstrate governance functionality",
         "ipfs://QmTestProposalMetadata",
         0, // Simple proposal
         0, // Relative voting
