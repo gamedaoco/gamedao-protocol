@@ -33,18 +33,6 @@ const navigation = [
     ]
   },
   {
-    name: 'Campaigns',
-    icon: '💸',
-    description: 'Crowdfunding',
-    badge: 'Active',
-    children: [
-      { name: 'All Campaigns', href: '/flow', icon: '🎯' },
-      { name: 'Create Campaign', href: '/flow/create', icon: '🚀' },
-      { name: 'My Contributions', href: '/flow/contributions', icon: '💝' },
-      { name: 'Analytics', href: '/flow/analytics', icon: '📊' },
-    ]
-  },
-  {
     name: 'Staking',
     icon: '🪙',
     description: 'Earn Rewards',
@@ -54,6 +42,18 @@ const navigation = [
       { name: 'Pools', href: '/staking/pools', icon: '🏊' },
       { name: 'Rewards', href: '/staking/rewards', icon: '🎁' },
       { name: 'History', href: '/staking/history', icon: '📜' },
+    ]
+  },
+  {
+    name: 'Campaigns',
+    icon: '💸',
+    description: 'Crowdfunding',
+    badge: 'Active',
+    children: [
+      { name: 'All Campaigns', href: '/flow', icon: '🎯' },
+      { name: 'Create Campaign', href: '/flow/create', icon: '🚀' },
+      { name: 'My Contributions', href: '/flow/contributions', icon: '💝' },
+      { name: 'Analytics', href: '/flow/analytics', icon: '📊' },
     ]
   },
   {
