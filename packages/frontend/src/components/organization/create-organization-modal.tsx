@@ -21,6 +21,7 @@ import { uploadOrganizationMetadata } from '@/lib/ipfs'
 import { useIPFSUpload } from '@/hooks/useIPFS'
 import { AlertCircle, Shield, CreditCard, Gamepad2, CheckCircle, Loader2, Upload, Image, X } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { useLogger } from '@/hooks/useLogger'
 
 interface CreateOrganizationModalProps {
   isOpen: boolean
@@ -68,6 +69,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
   const { refetch } = useOrganizations()
   const { ethBalance, gameBalance } = useTokenBalances()
   const { contracts } = useGameDAO()
+  const { logger } = useLogger('CreateOrganizationModal', { category: 'ui' })
 
   // Use the comprehensive creation hook that handles approval
   const {
@@ -136,7 +138,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
       // Reset success handler flag at start of new creation
       successHandledRef.current = false
 
-      console.log('🚀 Creating organization with params:', {
+      logger.info('Creating organization with params', {
         name: formData.name,
         accessModel: formData.accessModel,
         memberLimit: formData.memberLimit,
@@ -152,24 +154,18 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
 
       if (profileImage) {
         setUploadProgress('Uploading profile image to IPFS...')
-        console.log('📤 Uploading profile image:', profileImage)
-        const result = await uploadFile(profileImage, {
-          name: `${formData.name} Profile Image`,
-          description: `Profile image for ${formData.name} organization`
-        })
-        profileImageUrl = result.url
-        console.log('✅ Profile image uploaded:', result)
+        logger.info('Uploading profile image', { fileName: profileImage.name, fileSize: profileImage.size })
+        const hash = await uploadFile(profileImage)
+        profileImageUrl = `ipfs://${hash}`
+        logger.info('Profile image uploaded', { hash, url: profileImageUrl })
       }
 
       if (bannerImage) {
         setUploadProgress('Uploading banner image to IPFS...')
-        console.log('📤 Uploading banner image:', bannerImage)
-        const result = await uploadFile(bannerImage, {
-          name: `${formData.name} Banner Image`,
-          description: `Banner image for ${formData.name} organization`
-        })
-        bannerImageUrl = result.url
-        console.log('✅ Banner image uploaded:', result)
+        logger.info('Uploading banner image', { fileName: bannerImage.name, fileSize: bannerImage.size })
+        const hash = await uploadFile(bannerImage)
+        bannerImageUrl = `ipfs://${hash}`
+        logger.info('Banner image uploaded', { hash, url: bannerImageUrl })
       }
 
       // Create metadata object
