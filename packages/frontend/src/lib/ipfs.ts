@@ -1,9 +1,23 @@
 // IPFS utility functions for storing content
 // Using Pinata for IPFS storage
+import { createLogger } from './logger'
 
-const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/'
+// Create logger for IPFS operations
+const logger = createLogger('IPFS', 'ipfs')
+
+// Multiple IPFS gateways for redundancy and CORS compatibility
+const IPFS_GATEWAYS = [
+  'https://ipfs.io/ipfs/',           // Public gateway, CORS-friendly
+  'https://dweb.link/ipfs/',         // Protocol Labs gateway
+  'https://cloudflare-ipfs.com/ipfs/', // Cloudflare gateway
+  'https://gateway.pinata.cloud/ipfs/' // Pinata gateway (fallback)
+]
+
 const IPFS_API_ENDPOINT = 'https://api.pinata.cloud/pinning/pinJSONToIPFS'
 const IPFS_FILE_ENDPOINT = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
+
+// Default gateway for new uploads and primary access
+const DEFAULT_GATEWAY = IPFS_GATEWAYS[0]
 
 // Get Pinata API credentials from environment
 const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY
@@ -24,13 +38,78 @@ interface IPFSMetadata {
 }
 
 /**
+ * Try multiple IPFS gateways with fallback
+ */
+async function fetchWithGatewayFallback(hash: string): Promise<Response> {
+  let lastError: Error | null = null
+
+  for (let i = 0; i < IPFS_GATEWAYS.length; i++) {
+    const gateway = IPFS_GATEWAYS[i]
+    const url = `${gateway}${hash}`
+
+    try {
+      logger.debug(`Trying IPFS gateway ${i + 1}/${IPFS_GATEWAYS.length}`, { gateway, hash })
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json, image/*, */*'
+        }
+      })
+
+      clearTimeout(timeoutId)
+
+      if (response.ok) {
+        logger.debug(`Successfully fetched from gateway: ${gateway}`, { gateway, hash })
+        return response
+      }
+
+      if (response.status === 429) {
+        logger.warn(`Rate limited by gateway: ${gateway}`, { gateway, hash })
+        // Continue to next gateway
+        continue
+      }
+
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+
+    } catch (error) {
+      lastError = error as Error
+              logger.warn(`Gateway ${gateway} failed:`, { gateway, hash, error })
+
+      // If this is a CORS error or rate limit, try next gateway immediately
+      if (error instanceof TypeError && error.message.includes('CORS')) {
+        logger.warn(`CORS error with ${gateway}, trying next gateway`, { gateway, hash })
+        continue
+      }
+
+      // If rate limited, try next gateway
+      if (error instanceof Error && error.message.includes('429')) {
+        logger.warn(`Rate limited by ${gateway}, trying next gateway`, { gateway, hash })
+        continue
+      }
+
+      // For other errors, add a small delay before trying next gateway
+      if (i < IPFS_GATEWAYS.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    }
+  }
+
+  throw new Error(`All IPFS gateways failed. Last error: ${lastError?.message || 'Unknown error'}`)
+}
+
+/**
  * Upload JSON data to IPFS
  */
 export async function uploadJSONToIPFS(
   data: any,
   metadata?: IPFSMetadata
 ): Promise<IPFSUploadResult> {
-  console.log('📤 Starting JSON upload to IPFS:', {
+  logger.info('Starting JSON upload to IPFS', {
     dataKeys: Object.keys(data),
     metadata,
     isPinataConfigured
@@ -38,7 +117,7 @@ export async function uploadJSONToIPFS(
 
   try {
     if (isPinataConfigured) {
-      console.log('🔄 Using Pinata API for JSON upload...')
+      logger.debug('Using Pinata API for JSON upload...')
 
       // Use real Pinata API
       const response = await fetch(IPFS_API_ENDPOINT, {
@@ -57,30 +136,29 @@ export async function uploadJSONToIPFS(
         })
       })
 
-      console.log('📡 Pinata JSON response status:', response.status, response.statusText)
+      logger.debug('Pinata JSON response status:', response.status, response.statusText)
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('❌ Pinata JSON API error:', errorText)
-        console.error('❌ Response headers:', Object.fromEntries(response.headers.entries()))
+                 logger.error('Pinata JSON API error:', { errorText, headers: Object.fromEntries(response.headers.entries()) })
         throw new Error(`Pinata API error: ${response.statusText} - ${errorText}`)
       }
 
       const result = await response.json()
-      console.log('✅ Pinata JSON upload successful:', result)
+      logger.info('Pinata JSON upload successful:', result)
 
       return {
         hash: result.IpfsHash,
         url: `ipfs://${result.IpfsHash}`
       }
     } else {
-      console.log('🔄 Using mock storage for JSON...')
+      logger.debug('Using mock storage for JSON...')
 
       // Fallback to mock storage for development
       const hash = generateMockHash(JSON.stringify(data))
       const url = `ipfs://${hash}`
 
-      console.log('✅ Mock JSON upload complete:', { hash, url })
+      logger.info('Mock JSON upload complete', { hash, url })
 
       // Store in localStorage for development
       if (typeof window !== 'undefined') {
@@ -94,12 +172,13 @@ export async function uploadJSONToIPFS(
       return { hash, url }
     }
   } catch (error) {
-    console.error('❌ Failed to upload JSON to IPFS:', error)
-    console.error('❌ Error details:', {
+    logger.error('Failed to upload JSON to IPFS:', {
+      error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       type: typeof error,
-      error: error
+      data,
+      metadata
     })
     throw new Error(`IPFS JSON upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
@@ -112,7 +191,7 @@ export async function uploadFileToIPFS(
   file: File,
   metadata?: IPFSMetadata
 ): Promise<IPFSUploadResult> {
-  console.log('📤 Starting file upload to IPFS:', {
+  logger.info('Starting file upload to IPFS', {
     fileName: file.name,
     fileSize: file.size,
     fileType: file.type,
@@ -122,7 +201,7 @@ export async function uploadFileToIPFS(
 
   try {
     if (isPinataConfigured) {
-      console.log('🔄 Using Pinata API for file upload...')
+      logger.debug('Using Pinata API for file upload...')
 
       // Use real Pinata API
       const formData = new FormData()
@@ -132,8 +211,8 @@ export async function uploadFileToIPFS(
         keyvalues: metadata || {}
       }))
 
-      console.log('📡 Sending request to Pinata...')
-      console.log('📋 Request details:', {
+      logger.debug('Sending request to Pinata...')
+      logger.debug('Request details:', {
         endpoint: IPFS_FILE_ENDPOINT,
         headers: {
           'pinata_api_key': PINATA_API_KEY ? `${PINATA_API_KEY.substring(0, 8)}...` : 'NOT SET',
@@ -155,30 +234,30 @@ export async function uploadFileToIPFS(
         body: formData
       })
 
-      console.log('📡 Pinata response status:', response.status, response.statusText)
+      logger.debug('Pinata response status:', response.status, response.statusText)
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('❌ Pinata API error:', errorText)
-        console.error('❌ Response headers:', Object.fromEntries(response.headers.entries()))
+        logger.error('Pinata API error:', errorText)
+        logger.error('Response headers:', Object.fromEntries(response.headers.entries()))
         throw new Error(`Pinata API error: ${response.statusText} - ${errorText}`)
       }
 
       const result = await response.json()
-      console.log('✅ Pinata upload successful:', result)
+      logger.info('Pinata upload successful:', result)
 
       return {
         hash: result.IpfsHash,
         url: `ipfs://${result.IpfsHash}`
       }
     } else {
-      console.log('🔄 Using mock storage for development...')
+      logger.debug('Using mock storage for development...')
 
       // Fallback to mock storage for development
       const hash = generateMockHash(file.name + file.size + file.lastModified)
       const url = `ipfs://${hash}`
 
-      console.log('✅ Mock upload complete:', { hash, url })
+      logger.info('Mock upload complete', { hash, url })
 
       // Store file info in localStorage for development
       if (typeof window !== 'undefined') {
@@ -199,12 +278,14 @@ export async function uploadFileToIPFS(
       return { hash, url }
     }
   } catch (error) {
-    console.error('❌ Failed to upload file to IPFS:', error)
-    console.error('❌ Error details:', {
+    logger.error('Failed to upload file to IPFS:', {
+      error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       type: typeof error,
-      error: error
+      fileName: file.name,
+      fileSize: file.size,
+      metadata
     })
     throw new Error(`IPFS file upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
@@ -248,7 +329,7 @@ export async function uploadOrganizationMetadata(metadata: {
   }
   tags?: string[]
 }): Promise<IPFSUploadResult> {
-  console.log('📤 Starting organization metadata upload:', metadata)
+  logger.info('Starting organization metadata upload', metadata)
 
   const data = {
     ...metadata,
@@ -257,14 +338,14 @@ export async function uploadOrganizationMetadata(metadata: {
     created: new Date().toISOString()
   }
 
-  console.log('📋 Final metadata to upload:', data)
+  logger.debug('Final metadata to upload:', data)
 
   const result = await uploadJSONToIPFS(data, {
     name: metadata.name,
     description: `Metadata for ${metadata.name} organization`
   })
 
-  console.log('✅ Organization metadata upload result:', result)
+  logger.info('Organization metadata upload result', result)
   return result
 }
 
@@ -347,14 +428,10 @@ export async function getFromIPFS(hashOrUrl: string): Promise<any> {
     }
 
     // In production, fetch from IPFS gateway
-    const response = await fetch(`${IPFS_GATEWAY}${hash}`)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch from IPFS: ${response.statusText}`)
-    }
-
+    const response = await fetchWithGatewayFallback(hash)
     return await response.json()
   } catch (error) {
-    console.error('Failed to retrieve from IPFS:', error)
+    logger.error('Failed to retrieve from IPFS:', error)
     throw new Error('IPFS retrieval failed')
   }
 }
@@ -364,9 +441,9 @@ export async function getFromIPFS(hashOrUrl: string): Promise<any> {
  */
 export function getIPFSUrl(hashOrUrl: string): string {
   if (hashOrUrl.startsWith('ipfs://')) {
-    return hashOrUrl.replace('ipfs://', IPFS_GATEWAY)
+    return hashOrUrl.replace('ipfs://', DEFAULT_GATEWAY)
   }
-  return `${IPFS_GATEWAY}${hashOrUrl}`
+  return `${DEFAULT_GATEWAY}${hashOrUrl}`
 }
 
 /**

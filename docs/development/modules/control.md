@@ -1,241 +1,69 @@
----
-title: "Control Module Implementation"
-date: "2024-12-21"
-status: "completed"
-category: "modules"
-source: "logs/003-control-module.md"
----
+# Control Module
 
-# Control Module Implementation
-
-**Date:** 2024-12-21
-**Phase:** Control Module Development
-**Status:** ✅ COMPLETED
+DAO core to create organizations with their segregated treasury and maintain members
 
 ## Overview
 
-The Control module serves as the foundation of the GameDAO protocol, providing comprehensive DAO infrastructure including organization management, member lifecycle, treasury integration, and $GAME token staking mechanisms.
+Control is a wrapper for organizations on chain.
 
-## Implementation Details
+Organizations consist of:
+	- members as individual users/accounts
+	- prime as the prime voter, allowed to call administrative extrinsics
+	- council as the organization's top voters and controllers
 
-### Core Infrastructure (455 lines)
+Every organization has a treasury attached, which is managed collectively by its members.
 
-**Control.sol** - Complete DAO management implementation:
+### Terminology
 
-#### Organization Management
-- **Organization Creation**: Full lifecycle with custom parameters and treasury deployment
-- **Organization Updates**: Prime-controlled settings modification
-- **State Management**: Active/Inactive/Locked states with admin controls
-- **Treasury Integration**: Automatic treasury deployment per organization
-- **$GAME Token Staking**: Configurable staking requirements for organization creation
+* **Organizations controller:** Admin of the organization.
+* **Organizations access model:** How users may apply to the organization.
+	* `Open` - any user may join;
+	* `Voting` - user may join only if organization members allow it by voting;
+	* `Controller` - user may be invited by org controller.
+* **Organizations treasury:** Account, where all organization funds are stored for further management.
+Interaction with the treasury happens only with collective decisions, approved by organization members.
+* **Organizations fee:** amount of protocol tokens to be locked/transfered from the user, once he joins the organization.
 
-#### Member Management System
-- **Member Lifecycle**: Complete state management (Inactive, Active, Pending, Kicked, Banned, Exited)
-- **Access Models**: Three access patterns (Open, Voting, Invite-only)
-- **Member Limits**: Configurable maximum members per organization
-- **Role System**: Flexible role assignment and management
-- **Membership Fees**: Configurable fee models (NoFees, Reserve, Transfer)
+### Goals
 
-#### Treasury Integration
-- **Automatic Deployment**: Each organization gets dedicated Treasury contract
-- **Multi-token Support**: ETH and ERC20 token management
-- **Spending Controls**: Prime-controlled treasury operations
-- **Fee Collection**: Membership fee handling with multiple models
+Control is designed to make the following possible:
 
-### Interface Definition (213 lines)
+* Allow users to create organizations with specified options.
+* Provide organizations with individual treasury account.
+* Allow users to become members of organizations.
 
-**IControl.sol** - Comprehensive API specification:
+## Interface
 
-#### Data Structures
-```solidity
-struct Organization {
-    uint256 index;
-    address creator;
-    address prime;
-    string name;
-    string metadataURI;
-    OrgType orgType;
-    AccessModel accessModel;
-    FeeModel feeModel;
-    uint256 membershipFee;
-    address treasury;
-    uint32 memberLimit;
-    OrgState state;
-    uint256 createdAt;
-    uint256 updatedAt;
-}
+### Dispatchable Functions
 
-struct Member {
-    MemberState state;
-    uint256 joinedAt;
-    uint256 totalContribution;
-    bytes32 role;
-    uint256 stakedAmount;
-}
-```
+* `create_org` - Create an on chain organizations. Created entity is used in other functions.
+* `add_member` - Add member to organization.
+* `remove_member` - Remove member from orgaization.
+* `disable_org` - Disable organization, root only.
+* `enable_org` - Enable organization, root only.
 
-#### Enums
-- **OrgType**: Individual, Company, DAO, Hybrid
-- **AccessModel**: Open, Voting, Invite
-- **FeeModel**: NoFees, Reserve, Transfer
-- **MemberState**: Inactive, Active, Pending, Kicked, Banned, Exited
-- **OrgState**: Inactive, Active, Locked
+### Public Functions
 
-### Treasury Contract (350 lines)
+* `org_prime_account` - Get prime of the organization with `org_id`.
+* `org_treasury_account` - Get treasury of the organization with `org_id`.
+* `is_org_active` - Find out if organization with `org_id` is active or not.
+* `is_org_member_active` - Find out if organization with `org_id` has an active member with `account_id`.
 
-**Treasury.sol** - Multi-token treasury management:
+## Usage
 
-#### Features
-- **Multi-token Support**: ETH and ERC20 token handling with SafeERC20
-- **Access Control**: Role-based permissions (TREASURY_ADMIN_ROLE, SPENDER_ROLE)
-- **Daily Spending Limits**: Configurable spending controls per token
-- **Emergency Functions**: Pause/unpause and emergency withdrawal
-- **Event Logging**: Comprehensive audit trail for all operations
+The following example shows how to use the Control module in your runtime by exposing public functions to:
 
-#### Security
-- **ReentrancyGuard**: Protection against reentrancy attacks
-- **Pausable**: Emergency controls for critical situations
-- **Input Validation**: Comprehensive parameter validation
-- **Custom Errors**: Gas-efficient error handling
+* Create an onchain organizations.
+* Add some members to the organization.
+* Use related module (flow) to raise funds via croudfunding.
+* Use related module (signal) to manage raised funds via proposals.
 
-### Technical Architecture
+## Development
 
-#### Security Implementation
-- **OpenZeppelin Integration**: AccessControl, ReentrancyGuard, Pausable
-- **Role-Based Access Control**: Granular permission system
-- **Custom Error Handling**: Gas-efficient error messages
-- **Input Validation**: Comprehensive parameter checking
-- **Reentrancy Protection**: All state-changing functions protected
+Run tests in development: `cargo test -p gamedao-control`
+Run benchmarking: `cargo test -p gamedao-control --features runtime-benchmarks`
 
-#### Storage Optimization
-- **EnumerableSet Integration**: Efficient set operations for members and organizations
-- **Counters Utility**: Gas-optimized counter management
-- **Mapping Structures**: Optimized data access patterns
-- **State Tracking**: Minimal storage for maximum functionality
+## Related Modules
 
-#### GameDAO Integration
-- **$GAME Token Staking**: Integration with IGameToken interface
-- **Purpose-based Staking**: DAO_CREATION purpose for organization creation
-- **Staking Validation**: Ensures required stake before organization creation
-- **Cross-module Communication**: Registry-based module interaction
-
-### Testing Framework
-
-Comprehensive test suite with **17 test cases** covering:
-
-#### Organization Management (4 tests)
-- ✅ Should create organization successfully
-- ✅ Should have treasury created for organization
-- ✅ Should update organization settings
-- ✅ Should prevent non-prime from updating organization
-
-#### Member Management (6 tests)
-- ✅ Should add member to open access organization
-- ✅ Should handle voting access model correctly
-- ✅ Should enforce member limits
-- ✅ Should remove member successfully
-- ✅ Should allow member to remove themselves
-- ✅ Should prevent unauthorized member removal
-
-#### View Functions (3 tests)
-- ✅ Should return correct organization count
-- ✅ Should check join eligibility correctly
-- ✅ Should return organization members list
-
-#### Access Control (2 tests)
-- ✅ Should set organization state with admin role
-- ✅ Should prevent non-admin from changing organization state
-
-#### Edge Cases (2 tests)
-- ✅ Should handle empty organization name
-- ✅ Should handle non-existent organization queries
-
-### Deployment Integration
-
-Complete deployment script with:
-- **Registry and Control Deployment**: Automatic module registration
-- **Treasury Integration**: End-to-end treasury creation testing
-- **Member Management**: Live member addition and state management
-- **Cross-module Validation**: Integration with other protocol modules
-- **JSON Output**: Frontend integration data export
-
-## Results
-
-### Contract Sizes
-- **Control Contract**: 21.045 KiB (within size limits)
-- **Treasury Contract**: 7.173 KiB (optimized)
-- **IControl Interface**: 213 lines of comprehensive API
-
-### Test Coverage
-- **17 comprehensive test cases** covering all functionality
-- **100% pass rate** across all test scenarios
-- **Edge case coverage** including error conditions
-- **Integration testing** with Treasury and Registry
-
-### Gas Efficiency
-- **Custom errors** for reduced gas costs
-- **Optimized storage** patterns with EnumerableSet
-- **Efficient data structures** for member and organization management
-- **Minimal redundant operations** in all functions
-
-## Security Considerations
-
-### Access Control
-- **Multi-role system** with ADMIN_ROLE and module-specific roles
-- **Prime account management** for organization administration
-- **Member permission validation** for all operations
-- **Emergency controls** for critical situations
-
-### Data Integrity
-- **Input validation** for all parameters
-- **State consistency** checks throughout
-- **Reentrancy protection** on all fund operations
-- **Event logging** for complete audit trails
-
-### Treasury Security
-- **Separate Treasury contracts** for each organization
-- **Daily spending limits** to prevent abuse
-- **Multi-signature compatibility** for enhanced security
-- **Emergency withdrawal** capabilities
-
-## GameDAO Protocol Integration
-
-### $GAME Token Features
-- **Staking Requirements**: Configurable $GAME staking for organization creation
-- **Purpose-based Staking**: DAO_CREATION purpose tracking
-- **Stake Validation**: Ensures proper stake before allowing operations
-- **Cross-module Compatibility**: Works with other protocol modules
-
-### Registry Integration
-- **Module Registration**: Automatic registration with GameDAORegistry
-- **Version Management**: Semantic versioning support
-- **Upgrade Compatibility**: Proxy pattern support for future upgrades
-- **Cross-module Communication**: Secure inter-module function calls
-
-## Integration Points
-
-### Frontend Integration
-- **Event Listening**: Comprehensive event emission for real-time updates
-- **State Queries**: Efficient view functions for UI rendering
-- **Batch Operations**: Support for bulk member management
-- **Error Handling**: Clear error messages for user feedback
-
-### Subgraph Integration
-- **Event Indexing**: All events designed for efficient indexing
-- **State Tracking**: Complete state history for analytics
-- **Relationship Mapping**: Organization-member relationships
-- **Treasury Tracking**: Financial operations and balances
-
-## Future Enhancements
-
-### Planned Features
-- **Multi-signature Treasury**: Enhanced security for large organizations
-- **Governance Integration**: Deeper Signal module integration
-- **Advanced Roles**: Hierarchical role systems
-- **Automated Compliance**: Regulatory compliance features
-
-### Upgrade Path
-- **Proxy Pattern**: Support for future upgrades
-- **State Migration**: Tools for data migration
-- **Backward Compatibility**: Maintaining existing integrations
-- **Testing Suite**: Comprehensive upgrade testing
+* [`Flow`](../flow)
+* [`Signal`](../signal)

@@ -15,8 +15,15 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Brand */}
           <div className="space-y-2">
-            <div className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              GameDAO Protocol
+            <div className="flex items-center space-x-2">
+              <img
+                src="/gamedao-color-square.svg"
+                alt="GameDAO"
+                className="h-6 w-6"
+              />
+              <div className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                GameDAO Protocol
+              </div>
             </div>
             <p className="text-sm text-muted-foreground">
               Decentralized Autonomous Organizations for Gaming Communities

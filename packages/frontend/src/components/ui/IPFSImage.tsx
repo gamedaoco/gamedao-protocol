@@ -1,163 +1,128 @@
 'use client'
 
-import { useState, forwardRef } from 'react'
+import { useState, useCallback } from 'react'
 import { useIPFSImage } from '@/hooks/useIPFS'
 import { cn } from '@/lib/utils'
-import { ImageIcon, RefreshCw, AlertCircle } from 'lucide-react'
 
-interface IPFSImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'onLoad' | 'onError'> {
+interface IPFSImageProps {
   hash?: string
+  alt: string
+  className?: string
   fallbackUrl?: string
-  showLoading?: boolean
-  showError?: boolean
-  retryButton?: boolean
-  loadingClassName?: string
-  errorClassName?: string
-  aspectRatio?: 'square' | '16:9' | '4:3' | '3:2' | 'auto'
+  width?: number
+  height?: number
+  priority?: boolean
+  onLoad?: () => void
+  onError?: (error: string) => void
 }
 
-export const IPFSImage = forwardRef<HTMLImageElement, IPFSImageProps>(({
+export function IPFSImage({
   hash,
-  fallbackUrl,
-  showLoading = true,
-  showError = true,
-  retryButton = true,
-  loadingClassName,
-  errorClassName,
-  aspectRatio = 'auto',
+  alt,
   className,
-  alt = '',
-  ...props
-}, ref) => {
-  const [imageLoadError, setImageLoadError] = useState(false)
+  fallbackUrl = '/splash.png',
+  width,
+  height,
+  priority = false,
+  onLoad,
+  onError
+}: IPFSImageProps) {
+  const [showFallback, setShowFallback] = useState(false)
 
   const {
     imageUrl,
     isLoading,
     error,
-    isImageLoaded,
     imageError,
-    isFullyLoaded,
     hasError,
-    retry,
-    naturalWidth,
-    naturalHeight
+    retry
   } = useIPFSImage(hash, {
     fallbackUrl,
     preload: true,
-    retryAttempts: 3,
-    autoRetry: true
+    priority: priority ? 1 : 0
   })
 
-  const getAspectRatioClass = () => {
-    switch (aspectRatio) {
-      case 'square': return 'aspect-square'
-      case '16:9': return 'aspect-video'
-      case '4:3': return 'aspect-[4/3]'
-      case '3:2': return 'aspect-[3/2]'
-      default: return ''
-    }
-  }
+  const handleImageLoad = useCallback(() => {
+    setShowFallback(false)
+    onLoad?.()
+  }, [onLoad])
 
-  const handleImageLoad = () => {
-    setImageLoadError(false)
-  }
+  const handleImageError = useCallback(() => {
+    console.warn(`🖼️ IPFSImage failed to load: ${hash}`)
+    setShowFallback(true)
+    onError?.(error || 'Image failed to load')
+  }, [hash, error, onError])
 
-  const handleImageError = () => {
-    setImageLoadError(true)
-  }
-
-  const handleRetry = () => {
-    setImageLoadError(false)
+  const handleRetry = useCallback(() => {
+    setShowFallback(false)
     retry()
-  }
+  }, [retry])
 
   // Show loading state
-  if ((isLoading || !isImageLoaded) && showLoading) {
+  if (isLoading) {
     return (
-      <div className={cn(
-        'flex items-center justify-center bg-muted border border-border rounded-md',
-        getAspectRatioClass(),
-        loadingClassName,
-        className
-      )}>
-        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-          <RefreshCw className="h-6 w-6 animate-spin" />
-          <span className="text-sm">Loading image...</span>
+      <div
+        className={cn(
+          'bg-muted animate-pulse flex items-center justify-center',
+          className
+        )}
+        style={{ width, height }}
+      >
+        <div className="text-muted-foreground text-sm">Loading...</div>
+      </div>
+    )
+  }
+
+  // Show error state with retry option
+  if (hasError && showFallback) {
+    return (
+      <div
+        className={cn(
+          'bg-muted border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-2',
+          className
+        )}
+        style={{ width, height }}
+      >
+        <div className="text-muted-foreground text-xs text-center">
+          Image failed to load
         </div>
+        <button
+          onClick={handleRetry}
+          className="text-xs text-primary hover:underline"
+        >
+          Retry
+        </button>
       </div>
     )
   }
 
-  // Show error state
-  if ((hasError || imageLoadError) && showError) {
-    return (
-      <div className={cn(
-        'flex items-center justify-center bg-muted border border-border rounded-md',
-        getAspectRatioClass(),
-        errorClassName,
-        className
-      )}>
-        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-          <AlertCircle className="h-6 w-6" />
-          <span className="text-sm text-center">
-            {error || 'Failed to load image'}
-          </span>
-          {retryButton && (
-            <button
-              onClick={handleRetry}
-              className="text-xs text-primary hover:underline flex items-center gap-1"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Retry
-            </button>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // Show fallback when no image URL available
-  if (!imageUrl) {
-    return (
-      <div className={cn(
-        'flex items-center justify-center bg-muted border border-border rounded-md',
-        getAspectRatioClass(),
-        className
-      )}>
-        <ImageIcon className="h-6 w-6 text-muted-foreground" />
-      </div>
-    )
-  }
-
-  // Show the actual image
+  // Show the image (either IPFS or fallback)
   return (
     <img
-      ref={ref}
-      src={imageUrl}
+      src={imageUrl || fallbackUrl}
       alt={alt}
+      className={cn('object-cover', className)}
+      width={width}
+      height={height}
       onLoad={handleImageLoad}
       onError={handleImageError}
-      className={cn(
-        'object-cover',
-        getAspectRatioClass(),
-        className
-      )}
-      {...props}
+      loading={priority ? 'eager' : 'lazy'}
     />
   )
-})
-
-IPFSImage.displayName = 'IPFSImage'
+}
 
 // Specialized components for common use cases
 export function IPFSAvatar({
   hash,
+  alt,
   fallbackUrl,
   size = 'md',
   className,
   ...props
-}: IPFSImageProps & { size?: 'sm' | 'md' | 'lg' | 'xl' }) {
+}: Omit<IPFSImageProps, 'className'> & {
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  className?: string
+}) {
   const sizeClasses = {
     sm: 'h-8 w-8',
     md: 'h-10 w-10',
@@ -168,10 +133,10 @@ export function IPFSAvatar({
   return (
     <IPFSImage
       hash={hash}
+      alt={alt}
       fallbackUrl={fallbackUrl}
-      aspectRatio="square"
       className={cn(
-        'rounded-full',
+        'rounded-full object-cover',
         sizeClasses[size],
         className
       )}
@@ -182,6 +147,7 @@ export function IPFSAvatar({
 
 export function IPFSBanner({
   hash,
+  alt,
   fallbackUrl,
   className,
   ...props
@@ -189,30 +155,10 @@ export function IPFSBanner({
   return (
     <IPFSImage
       hash={hash}
+      alt={alt}
       fallbackUrl={fallbackUrl}
-      aspectRatio="16:9"
       className={cn(
-        'w-full rounded-lg',
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
-export function IPFSCard({
-  hash,
-  fallbackUrl,
-  className,
-  ...props
-}: IPFSImageProps) {
-  return (
-    <IPFSImage
-      hash={hash}
-      fallbackUrl={fallbackUrl}
-      aspectRatio="4:3"
-      className={cn(
-        'w-full rounded-lg',
+        'w-full aspect-video object-cover rounded-lg',
         className
       )}
       {...props}

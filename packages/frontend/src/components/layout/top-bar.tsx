@@ -33,7 +33,11 @@ export function TopBar() {
         {/* Logo */}
         <div className="mr-6 flex items-center">
           <Link href="/" className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500" />
+            <img
+              src="/gamedao-color-square.svg"
+              alt="GameDAO Logo"
+              className="h-8 w-8"
+            />
             <span className="font-bold">GameDAO</span>
           </Link>
         </div>
