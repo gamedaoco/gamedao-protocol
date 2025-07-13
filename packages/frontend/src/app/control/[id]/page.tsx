@@ -17,7 +17,7 @@ import { useOrganizationMetadata } from '@/hooks/useOrganizationMetadata'
 import { useMembership } from '@/hooks/useMembership'
 import { useLogger } from '@/hooks/useLogger'
 import { formatUnits } from 'viem'
-import { Users, Crown, TrendingUp, Wallet, Shield, User, ChevronDown, ChevronUp, Vote, Clock, CheckCircle, XCircle, Pause } from 'lucide-react'
+import { Users, Crown, TrendingUp, Wallet, Shield, User, ChevronDown, ChevronUp, Vote, Clock, CheckCircle, XCircle, Pause, Copy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface OrganizationDetailPageProps {
@@ -38,6 +38,19 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
   const { isMember, refetch: refetchMembership } = useMembership(id)
   const isActive = useMemo(() => organization?.state === 1, [organization?.state])
   const { logUserAction } = useLogger('OrganizationDetailPage', { category: 'ui' })
+
+  // Handle copying treasury address
+  const handleCopyTreasuryAddress = async () => {
+    if (!organization?.treasury) return
+
+    try {
+      await navigator.clipboard.writeText(organization.treasury)
+      logUserAction('treasury_address_copied', { organizationId: id, treasuryAddress: organization.treasury })
+      // You could add a toast notification here if you have toast functionality
+    } catch (error) {
+      console.error('Failed to copy treasury address:', error)
+    }
+  }
 
   // Handle leaving organization
   const handleLeaveOrganization = () => {
@@ -130,9 +143,17 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                       >
                         {isActive ? 'Active' : 'Inactive'}
                       </Badge>
-                      <span className="text-white/80 text-sm">
-                        Created by {formatAddress(organization.creator)}
-                      </span>
+                      <div className="flex items-center gap-2 text-white/80 text-sm">
+                        <Wallet className="h-4 w-4" />
+                        <span>Treasury: {formatAddress(organization.treasury)}</span>
+                        <button
+                          onClick={handleCopyTreasuryAddress}
+                          className="p-1 hover:bg-white/10 rounded transition-colors"
+                          title="Copy treasury address"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
