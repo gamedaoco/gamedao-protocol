@@ -53,10 +53,10 @@ export function ReputationCard() {
   }
 
   const repLevel = getReputationLevel(userProfile.reputation)
-  const trustLevel = getTrustLevel(userProfile.reputation)
+  const trustLevel = getTrustLevel(userProfile.trustScore)
 
   return (
-    <Card className="w-56 bg-gradient-to-br from-background/50 to-muted/30 border-border/50 backdrop-blur-sm">
+    <Card className="bg-gradient-to-br from-background/50 to-muted/30 border-border/50 backdrop-blur-sm">
       <CardHeader>
         <CardTitle>Reputation</CardTitle>
       </CardHeader>
@@ -109,7 +109,7 @@ export function ReputationCard() {
               className={cn("text-xs font-mono border-0", trustLevel.color)}
             >
               <div className="text-2xl font-bold">
-                {userProfile.reputation.toLocaleString()}%
+                {userProfile.trustScore.toLocaleString()}
               </div>
             </Badge>
           </div>
