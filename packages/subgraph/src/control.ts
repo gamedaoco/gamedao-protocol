@@ -38,6 +38,26 @@ function mapAccessModel(accessModel: number): string {
   return "OPEN" // Default
 }
 
+// Helper function to create or update User entity
+// TODO: Uncomment after schema regeneration
+// function createOrUpdateUser(address: Address, timestamp: BigInt): void {
+//   let userId = address.toHex().toLowerCase()
+//   let user = User.load(userId)
+//
+//   if (!user) {
+//     user = new User(userId)
+//     user.address = address
+//     user.totalOrganizations = BigInt.zero()
+//     user.totalContributions = BigInt.zero()
+//     user.totalProposals = BigInt.zero()
+//     user.totalVotes = BigInt.zero()
+//     user.firstSeenAt = timestamp
+//   }
+//
+//   user.lastActiveAt = timestamp
+//   user.save()
+// }
+
 export function handleOrganizationCreated(event: OrganizationCreated): void {
   // Track indexing progress
   updateIndexingStatus(event.block, 'OrganizationCreated')
