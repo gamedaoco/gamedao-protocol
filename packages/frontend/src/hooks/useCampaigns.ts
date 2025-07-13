@@ -116,33 +116,29 @@ export function useCampaigns() {
       throw new Error('Wallet not connected or contracts not loaded')
     }
 
-    // Check if GAME token approval is needed for campaign creation
-    // Most campaigns will require a GAME token deposit/stake
-    const gameDepositAmount = params.gameDeposit || '1000' // Default 1000 GAME tokens
-
     try {
       console.log('🔍 Creating campaign with GAME token approval:', {
         organizationId: params.organizationId,
         title: params.title,
-        gameDeposit: gameDepositAmount
+        gameDeposit: params.gameDeposit
       })
 
-             // Handle GAME token approval first if needed
-       if (gameDepositAmount && parseFloat(gameDepositAmount) > 0) {
-         console.log('🔍 GAME token deposit required:', gameDepositAmount)
+      // Handle GAME token approval first if needed
+      if (params.gameDeposit && parseFloat(params.gameDeposit) > 0) {
+        console.log('🔍 GAME token deposit required:', params.gameDeposit)
 
-         const approvalNeeded = await handleTokenApproval({
-           token: 'GAME',
-           spender: contracts.FLOW,
-           amount: gameDepositAmount,
-           purpose: 'campaign creation'
-         })
+        const approvalNeeded = await handleTokenApproval({
+          token: 'GAME',
+          spender: contracts.FLOW,
+          amount: params.gameDeposit,
+          purpose: 'campaign creation'
+        })
 
-         if (!approvalNeeded) {
-           // Approval is pending, campaign creation will be handled after approval
-           return
-         }
-       }
+        if (!approvalNeeded) {
+          // Approval is pending, campaign creation will be handled after approval
+          return
+        }
+      }
 
       // Proceed with campaign creation
       const result = await createCampaign({
