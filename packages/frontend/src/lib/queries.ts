@@ -631,3 +631,138 @@ export const GET_INDEXING_METRICS = gql`
     }
   }
 `
+
+// New efficient user-centric queries
+export const GET_USER_PROFILE = gql`
+  query GetUserProfile($address: String!) {
+    user(id: $address) {
+      id
+      address
+      totalOrganizations
+      totalContributions
+      totalProposals
+      totalVotes
+      firstSeenAt
+      lastActiveAt
+      memberships {
+        id
+        organization {
+          id
+          name
+          state
+        }
+        role
+        state
+        joinedAt
+      }
+    }
+  }
+`
+
+export const GET_ALL_USER_MEMBERSHIPS = gql`
+  query GetAllUserMemberships($address: Bytes!) {
+    members(where: { address: $address, state: ACTIVE }) {
+      id
+      organization {
+        id
+        name
+        creator
+        memberCount
+        state
+        createdAt
+      }
+      role
+      state
+      joinedAt
+    }
+  }
+`
+
+export const GET_USER_ACTIVITY = gql`
+  query GetUserActivity($address: Bytes!) {
+    user(id: $address) {
+      id
+      address
+      memberships(where: { state: ACTIVE }) {
+        organization {
+          id
+          name
+        }
+        role
+        joinedAt
+      }
+      contributions {
+        id
+        amount
+        campaign {
+          id
+          title
+          organization {
+            name
+          }
+        }
+      }
+      proposals {
+        id
+        title
+        state
+        organization {
+          name
+        }
+      }
+      votes {
+        id
+        choice
+        proposal {
+          title
+          organization {
+            name
+          }
+        }
+      }
+    }
+  }
+`
+
+// Enhanced organization queries with user references
+export const GET_ORGANIZATION_WITH_USER_DETAILS = gql`
+  query GetOrganizationWithUserDetails($id: ID!) {
+    organization(id: $id) {
+      id
+      name
+      creator
+      prime
+      metadataURI
+      treasury {
+        id
+        address
+        balance
+      }
+      orgType
+      accessModel
+      state
+      memberLimit
+      membershipFee
+      memberCount
+      totalCampaigns
+      totalProposals
+      createdAt
+      updatedAt
+      blockNumber
+      transactionHash
+      members {
+        id
+        user {
+          id
+          address
+          totalOrganizations
+          firstSeenAt
+        }
+        address
+        state
+        role
+        joinedAt
+      }
+    }
+  }
+`

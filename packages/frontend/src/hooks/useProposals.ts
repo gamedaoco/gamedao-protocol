@@ -175,15 +175,13 @@ export function useProposals(organizationId?: string) {
       })
 
       // Handle GAME token approval for proposal deposits if needed
-      const gameDepositAmount = proposalData.gameDeposit || '100' // Default 100 GAME tokens for proposal creation
-
-      if (gameDepositAmount && parseFloat(gameDepositAmount) > 0) {
-        console.log('🔍 GAME token deposit required for proposal:', gameDepositAmount)
+      if (proposalData.gameDeposit && parseFloat(proposalData.gameDeposit) > 0) {
+        console.log('🔍 GAME token deposit required for proposal:', proposalData.gameDeposit)
 
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
           spender: contracts.SIGNAL,
-          amount: gameDepositAmount,
+          amount: proposalData.gameDeposit,
           purpose: 'proposal creation'
         })
 
