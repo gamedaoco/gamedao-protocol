@@ -12,25 +12,6 @@ const PINATA_SECRET_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_KEY
 // Check if Pinata is configured
 const isPinataConfigured = Boolean(PINATA_API_KEY && PINATA_SECRET_KEY)
 
-console.log('🔍 IPFS Configuration:', {
-  isPinataConfigured,
-  hasApiKey: !!PINATA_API_KEY,
-  hasSecretKey: !!PINATA_SECRET_KEY,
-  apiKeyLength: PINATA_API_KEY?.length || 0,
-  secretKeyLength: PINATA_SECRET_KEY?.length || 0,
-  nodeEnv: process.env.NODE_ENV,
-  allEnvVars: Object.keys(process.env).filter(key => key.includes('PINATA'))
-})
-
-// Debug: Show all environment variables that start with NEXT_PUBLIC_PINATA
-console.log('🔍 All Pinata env vars:', {
-  NEXT_PUBLIC_PINATA_API_KEY: process.env.NEXT_PUBLIC_PINATA_API_KEY ? 'SET' : 'NOT SET',
-  NEXT_PUBLIC_PINATA_SECRET_KEY: process.env.NEXT_PUBLIC_PINATA_SECRET_KEY ? 'SET' : 'NOT SET',
-  // Show first few characters for debugging
-  apiKeyPreview: PINATA_API_KEY ? `${PINATA_API_KEY.substring(0, 8)}...` : 'NOT SET',
-  secretKeyPreview: PINATA_SECRET_KEY ? `${PINATA_SECRET_KEY.substring(0, 8)}...` : 'NOT SET'
-})
-
 interface IPFSUploadResult {
   hash: string
   url: string
