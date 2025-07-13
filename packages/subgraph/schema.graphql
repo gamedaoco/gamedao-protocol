@@ -59,6 +59,28 @@ enum MemberState {
   KICKED
 }
 
+# User entity for efficient user-centric queries
+type User @entity {
+  id: ID! # wallet address (lowercase)
+  address: Bytes! # original wallet address
+
+  # Aggregated stats
+  totalOrganizations: BigInt!
+  totalContributions: BigInt!
+  totalProposals: BigInt!
+  totalVotes: BigInt!
+
+  # Timestamps
+  firstSeenAt: BigInt!
+  lastActiveAt: BigInt!
+
+  # Relationships (derived from other entities)
+  memberships: [Member!]! @derivedFrom(field: "user")
+  contributions: [Contribution!]! @derivedFrom(field: "contributor")
+  proposals: [Proposal!]! @derivedFrom(field: "proposer")
+  votes: [Vote!]! @derivedFrom(field: "voter")
+}
+
 type Organization @entity {
   id: ID! # organization ID (8-character alphanumeric string)
   creator: Bytes! # creator address
@@ -96,7 +118,8 @@ type Organization @entity {
 type Member @entity {
   id: ID! # organization ID + member address
   organization: Organization!
-  address: Bytes!
+  user: User! # reference to User entity
+  address: Bytes! # kept for backward compatibility
   state: MemberState!
   role: String! # PRIME, MEMBER, etc.
   fee: BigInt! # fee paid to join
