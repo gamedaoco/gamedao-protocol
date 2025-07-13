@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { getFromIPFS, getIPFSUrl } from '@/lib/ipfs'
+import { useState, useEffect, useMemo } from 'react'
+import { useIPFS, useIPFSBatch } from './useIPFS'
+import { getIPFSUrl } from '@/lib/ipfs'
 
 export interface OrganizationMetadata {
   name: string
@@ -27,127 +28,84 @@ export interface UseOrganizationMetadataResult {
   error: string | null
   bannerImageUrl: string | null
   profileImageUrl: string | null
+  retry: () => void
 }
 
+/**
+ * Hook to fetch organization metadata from IPFS with enhanced loading and error handling
+ */
 export function useOrganizationMetadata(metadataURI?: string): UseOrganizationMetadataResult {
-  const [metadata, setMetadata] = useState<OrganizationMetadata | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const {
+    data: metadata,
+    isLoading,
+    error,
+    retry
+  } = useIPFS(metadataURI, {
+    retryAttempts: 3,
+    retryDelay: 1000,
+    autoRetry: true,
+    enabled: !!metadataURI
+  })
 
-  useEffect(() => {
-    async function fetchMetadata() {
-      if (!metadataURI) {
-        setMetadata(null)
-        setIsLoading(false)
-        setError(null)
-        return
-      }
+  // Convert IPFS URLs to HTTP URLs for images
+  const bannerImageUrl = useMemo(() =>
+    metadata?.bannerImage ? getIPFSUrl(metadata.bannerImage) : null,
+    [metadata?.bannerImage]
+  )
 
-      setIsLoading(true)
-      setError(null)
-
-      try {
-        console.log('📤 Fetching organization metadata from IPFS:', metadataURI)
-
-        const data = await getFromIPFS(metadataURI)
-        console.log('✅ Organization metadata fetched:', data)
-
-        setMetadata(data)
-      } catch (err) {
-        console.error('❌ Failed to fetch organization metadata:', err)
-        setError(err instanceof Error ? err.message : 'Failed to fetch metadata')
-        setMetadata(null)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchMetadata()
-  }, [metadataURI])
-
-  // Convert IPFS URLs to HTTP URLs for banner and profile images
-  const bannerImageUrl = metadata?.bannerImage ? getIPFSUrl(metadata.bannerImage) : null
-  const profileImageUrl = metadata?.profileImage ? getIPFSUrl(metadata.profileImage) : null
+  const profileImageUrl = useMemo(() =>
+    metadata?.profileImage ? getIPFSUrl(metadata.profileImage) : null,
+    [metadata?.profileImage]
+  )
 
   return {
     metadata,
     isLoading,
     error,
     bannerImageUrl,
-    profileImageUrl
+    profileImageUrl,
+    retry
   }
 }
 
-// Hook for fetching multiple organization metadata
+/**
+ * Hook to fetch multiple organization metadata from IPFS efficiently
+ */
 export function useOrganizationsMetadata(metadataURIs: string[]): Record<string, UseOrganizationMetadataResult> {
-  const [results, setResults] = useState<Record<string, UseOrganizationMetadataResult>>({})
+  const { results, retry } = useIPFSBatch(metadataURIs, {
+    retryAttempts: 2,
+    retryDelay: 1000,
+    autoRetry: true
+  })
 
-  // Create a stable string representation of the URIs for comparison
-  const urisString = metadataURIs.join(',')
+  return useMemo(() => {
+    const transformedResults: Record<string, UseOrganizationMetadataResult> = {}
 
-  useEffect(() => {
-    async function fetchAllMetadata() {
-      const uris = metadataURIs.filter(Boolean)
-      if (uris.length === 0) {
-        setResults({})
-        return
-      }
-
-      const newResults: Record<string, UseOrganizationMetadataResult> = {}
-
-      // Initialize all results with loading state
-      uris.forEach(uri => {
-        newResults[uri] = {
+    metadataURIs.forEach(uri => {
+      const result = results[uri]
+      if (result) {
+        const metadata = result.data
+        transformedResults[uri] = {
+          metadata,
+          isLoading: result.isLoading,
+          error: result.error,
+          bannerImageUrl: metadata?.bannerImage ? getIPFSUrl(metadata.bannerImage) : null,
+          profileImageUrl: metadata?.profileImage ? getIPFSUrl(metadata.profileImage) : null,
+          retry
+        }
+      } else {
+        // Default state for URIs not yet processed
+        transformedResults[uri] = {
           metadata: null,
           isLoading: true,
           error: null,
           bannerImageUrl: null,
-          profileImageUrl: null
+          profileImageUrl: null,
+          retry
         }
-      })
+      }
+    })
 
-      setResults(newResults)
-
-      // Fetch metadata for each URI
-      await Promise.allSettled(
-        uris.map(async (uri) => {
-          try {
-            console.log('📤 Fetching organization metadata from IPFS:', uri)
-            const data = await getFromIPFS(uri)
-            console.log('✅ Organization metadata fetched:', data)
-
-            const bannerImageUrl = data?.bannerImage ? getIPFSUrl(data.bannerImage) : null
-            const profileImageUrl = data?.profileImage ? getIPFSUrl(data.profileImage) : null
-
-            setResults(prev => ({
-              ...prev,
-              [uri]: {
-                metadata: data,
-                isLoading: false,
-                error: null,
-                bannerImageUrl,
-                profileImageUrl
-              }
-            }))
-          } catch (err) {
-            console.error('❌ Failed to fetch organization metadata:', err)
-            setResults(prev => ({
-              ...prev,
-              [uri]: {
-                metadata: null,
-                isLoading: false,
-                error: err instanceof Error ? err.message : 'Failed to fetch metadata',
-                bannerImageUrl: null,
-                profileImageUrl: null
-              }
-            }))
-          }
-        })
-      )
-    }
-
-    fetchAllMetadata()
-  }, [urisString]) // Use stable string instead of array reference
-
-  return results
+    return transformedResults
+  }, [results, metadataURIs, retry])
 }

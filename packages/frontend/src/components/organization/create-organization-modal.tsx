@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,13 +11,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useOrganizations } from '@/hooks/useOrganizations'
+import { useOrganizationCreation } from '@/hooks/useOrganizationCreation'
 import { useTokenBalances } from '@/hooks/useTokenBalances'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useAccount } from 'wagmi'
 import { formatAddress } from '@/lib/utils'
 import { InsufficientBalanceWarning } from '@/components/wallet/wallet-balance'
-import { uploadOrganizationMetadata, uploadFileToIPFS } from '@/lib/ipfs'
-import { AlertCircle, Users, Shield, CreditCard, Gamepad2, CheckCircle, Loader2, Upload, Image, X } from 'lucide-react'
+import { uploadOrganizationMetadata } from '@/lib/ipfs'
+import { useIPFSUpload } from '@/hooks/useIPFS'
+import { AlertCircle, Shield, CreditCard, Gamepad2, CheckCircle, Loader2, Upload, Image, X } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 interface CreateOrganizationModalProps {
@@ -63,9 +65,26 @@ const FEE_MODELS = [
 
 export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOrganizationModalProps) {
   const { address, isConnected } = useAccount()
-  const { createOrganization, isCreating, createSuccess, createError } = useOrganizations()
-  const { ethBalance, gameBalance, usdcBalance, hasBalance } = useTokenBalances()
+  const { refetch } = useOrganizations()
+  const { ethBalance, gameBalance } = useTokenBalances()
   const { contracts } = useGameDAO()
+
+  // Use the comprehensive creation hook that handles approval
+  const {
+    isCreating,
+    error: createError,
+    currentStep,
+    createOrganizationWithApproval
+  } = useOrganizationCreation()
+
+  // IPFS upload hook for better file handling
+  const { uploadFile, isUploading, progress: ipfsUploadProgress, error: uploadError, reset: resetUpload } = useIPFSUpload()
+
+  // Derive createSuccess from currentStep
+  const createSuccess = currentStep === 'success'
+
+  // Track if success handler has been called to prevent infinite loops
+  const successHandledRef = useRef(false)
 
   const [formData, setFormData] = useState<OrganizationFormData>({
     name: '',
@@ -73,7 +92,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
     orgType: 2, // Default to DAO
     accessModel: 0, // Default to Open
     feeModel: 0, // Default to No Fees
-    memberLimit: 100,
+    memberLimit: 0, // Default to no limit (unlimited)
     membershipFee: '0',
     gameStakeRequired: '0',
     website: '',
@@ -82,6 +101,8 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
     github: '',
     tags: ''
   })
+
+
 
   const [profileImage, setProfileImage] = useState<File | null>(null)
   const [bannerImage, setBannerImage] = useState<File | null>(null)
@@ -112,6 +133,9 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
     e.preventDefault()
 
     try {
+      // Reset success handler flag at start of new creation
+      successHandledRef.current = false
+
       console.log('🚀 Creating organization with params:', {
         name: formData.name,
         accessModel: formData.accessModel,
@@ -129,7 +153,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
       if (profileImage) {
         setUploadProgress('Uploading profile image to IPFS...')
         console.log('📤 Uploading profile image:', profileImage)
-        const result = await uploadFileToIPFS(profileImage, {
+        const result = await uploadFile(profileImage, {
           name: `${formData.name} Profile Image`,
           description: `Profile image for ${formData.name} organization`
         })
@@ -140,7 +164,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
       if (bannerImage) {
         setUploadProgress('Uploading banner image to IPFS...')
         console.log('📤 Uploading banner image:', bannerImage)
-        const result = await uploadFileToIPFS(bannerImage, {
+        const result = await uploadFile(bannerImage, {
           name: `${formData.name} Banner Image`,
           description: `Banner image for ${formData.name} organization`
         })
@@ -186,7 +210,24 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
 
       console.log('📋 Final contract parameters:', contractParams)
 
-      await createOrganization(contractParams)
+      await createOrganizationWithApproval({
+        name: formData.name,
+        description: formData.description,
+        longDescription: formData.description,
+        website: formData.website,
+        twitter: formData.twitter,
+        discord: formData.discord,
+        github: formData.github,
+        tags: formData.tags,
+        orgType: formData.orgType,
+        accessModel: formData.accessModel,
+        feeModel: formData.feeModel,
+        memberLimit: formData.memberLimit,
+        membershipFee: formData.membershipFee,
+        stakeAmount: formData.gameStakeRequired,
+        profileImage: profileImage || undefined,
+        bannerImage: bannerImage || undefined
+      })
 
       console.log('✅ Organization creation transaction submitted')
       setUploadProgress('')
@@ -210,8 +251,12 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
 
   // Handle success state change
   useEffect(() => {
-    if (createSuccess) {
+    if (createSuccess && !successHandledRef.current) {
+      successHandledRef.current = true
       console.log('🎉 Organization created successfully!')
+
+      // Refetch organizations data
+      refetch()
 
       if (onSuccess) onSuccess()
       onClose()
@@ -223,7 +268,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         orgType: 2,
         accessModel: 0,
         feeModel: 0,
-        memberLimit: 100,
+        memberLimit: 0, // Default to no limit (unlimited)
         membershipFee: '0',
         gameStakeRequired: '0',
         website: '',
@@ -242,17 +287,17 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
       createError: !!createError,
       isCreating,
       step,
-      errorMessage: createError?.message
+      errorMessage: createError
     })
 
     // Only show toast errors during actual transaction attempts
     if (createError && isCreating) {
       console.error('❌ Organization creation failed:', createError)
       // Show user-friendly error message
-      if (createError instanceof Error) {
-        if (createError.message.includes('user rejected')) {
+      if (typeof createError === 'string') {
+        if (createError.includes('user rejected')) {
           toast.error('Transaction was cancelled by user')
-        } else if (createError.message.includes('insufficient funds')) {
+        } else if (createError.includes('insufficient funds')) {
           toast.error('Insufficient funds for gas fees')
         } else {
           toast.error('Failed to create organization. Please try again.')
@@ -262,7 +307,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
       }
     } else if (createError && !isCreating) {
       // Log but don't show toast for stale errors
-      console.log('🔍 Stale error detected (not during creation):', createError?.message)
+      console.log('🔍 Stale error detected (not during creation):', createError)
     }
   }, [createError, isCreating, step])
 
@@ -284,6 +329,9 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
   // Reset any previous errors when opening the modal
   useEffect(() => {
     if (isOpen) {
+      // Reset success handler flag
+      successHandledRef.current = false
+
       // Reset form and clear any previous errors
       setFormData({
         name: '',
@@ -291,7 +339,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         orgType: 2,
         accessModel: 0,
         feeModel: 0,
-        memberLimit: 100,
+        memberLimit: 0, // Default to no limit (unlimited)
         membershipFee: '0',
         gameStakeRequired: '0',
         website: '',
@@ -314,7 +362,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         return true // Images are optional
 
       case 'governance':
-        return formData.memberLimit > 0
+        return formData.memberLimit >= 0 // Allow 0 for unlimited members
 
       case 'economics':
         return true // Economics step is always valid (all fields have defaults)
@@ -602,7 +650,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
           </div>
         )
 
-      case 'governance':
+            case 'governance':
         return (
           <div className="space-y-6">
             <div className="space-y-4">
@@ -613,11 +661,11 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                     <Card
                       key={model.value}
                       className={`cursor-pointer transition-colors ${
-                        formData.accessModel === model.value
+                        Number(formData.accessModel) === Number(model.value)
                           ? 'ring-2 ring-primary border-primary'
                           : 'hover:border-muted-foreground/50'
                       }`}
-                      onClick={() => setFormData(prev => ({ ...prev, accessModel: model.value }))}
+                      onClick={() => setFormData(prev => ({ ...prev, accessModel: Number(model.value) }))}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start space-x-3">
@@ -626,7 +674,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                             <div className="font-medium">{model.label}</div>
                             <div className="text-sm text-muted-foreground">{model.description}</div>
                           </div>
-                          {formData.accessModel === model.value && (
+                          {Number(formData.accessModel) === Number(model.value) && (
                             <Badge variant="default">Selected</Badge>
                           )}
                         </div>
@@ -641,14 +689,26 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                 <Input
                   id="memberLimit"
                   type="number"
-                  min="1"
+                  min="0"
                   max="10000"
-                  value={formData.memberLimit}
-                  onChange={(e) => setFormData(prev => ({ ...prev, memberLimit: parseInt(e.target.value) || 0 }))}
+                  value={formData.memberLimit.toString()}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    // Allow empty string, convert to 0 when parsing
+                    if (value === '' || value === '0') {
+                      setFormData(prev => ({ ...prev, memberLimit: 0 }))
+                    } else {
+                      const parsed = parseInt(value)
+                      if (!isNaN(parsed) && parsed >= 0) {
+                        setFormData(prev => ({ ...prev, memberLimit: parsed }))
+                      }
+                    }
+                  }}
+                  placeholder="0 for unlimited"
                   className="mt-1"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  Maximum number of members (set to 0 for unlimited)
+                  Maximum number of members (0 for unlimited)
                 </p>
               </div>
             </div>
@@ -670,7 +730,11 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                           ? 'ring-2 ring-primary border-primary'
                           : 'hover:border-muted-foreground/50'
                       }`}
-                      onClick={() => setFormData(prev => ({ ...prev, feeModel: model.value }))}
+                      onClick={() => setFormData(prev => ({
+                        ...prev,
+                        feeModel: model.value,
+                        membershipFee: model.value === 0 ? '0' : prev.membershipFee // Reset fee when no fees selected
+                      }))}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start space-x-3">
@@ -689,23 +753,25 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                 </div>
               </div>
 
-              {formData.feeModel !== 0 && (
-                <div>
-                  <Label htmlFor="membershipFee">Membership Fee (GAME)</Label>
-                  <Input
-                    id="membershipFee"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={formData.membershipFee}
-                    onChange={(e) => setFormData(prev => ({ ...prev, membershipFee: e.target.value }))}
-                    className="mt-1"
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    GAME tokens required to join the organization
-                  </p>
-                </div>
-              )}
+              <div>
+                <Label htmlFor="membershipFee">Membership Fee (GAME)</Label>
+                <Input
+                  id="membershipFee"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.membershipFee}
+                  onChange={(e) => setFormData(prev => ({ ...prev, membershipFee: e.target.value }))}
+                  className="mt-1"
+                  disabled={formData.feeModel === 0}
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  {formData.feeModel === 0
+                    ? 'No membership fee required (free to join)'
+                    : 'GAME tokens required to join the organization'
+                  }
+                </p>
+              </div>
 
               <div>
                 <Label htmlFor="gameStakeRequired">GAME Token Stake Required</Label>
@@ -779,9 +845,9 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                   <div>
                     <span className="font-medium">Fee Model:</span> {FEE_MODELS.find(f => f.value === formData.feeModel)?.label}
                   </div>
-                  {formData.feeModel !== 0 && (
+                  {formData.feeModel !== 0 && formData.membershipFee !== '0' && (
                     <div>
-                      <span className="font-medium">Membership Fee:</span> {formData.membershipFee} USDC
+                      <span className="font-medium">Membership Fee:</span> {formData.membershipFee} GAME
                     </div>
                   )}
                   <div>
@@ -836,7 +902,11 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                 <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
                   <span className="text-sm text-blue-800">
-                    {uploadProgress || 'Transaction submitted. Please wait for confirmation...'}
+                    {currentStep === 'uploading' && 'Uploading metadata to IPFS...'}
+                    {currentStep === 'approving' && 'Requesting GAME token approval...'}
+                    {currentStep === 'creating' && 'Creating organization on blockchain...'}
+                    {currentStep === 'confirming' && 'Waiting for transaction confirmation...'}
+                    {!['uploading', 'approving', 'creating', 'confirming'].includes(currentStep) && 'Processing...'}
                   </span>
                 </div>
               )}
@@ -914,7 +984,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
           ))}
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           {renderStepContent()}
 
           <Separator className="my-6" />
@@ -922,7 +992,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {step !== 'basic' && (
-                <Button type="button" variant="outline" onClick={prevStep}>
+                <Button type="button" variant="outline" onClick={prevStep} disabled={isCreating}>
                   Previous
                 </Button>
               )}
@@ -943,23 +1013,23 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                 </div>
               )}
 
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isCreating}>
                 Cancel
               </Button>
 
               {step === 'review' ? (
                 <Button
                   type="submit"
-                  disabled={!isFormValid() || isCreating}
+                  disabled={!isFormValid() || isCreating || createSuccess}
                   className="min-w-[120px]"
                 >
-                  {isCreating ? 'Creating...' : 'Create Organization'}
+                  {isCreating ? 'Creating...' : createSuccess ? 'Created!' : 'Create Organization'}
                 </Button>
               ) : (
                 <Button
                   type="button"
                   onClick={nextStep}
-                  disabled={!isFormValid()}
+                  disabled={!isFormValid() || isCreating}
                 >
                   Next
                 </Button>
