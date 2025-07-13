@@ -34,3 +34,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## GameDAO Frontend Development
+
+### Documentation & Guides
+
+The following guides are available in the `/guides/` directory:
+
+- **[Console.log Migration Guide](./guides/migrate-logs.md)** - Instructions for migrating from console.log to the unified logger system
+- **[IPFS Hooks Documentation](./guides/ipfs-hooks.md)** - Comprehensive guide for the unified IPFS hooks with loading states, retry logic, and caching
+- **[IPFS Queue System](./guides/ipfs-queue.md)** - Advanced IPFS request queue system with rate limiting prevention and request management
+
+### Development Guidelines
+
+- Use the unified logger system instead of console.log
+- Utilize IPFS hooks for all IPFS operations
+- Follow the component structure established in the app directory
+- Implement proper error handling and loading states
+
+### Related Documentation
+
+- **[Frontend Alignment Plan](./alignment-plan.md)** - Strategic alignment and development roadmap
+- **[Development Modules](../modules/)** - Backend module documentation
+- **[Contract APIs](../contracts/)** - Smart contract interfaces
