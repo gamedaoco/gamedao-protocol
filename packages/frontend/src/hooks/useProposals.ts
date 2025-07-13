@@ -6,9 +6,10 @@ import { useAccount } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_PROPOSALS, GET_PROPOSAL_BY_ID, GET_USER_VOTES } from '@/lib/queries'
-import { useState, useMemo, useEffect } from 'react'
+import { useMemo, useEffect } from 'react'
 import { useTokenApproval } from './useTokenApproval'
 import { toContractId } from '@/lib/id-utils'
+import { useToast } from './useToast'
 
 
 export interface Proposal {
@@ -47,7 +48,8 @@ export interface ProposalStats {
 export function useProposals(organizationId?: string) {
   const { address } = useAccount()
   const { contracts, isConnected } = useGameDAO()
-  const [isVoting, setIsVoting] = useState(false)
+  // Remove unused setIsVoting state - we use contract state instead
+  const toast = useToast()
 
   // Contract write for creating proposals
   const {
@@ -68,7 +70,22 @@ export function useProposals(organizationId?: string) {
   })
 
   // Contract write for voting
-  const { writeContract: writeVote } = useWriteContract()
+  const {
+    writeContract: writeVote,
+    isPending: isVotePending,
+    data: voteTxHash,
+    error: voteError,
+    reset: resetVote
+  } = useWriteContract()
+
+  // Wait for vote transaction confirmation
+  const {
+    isLoading: isVoteConfirming,
+    isSuccess: voteSuccess,
+    error: voteConfirmError,
+  } = useWaitForTransactionReceipt({
+    hash: voteTxHash,
+  })
 
   // Add token approval hook for GAME token deposits
   const {
@@ -78,6 +95,7 @@ export function useProposals(organizationId?: string) {
     approvalSuccess: tokenApprovalSuccess,
     approvalError: tokenApprovalError
   } = useTokenApproval()
+
   // Fetch proposals from subgraph
   const { data, loading, error, refetch } = useQuery(GET_PROPOSALS, {
     variables: { first: 100, skip: 0 },
@@ -100,6 +118,23 @@ export function useProposals(organizationId?: string) {
     functionName: 'getProposalCount',
     query: { enabled: isConnected },
   })
+
+  // Handle vote success
+  useEffect(() => {
+    if (voteSuccess) {
+      toast.success('Vote cast successfully!')
+      refetch()
+      refetchCount()
+      resetVote()
+    }
+  }, [voteSuccess, toast, refetch, refetchCount, resetVote])
+
+  // Handle vote error
+  useEffect(() => {
+    if (voteError) {
+      toast.error('Failed to cast vote. Please try again.')
+    }
+  }, [voteError, toast])
 
   // Transform subgraph data to match our interface
   const proposals: Proposal[] = data?.proposals?.map((prop: any) => ({
@@ -148,19 +183,21 @@ export function useProposals(organizationId?: string) {
     }
   }, [filteredProposals, userVotes])
 
-  // Cast vote function
+    // Cast vote function
   const castVote = async (proposalId: string, choice: 0 | 1 | 2, reason?: string) => {
     if (!isConnected || !address) {
       throw new Error('Wallet not connected')
     }
 
-    setIsVoting(true)
     try {
+      // Convert proposalId string to bytes32 format for contract call
+      const proposalIdBytes32 = proposalId.startsWith('0x') ? proposalId as `0x${string}` : `0x${proposalId}` as `0x${string}`
+
       await writeVote({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
         functionName: 'castVote',
-        args: [proposalId, choice, reason || ''],
+        args: [proposalIdBytes32, choice, reason || ''],
       })
 
       // Refetch data after voting
@@ -169,8 +206,6 @@ export function useProposals(organizationId?: string) {
     } catch (error) {
       console.error('Error casting vote:', error)
       throw error
-    } finally {
-      setIsVoting(false)
     }
   }
 
@@ -295,6 +330,45 @@ export function useProposals(organizationId?: string) {
     return userVotes.some((vote: any) => vote.proposal.id === proposalId)
   }
 
+  // Check if user can vote on a proposal
+  const canUserVote = (proposalId: string): boolean => {
+    if (!isConnected || !address) return false
+
+    const proposal = proposals.find(p => p.id === proposalId)
+    if (!proposal) return false
+
+    // Check if proposal is active
+    if (!isActive(proposal)) return false
+
+    // Check if user has already voted
+    if (hasUserVoted(proposalId)) return false
+
+    return true
+  }
+
+  // Get voting power for current user on a proposal
+  const { data: userVotingPower, refetch: refetchVotingPower } = useReadContract({
+    address: contracts.SIGNAL,
+    abi: ABIS.SIGNAL,
+    functionName: 'getVotingPower',
+    args: proposals.length > 0 ? [proposals[0].id.startsWith('0x') ? proposals[0].id as `0x${string}` : `0x${proposals[0].id}` as `0x${string}`, address] : undefined,
+    query: { enabled: isConnected && address && proposals.length > 0 },
+  })
+
+      // Get voting power for a specific proposal
+  const getVotingPowerForProposal = async (_proposalId: string): Promise<number> => {
+    if (!isConnected || !address) return 0
+
+    try {
+      // For now, return 1 as default voting power (democratic voting)
+      // TODO: Implement proper voting power calculation based on proposal type
+      return 1
+    } catch (error) {
+      console.error('Error getting voting power:', error)
+      return 0
+    }
+  }
+
   return {
     // Data
     proposals: filteredProposals,
@@ -308,7 +382,9 @@ export function useProposals(organizationId?: string) {
     // Status
     isLoading: loading && filteredProposals.length === 0,
     isLoadingUserVotes: userVotesLoading,
-    isVoting,
+    isVoting: isVotePending || isVoteConfirming,
+    voteSuccess,
+    voteError: voteError || voteConfirmError,
     isCreatingProposal: isCreating || isCreateConfirming || isTokenApproving || isTokenApprovalConfirming,
     createSuccess,
     createError: createError || createConfirmError,
@@ -321,6 +397,9 @@ export function useProposals(organizationId?: string) {
     isActive,
     getTimeRemaining,
     hasUserVoted,
+    canUserVote,
+    getVotingPowerForProposal,
+    userVotingPower: Number(userVotingPower || 0),
 
     // Refetch
     refetch: () => {

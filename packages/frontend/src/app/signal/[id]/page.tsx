@@ -10,14 +10,16 @@ import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useProposals } from '@/hooks/useProposals'
 import { useOrganizations } from '@/hooks/useOrganizations'
+import { useState } from 'react'
 import { Vote, Users, Clock, CheckCircle, XCircle, Pause } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import React from 'react'
 
 // Individual proposal hook (to be implemented)
 function useProposal(id: string) {
   // For now, get from the proposals list
   // TODO: Implement individual proposal fetching
-  const { proposals, isLoading, error, getStateString } = useProposals()
+  const { proposals, isLoading, error, getStateString, castVote, isVoting, canUserVote, hasUserVoted, getVotingPowerForProposal } = useProposals()
   const { organizations } = useOrganizations()
 
   const proposal = proposals?.find(prop => prop.id === id)
@@ -29,7 +31,12 @@ function useProposal(id: string) {
     isLoading,
     error,
     // Utility functions
-    getStateString
+    getStateString,
+    castVote,
+    isVoting,
+    canUserVote,
+    hasUserVoted,
+    getVotingPowerForProposal
   }
 }
 
@@ -46,8 +53,35 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
     organization,
     isLoading,
     error,
-    getStateString
+    getStateString,
+    castVote,
+    isVoting,
+    canUserVote,
+    hasUserVoted,
+    getVotingPowerForProposal
   } = useProposal(id)
+
+  const [votingPower, setVotingPower] = useState<number>(0)
+
+  // Load voting power when component mounts
+  React.useEffect(() => {
+    if (proposal && canUserVote(proposal.id)) {
+      getVotingPowerForProposal(proposal.id).then(setVotingPower)
+    }
+  }, [proposal, canUserVote, getVotingPowerForProposal])
+
+  // Handle voting
+  const handleVote = async (choice: 0 | 1 | 2) => {
+    if (!proposal || !canUserVote(proposal.id)) return
+
+    try {
+      await castVote(proposal.id, choice)
+      // Voting power will be recalculated after vote
+      setVotingPower(0)
+    } catch (error) {
+      console.error('Error voting:', error)
+    }
+  }
 
   // Loading state
   if (isLoading) {
@@ -300,20 +334,46 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
                   <CardHeader>
                     <CardTitle>Cast Your Vote</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                                    <CardContent className="space-y-4">
+                    {/* Voting Status */}
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      {hasUserVoted(proposal.id) ? (
+                        <p className="text-green-600">✓ You have already voted on this proposal</p>
+                      ) : votingPower === 0 ? (
+                        <p className="text-red-600">⚠ You don&apos;t have voting power for this proposal</p>
+                      ) : (
+                        <p>Your voting power: {votingPower}</p>
+                      )}
+                    </div>
+
                     <div className="space-y-2">
-                      <Button className="w-full" variant="default">
+                      <Button
+                        className="w-full"
+                        variant="default"
+                        onClick={() => handleVote(1)}
+                        disabled={isVoting || !canUserVote(proposal.id) || hasUserVoted(proposal.id) || votingPower === 0}
+                      >
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Vote For
+                        {isVoting ? 'Voting...' : 'Vote For'}
                       </Button>
-                      <Button className="w-full" variant="destructive">
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Vote Against
-                      </Button>
-                      <Button className="w-full" variant="outline">
-                        <Pause className="h-4 w-4 mr-2" />
-                        Abstain
-                      </Button>
+                        <Button
+                          className="w-full"
+                          variant="destructive"
+                          onClick={() => handleVote(0)}
+                          disabled={isVoting || !canUserVote(proposal.id) || hasUserVoted(proposal.id) || votingPower === 0}
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          {isVoting ? 'Voting...' : 'Vote Against'}
+                        </Button>
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          onClick={() => handleVote(2)}
+                          disabled={isVoting || !canUserVote(proposal.id) || hasUserVoted(proposal.id) || votingPower === 0}
+                        >
+                          <Pause className="h-4 w-4 mr-2" />
+                          {isVoting ? 'Voting...' : 'Abstain'}
+                        </Button>
                     </div>
                   </CardContent>
                 </Card>
