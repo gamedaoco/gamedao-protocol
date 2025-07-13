@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { formatAddress } from '@/lib/utils'
 import { OrganizationMember } from '@/hooks/useOrganizationDetails'
-import { Eye, EyeOff, Users, Crown, Shield, User, Clock } from 'lucide-react'
+import { useUserProfile } from '@/hooks/useUserProfile'
+import { Eye, EyeOff, Users, Crown, Shield, User, Clock, Star, TrendingUp } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface MemberListProps {
@@ -137,6 +138,81 @@ interface MemberListContentProps {
   getStateColor: (state: string) => string
 }
 
+interface MemberReputationProps {
+  address: string
+  compact?: boolean
+}
+
+function MemberReputation({ address, compact = false }: MemberReputationProps) {
+  const { userProfile, isLoading } = useUserProfile(address)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+        <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+      </div>
+    )
+  }
+
+  if (!userProfile?.reputation?.hasProfile) {
+    return (
+      <div className="text-xs text-muted-foreground">
+        No reputation profile
+      </div>
+    )
+  }
+
+  const reputation = userProfile.reputation
+
+    if (compact) {
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-1">
+          <TrendingUp className="h-3 w-3 text-blue-500" />
+          <span className="font-medium">{reputation.experience.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Star className="h-3 w-3 text-yellow-500" />
+          <span className="font-medium">{reputation.reputation.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Shield className="h-3 w-3 text-green-500" />
+          <span className="font-medium">{reputation.trustScore.toLocaleString()}</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-3 gap-3 text-xs">
+      <div className="text-center">
+        <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+          <TrendingUp className="h-3 w-3 text-blue-500" />
+          <span>XP</span>
+        </div>
+        <div className="font-semibold">{reputation.experience.toLocaleString()}</div>
+      </div>
+
+      <div className="text-center">
+        <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+          <Star className="h-3 w-3 text-yellow-500" />
+          <span>REP</span>
+        </div>
+        <div className="font-semibold">{reputation.reputation.toLocaleString()}</div>
+      </div>
+
+      <div className="text-center">
+        <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+          <Shield className="h-3 w-3 text-green-500" />
+          <span>TRUST</span>
+        </div>
+        <div className="font-semibold">{reputation.trustScore.toLocaleString()}</div>
+      </div>
+    </div>
+  )
+}
+
 function MemberListContent({
   displayMembers,
   activeMembers,
@@ -205,6 +281,11 @@ function MemberListContent({
                       {member.state}
                     </div>
                   </div>
+
+                  {/* Compact reputation display */}
+                  <div className="mt-2">
+                    <MemberReputation address={member.address} compact={true} />
+                  </div>
                 </div>
               </div>
 
@@ -219,7 +300,8 @@ function MemberListContent({
             </div>
 
             {isExpanded && (
-              <div className="mt-3 pt-3 border-t border-border/50">
+              <div className="mt-3 pt-3 border-t border-border/50 space-y-4">
+                {/* Member Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="text-muted-foreground">Full Address</p>
@@ -247,6 +329,12 @@ function MemberListContent({
                       {member.state}
                     </p>
                   </div>
+                </div>
+
+                {/* Detailed Reputation */}
+                <div>
+                  <p className="text-muted-foreground text-sm mb-2">Reputation</p>
+                  <MemberReputation address={member.address} compact={false} />
                 </div>
               </div>
             )}
