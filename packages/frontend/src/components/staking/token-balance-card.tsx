@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Coins, DollarSign, CheckCircle, Clock } from "lucide-react"
-import { useTokenBalances } from "@/hooks/use-token-balances"
+import { useStakingBalances } from "@/hooks/useStakingBalances"
 
 export function TokenBalanceCard() {
   const {
@@ -16,7 +16,7 @@ export function TokenBalanceCard() {
     isApproving,
     approveGame,
     approveUsdc
-  } = useTokenBalances()
+  } = useStakingBalances()
 
   if (isLoading) {
     return (

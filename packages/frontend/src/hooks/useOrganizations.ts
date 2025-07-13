@@ -7,7 +7,7 @@ import { ABIS } from '@/lib/abis'
 import { GET_ORGANIZATIONS, GET_USER_ORGANIZATIONS } from '@/lib/queries'
 import { useEffect, useState, useMemo } from 'react'
 import { useAccount } from 'wagmi'
-import { useToast } from './use-toast'
+import { useToast } from './useToast'
 import { extractOrganizationIdFromLogs, toContractId } from '@/lib/id-utils'
 import { parseTokenAmount } from '@/lib/tokenUtils'
 import { formatUnits } from 'viem'
@@ -120,7 +120,7 @@ export function useOrganizations() {
 
   // Fetch user's organizations from subgraph
   const { data: userOrgsData, loading: userOrgsLoading, refetch: refetchUserOrgs } = useQuery(GET_USER_ORGANIZATIONS, {
-    variables: { user: address },
+    variables: { user: address?.toLowerCase() || '' },
     skip: !address,
     pollInterval: 30000,
     errorPolicy: 'ignore',
@@ -130,24 +130,38 @@ export function useOrganizations() {
 
   // Transform user organizations data
   const userOrganizations: Organization[] = useMemo(() => {
-    if (!userOrgsData?.organizations) return []
+    console.log('🔍 useOrganizations userOrgsData:', {
+      userOrgsData,
+      members: userOrgsData?.members,
+      membersLength: userOrgsData?.members?.length,
+      address
+    })
 
-    return userOrgsData.organizations.map((org: any) => ({
-      id: org.id, // Now comes directly as 8-character alphanumeric from smart contract
-      name: org.name || `Organization ${org.id}`,
-      creator: org.creator,
-      metadataURI: org.metadataURI,
-      treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
-      accessModel: getAccessModelFromString(org.accessModel),
-      feeModel: 0,
-      memberLimit: parseInt(org.memberLimit) || 100,
-      memberCount: parseInt(org.memberCount) || 0,
-      totalCampaigns: parseInt(org.totalCampaigns) || 0,
-      totalProposals: parseInt(org.totalProposals) || 0,
-      state: getStateFromString(org.state),
-      createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
-    }))
-  }, [userOrgsData?.organizations])
+    if (!userOrgsData?.members) return []
+
+    const activeMembers = userOrgsData.members.filter((member: any) => member.state === 'ACTIVE')
+    console.log('🔍 Active members:', activeMembers)
+
+    return activeMembers.map((member: any) => {
+      const org = member.organization
+      return {
+        id: org.id, // Now comes directly as 8-character alphanumeric from smart contract
+        name: org.name || `Organization ${org.id}`,
+        creator: org.creator,
+        metadataURI: org.metadataURI || '',
+        treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
+        accessModel: getAccessModelFromString(org.accessModel),
+        feeModel: 0,
+        memberLimit: parseInt(org.memberLimit) || 100,
+        memberCount: parseInt(org.memberCount) || 0,
+        totalCampaigns: parseInt(org.totalCampaigns) || 0,
+        totalProposals: parseInt(org.totalProposals) || 0,
+        membershipFee: 0, // Not available in this query
+        state: getStateFromString(org.state),
+        createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
+      }
+    })
+  }, [userOrgsData?.members, address])
 
   // Contract write for creating organization
   const {
@@ -406,24 +420,29 @@ export function useUserOrganizations() {
 
   // Transform user organizations data
   const userOrganizations: Organization[] = useMemo(() => {
-    if (!userOrgsData?.organizations) return []
+    if (!userOrgsData?.members) return []
 
-    return userOrgsData.organizations.map((org: any) => ({
-      id: org.id, // Now comes directly as 8-character alphanumeric from smart contract
-      name: org.name || `Organization ${org.id}`,
-      creator: org.creator,
-      metadataURI: org.metadataURI,
-      treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
-      accessModel: getAccessModelFromString(org.accessModel),
-      feeModel: 0,
-      memberLimit: parseInt(org.memberLimit) || 100,
-      memberCount: parseInt(org.memberCount) || 0,
-      totalCampaigns: parseInt(org.totalCampaigns) || 0,
-      totalProposals: parseInt(org.totalProposals) || 0,
-      membershipFee: org.membershipFee ? parseFloat(formatUnits(BigInt(org.membershipFee), 18)) : 0,
-      state: getStateFromString(org.state),
-      createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
-    }))
+    return userOrgsData.members
+      .filter((member: any) => member.state === 'ACTIVE') // Only active members
+      .map((member: any) => {
+        const org = member.organization
+        return {
+          id: org.id, // Now comes directly as 8-character alphanumeric from smart contract
+          name: org.name || `Organization ${org.id}`,
+          creator: org.creator,
+          metadataURI: org.metadataURI || '',
+          treasury: org.treasury?.address || '0x0000000000000000000000000000000000000000',
+          accessModel: getAccessModelFromString(org.accessModel),
+          feeModel: 0,
+          memberLimit: parseInt(org.memberLimit) || 100,
+          memberCount: parseInt(org.memberCount) || 0,
+          totalCampaigns: parseInt(org.totalCampaigns) || 0,
+          totalProposals: parseInt(org.totalProposals) || 0,
+          membershipFee: 0, // Not available in this query
+          state: getStateFromString(org.state),
+          createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
+        }
+      })
   }, [userOrgsData])
 
   // Update error state

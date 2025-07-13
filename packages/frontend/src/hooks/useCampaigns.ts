@@ -7,7 +7,7 @@ import { ABIS } from '@/lib/abis'
 import { GET_CAMPAIGNS, GET_USER_CAMPAIGNS } from '@/lib/queries'
 import { useEffect } from 'react'
 import { useAccount } from 'wagmi'
-import { useToast } from './use-toast'
+import { useToast } from './useToast'
 import { toContractId } from '@/lib/id-utils'
 import { useTokenApproval } from './useTokenApproval'
 

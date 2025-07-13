@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Users, DollarSign, Vote, Zap, Target, Coins, Shield, Trophy, Gamepad2, TrendingUp, Activity, Rocket } from 'lucide-react'
 import { useProtocolStats } from '@/hooks/useProtocolStats'
-import { useStakingPools } from '@/hooks/use-staking-pools'
+import { useStakingPools } from '@/hooks/useStakingPools'
 import { WalletConnection } from '@/components/wallet/wallet-connection'
 import { useRouter } from 'next/navigation'
 

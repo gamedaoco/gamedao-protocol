@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { useStakingPools } from '@/hooks/use-staking-pools'
+import { useStakingPools } from '@/hooks/useStakingPools'
 import { Clock, TrendingUp, TrendingDown, Coins, Calendar } from 'lucide-react'
 
 interface StakingHistoryEvent {

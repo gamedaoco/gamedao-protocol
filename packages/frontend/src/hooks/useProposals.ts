@@ -1,13 +1,14 @@
 'use client'
 
 import { useQuery } from '@apollo/client'
-import { useReadContract, useWriteContract } from 'wagmi'
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { useAccount } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_PROPOSALS, GET_PROPOSAL_BY_ID, GET_USER_VOTES } from '@/lib/queries'
 import { useState, useMemo, useEffect } from 'react'
 import { useTokenApproval } from './useTokenApproval'
+import { toContractId } from '@/lib/id-utils'
 
 
 export interface Proposal {
@@ -47,7 +48,27 @@ export function useProposals(organizationId?: string) {
   const { address } = useAccount()
   const { contracts, isConnected } = useGameDAO()
   const [isVoting, setIsVoting] = useState(false)
-  const { writeContract } = useWriteContract()
+
+  // Contract write for creating proposals
+  const {
+    writeContract: writeCreateProposal,
+    isPending: isCreating,
+    data: createTxHash,
+    error: createError,
+    reset: resetCreate
+  } = useWriteContract()
+
+  // Wait for create transaction confirmation
+  const {
+    isLoading: isCreateConfirming,
+    isSuccess: createSuccess,
+    error: createConfirmError,
+  } = useWaitForTransactionReceipt({
+    hash: createTxHash,
+  })
+
+  // Contract write for voting
+  const { writeContract: writeVote } = useWriteContract()
 
   // Add token approval hook for GAME token deposits
   const {
@@ -135,7 +156,7 @@ export function useProposals(organizationId?: string) {
 
     setIsVoting(true)
     try {
-      await writeContract({
+      await writeVote({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
         functionName: 'castVote',
@@ -192,12 +213,12 @@ export function useProposals(organizationId?: string) {
       }
 
       // Proceed with proposal creation
-      await writeContract({
+      await writeCreateProposal({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
         functionName: 'createProposal',
         args: [
-          proposalData.organizationId,
+          toContractId(proposalData.organizationId), // Convert to bytes8 format
           proposalData.title,
           proposalData.description,
           '', // metadataURI
@@ -288,7 +309,9 @@ export function useProposals(organizationId?: string) {
     isLoading: loading && filteredProposals.length === 0,
     isLoadingUserVotes: userVotesLoading,
     isVoting,
-    isCreatingProposal: isTokenApproving || isTokenApprovalConfirming,
+    isCreatingProposal: isCreating || isCreateConfirming || isTokenApproving || isTokenApprovalConfirming,
+    createSuccess,
+    createError: createError || createConfirmError,
     error: error && filteredProposals.length === 0 ? error : tokenApprovalError,
 
     // Utils

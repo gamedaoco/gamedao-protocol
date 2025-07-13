@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Coins, TrendingUp, Clock, Gift } from "lucide-react"
-import { useStakingPools } from "@/hooks/use-staking-pools"
+import { useStakingPools } from "@/hooks/useStakingPools"
 
 const POOL_CONFIGS = {
   GOVERNANCE: {

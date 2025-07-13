@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Coins, TrendingUp, Users, Clock } from "lucide-react"
-import { useStakingPools } from "@/hooks/use-staking-pools"
+import { useStakingPools } from "@/hooks/useStakingPools"
 import { StakingModal } from "./staking-modal"
 import { useState } from "react"
 

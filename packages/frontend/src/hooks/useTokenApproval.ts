@@ -3,7 +3,7 @@ import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePub
 import { useAccount } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
-import { useToast } from './use-toast'
+import { useToast } from './useToast'
 import { readContract } from 'viem/actions'
 
 export interface TokenApprovalParams {

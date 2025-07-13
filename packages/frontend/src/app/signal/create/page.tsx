@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useOrganizations } from '@/hooks/useOrganizations'
-import { useProposals } from '@/hooks/useProposals'
+import { useProposalCreation } from '@/hooks/useProposalCreation'
+import { useMembership } from '@/hooks/useMembership'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -21,25 +22,35 @@ export default function CreateProposalPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { address, isConnected } = useAccount()
-  const { contracts } = useGameDAO()
-  const { organizations, isLoading: orgsLoading } = useOrganizations()
-  const { createProposal } = useProposals()
+    const { contracts } = useGameDAO()
+  const { userOrganizations, isUserOrgsLoading } = useOrganizations()
+    const {
+    createProposalWithApproval,
+    isCreating: isCreatingProposal,
+    isApproving,
+    currentStep,
+    progress,
+    error: creationError,
+    canCreate,
+    isProcessing,
+    resetState
+  } = useProposalCreation()
 
   // Get organization ID from URL params
   const preselectedOrgId = searchParams.get('org')
+
+  // Check membership for the preselected organization
+  const { isMember, memberData, isLoading: membershipLoading } = useMembership(preselectedOrgId || '')
 
   const [formData, setFormData] = useState({
     organizationId: preselectedOrgId || '',
     title: '',
     description: '',
-    metadataURI: '',
     proposalType: '0', // SIMPLE
     votingType: '0', // SIMPLE
     votingPeriod: '7', // 7 days in days, will convert to seconds
     gameDeposit: '100' // GAME tokens required for proposal creation
   })
-
-  const [isCreating, setIsCreating] = useState(false)
 
   // Set preselected organization when component mounts
   useEffect(() => {
@@ -47,6 +58,14 @@ export default function CreateProposalPage() {
       setFormData(prev => ({ ...prev, organizationId: preselectedOrgId }))
     }
   }, [preselectedOrgId])
+
+  // Handle successful proposal creation
+  useEffect(() => {
+    if (currentStep === 'success') {
+      // Redirect to proposals page after successful creation
+      router.push('/signal')
+    }
+  }, [currentStep, router])
 
   if (!isConnected) {
     return (
@@ -65,7 +84,7 @@ export default function CreateProposalPage() {
     )
   }
 
-  if (orgsLoading) {
+  if (isUserOrgsLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center">
@@ -75,30 +94,50 @@ export default function CreateProposalPage() {
     )
   }
 
-  // Filter organizations to only show those where user is a member
-  const userOrganizations = organizations.filter(org =>
-    org.members?.some(member =>
-      member.address.toLowerCase() === address?.toLowerCase() &&
-      member.state === 'ACTIVE'
-    )
-  )
+  // Debug logging (can be removed in production)
+  console.log('🔍 Proposal creation debug:', {
+    userOrganizations: userOrganizations,
+    userOrganizationsLength: userOrganizations.length,
+    preselectedOrgId,
+    address,
+    isConnected,
+    isMember,
+    memberData,
+    membershipLoading,
+    currentStep,
+    isProcessing
+  })
 
   if (userOrganizations.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <EmptyState
-          title="No Organizations Available"
-          description="You need to be a member of an organization to create a proposal."
-          icon={<Vote className="h-12 w-12 text-muted-foreground" />}
-          primaryAction={{
-            label: 'Browse Organizations',
-            onClick: () => router.push('/control')
-          }}
-          secondaryAction={{
-            label: 'Create Organization',
-            onClick: () => router.push('/control/create')
-          }}
-        />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <Vote className="h-12 w-12 text-muted-foreground mx-auto" />
+              <div>
+                <h2 className="text-2xl font-bold mb-2">No Organizations Available</h2>
+                <p className="text-muted-foreground">You need to be a member of an organization to create a proposal.</p>
+                {preselectedOrgId && (
+                  <div className="mt-4 text-sm text-muted-foreground space-y-1">
+                    <p>Preselected org: {preselectedOrgId}</p>
+                    <p>Is member: {isMember ? 'Yes' : 'No'}</p>
+                    <p>Member data: {memberData ? JSON.stringify(memberData) : 'None'}</p>
+                    <p>User organizations: {userOrganizations.length}</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-4 justify-center">
+                <Button onClick={() => router.push('/control')}>
+                  Browse Organizations
+                </Button>
+                <Button variant="outline" onClick={() => router.push('/control/create')}>
+                  Create Organization
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -107,25 +146,21 @@ export default function CreateProposalPage() {
     e.preventDefault()
     if (!isConnected || !contracts.SIGNAL || !address) return
 
-    setIsCreating(true)
     try {
-      await createProposal({
+      await createProposalWithApproval({
         organizationId: formData.organizationId,
         title: formData.title,
         description: formData.description,
-        metadataURI: formData.metadataURI,
         proposalType: parseInt(formData.proposalType),
         votingType: parseInt(formData.votingType),
         votingPeriod: parseInt(formData.votingPeriod) * 24 * 60 * 60, // Convert days to seconds
         gameDeposit: formData.gameDeposit
       })
 
-      // Redirect to proposals page
-      router.push('/signal')
+      // TODO: Redirect to proposals page after successful creation
+      // This should be handled when currentStep becomes 'success'
     } catch (error) {
       console.error('Failed to create proposal:', error)
-    } finally {
-      setIsCreating(false)
     }
   }
 
@@ -175,6 +210,34 @@ export default function CreateProposalPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Error Display */}
+            {creationError && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">{creationError}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={resetState}
+                  className="mt-2"
+                >
+                  Try Again
+                </Button>
+              </div>
+            )}
+
+            {/* Progress Display */}
+            {progress && isProcessing && (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-blue-700 text-sm">{progress}</p>
+                {isApproving && (
+                  <p className="text-blue-600 text-xs mt-1">
+                    Please confirm the transaction in your wallet
+                  </p>
+                )}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Organization Selection */}
               <div className="space-y-2">
@@ -229,19 +292,7 @@ export default function CreateProposalPage() {
                 />
               </div>
 
-              {/* Metadata URI (Optional) */}
-              <div className="space-y-2">
-                <Label htmlFor="metadataURI">Additional Information (Optional)</Label>
-                <Input
-                  id="metadataURI"
-                  value={formData.metadataURI}
-                  onChange={(e) => handleInputChange('metadataURI', e.target.value)}
-                  placeholder="IPFS hash or URL for additional documents"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Link to additional documents, research, or supporting materials
-                </p>
-              </div>
+
 
               {/* Proposal Type */}
               <div className="space-y-2">
@@ -342,10 +393,14 @@ export default function CreateProposalPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isCreating || !formData.organizationId || !formData.title || !formData.description}
+                  disabled={isProcessing || !formData.organizationId || !formData.title || !formData.description}
                   className="flex-1"
                 >
-                  {isCreating ? 'Creating Proposal...' : 'Create Proposal'}
+                  {isProcessing ? (
+                    progress || 'Creating Proposal...'
+                  ) : (
+                    'Create Proposal'
+                  )}
                 </Button>
               </div>
             </form>
