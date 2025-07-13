@@ -7,8 +7,10 @@ import { Plus, Vote, Users, Clock, CheckCircle, XCircle } from 'lucide-react'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useProposals } from '@/hooks/useProposals'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function SignalPage() {
+  const router = useRouter()
   const { isConnected } = useGameDAO()
   const { proposals, stats, isLoading, isVoting, castVote, error } = useProposals()
   const [selectedStatus, setSelectedStatus] = useState('All')
@@ -36,7 +38,7 @@ export default function SignalPage() {
             </p>
           )}
         </div>
-        <Button disabled={!isConnected} className="flex items-center space-x-2">
+        <Button disabled={!isConnected} className="flex items-center space-x-2" onClick={() => router.push('/signal/create')}>
           <Plus className="h-4 w-4" />
           <span>Create Proposal</span>
         </Button>
@@ -228,7 +230,7 @@ export default function SignalPage() {
                         Abstain
                       </Button>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => window.location.href = `/signal/${proposal.id}`}>
+                    <Button variant="ghost" size="sm" onClick={() => router.push(`/signal/${proposal.id}`)}>
                       View Details
                     </Button>
                   </div>

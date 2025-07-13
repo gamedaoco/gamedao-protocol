@@ -26,6 +26,10 @@ Frontend development documentation:
 
 - **`README.md`** - Frontend development guide (moved from `packages/frontend/README.md`)
 - **`alignment-plan.md`** - Frontend alignment plan (moved from `packages/frontend/FRONTEND_ALIGNMENT_PLAN.md`)
+- **`guides/`** - Frontend development guides:
+  - **`migrate-logs.md`** - Console.log migration guide (moved from `packages/frontend/migrate-logs.md`)
+  - **`ipfs-hooks.md`** - IPFS hooks documentation (moved from `packages/frontend/src/hooks/README-IPFS.md`)
+  - **`ipfs-queue.md`** - IPFS queue system documentation (moved from `packages/frontend/src/hooks/README-IPFS-QUEUE.md`)
 
 ### Development Notes
 - **`editor-notes.md`** - Editor notes and development reminders (moved from root `editor-notes.md`)
@@ -50,6 +54,8 @@ Each module has its own technical documentation detailing:
 ## Migration Notes
 
 This documentation structure was created on **2025-01-13** as part of the comprehensive documentation reorganization. All files have been moved from their original locations to create a unified documentation system while preserving all historical context and technical details.
+
+**Note**: Core repository files (README.md, LICENSE, CODE_OF_CONDUCT.md) remain at the top level as per standard conventions.
 
 For historical development logs, see [`docs/logs/`](../logs/).
 For product feature proposals, see [`docs/gips/`](../gips/).

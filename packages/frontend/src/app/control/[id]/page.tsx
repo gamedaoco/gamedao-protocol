@@ -17,7 +17,8 @@ import { useOrganizationMetadata } from '@/hooks/useOrganizationMetadata'
 import { useMembership } from '@/hooks/useMembership'
 import { useLogger } from '@/hooks/useLogger'
 import { formatUnits } from 'viem'
-import { Users, Crown, TrendingUp, Wallet, Shield, User } from 'lucide-react'
+import { Users, Crown, TrendingUp, Wallet, Shield, User, ChevronDown, ChevronUp, Vote, Clock, CheckCircle, XCircle, Pause } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface OrganizationDetailPageProps {
   params: { id: string }
@@ -28,10 +29,12 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
 
   // All hooks must be called at the top level before any conditional logic
   const { address } = useAccount()
+  const router = useRouter()
   const { organization, actualMemberCount, isLoading, refetch } = useOrganizationDetails(id)
   const { metadata } = useOrganizationMetadata(organization?.metadataURI)
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
+  const [isProposalsExpanded, setIsProposalsExpanded] = useState(false)
   const { isMember, refetch: refetchMembership } = useMembership(id)
   const isActive = useMemo(() => organization?.state === 1, [organization?.state])
   const { logUserAction } = useLogger('OrganizationDetailPage', { category: 'ui' })
@@ -87,18 +90,18 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
         {/* Full-width banner header */}
-        <div className="relative w-full h-64 bg-gradient-to-r from-blue-600 to-purple-600 overflow-hidden">
+        <div className="relative w-full h-64 bg-gradient-to-r from-blue-600 to-purple-600 overflow-hidden rounded-lg">
           {/* Banner image */}
           {metadata?.bannerImage && (
             <IPFSBanner
               hash={metadata.bannerImage}
               alt={`${organization.name} banner`}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover rounded-lg"
             />
           )}
 
           {/* Overlay for text readability */}
-          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-black/40 rounded-lg" />
 
           {/* Content container */}
           <div className="relative max-w-7xl mx-auto px-4 h-full flex items-end pb-8">
@@ -385,6 +388,148 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
               currentUserAddress={address}
               showTitle={true}
             />
+          </div>
+
+          {/* Proposals Section */}
+          <div className="mt-8">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Vote className="h-5 w-5" />
+                    Recent Proposals
+                    <Badge variant="secondary" className="ml-2">
+                      {organization.totalProposals || 0}
+                    </Badge>
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsProposalsExpanded(!isProposalsExpanded)}
+                    className="flex items-center gap-1"
+                  >
+                    {isProposalsExpanded ? (
+                      <>
+                        <ChevronUp className="h-4 w-4" />
+                        Hide
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4" />
+                        Show
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+              {isProposalsExpanded && (
+                <CardContent>
+                  {organization.proposals && organization.proposals.length > 0 ? (
+                    <div className="space-y-4">
+                      {organization.proposals
+                        .sort((a, b) => b.createdAt - a.createdAt)
+                        .slice(0, 10)
+                        .map((proposal) => {
+                          const getProposalIcon = (state: string) => {
+                            switch (state.toLowerCase()) {
+                              case 'active':
+                                return <Clock className="h-4 w-4 text-blue-500" />
+                              case 'executed':
+                                return <CheckCircle className="h-4 w-4 text-green-500" />
+                              case 'rejected':
+                                return <XCircle className="h-4 w-4 text-red-500" />
+                              case 'cancelled':
+                                return <XCircle className="h-4 w-4 text-gray-500" />
+                              default:
+                                return <Pause className="h-4 w-4 text-yellow-500" />
+                            }
+                          }
+
+                          const getProposalStatusColor = (state: string) => {
+                            switch (state.toLowerCase()) {
+                              case 'active':
+                                return 'bg-blue-100 text-blue-800 border-blue-200'
+                              case 'executed':
+                                return 'bg-green-100 text-green-800 border-green-200'
+                              case 'rejected':
+                                return 'bg-red-100 text-red-800 border-red-200'
+                              case 'cancelled':
+                                return 'bg-gray-100 text-gray-800 border-gray-200'
+                              default:
+                                return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                            }
+                          }
+
+                          return (
+                            <div
+                              key={proposal.id}
+                              className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                              onClick={() => {
+                                logUserAction('proposal_clicked', { proposalId: proposal.id, organizationId: id })
+                                router.push(`/signal/${proposal.id}`)
+                              }}
+                            >
+                              <div className="flex items-center gap-3 flex-1">
+                                {getProposalIcon(proposal.state)}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="font-medium text-sm truncate">
+                                      {proposal.title || `Proposal ${proposal.id.slice(0, 8)}`}
+                                    </h4>
+                                    <Badge className={getProposalStatusColor(proposal.state)}>
+                                      {proposal.state}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Created {new Date(proposal.createdAt * 1000).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    logUserAction('proposal_clicked', { proposalId: proposal.id, organizationId: id })
+                                    router.push(`/signal/${proposal.id}`)
+                                  }}
+                                >
+                                  View Details
+                                </Button>
+                              </div>
+                            </div>
+                          )
+                        })}
+
+                      {organization.proposals.length > 10 && (
+                        <div className="text-center pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/signal?org=${id}`)}
+                          >
+                            View All {organization.totalProposals} Proposals
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="No proposals yet"
+                      description="This organization hasn't created any proposals yet."
+                      icon={<Vote className="h-12 w-12 text-muted-foreground" />}
+                      primaryAction={
+                        isMember ? {
+                          label: 'Create Proposal',
+                          onClick: () => router.push(`/signal/create?org=${id}`)
+                        } : undefined
+                      }
+                    />
+                  )}
+                </CardContent>
+              )}
+            </Card>
           </div>
         </div>
 
