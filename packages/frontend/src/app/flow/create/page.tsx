@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useOrganizations } from '@/hooks/useOrganizations'
+import { useCampaigns } from '@/hooks/useCampaigns'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -19,6 +20,7 @@ export default function CreateCampaignPage() {
   const { address, isConnected } = useAccount()
   const { contracts } = useGameDAO()
   const { organizations, isLoading: orgsLoading } = useOrganizations()
+  const { createCampaign } = useCampaigns()
 
   const [formData, setFormData] = useState({
     organizationId: '',
@@ -31,7 +33,8 @@ export default function CreateCampaignPage() {
     min: '',
     max: '',
     duration: '30', // days
-    autoFinalize: false
+    autoFinalize: false,
+    gameDeposit: '100' // GAME tokens required for campaign creation
   })
 
   const [isCreating, setIsCreating] = useState(false)
@@ -268,6 +271,19 @@ export default function CreateCampaignPage() {
                 <Label htmlFor="autoFinalize">
                   Auto-finalize campaign when target is reached
                 </Label>
+              </div>
+
+              {/* GAME Deposit */}
+              <div className="space-y-2">
+                <Label htmlFor="gameDeposit">GAME Deposit (Required) *</Label>
+                <Input
+                  id="gameDeposit"
+                  type="number"
+                  value={formData.gameDeposit}
+                  onChange={(e) => handleInputChange('gameDeposit', e.target.value)}
+                  placeholder="100"
+                  required
+                />
               </div>
 
               {/* Submit Button */}
