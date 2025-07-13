@@ -5,7 +5,7 @@ import { useAccount } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { useOrganizations } from './useOrganizations'
 import { useGameTokenApproval } from './useGameTokenApproval'
-import { useToast } from './use-toast'
+import { useToast } from './useToast'
 // Token utilities are handled by the underlying hooks
 import { uploadFileToIPFS, uploadOrganizationMetadata } from '@/lib/ipfs'
 

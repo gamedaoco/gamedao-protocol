@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Coins, Clock, Zap, Shield } from "lucide-react"
-import { useStakingPools } from "@/hooks/use-staking-pools"
-import { useTokenBalances } from "@/hooks/use-token-balances"
+import { useStakingPools } from "@/hooks/useStakingPools"
+import { useStakingBalances } from "@/hooks/useStakingBalances"
 
 // Unstaking strategies enum (matches the Solidity contract)
 enum UnstakeStrategy {
@@ -59,7 +59,7 @@ export function StakingModal({ isOpen, onClose, poolPurpose, poolTitle, poolApy,
   const [amount, setAmount] = useState('')
   const [strategy, setStrategy] = useState<UnstakeStrategy>(UnstakeStrategy.STANDARD)
   const { stake, unstake, isStaking, isUnstaking } = useStakingPools()
-  const { gameBalance } = useTokenBalances()
+  const { gameBalance } = useStakingBalances()
 
   const handleSubmit = async () => {
     if (!amount || Number(amount) <= 0) return

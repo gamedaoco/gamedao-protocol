@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react'
 import { useAccount } from 'wagmi'
-import { DetailPageLayout } from '@/components/layout/detail-page-layout'
+import { DetailPageLayout } from '@/components/layout/detailPageLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'

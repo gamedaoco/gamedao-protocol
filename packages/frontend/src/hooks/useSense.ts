@@ -5,7 +5,7 @@ import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 
 import { useAccount } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
-import { useToast } from './use-toast'
+import { useToast } from './useToast'
 import { useTokenApproval } from './useTokenApproval'
 
 export interface CreateProfileParams {

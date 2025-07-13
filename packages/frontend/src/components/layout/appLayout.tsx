@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { TopBar } from './top-bar'
+import { TopBar } from './topBar'
 import { Sidebar } from './sidebar'
 import { Footer } from './footer'
 

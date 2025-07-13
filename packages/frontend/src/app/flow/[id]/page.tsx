@@ -1,7 +1,7 @@
 'use client'
 
 import { use } from 'react'
-import { DetailPageLayout } from '@/components/layout/detail-page-layout'
+import { DetailPageLayout } from '@/components/layout/detailPageLayout'
 import { ErrorBoundary, ErrorState } from '@/components/ui/error-boundary'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'

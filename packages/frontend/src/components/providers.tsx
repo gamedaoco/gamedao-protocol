@@ -1,10 +1,10 @@
 'use client'
 
-import { Web3Provider } from '@/providers/web3-provider'
-import { ThemeProvider } from '@/providers/theme-provider'
-import { ApolloProviderWrapper } from '@/providers/apollo-provider'
-import { ToastProvider } from '@/providers/toast-provider'
-import { AppLayout } from '@/components/layout/app-layout'
+import { Web3Provider } from '@/providers/web3Provider'
+import { ThemeProvider } from '@/providers/themeProvider'
+import { ApolloProviderWrapper } from '@/providers/apolloProvider'
+import { ToastProvider } from '@/providers/toastProvider'
+import { AppLayout } from '@/components/layout/appLayout'
 
 interface ProvidersProps {
   children: React.ReactNode
