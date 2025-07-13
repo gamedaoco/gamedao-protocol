@@ -85,15 +85,13 @@ export function useSense() {
       })
 
       // Handle GAME token approval for profile creation
-      const gameDepositAmount = params.gameDeposit || '50' // Default 50 GAME tokens for profile creation
-
-      if (gameDepositAmount && parseFloat(gameDepositAmount) > 0) {
-        console.log('🔍 GAME token deposit required for profile creation:', gameDepositAmount)
+      if (params.gameDeposit && parseFloat(params.gameDeposit) > 0) {
+        console.log('🔍 GAME token deposit required for profile creation:', params.gameDeposit)
 
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
           spender: contracts.SENSE,
-          amount: gameDepositAmount,
+          amount: params.gameDeposit,
           purpose: 'profile creation'
         })
 
@@ -137,15 +135,13 @@ export function useSense() {
       })
 
       // Handle GAME token approval for name claiming
-      const gameDepositAmount = params.gameDeposit || '25' // Default 25 GAME tokens for name claiming
-
-      if (gameDepositAmount && parseFloat(gameDepositAmount) > 0) {
-        console.log('🔍 GAME token deposit required for name claiming:', gameDepositAmount)
+      if (params.gameDeposit && parseFloat(params.gameDeposit) > 0) {
+        console.log('🔍 GAME token deposit required for name claiming:', params.gameDeposit)
 
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
           spender: contracts.SENSE,
-          amount: gameDepositAmount,
+          amount: params.gameDeposit,
           purpose: 'name claiming'
         })
 

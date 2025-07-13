@@ -10,6 +10,7 @@ import { useAccount } from 'wagmi'
 import { useToast } from './use-toast'
 import { extractOrganizationIdFromLogs, toContractId } from '@/lib/id-utils'
 import { parseTokenAmount } from '@/lib/tokenUtils'
+import { formatUnits } from 'viem'
 
 
 export interface Organization {
@@ -111,7 +112,7 @@ export function useOrganizations() {
       memberCount: parseInt(org.memberCount) || 0,
       totalCampaigns: parseInt(org.totalCampaigns) || 0,
       totalProposals: parseInt(org.totalProposals) || 0,
-      membershipFee: parseInt(org.membershipFee) || 0,
+      membershipFee: org.membershipFee ? parseFloat(formatUnits(BigInt(org.membershipFee), 18)) : 0,
       state: getStateFromString(org.state),
       createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
     }))
@@ -419,7 +420,7 @@ export function useUserOrganizations() {
       memberCount: parseInt(org.memberCount) || 0,
       totalCampaigns: parseInt(org.totalCampaigns) || 0,
       totalProposals: parseInt(org.totalProposals) || 0,
-      membershipFee: parseInt(org.membershipFee) || 0,
+      membershipFee: org.membershipFee ? parseFloat(formatUnits(BigInt(org.membershipFee), 18)) : 0,
       state: getStateFromString(org.state),
       createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
     }))

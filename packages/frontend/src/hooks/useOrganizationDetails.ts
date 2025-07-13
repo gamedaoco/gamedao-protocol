@@ -3,6 +3,7 @@
 import { useQuery } from '@apollo/client'
 import { GET_ORGANIZATION_BY_ID } from '@/lib/queries'
 import { useMemo } from 'react'
+import { formatUnits } from 'viem'
 
 export interface OrganizationMember {
   id: string
@@ -100,7 +101,7 @@ export function useOrganizationDetails(organizationId: string) {
       accessModel: getAccessModelFromString(org.accessModel),
       state: getStateFromString(org.state),
       memberLimit: parseInt(org.memberLimit) || 100,
-      membershipFee: parseInt(org.membershipFee) || 0,
+      membershipFee: org.membershipFee ? parseFloat(formatUnits(BigInt(org.membershipFee), 18)) : 0,
       memberCount: parseInt(org.memberCount) || 0,
       totalCampaigns: parseInt(org.totalCampaigns) || 0,
       totalProposals: parseInt(org.totalProposals) || 0,
