@@ -129,49 +129,6 @@ export default function DashboardPage() {
         <ReputationCard />
       </div>
 
-      {/* Protocol Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Organizations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? '...' : globalStats.totalOrganizations}</div>
-            <p className="text-muted-foreground text-sm">Total DAOs</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Campaigns</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? '...' : globalStats.totalCampaigns}</div>
-            <p className="text-muted-foreground text-sm">Active funding</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Proposals</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? '...' : globalStats.totalProposals}</div>
-            <p className="text-muted-foreground text-sm">Governance votes</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Raised</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${isLoading ? '0.00' : parseFloat(globalStats.totalRaised).toFixed(2)}</div>
-            <p className="text-muted-foreground text-sm">Community funded</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Quick Actions */}
       <Card>
         <CardHeader>

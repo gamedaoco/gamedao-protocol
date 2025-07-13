@@ -26,21 +26,14 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
   const { address } = useAccount()
   const { organization, actualMemberCount, isLoading, refetch } = useOrganizationDetails(id)
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
   const { isMember, refetch: refetchMembership } = useMembership(id)
   const isActive = useMemo(() => organization?.state === 1, [organization?.state])
 
-  // Handle leaving organization (for now, just show alert - TODO: implement contract call)
+  // Handle leaving organization
   const handleLeaveOrganization = () => {
     if (!organization || !address) return
-
-    // TODO: Implement actual contract call to leave organization
-    // For now, just show confirmation
-    const confirmed = window.confirm(`Are you sure you want to leave ${organization.name}?`)
-    if (confirmed) {
-      console.log('🚪 Leaving organization:', organization.name)
-      // This would call the contract's removeMember function
-      alert('Leave functionality will be implemented with contract integration')
-    }
+    setIsLeaveModalOpen(true)
   }
 
   // Validate params after all hooks are called
@@ -299,6 +292,35 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
             }}
             onSuccess={() => {
               setIsJoinModalOpen(false)
+              refetch()
+              refetchMembership()
+
+              // Refetch membership status again after a delay to ensure subgraph indexing
+              setTimeout(() => {
+                refetchMembership()
+              }, 3000)
+
+              // And once more after a longer delay
+              setTimeout(() => {
+                refetchMembership()
+              }, 8000)
+            }}
+          />
+        )}
+
+        {/* Leave Organization Modal */}
+        {organization && (
+          <JoinOrganizationModal
+            isOpen={isLeaveModalOpen}
+            onClose={() => setIsLeaveModalOpen(false)}
+            organization={{
+              ...organization,
+              treasury: organization.treasury.address,
+              feeModel: 0 // Default feeModel for compatibility
+            }}
+            mode="leave"
+            onSuccess={() => {
+              setIsLeaveModalOpen(false)
               refetch()
               refetchMembership()
 
