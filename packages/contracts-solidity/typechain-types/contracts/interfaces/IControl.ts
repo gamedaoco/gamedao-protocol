@@ -123,6 +123,7 @@ export interface IControlInterface extends Interface {
       | "removeMember"
       | "updateMemberState"
       | "updateOrganizationState"
+      | "withdrawStake"
   ): FunctionFragment;
 
   getEvent(
@@ -203,6 +204,10 @@ export interface IControlInterface extends Interface {
     functionFragment: "updateOrganizationState",
     values: [BytesLike, BigNumberish]
   ): string;
+  encodeFunctionData(
+    functionFragment: "withdrawStake",
+    values: [BytesLike]
+  ): string;
 
   decodeFunctionResult(functionFragment: "addMember", data: BytesLike): Result;
   decodeFunctionResult(
@@ -250,6 +255,10 @@ export interface IControlInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "updateOrganizationState",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "withdrawStake",
     data: BytesLike
   ): Result;
 }
@@ -519,6 +528,12 @@ export interface IControl extends BaseContract {
     "nonpayable"
   >;
 
+  withdrawStake: TypedContractMethod<
+    [organizationId: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
@@ -617,6 +632,9 @@ export interface IControl extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "withdrawStake"
+  ): TypedContractMethod<[organizationId: BytesLike], [void], "nonpayable">;
 
   getEvent(
     key: "MemberAdded"

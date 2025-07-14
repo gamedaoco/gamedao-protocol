@@ -105,6 +105,30 @@ export declare namespace IControl {
   };
 }
 
+export declare namespace IGameStaking {
+  export type OrganizationStakeStruct = {
+    organizationId: BytesLike;
+    staker: AddressLike;
+    amount: BigNumberish;
+    stakedAt: BigNumberish;
+    active: boolean;
+  };
+
+  export type OrganizationStakeStructOutput = [
+    organizationId: string,
+    staker: string,
+    amount: bigint,
+    stakedAt: bigint,
+    active: boolean
+  ] & {
+    organizationId: string;
+    staker: string;
+    amount: bigint;
+    stakedAt: bigint;
+    active: boolean;
+  };
+}
+
 export interface ControlInterface extends Interface {
   getFunction(
     nameOrSignature:
@@ -112,12 +136,15 @@ export interface ControlInterface extends Interface {
       | "DEFAULT_ADMIN_ROLE"
       | "MAX_MEMBER_LIMIT"
       | "MIN_MEMBER_LIMIT"
+      | "MIN_STAKE_AMOUNT"
       | "MODULE_ID"
       | "OPERATOR_ROLE"
       | "addMember"
+      | "canWithdrawStake"
       | "createOrganization"
       | "emergencyPause"
       | "emergencyUnpause"
+      | "gameStaking"
       | "gameToken"
       | "getAllOrganizations"
       | "getMember"
@@ -125,6 +152,7 @@ export interface ControlInterface extends Interface {
       | "getMembers"
       | "getOrganization"
       | "getOrganizationCount"
+      | "getOrganizationStake"
       | "getOrganizationsByState"
       | "getRoleAdmin"
       | "grantRole"
@@ -148,6 +176,7 @@ export interface ControlInterface extends Interface {
       | "updateMemberState"
       | "updateOrganizationState"
       | "version"
+      | "withdrawStake"
   ): FunctionFragment;
 
   getEvent(
@@ -164,6 +193,7 @@ export interface ControlInterface extends Interface {
       | "RoleAdminChanged"
       | "RoleGranted"
       | "RoleRevoked"
+      | "StakeWithdrawn"
       | "Unpaused"
   ): EventFragment;
 
@@ -183,6 +213,10 @@ export interface ControlInterface extends Interface {
     functionFragment: "MIN_MEMBER_LIMIT",
     values?: undefined
   ): string;
+  encodeFunctionData(
+    functionFragment: "MIN_STAKE_AMOUNT",
+    values?: undefined
+  ): string;
   encodeFunctionData(functionFragment: "MODULE_ID", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "OPERATOR_ROLE",
@@ -191,6 +225,10 @@ export interface ControlInterface extends Interface {
   encodeFunctionData(
     functionFragment: "addMember",
     values: [BytesLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "canWithdrawStake",
+    values: [BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "createOrganization",
@@ -211,6 +249,10 @@ export interface ControlInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "emergencyUnpause",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "gameStaking",
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "gameToken", values?: undefined): string;
@@ -237,6 +279,10 @@ export interface ControlInterface extends Interface {
   encodeFunctionData(
     functionFragment: "getOrganizationCount",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getOrganizationStake",
+    values: [BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getOrganizationsByState",
@@ -312,6 +358,10 @@ export interface ControlInterface extends Interface {
     values: [BytesLike, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "version", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "withdrawStake",
+    values: [BytesLike]
+  ): string;
 
   decodeFunctionResult(functionFragment: "ADMIN_ROLE", data: BytesLike): Result;
   decodeFunctionResult(
@@ -326,12 +376,20 @@ export interface ControlInterface extends Interface {
     functionFragment: "MIN_MEMBER_LIMIT",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "MIN_STAKE_AMOUNT",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "MODULE_ID", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "OPERATOR_ROLE",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "addMember", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "canWithdrawStake",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "createOrganization",
     data: BytesLike
@@ -342,6 +400,10 @@ export interface ControlInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "emergencyUnpause",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "gameStaking",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "gameToken", data: BytesLike): Result;
@@ -361,6 +423,10 @@ export interface ControlInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getOrganizationCount",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getOrganizationStake",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -422,6 +488,10 @@ export interface ControlInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "version", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "withdrawStake",
+    data: BytesLike
+  ): Result;
 }
 
 export namespace MemberAddedEvent {
@@ -651,6 +721,31 @@ export namespace RoleRevokedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace StakeWithdrawnEvent {
+  export type InputTuple = [
+    organizationId: BytesLike,
+    staker: AddressLike,
+    amount: BigNumberish,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    organizationId: string,
+    staker: string,
+    amount: bigint,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    organizationId: string;
+    staker: string;
+    amount: bigint;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace UnpausedEvent {
   export type InputTuple = [account: AddressLike];
   export type OutputTuple = [account: string];
@@ -716,6 +811,8 @@ export interface Control extends BaseContract {
 
   MIN_MEMBER_LIMIT: TypedContractMethod<[], [bigint], "view">;
 
+  MIN_STAKE_AMOUNT: TypedContractMethod<[], [bigint], "view">;
+
   MODULE_ID: TypedContractMethod<[], [string], "view">;
 
   OPERATOR_ROLE: TypedContractMethod<[], [string], "view">;
@@ -724,6 +821,12 @@ export interface Control extends BaseContract {
     [organizationId: BytesLike, member: AddressLike],
     [void],
     "nonpayable"
+  >;
+
+  canWithdrawStake: TypedContractMethod<
+    [organizationId: BytesLike],
+    [boolean],
+    "view"
   >;
 
   createOrganization: TypedContractMethod<
@@ -744,6 +847,8 @@ export interface Control extends BaseContract {
   emergencyPause: TypedContractMethod<[], [void], "nonpayable">;
 
   emergencyUnpause: TypedContractMethod<[], [void], "nonpayable">;
+
+  gameStaking: TypedContractMethod<[], [string], "view">;
 
   gameToken: TypedContractMethod<[], [string], "view">;
 
@@ -778,6 +883,12 @@ export interface Control extends BaseContract {
   >;
 
   getOrganizationCount: TypedContractMethod<[], [bigint], "view">;
+
+  getOrganizationStake: TypedContractMethod<
+    [organizationId: BytesLike],
+    [IGameStaking.OrganizationStakeStructOutput],
+    "view"
+  >;
 
   getOrganizationsByState: TypedContractMethod<
     [state: BigNumberish],
@@ -877,6 +988,12 @@ export interface Control extends BaseContract {
 
   version: TypedContractMethod<[], [string], "view">;
 
+  withdrawStake: TypedContractMethod<
+    [organizationId: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
@@ -894,6 +1011,9 @@ export interface Control extends BaseContract {
     nameOrSignature: "MIN_MEMBER_LIMIT"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "MIN_STAKE_AMOUNT"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
     nameOrSignature: "MODULE_ID"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -906,6 +1026,9 @@ export interface Control extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "canWithdrawStake"
+  ): TypedContractMethod<[organizationId: BytesLike], [boolean], "view">;
   getFunction(
     nameOrSignature: "createOrganization"
   ): TypedContractMethod<
@@ -928,6 +1051,9 @@ export interface Control extends BaseContract {
   getFunction(
     nameOrSignature: "emergencyUnpause"
   ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "gameStaking"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "gameToken"
   ): TypedContractMethod<[], [string], "view">;
@@ -957,6 +1083,13 @@ export interface Control extends BaseContract {
   getFunction(
     nameOrSignature: "getOrganizationCount"
   ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "getOrganizationStake"
+  ): TypedContractMethod<
+    [organizationId: BytesLike],
+    [IGameStaking.OrganizationStakeStructOutput],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "getOrganizationsByState"
   ): TypedContractMethod<
@@ -1066,6 +1199,9 @@ export interface Control extends BaseContract {
   getFunction(
     nameOrSignature: "version"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "withdrawStake"
+  ): TypedContractMethod<[organizationId: BytesLike], [void], "nonpayable">;
 
   getEvent(
     key: "MemberAdded"
@@ -1150,6 +1286,13 @@ export interface Control extends BaseContract {
     RoleRevokedEvent.InputTuple,
     RoleRevokedEvent.OutputTuple,
     RoleRevokedEvent.OutputObject
+  >;
+  getEvent(
+    key: "StakeWithdrawn"
+  ): TypedContractEvent<
+    StakeWithdrawnEvent.InputTuple,
+    StakeWithdrawnEvent.OutputTuple,
+    StakeWithdrawnEvent.OutputObject
   >;
   getEvent(
     key: "Unpaused"
@@ -1290,6 +1433,17 @@ export interface Control extends BaseContract {
       RoleRevokedEvent.InputTuple,
       RoleRevokedEvent.OutputTuple,
       RoleRevokedEvent.OutputObject
+    >;
+
+    "StakeWithdrawn(bytes8,address,uint256,uint256)": TypedContractEvent<
+      StakeWithdrawnEvent.InputTuple,
+      StakeWithdrawnEvent.OutputTuple,
+      StakeWithdrawnEvent.OutputObject
+    >;
+    StakeWithdrawn: TypedContractEvent<
+      StakeWithdrawnEvent.InputTuple,
+      StakeWithdrawnEvent.OutputTuple,
+      StakeWithdrawnEvent.OutputObject
     >;
 
     "Unpaused(address)": TypedContractEvent<

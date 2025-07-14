@@ -15,7 +15,7 @@ interface IIdentity {
      * @dev User profile structure
      */
     struct Profile {
-        string profileId;           // Hierarchical profile ID (e.g., "GAMEDAO-U-USER001")
+        bytes8 profileId;           // 8-byte alphanumeric profile ID (e.g., "ALICE123")
         address owner;              // Profile owner address
         bytes8 organizationId;      // Organization the profile belongs to
         string metadata;            // IPFS hash for extended profile data
@@ -67,7 +67,7 @@ interface IIdentity {
      * @dev Emitted when a profile is created
      */
     event ProfileCreated(
-        string indexed profileId,
+        bytes8 indexed profileId,
         address indexed owner,
         bytes8 indexed organizationId,
         string metadata,
@@ -78,7 +78,7 @@ interface IIdentity {
      * @dev Emitted when a profile is updated
      */
     event ProfileUpdated(
-        string indexed profileId,
+        bytes8 indexed profileId,
         string metadata,
         uint256 timestamp
     );
@@ -87,7 +87,7 @@ interface IIdentity {
      * @dev Emitted when a profile is verified
      */
     event ProfileVerified(
-        string indexed profileId,
+        bytes8 indexed profileId,
         VerificationLevel level,
         address indexed verifier,
         uint256 timestamp
@@ -119,9 +119,9 @@ interface IIdentity {
     // ERRORS
     // =============================================================
 
-    error ProfileNotFound(string profileId);
+    error ProfileNotFound(bytes8 profileId);
     error ProfileAlreadyExists(address owner, bytes8 organizationId);
-    error UnauthorizedProfileAccess(string profileId, address caller);
+    error UnauthorizedProfileAccess(bytes8 profileId, address caller);
     error OrganizationNotFound(bytes8 organizationId);
     error InvalidNameFormat(bytes8 name);
     error NameAlreadyClaimed(bytes8 name);
@@ -137,34 +137,24 @@ interface IIdentity {
     // =============================================================
 
     /**
-     * @dev Create a new user profile with hierarchical ID
-     * @param organizationId Organization ID to create profile for
-     * @param metadata IPFS hash for profile metadata
-     * @return profileId Generated hierarchical profile ID
+     * @dev Create a new user profile
      */
     function createProfile(bytes8 organizationId, string memory metadata)
         external
-        returns (string memory profileId);
+        returns (bytes8 profileId);
 
     /**
      * @dev Update an existing profile
-     * @param profileId Profile ID to update
-     * @param metadata New metadata IPFS hash
      */
-    function updateProfile(string memory profileId, string memory metadata) external;
+    function updateProfile(bytes8 profileId, string memory metadata) external;
 
     /**
      * @dev Get profile information
-     * @param profileId Profile ID to query
-     * @return profile Profile data
      */
-    function getProfile(string memory profileId) external view returns (Profile memory profile);
+    function getProfile(bytes8 profileId) external view returns (Profile memory profile);
 
     /**
      * @dev Get profile by owner and organization
-     * @param owner Profile owner address
-     * @param organizationId Organization ID
-     * @return profile Profile data
      */
     function getProfileByOwner(address owner, bytes8 organizationId)
         external
@@ -173,24 +163,19 @@ interface IIdentity {
 
     /**
      * @dev Check if a profile exists
-     * @param profileId Profile ID to check
-     * @return exists True if profile exists
      */
-    function profileExists(string memory profileId) external view returns (bool exists);
+    function profileExists(bytes8 profileId) external view returns (bool exists);
 
     /**
      * @dev Get profiles by organization
-     * @param organizationId Organization ID
-     * @return profileIds Array of profile IDs
      */
     function getProfilesByOrganization(bytes8 organizationId)
         external
         view
-        returns (string[] memory profileIds);
+        returns (bytes8[] memory profileIds);
 
     /**
      * @dev Get total number of profiles
-     * @return count Total profile count
      */
     function getProfileCount() external view returns (uint256 count);
 
@@ -200,17 +185,13 @@ interface IIdentity {
 
     /**
      * @dev Verify a profile
-     * @param profileId Profile ID to verify
-     * @param level Verification level to set
      */
-    function verifyProfile(string memory profileId, VerificationLevel level) external;
+    function verifyProfile(bytes8 profileId, VerificationLevel level) external;
 
     /**
      * @dev Get verification level for a profile
-     * @param profileId Profile ID to query
-     * @return level Current verification level
      */
-    function getVerificationLevel(string memory profileId) external view returns (VerificationLevel level);
+    function getVerificationLevel(bytes8 profileId) external view returns (VerificationLevel level);
 
     // =============================================================
     // NAME CLAIMING SYSTEM

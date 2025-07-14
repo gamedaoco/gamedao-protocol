@@ -36,7 +36,8 @@ interface IControl {
     enum OrgState {
         Inactive,
         Active,
-        Locked
+        Locked,
+        Dissolved
     }
 
     // Structs
@@ -120,6 +121,7 @@ interface IControl {
     function removeMember(bytes8 organizationId, address member) external;
     function updateMemberState(bytes8 organizationId, address member, MemberState state) external;
     function updateOrganizationState(bytes8 organizationId, OrgState state) external;
+    function withdrawStake(bytes8 organizationId) external;
 
     // View functions
     function getOrganization(bytes8 id) external view returns (Organization memory);

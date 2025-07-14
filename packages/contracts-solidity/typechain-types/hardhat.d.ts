@@ -78,6 +78,14 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IGameDAORegistry__factory>;
     getContractFactory(
+      name: "IGameStaking",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IGameStaking__factory>;
+    getContractFactory(
+      name: "IGameTokenDeprecated",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IGameTokenDeprecated__factory>;
+    getContractFactory(
       name: "IGameToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IGameToken__factory>;
@@ -89,10 +97,6 @@ declare module "hardhat/types/runtime" {
       name: "ISense",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ISense__factory>;
-    getContractFactory(
-      name: "ISenseSimplified",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ISenseSimplified__factory>;
     getContractFactory(
       name: "ISignal",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -126,10 +130,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Sense__factory>;
     getContractFactory(
-      name: "SenseSimplified",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.SenseSimplified__factory>;
-    getContractFactory(
       name: "Signal",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Signal__factory>;
@@ -141,6 +141,10 @@ declare module "hardhat/types/runtime" {
       name: "AlphanumericIDTest",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.AlphanumericIDTest__factory>;
+    getContractFactory(
+      name: "GameToken",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.GameToken__factory>;
 
     getContractAt(
       name: "AccessControl",
@@ -223,6 +227,16 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IGameDAORegistry>;
     getContractAt(
+      name: "IGameStaking",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IGameStaking>;
+    getContractAt(
+      name: "IGameTokenDeprecated",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IGameTokenDeprecated>;
+    getContractAt(
       name: "IGameToken",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -237,11 +251,6 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.ISense>;
-    getContractAt(
-      name: "ISenseSimplified",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ISenseSimplified>;
     getContractAt(
       name: "ISignal",
       address: string | ethers.Addressable,
@@ -283,11 +292,6 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.Sense>;
     getContractAt(
-      name: "SenseSimplified",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.SenseSimplified>;
-    getContractAt(
       name: "Signal",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -302,6 +306,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.AlphanumericIDTest>;
+    getContractAt(
+      name: "GameToken",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.GameToken>;
 
     deployContract(
       name: "AccessControl",
@@ -368,6 +377,14 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IGameDAORegistry>;
     deployContract(
+      name: "IGameStaking",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IGameStaking>;
+    deployContract(
+      name: "IGameTokenDeprecated",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IGameTokenDeprecated>;
+    deployContract(
       name: "IGameToken",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IGameToken>;
@@ -379,10 +396,6 @@ declare module "hardhat/types/runtime" {
       name: "ISense",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ISense>;
-    deployContract(
-      name: "ISenseSimplified",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ISenseSimplified>;
     deployContract(
       name: "ISignal",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -416,10 +429,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Sense>;
     deployContract(
-      name: "SenseSimplified",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.SenseSimplified>;
-    deployContract(
       name: "Signal",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Signal>;
@@ -431,6 +440,10 @@ declare module "hardhat/types/runtime" {
       name: "AlphanumericIDTest",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.AlphanumericIDTest>;
+    deployContract(
+      name: "GameToken",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.GameToken>;
 
     deployContract(
       name: "AccessControl",
@@ -513,6 +526,16 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IGameDAORegistry>;
     deployContract(
+      name: "IGameStaking",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IGameStaking>;
+    deployContract(
+      name: "IGameTokenDeprecated",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IGameTokenDeprecated>;
+    deployContract(
       name: "IGameToken",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -527,11 +550,6 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ISense>;
-    deployContract(
-      name: "ISenseSimplified",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ISenseSimplified>;
     deployContract(
       name: "ISignal",
       args: any[],
@@ -573,11 +591,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Sense>;
     deployContract(
-      name: "SenseSimplified",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.SenseSimplified>;
-    deployContract(
       name: "Signal",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -592,6 +605,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.AlphanumericIDTest>;
+    deployContract(
+      name: "GameToken",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.GameToken>;
 
     // default types
     getContractFactory(

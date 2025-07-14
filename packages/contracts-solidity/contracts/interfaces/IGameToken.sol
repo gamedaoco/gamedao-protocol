@@ -4,11 +4,12 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title IGameToken
- * @dev Interface for the GAME token with staking functionality
+ * @title IGameTokenDeprecated
+ * @dev DEPRECATED: Interface for the GAME token with staking functionality
+ * @notice This interface is deprecated. Use IGameTokenClean and IGameStaking instead.
  * @author GameDAO AG
  */
-interface IGameToken is IERC20 {
+interface IGameTokenDeprecated is IERC20 {
     // Events
     event Staked(
         address indexed user,

@@ -499,92 +499,252 @@ export const SIGNAL_ABI = [
 export const SENSE_ABI = [
   {
     "inputs": [
-      {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
-      {"internalType": "string", "name": "metadata", "type": "string"}
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"},
+      {"internalType": "bytes32", "name": "reason", "type": "bytes32"}
     ],
-    "name": "createProfile",
-    "outputs": [{"internalType": "bytes32", "name": "profileId", "type": "bytes32"}],
+    "name": "awardExperience",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getProfileCount",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"},
+      {"internalType": "uint256", "name": "baseWeight", "type": "uint256"}
+    ],
+    "name": "calculateVotingWeight",
+    "outputs": [{"internalType": "uint256", "name": "votingWeight", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"}
+    ],
+    "name": "calculateTrustScore",
+    "outputs": [{"internalType": "uint256", "name": "trustScore", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"}
+    ],
+    "name": "getExperience",
+    "outputs": [{"internalType": "uint256", "name": "experience", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"}
+    ],
+    "name": "getReputation",
+    "outputs": [
+      {
+        "components": [
+          {"internalType": "uint256", "name": "experience", "type": "uint256"},
+          {"internalType": "uint256", "name": "reputation", "type": "uint256"},
+          {"internalType": "uint256", "name": "trust", "type": "uint256"},
+          {"internalType": "uint256", "name": "lastUpdated", "type": "uint256"},
+          {"internalType": "uint256", "name": "totalInteractions", "type": "uint256"},
+          {"internalType": "uint256", "name": "positiveInteractions", "type": "uint256"}
+        ],
+        "internalType": "struct ISense.ReputationData",
+        "name": "reputation",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8[]", "name": "profileIds", "type": "bytes8[]"}
+    ],
+    "name": "getReputationBatch",
+    "outputs": [
+      {
+        "components": [
+          {"internalType": "uint256", "name": "experience", "type": "uint256"},
+          {"internalType": "uint256", "name": "reputation", "type": "uint256"},
+          {"internalType": "uint256", "name": "trust", "type": "uint256"},
+          {"internalType": "uint256", "name": "lastUpdated", "type": "uint256"},
+          {"internalType": "uint256", "name": "totalInteractions", "type": "uint256"},
+          {"internalType": "uint256", "name": "positiveInteractions", "type": "uint256"}
+        ],
+        "internalType": "struct ISense.ReputationData[]",
+        "name": "reputations",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"}
+    ],
+    "name": "getReputationHistory",
+    "outputs": [
+      {
+        "components": [
+          {"internalType": "bytes8", "name": "profileId", "type": "bytes8"},
+          {"internalType": "uint8", "name": "repType", "type": "uint8"},
+          {"internalType": "int256", "name": "delta", "type": "int256"},
+          {"internalType": "bytes32", "name": "reason", "type": "bytes32"},
+          {"internalType": "address", "name": "updatedBy", "type": "address"},
+          {"internalType": "uint256", "name": "timestamp", "type": "uint256"}
+        ],
+        "internalType": "struct ISense.ReputationEvent[]",
+        "name": "events",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"}
+    ],
+    "name": "getTrustScore",
+    "outputs": [{"internalType": "uint256", "name": "trustScore", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"},
+      {"internalType": "bool", "name": "positive", "type": "bool"},
+      {"internalType": "bytes32", "name": "reason", "type": "bytes32"}
+    ],
+    "name": "recordInteraction",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"},
+      {"internalType": "uint8", "name": "repType", "type": "uint8"},
+      {"internalType": "int256", "name": "delta", "type": "int256"},
+      {"internalType": "bytes32", "name": "reason", "type": "bytes32"}
+    ],
+    "name": "updateReputation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+] as const
+
+export const GAME_STAKING_ABI = [
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+      {"internalType": "address", "name": "staker", "type": "address"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"}
+    ],
+    "name": "stakeForOrganization",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+      {"internalType": "address", "name": "staker", "type": "address"}
+    ],
+    "name": "withdrawOrganizationStake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes8", "name": "organizationId", "type": "bytes8"}],
+    "name": "getOrganizationStake",
+    "outputs": [
+      {
+        "components": [
+          {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+          {"internalType": "address", "name": "staker", "type": "address"},
+          {"internalType": "uint256", "name": "amount", "type": "uint256"},
+          {"internalType": "uint256", "name": "stakedAt", "type": "uint256"},
+          {"internalType": "bool", "name": "active", "type": "bool"}
+        ],
+        "internalType": "struct GameStaking.OrganizationStake",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes8", "name": "organizationId", "type": "bytes8"}],
+    "name": "canWithdrawOrganizationStake",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
-    "name": "getProfile",
-    "outputs": [
-      {"internalType": "bytes32", "name": "id", "type": "bytes32"},
-      {"internalType": "address", "name": "owner", "type": "address"},
-      {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
-      {"internalType": "string", "name": "name", "type": "string"},
-      {"internalType": "bool", "name": "active", "type": "bool"},
-      {"internalType": "bool", "name": "verified", "type": "bool"},
-      {"internalType": "uint256", "name": "createdAt", "type": "uint256"}
-    ],
+    "name": "getUserOrganizationStakes",
+    "outputs": [{"internalType": "bytes8[]", "name": "", "type": "bytes8[]"}],
     "stateMutability": "view",
     "type": "function"
   },
-  // Name claiming functions
   {
     "inputs": [
-      {"internalType": "bytes8", "name": "name", "type": "bytes8"},
-      {"internalType": "uint256", "name": "stakeAmount", "type": "uint256"},
-      {"internalType": "uint256", "name": "stakeDuration", "type": "uint256"},
-      {"internalType": "uint8", "name": "nameType", "type": "uint8"}
+      {"internalType": "uint8", "name": "purpose", "type": "uint8"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"},
+      {"internalType": "uint8", "name": "preferredStrategy", "type": "uint8"}
     ],
-    "name": "claimName",
-    "outputs": [{"internalType": "bool", "name": "success", "type": "bool"}],
+    "name": "stake",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "bytes8", "name": "name", "type": "bytes8"}],
-    "name": "releaseName",
-    "outputs": [{"internalType": "uint256", "name": "stakeAmount", "type": "uint256"}],
+    "inputs": [
+      {"internalType": "uint8", "name": "purpose", "type": "uint8"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"},
+      {"internalType": "uint8", "name": "strategy", "type": "uint8"}
+    ],
+    "name": "requestUnstake",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "bytes8", "name": "name", "type": "bytes8"}],
-    "name": "isNameAvailable",
-    "outputs": [{"internalType": "bool", "name": "available", "type": "bool"}],
-    "stateMutability": "view",
+    "inputs": [{"internalType": "uint8", "name": "purpose", "type": "uint8"}],
+    "name": "claimRewards",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "bytes8", "name": "name", "type": "bytes8"}],
-    "name": "getNameClaim",
-    "outputs": [
-      {"internalType": "bytes8", "name": "name", "type": "bytes8"},
-      {"internalType": "address", "name": "owner", "type": "address"},
-      {"internalType": "uint256", "name": "stakeAmount", "type": "uint256"},
-      {"internalType": "uint256", "name": "stakeDuration", "type": "uint256"},
-      {"internalType": "uint256", "name": "claimedAt", "type": "uint256"},
-      {"internalType": "uint256", "name": "expiresAt", "type": "uint256"},
-      {"internalType": "bool", "name": "isActive", "type": "bool"},
-      {"internalType": "uint8", "name": "nameType", "type": "uint8"}
+    "anonymous": false,
+    "inputs": [
+      {"indexed": true, "internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+      {"indexed": true, "internalType": "address", "name": "staker", "type": "address"},
+      {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
+      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "name": "OrganizationStaked",
+    "type": "event"
   },
   {
-    "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
-    "name": "getNamesOwnedBy",
-    "outputs": [{"internalType": "bytes8[]", "name": "names", "type": "bytes8[]"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "bytes8", "name": "name", "type": "bytes8"}],
-    "name": "validateNameFormat",
-    "outputs": [{"internalType": "bool", "name": "valid", "type": "bool"}],
-    "stateMutability": "pure",
-    "type": "function"
+    "anonymous": false,
+    "inputs": [
+      {"indexed": true, "internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+      {"indexed": true, "internalType": "address", "name": "staker", "type": "address"},
+      {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
+      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+    ],
+    "name": "OrganizationStakeWithdrawn",
+    "type": "event"
   }
 ] as const
 
@@ -776,6 +936,198 @@ export const USDC_ABI = [
   }
 ] as const
 
+export const IDENTITY_ABI = [
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+      {"internalType": "string", "name": "metadata", "type": "string"}
+    ],
+    "name": "createProfile",
+    "outputs": [{"internalType": "bytes8", "name": "profileId", "type": "bytes8"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"},
+      {"internalType": "string", "name": "metadata", "type": "string"}
+    ],
+    "name": "updateProfile",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"}
+    ],
+    "name": "getProfile",
+    "outputs": [
+      {
+        "components": [
+          {"internalType": "bytes8", "name": "profileId", "type": "bytes8"},
+          {"internalType": "address", "name": "owner", "type": "address"},
+          {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+          {"internalType": "string", "name": "metadata", "type": "string"},
+          {"internalType": "uint256", "name": "createdAt", "type": "uint256"},
+          {"internalType": "uint256", "name": "updatedAt", "type": "uint256"},
+          {"internalType": "bool", "name": "active", "type": "bool"},
+          {"internalType": "bool", "name": "verified", "type": "bool"}
+        ],
+        "internalType": "struct IIdentity.Profile",
+        "name": "profile",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "address", "name": "owner", "type": "address"},
+      {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"}
+    ],
+    "name": "getProfileByOwner",
+    "outputs": [
+      {
+        "components": [
+          {"internalType": "bytes8", "name": "profileId", "type": "bytes8"},
+          {"internalType": "address", "name": "owner", "type": "address"},
+          {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+          {"internalType": "string", "name": "metadata", "type": "string"},
+          {"internalType": "uint256", "name": "createdAt", "type": "uint256"},
+          {"internalType": "uint256", "name": "updatedAt", "type": "uint256"},
+          {"internalType": "bool", "name": "active", "type": "bool"},
+          {"internalType": "bool", "name": "verified", "type": "bool"}
+        ],
+        "internalType": "struct IIdentity.Profile",
+        "name": "profile",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"}
+    ],
+    "name": "profileExists",
+    "outputs": [{"internalType": "bool", "name": "exists", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"}
+    ],
+    "name": "getProfilesByOrganization",
+    "outputs": [{"internalType": "bytes8[]", "name": "profileIds", "type": "bytes8[]"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getProfileCount",
+    "outputs": [{"internalType": "uint256", "name": "count", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"},
+      {"internalType": "uint8", "name": "level", "type": "uint8"}
+    ],
+    "name": "verifyProfile",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "profileId", "type": "bytes8"}
+    ],
+    "name": "getVerificationLevel",
+    "outputs": [{"internalType": "uint8", "name": "level", "type": "uint8"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  // Name claiming functions
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "name", "type": "bytes8"},
+      {"internalType": "uint256", "name": "stakeAmount", "type": "uint256"},
+      {"internalType": "uint256", "name": "stakeDuration", "type": "uint256"},
+      {"internalType": "uint8", "name": "nameType", "type": "uint8"}
+    ],
+    "name": "claimName",
+    "outputs": [{"internalType": "bool", "name": "success", "type": "bool"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "name", "type": "bytes8"}
+    ],
+    "name": "releaseName",
+    "outputs": [{"internalType": "uint256", "name": "stakeAmount", "type": "uint256"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "name", "type": "bytes8"}
+    ],
+    "name": "isNameAvailable",
+    "outputs": [{"internalType": "bool", "name": "available", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "name", "type": "bytes8"}
+    ],
+    "name": "getNameClaim",
+    "outputs": [
+      {
+        "components": [
+          {"internalType": "bytes8", "name": "name", "type": "bytes8"},
+          {"internalType": "address", "name": "owner", "type": "address"},
+          {"internalType": "uint256", "name": "stakeAmount", "type": "uint256"},
+          {"internalType": "uint256", "name": "stakeDuration", "type": "uint256"},
+          {"internalType": "uint256", "name": "claimedAt", "type": "uint256"},
+          {"internalType": "uint256", "name": "expiresAt", "type": "uint256"},
+          {"internalType": "bool", "name": "isActive", "type": "bool"},
+          {"internalType": "uint8", "name": "nameType", "type": "uint8"}
+        ],
+        "internalType": "struct IIdentity.NameClaim",
+        "name": "claim",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "address", "name": "owner", "type": "address"}
+    ],
+    "name": "getNamesOwnedBy",
+    "outputs": [{"internalType": "bytes8[]", "name": "names", "type": "bytes8[]"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "name", "type": "bytes8"}
+    ],
+    "name": "validateNameFormat",
+    "outputs": [{"internalType": "bool", "name": "valid", "type": "bool"}],
+    "stateMutability": "pure",
+    "type": "function"
+  }
+] as const
+
 export const ABIS = {
   REGISTRY: REGISTRY_ABI as Abi,
   CONTROL: CONTROL_ABI as Abi,
@@ -785,6 +1137,7 @@ export const ABIS = {
   STAKING: STAKING_ABI as Abi,
   GAME_TOKEN: GAME_TOKEN_ABI as Abi,
   USDC: USDC_ABI as Abi,
+  IDENTITY: IDENTITY_ABI as Abi,
 } as const
 
 // Type exports for better TypeScript support
@@ -796,3 +1149,4 @@ export type SenseABI = typeof SENSE_ABI
 export type StakingABI = typeof STAKING_ABI
 export type GameTokenABI = typeof GAME_TOKEN_ABI
 export type UsdcABI = typeof USDC_ABI
+export type IdentityABI = typeof IDENTITY_ABI

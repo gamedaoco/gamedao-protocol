@@ -53,7 +53,7 @@ export default function CreateOrganizationPage() {
     feeModel: '0',
     memberLimit: '20',
     membershipFee: '0',
-    stakeAmount: '1000'
+    stakeAmount: '10000'
   })
 
   const [profileImage, setProfileImage] = useState<File | null>(null)
@@ -628,12 +628,12 @@ export default function CreateOrganizationPage() {
                     type="number"
                     value={formData.stakeAmount}
                     onChange={(e) => handleInputChange('stakeAmount', e.target.value)}
-                    placeholder="1000"
-                    min="100"
+                    placeholder="10000"
+                    min="10000"
                     required
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    Minimum 100 GAME tokens required to create an organization
+                    Minimum 10000 GAME tokens required to create an organization
                   </p>
                 </div>
               </CardContent>

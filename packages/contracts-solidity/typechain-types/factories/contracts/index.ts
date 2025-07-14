@@ -8,3 +8,4 @@ export * as mocks from "./mocks";
 export * as modules from "./modules";
 export * as staking from "./staking";
 export * as test from "./test";
+export * as tokens from "./tokens";

@@ -6,16 +6,15 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../core/GameDAOModule.sol";
 import "../../interfaces/IIdentity.sol";
 import "../../interfaces/IControl.sol";
-import "../../libraries/GameId.sol";
+import "../../libraries/AlphanumericID.sol";
 
 /**
  * @title Identity
  * @dev GameDAO Identity Module - User Identity & Profile Management
- * @notice Provides user identity management, profile creation, name claiming, and verification using hierarchical IDs
+ * @notice Provides user identity management, profile creation, name claiming, and verification using 8-byte alphanumeric IDs
  */
 contract Identity is GameDAOModule, IIdentity {
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    using GameId for bytes8;
 
     // =============================================================
     // CONSTANTS
@@ -31,15 +30,22 @@ contract Identity is GameDAOModule, IIdentity {
     uint256 public constant MAX_STAKE_DURATION = 365 days;
     uint256 public constant NAME_LENGTH = 8;
 
+    // Constants
+    bytes32 public constant MODULE_ID = keccak256("IDENTITY");
+    bytes32 private constant CONTROL_MODULE_ID = keccak256("CONTROL");
+    uint256 public constant MAX_PROFILE_LIMIT = 1000000;
+    uint256 public constant MAX_NAME_LENGTH = 32;
+
     // =============================================================
     // STATE VARIABLES
     // =============================================================
 
-    // Profile storage
-    mapping(string => Profile) private _profiles;                           // profileId -> Profile
-    mapping(address => mapping(bytes8 => string)) private _ownerToProfile;  // owner -> orgId -> profileId
+    // Profile storage with simplified 8-byte IDs
+    mapping(bytes8 => Profile) private _profiles;                           // profileId -> Profile
+    mapping(address => mapping(bytes8 => bytes8)) private _ownerToProfile;  // owner -> orgId -> profileId
     EnumerableSet.Bytes32Set private _allProfiles;                          // All profile IDs (as bytes32)
     mapping(bytes8 => EnumerableSet.Bytes32Set) private _organizationProfiles; // orgId -> profileIds
+    mapping(bytes32 => bytes8) private _hashToProfileId;                    // hash -> profileId for reverse lookup
 
     // Name claiming system
     mapping(bytes8 => address) private _nameOwners;         // name -> owner
@@ -49,7 +55,7 @@ contract Identity is GameDAOModule, IIdentity {
     mapping(bytes8 => NameClaim) private _nameClaims;       // name -> claim details
 
     // Verification storage
-    mapping(string => VerificationLevel) private _verificationLevels;
+    mapping(bytes8 => VerificationLevel) private _verificationLevels;
 
     // Counters
     uint256 private _profileCounter;
@@ -89,45 +95,61 @@ contract Identity is GameDAOModule, IIdentity {
     // =============================================================
 
     /**
-     * @dev Create a new user profile with hierarchical ID
+     * @dev Create a new user profile
+     * @param organizationId Organization ID (can be 0x0000000000000000 for individual profiles)
+     * @param metadata IPFS hash or JSON metadata for the profile
+     * @return profileId The generated profile ID
      */
     function createProfile(bytes8 organizationId, string memory metadata)
         external
         override
         onlyInitialized
         whenNotPaused
-        returns (string memory profileId)
+        nonReentrant
+        returns (bytes8)
     {
-        // Validate organization exists
-        _validateOrganization(organizationId);
-
-        // Check if profile already exists for this owner and organization
-        string memory existingProfileId = _ownerToProfile[_msgSender()][organizationId];
-        if (bytes(existingProfileId).length != 0) {
-            revert ProfileAlreadyExists(_msgSender(), organizationId);
+        // Check if organization exists (skip check for individual profiles with zero org ID)
+        if (organizationId != 0x0000000000000000) {
+            IControl control = IControl(getRegistry().getModule(keccak256("CONTROL")));
+            require(control.isOrganizationActive(organizationId), "Organization not active");
         }
 
-        // Generate hierarchical profile ID using GameId library
-        profileId = _generateProfileId(organizationId, _msgSender());
+        // Check if user already has a profile in this organization/individual context
+        require(
+            _ownerToProfile[msg.sender][organizationId] == 0x0000000000000000,
+            "Profile already exists for this user in this context"
+        );
+
+        // Generate unique profile ID
+        bytes8 profileId = _generateProfileId(organizationId, msg.sender);
 
         // Create profile
-        Profile storage profile = _profiles[profileId];
-        profile.profileId = profileId;
-        profile.owner = _msgSender();
-        profile.organizationId = organizationId;
-        profile.metadata = metadata;
-        profile.createdAt = block.timestamp;
-        profile.updatedAt = block.timestamp;
-        profile.active = true;
-        profile.verified = false;
+        Profile memory newProfile = Profile({
+            profileId: profileId,
+            owner: msg.sender,
+            organizationId: organizationId,
+            metadata: metadata,
+            createdAt: block.timestamp,
+            updatedAt: block.timestamp,
+            active: true,
+            verified: false
+        });
 
-        // Add to tracking sets
-        bytes32 profileIdHash = keccak256(bytes(profileId));
-        _allProfiles.add(profileIdHash);
-        _organizationProfiles[organizationId].add(profileIdHash);
-        _ownerToProfile[_msgSender()][organizationId] = profileId;
+        // Store profile
+        _profiles[profileId] = newProfile;
+        _ownerToProfile[msg.sender][organizationId] = profileId;
 
-        emit ProfileCreated(profileId, _msgSender(), organizationId, metadata, block.timestamp);
+        // Add to sets for enumeration
+        bytes32 profileHash = bytes32(profileId);
+        _allProfiles.add(profileHash);
+        _hashToProfileId[profileHash] = profileId;
+
+        // Add to organization profiles if not individual
+        if (organizationId != 0x0000000000000000) {
+            _organizationProfiles[organizationId].add(profileHash);
+        }
+
+        emit ProfileCreated(profileId, msg.sender, organizationId, metadata, block.timestamp);
 
         return profileId;
     }
@@ -135,7 +157,7 @@ contract Identity is GameDAOModule, IIdentity {
     /**
      * @dev Update an existing profile
      */
-    function updateProfile(string memory profileId, string memory metadata)
+    function updateProfile(bytes8 profileId, string memory metadata)
         external
         override
         onlyInitialized
@@ -156,7 +178,7 @@ contract Identity is GameDAOModule, IIdentity {
     /**
      * @dev Get profile information
      */
-    function getProfile(string memory profileId) external view override returns (Profile memory profile) {
+    function getProfile(bytes8 profileId) external view override returns (Profile memory profile) {
         profile = _profiles[profileId];
         if (profile.owner == address(0)) revert ProfileNotFound(profileId);
         return profile;
@@ -171,15 +193,15 @@ contract Identity is GameDAOModule, IIdentity {
         override
         returns (Profile memory profile)
     {
-        string memory profileId = _ownerToProfile[owner][organizationId];
-        if (bytes(profileId).length == 0) revert ProfileNotFound(profileId);
+        bytes8 profileId = _ownerToProfile[owner][organizationId];
+        if (profileId == 0) revert ProfileNotFound(profileId);
         return _profiles[profileId];
     }
 
     /**
      * @dev Check if a profile exists
      */
-    function profileExists(string memory profileId) external view override returns (bool exists) {
+    function profileExists(bytes8 profileId) external view override returns (bool exists) {
         return _profiles[profileId].owner != address(0);
     }
 
@@ -190,17 +212,13 @@ contract Identity is GameDAOModule, IIdentity {
         external
         view
         override
-        returns (string[] memory profileIds)
+        returns (bytes8[] memory profileIds)
     {
         bytes32[] memory profileHashes = _organizationProfiles[organizationId].values();
-        profileIds = new string[](profileHashes.length);
+        profileIds = new bytes8[](profileHashes.length);
 
         for (uint256 i = 0; i < profileHashes.length; i++) {
-            // Find the profile ID that matches this hash
-            // This is a simplified approach - in production, consider maintaining a reverse mapping
-            bytes32 targetHash = profileHashes[i];
-            // For now, we'll need to iterate through profiles to find matches
-            // This can be optimized with additional mappings if needed
+            profileIds[i] = _hashToProfileId[profileHashes[i]];
         }
 
         return profileIds;
@@ -220,7 +238,7 @@ contract Identity is GameDAOModule, IIdentity {
     /**
      * @dev Verify a profile
      */
-    function verifyProfile(string memory profileId, VerificationLevel level)
+    function verifyProfile(bytes8 profileId, VerificationLevel level)
         external
         override
         onlyRole(VERIFIER_ROLE)
@@ -239,7 +257,7 @@ contract Identity is GameDAOModule, IIdentity {
     /**
      * @dev Get verification level for a profile
      */
-    function getVerificationLevel(string memory profileId) external view override returns (VerificationLevel level) {
+    function getVerificationLevel(bytes8 profileId) external view override returns (VerificationLevel level) {
         if (_profiles[profileId].owner == address(0)) revert ProfileNotFound(profileId);
         return _verificationLevels[profileId];
     }
@@ -434,15 +452,16 @@ contract Identity is GameDAOModule, IIdentity {
     }
 
     /**
-     * @dev Generate hierarchical profile ID using GameId library
+     * @dev Generate 8-byte alphanumeric profile ID using AlphanumericID library
      */
-    function _generateProfileId(bytes8 organizationId, address user) internal view returns (string memory) {
-        bytes8 profileId = GameId.generateId("profile", _profileCounter);
-        return string(abi.encodePacked(
+    function _generateProfileId(bytes8 organizationId, address user) internal returns (bytes8) {
+        _profileCounter++;
+        return AlphanumericID.generateProfileID(
+            user,
             organizationId,
-            "-U-",
-            profileId
-        ));
+            block.timestamp,
+            _profileCounter
+        );
     }
 
     /**

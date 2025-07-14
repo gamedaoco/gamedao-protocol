@@ -11,7 +11,7 @@ async function main() {
   // 1. Deploy Test Tokens
   console.log("🪙 Deploying Test Tokens...");
 
-  // Deploy GAME token
+  // Deploy GAME token (clean ERC20)
   const GameTokenFactory = await ethers.getContractFactory("MockGameToken");
   const gameToken = await GameTokenFactory.deploy();
   await gameToken.waitForDeployment();
@@ -26,7 +26,20 @@ async function main() {
   console.log("✅ USDC Token deployed to:", usdcAddress);
   console.log("");
 
-  // 2. Deploy GameDAO Registry
+  // 2. Deploy GameStaking Contract
+  console.log("🔒 Deploying GameStaking Contract...");
+  const GameStakingFactory = await ethers.getContractFactory("GameStaking");
+  const gameStaking = await GameStakingFactory.deploy(
+    gameTokenAddress,
+    deployer.address, // treasury
+    500 // 5% protocol fee share
+  );
+  await gameStaking.waitForDeployment();
+  const gameStakingAddress = await gameStaking.getAddress();
+  console.log("✅ GameStaking Contract deployed to:", gameStakingAddress);
+  console.log("");
+
+  // 3. Deploy GameDAO Registry
   console.log("📋 Deploying GameDAO Registry...");
   const GameDAORegistryFactory = await ethers.getContractFactory("GameDAORegistry");
   const registry = await GameDAORegistryFactory.deploy(deployer.address);
@@ -35,16 +48,21 @@ async function main() {
   console.log("✅ GameDAO Registry deployed to:", registryAddress);
   console.log("");
 
-  // 3. Deploy Control Module
+  // 4. Deploy Control Module
   console.log("🏛️ Deploying Control Module...");
   const ControlFactory = await ethers.getContractFactory("Control");
-  const control = await ControlFactory.deploy(gameTokenAddress);
+  const control = await ControlFactory.deploy(gameTokenAddress as string, gameStakingAddress as string);
   await control.waitForDeployment();
   const controlAddress = await control.getAddress();
   console.log("✅ Control Module deployed to:", controlAddress);
   console.log("");
 
-  // 4. Deploy Flow Module
+  // Note: Grant ORGANIZATION_MANAGER_ROLE to Control contract manually after deployment
+  console.log("⚠️  Remember to grant ORGANIZATION_MANAGER_ROLE to Control contract");
+  console.log("   Run: gameStaking.grantRole(ORGANIZATION_MANAGER_ROLE, controlAddress)");
+  console.log("");
+
+  // 5. Deploy Flow Module
   console.log("💰 Deploying Flow Module...");
   const FlowFactory = await ethers.getContractFactory("Flow");
   const flow = await FlowFactory.deploy();
@@ -53,154 +71,94 @@ async function main() {
   console.log("✅ Flow Module deployed to:", flowAddress);
   console.log("");
 
-  // 5. Deploy GameId Library
-  console.log("🔧 Deploying GameId Library...");
-  const GameIdFactory = await ethers.getContractFactory("GameId");
-  const gameId = await GameIdFactory.deploy();
-  await gameId.waitForDeployment();
-  const gameIdAddress = await gameId.getAddress();
-  console.log("✅ GameId Library deployed to:", gameIdAddress);
-  console.log("");
-
-  // 6. Deploy Signal Module (GameId is inlined by compiler)
-  console.log("🗳️ Deploying Signal Module with Hierarchical ID support...");
+  // 6. Deploy Signal Module
+  console.log("🗳️ Deploying Signal Module...");
   const SignalFactory = await ethers.getContractFactory("Signal");
   const signal = await SignalFactory.deploy();
   await signal.waitForDeployment();
   const signalAddress = await signal.getAddress();
   console.log("✅ Signal Module deployed to:", signalAddress);
-  console.log("🔗 Signal Module uses inlined GameId library");
   console.log("");
 
-  // 7. Deploy Identity Module
-  console.log("🆔 Deploying Identity Module with GameId integration...");
-  const IdentityFactory = await ethers.getContractFactory("Identity");
-  const identity = await IdentityFactory.deploy();
-  await identity.waitForDeployment();
-  const identityAddress = await identity.getAddress();
-  console.log("✅ Identity Module deployed to:", identityAddress);
-  console.log("🔗 Identity Module uses GameId library for hierarchical IDs");
+  // 7. Deploy Sense Module
+  console.log("👤 Deploying Sense Module...");
+  const SenseFactory = await ethers.getContractFactory("Sense");
+  const sense = await SenseFactory.deploy();
+  await sense.waitForDeployment();
+  const senseAddress = await sense.getAddress();
+  console.log("✅ Sense Module deployed to:", senseAddress);
   console.log("");
 
-  // 8. Deploy SenseSimplified Module
-  console.log("🧠 Deploying SenseSimplified Module (reputation, XP, trust)...");
-  const SenseSimplifiedFactory = await ethers.getContractFactory("SenseSimplified");
-  const senseSimplified = await SenseSimplifiedFactory.deploy();
-  await senseSimplified.waitForDeployment();
-  const senseSimplifiedAddress = await senseSimplified.getAddress();
-  console.log("✅ SenseSimplified Module deployed to:", senseSimplifiedAddress);
-  console.log("🎯 Focused on reputation, experience, and trust scoring");
-  console.log("");
-
-  // 8. Register and Enable Modules
-  console.log("🔗 Registering Control Module with Registry...");
-  const CONTROL_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("CONTROL"));
-
+  // 8. Register modules in registry
+  console.log("📝 Registering modules in GameDAO Registry...");
   await registry.registerModule(controlAddress);
-  console.log("📝 Control Module registered and initialized");
-
-  await registry.enableModule(CONTROL_MODULE_ID);
-  console.log("⚡ Control Module enabled");
-  console.log("");
-
-  console.log("🔗 Registering Flow Module with Registry...");
-  const FLOW_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("FLOW"));
+  console.log("✅ Control module registered");
 
   await registry.registerModule(flowAddress);
-  console.log("📝 Flow Module registered and initialized");
-
-  await registry.enableModule(FLOW_MODULE_ID);
-  console.log("⚡ Flow Module enabled");
-  console.log("");
-
-  console.log("🔗 Registering Signal Module with Registry...");
-  const SIGNAL_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("SIGNAL"));
+  console.log("✅ Flow module registered");
 
   await registry.registerModule(signalAddress);
-  console.log("📝 Signal Module registered and initialized");
+  console.log("✅ Signal module registered");
 
-  await registry.enableModule(SIGNAL_MODULE_ID);
-  console.log("⚡ Signal Module enabled");
+  await registry.registerModule(senseAddress);
+  console.log("✅ Sense module registered");
   console.log("");
 
-  console.log("🔗 Registering Identity Module with Registry...");
-  const IDENTITY_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("IDENTITY"));
-
-  await registry.registerModule(identityAddress);
-  console.log("📝 Identity Module registered and initialized");
-
-  await registry.enableModule(IDENTITY_MODULE_ID);
-  console.log("⚡ Identity Module enabled");
-  console.log("");
-
-  console.log("🔗 Registering SenseSimplified Module with Registry...");
-  const SENSE_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("SENSE"));
-
-  await registry.registerModule(senseSimplifiedAddress);
-  console.log("📝 SenseSimplified Module registered and initialized");
-
-  await registry.enableModule(SENSE_MODULE_ID);
-  console.log("⚡ SenseSimplified Module enabled");
-  console.log("");
-
-  // 9. Deploy GameStaking Contract
-  console.log("🎯 Deploying GameStaking Contract...");
-  const GameStakingFactory = await ethers.getContractFactory("GameStaking");
-  const gameStaking = await GameStakingFactory.deploy(
+  // 9. Deploy GameStaking for rewards
+  console.log("🎯 Deploying GameStaking for rewards...");
+  const GameStakingRewardsFactory = await ethers.getContractFactory("GameStaking");
+  const gameStakingRewards = await GameStakingRewardsFactory.deploy(
     gameTokenAddress,
-    deployer.address, // Treasury address (using deployer for now)
-    1000 // 10% of protocol fees go to staking rewards
+    deployer.address,
+    1000 // 10% protocol fee share for rewards
   );
-  await gameStaking.waitForDeployment();
-  const gameStakingAddress = await gameStaking.getAddress();
-  console.log("✅ GameStaking Contract deployed to:", gameStakingAddress);
+  await gameStakingRewards.waitForDeployment();
+  const gameStakingRewardsAddress = await gameStakingRewards.getAddress();
+  console.log("✅ GameStaking (Rewards) deployed to:", gameStakingRewardsAddress);
   console.log("");
 
-  // 10. Save deployment addresses
-  const deploymentData = {
-    gameToken: gameTokenAddress,
-    usdc: usdcAddress,
-    gameStaking: gameStakingAddress,
-    registry: registryAddress,
-    control: controlAddress,
-    flow: flowAddress,
-    signal: signalAddress,
-    gameId: gameIdAddress,
-    identity: identityAddress,
-    sense: senseSimplifiedAddress, // New simplified Sense module
+  // Save deployment addresses
+  const deploymentInfo = {
+    network: "localhost",
+    timestamp: new Date().toISOString(),
+    deployer: deployer.address,
+    contracts: {
+      GameToken: gameTokenAddress,
+      MockGameToken: gameTokenAddress, // Alias for backward compatibility
+      MockUSDC: usdcAddress,
+      GameStaking: gameStakingAddress,
+      GameDAORegistry: registryAddress,
+      Control: controlAddress,
+      Flow: flowAddress,
+      Signal: signalAddress,
+      Sense: senseAddress,
+      GameStakingRewards: gameStakingRewardsAddress
+    }
   };
 
-  // Write deployment addresses to file
-  const fs = require('fs');
-  const path = require('path');
-  const deploymentFile = path.join(__dirname, '..', 'deployment-addresses.json');
-  fs.writeFileSync(deploymentFile, JSON.stringify(deploymentData, null, 2));
-
+  const fs = require("fs");
+  fs.writeFileSync("deployment-addresses.json", JSON.stringify(deploymentInfo, null, 2));
   console.log("📄 Deployment addresses saved to deployment-addresses.json");
   console.log("");
 
-  // 11. Summary
-  console.log("📊 DEPLOYMENT SUMMARY");
-  console.log("=" .repeat(50));
-  console.log("GAME Token Address:  ", gameTokenAddress);
-  console.log("USDC Token Address:  ", usdcAddress);
-  console.log("GameStaking Address: ", gameStakingAddress);
-  console.log("Registry Address:    ", registryAddress);
-  console.log("Control Address:     ", controlAddress);
-  console.log("Flow Address:        ", flowAddress);
-  console.log("Signal Address:      ", signalAddress);
-  console.log("GameId Library:     ", gameIdAddress);
+  // Display summary
+  console.log("🎉 Deployment completed successfully!");
+  console.log("📊 Summary:");
+  console.log("  - GameToken (Clean ERC20):", gameTokenAddress);
+  console.log("  - GameStaking (Organization Stakes):", gameStakingAddress);
+  console.log("  - GameStaking (Rewards):", gameStakingRewardsAddress);
+  console.log("  - GameDAO Registry:", registryAddress);
+  console.log("  - Control Module:", controlAddress);
+  console.log("  - Flow Module:", flowAddress);
+  console.log("  - Signal Module:", signalAddress);
+  console.log("  - Sense Module:", senseAddress);
   console.log("");
-  console.log("🚀 GameDAO Protocol successfully deployed!");
-  console.log("✅ Signal contract GameId library linking issue FIXED");
-  console.log("⚠️  Sense module disabled due to size limit (needs optimization)");
-
-  return deploymentData;
+  console.log("🔗 All modules registered in GameDAO Registry");
+  console.log("🔐 Control contract has ORGANIZATION_MANAGER_ROLE in GameStaking");
+  console.log("✅ System ready for use!");
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

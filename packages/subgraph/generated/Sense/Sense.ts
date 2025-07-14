@@ -10,16 +10,16 @@ import {
   BigInt
 } from "@graphprotocol/graph-ts";
 
-export class AchievementGranted extends ethereum.Event {
-  get params(): AchievementGranted__Params {
-    return new AchievementGranted__Params(this);
+export class ExperienceAwarded extends ethereum.Event {
+  get params(): ExperienceAwarded__Params {
+    return new ExperienceAwarded__Params(this);
   }
 }
 
-export class AchievementGranted__Params {
-  _event: AchievementGranted;
+export class ExperienceAwarded__Params {
+  _event: ExperienceAwarded;
 
-  constructor(event: AchievementGranted) {
+  constructor(event: ExperienceAwarded) {
     this._event = event;
   }
 
@@ -27,62 +27,54 @@ export class AchievementGranted__Params {
     return this._event.parameters[0].value.toBytes();
   }
 
-  get achievementId(): Bytes {
-    return this._event.parameters[1].value.toBytes();
+  get amount(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
   }
 
-  get name(): string {
-    return this._event.parameters[2].value.toString();
+  get reason(): Bytes {
+    return this._event.parameters[2].value.toBytes();
   }
 
-  get points(): BigInt {
-    return this._event.parameters[3].value.toBigInt();
-  }
-
-  get grantedBy(): Address {
-    return this._event.parameters[4].value.toAddress();
+  get awardedBy(): Address {
+    return this._event.parameters[3].value.toAddress();
   }
 
   get timestamp(): BigInt {
-    return this._event.parameters[5].value.toBigInt();
+    return this._event.parameters[4].value.toBigInt();
   }
 }
 
-export class FeedbackSubmitted extends ethereum.Event {
-  get params(): FeedbackSubmitted__Params {
-    return new FeedbackSubmitted__Params(this);
+export class InteractionRecorded extends ethereum.Event {
+  get params(): InteractionRecorded__Params {
+    return new InteractionRecorded__Params(this);
   }
 }
 
-export class FeedbackSubmitted__Params {
-  _event: FeedbackSubmitted;
+export class InteractionRecorded__Params {
+  _event: InteractionRecorded;
 
-  constructor(event: FeedbackSubmitted) {
+  constructor(event: InteractionRecorded) {
     this._event = event;
   }
 
-  get feedbackId(): Bytes {
+  get profileId(): Bytes {
     return this._event.parameters[0].value.toBytes();
   }
 
-  get targetProfileId(): Bytes {
-    return this._event.parameters[1].value.toBytes();
+  get positive(): boolean {
+    return this._event.parameters[1].value.toBoolean();
   }
 
-  get giver(): Address {
-    return this._event.parameters[2].value.toAddress();
+  get reason(): Bytes {
+    return this._event.parameters[2].value.toBytes();
   }
 
-  get feedbackType(): i32 {
-    return this._event.parameters[3].value.toI32();
-  }
-
-  get rating(): i32 {
-    return this._event.parameters[4].value.toI32();
+  get recordedBy(): Address {
+    return this._event.parameters[3].value.toAddress();
   }
 
   get timestamp(): BigInt {
-    return this._event.parameters[5].value.toBigInt();
+    return this._event.parameters[4].value.toBigInt();
   }
 }
 
@@ -150,156 +142,6 @@ export class Paused__Params {
   }
 }
 
-export class ProfileCreated extends ethereum.Event {
-  get params(): ProfileCreated__Params {
-    return new ProfileCreated__Params(this);
-  }
-}
-
-export class ProfileCreated__Params {
-  _event: ProfileCreated;
-
-  constructor(event: ProfileCreated) {
-    this._event = event;
-  }
-
-  get profileId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get owner(): Address {
-    return this._event.parameters[1].value.toAddress();
-  }
-
-  get organizationId(): Bytes {
-    return this._event.parameters[2].value.toBytes();
-  }
-
-  get metadata(): string {
-    return this._event.parameters[3].value.toString();
-  }
-
-  get timestamp(): BigInt {
-    return this._event.parameters[4].value.toBigInt();
-  }
-}
-
-export class ProfileUpdated extends ethereum.Event {
-  get params(): ProfileUpdated__Params {
-    return new ProfileUpdated__Params(this);
-  }
-}
-
-export class ProfileUpdated__Params {
-  _event: ProfileUpdated;
-
-  constructor(event: ProfileUpdated) {
-    this._event = event;
-  }
-
-  get profileId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get metadata(): string {
-    return this._event.parameters[1].value.toString();
-  }
-
-  get timestamp(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
-  }
-}
-
-export class ProfileVerified extends ethereum.Event {
-  get params(): ProfileVerified__Params {
-    return new ProfileVerified__Params(this);
-  }
-}
-
-export class ProfileVerified__Params {
-  _event: ProfileVerified;
-
-  constructor(event: ProfileVerified) {
-    this._event = event;
-  }
-
-  get profileId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get level(): i32 {
-    return this._event.parameters[1].value.toI32();
-  }
-
-  get verifier(): Address {
-    return this._event.parameters[2].value.toAddress();
-  }
-
-  get timestamp(): BigInt {
-    return this._event.parameters[3].value.toBigInt();
-  }
-}
-
-export class ReputationExported extends ethereum.Event {
-  get params(): ReputationExported__Params {
-    return new ReputationExported__Params(this);
-  }
-}
-
-export class ReputationExported__Params {
-  _event: ReputationExported;
-
-  constructor(event: ReputationExported) {
-    this._event = event;
-  }
-
-  get profileId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get targetOrganizationId(): Bytes {
-    return this._event.parameters[1].value.toBytes();
-  }
-
-  get merkleRoot(): Bytes {
-    return this._event.parameters[2].value.toBytes();
-  }
-
-  get timestamp(): BigInt {
-    return this._event.parameters[3].value.toBigInt();
-  }
-}
-
-export class ReputationImported extends ethereum.Event {
-  get params(): ReputationImported__Params {
-    return new ReputationImported__Params(this);
-  }
-}
-
-export class ReputationImported__Params {
-  _event: ReputationImported;
-
-  constructor(event: ReputationImported) {
-    this._event = event;
-  }
-
-  get profileId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get sourceOrganizationId(): Bytes {
-    return this._event.parameters[1].value.toBytes();
-  }
-
-  get importedReputation(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
-  }
-
-  get timestamp(): BigInt {
-    return this._event.parameters[3].value.toBigInt();
-  }
-}
-
 export class ReputationUpdated extends ethereum.Event {
   get params(): ReputationUpdated__Params {
     return new ReputationUpdated__Params(this);
@@ -333,12 +175,8 @@ export class ReputationUpdated__Params {
     return this._event.parameters[4].value.toAddress();
   }
 
-  get newValue(): BigInt {
-    return this._event.parameters[5].value.toBigInt();
-  }
-
   get timestamp(): BigInt {
-    return this._event.parameters[6].value.toBigInt();
+    return this._event.parameters[5].value.toBigInt();
   }
 }
 
@@ -438,342 +276,6 @@ export class Unpaused__Params {
   }
 }
 
-export class Sense__exportReputationResultExportDataStruct extends ethereum.Tuple {
-  get sourceProfileId(): Bytes {
-    return this[0].toBytes();
-  }
-
-  get owner(): Address {
-    return this[1].toAddress();
-  }
-
-  get sourceOrganizationId(): Bytes {
-    return this[2].toBytes();
-  }
-
-  get reputation(): Sense__exportReputationResultExportDataReputationStruct {
-    return changetype<Sense__exportReputationResultExportDataReputationStruct>(
-      this[3].toTuple()
-    );
-  }
-
-  get achievements(): Array<
-    Sense__exportReputationResultExportDataAchievementsStruct
-  > {
-    return this[4].toTupleArray<
-      Sense__exportReputationResultExportDataAchievementsStruct
-    >();
-  }
-
-  get feedbackSummary(): Sense__exportReputationResultExportDataFeedbackSummaryStruct {
-    return changetype<
-      Sense__exportReputationResultExportDataFeedbackSummaryStruct
-    >(this[5].toTuple());
-  }
-
-  get exportedAt(): BigInt {
-    return this[6].toBigInt();
-  }
-
-  get merkleRoot(): Bytes {
-    return this[7].toBytes();
-  }
-}
-
-export class Sense__exportReputationResultExportDataReputationStruct extends ethereum.Tuple {
-  get experience(): BigInt {
-    return this[0].toBigInt();
-  }
-
-  get reputation(): BigInt {
-    return this[1].toBigInt();
-  }
-
-  get trust(): BigInt {
-    return this[2].toBigInt();
-  }
-
-  get lastUpdated(): BigInt {
-    return this[3].toBigInt();
-  }
-
-  get totalFeedbacks(): BigInt {
-    return this[4].toBigInt();
-  }
-
-  get positiveFeedbacks(): BigInt {
-    return this[5].toBigInt();
-  }
-}
-
-export class Sense__exportReputationResultExportDataAchievementsStruct extends ethereum.Tuple {
-  get achievementId(): Bytes {
-    return this[0].toBytes();
-  }
-
-  get profileId(): Bytes {
-    return this[1].toBytes();
-  }
-
-  get name(): string {
-    return this[2].toString();
-  }
-
-  get description(): string {
-    return this[3].toString();
-  }
-
-  get category(): string {
-    return this[4].toString();
-  }
-
-  get data(): Bytes {
-    return this[5].toBytes();
-  }
-
-  get earnedAt(): BigInt {
-    return this[6].toBigInt();
-  }
-
-  get grantedBy(): Address {
-    return this[7].toAddress();
-  }
-
-  get points(): BigInt {
-    return this[8].toBigInt();
-  }
-}
-
-export class Sense__exportReputationResultExportDataFeedbackSummaryStruct extends ethereum.Tuple {
-  get totalFeedbacks(): BigInt {
-    return this[0].toBigInt();
-  }
-
-  get positiveFeedbacks(): BigInt {
-    return this[1].toBigInt();
-  }
-
-  get negativeFeedbacks(): BigInt {
-    return this[2].toBigInt();
-  }
-
-  get neutralFeedbacks(): BigInt {
-    return this[3].toBigInt();
-  }
-
-  get averageRating(): BigInt {
-    return this[4].toBigInt();
-  }
-
-  get trustScore(): BigInt {
-    return this[5].toBigInt();
-  }
-}
-
-export class Sense__getAchievementsResultAchievementsStruct extends ethereum.Tuple {
-  get achievementId(): Bytes {
-    return this[0].toBytes();
-  }
-
-  get profileId(): Bytes {
-    return this[1].toBytes();
-  }
-
-  get name(): string {
-    return this[2].toString();
-  }
-
-  get description(): string {
-    return this[3].toString();
-  }
-
-  get category(): string {
-    return this[4].toString();
-  }
-
-  get data(): Bytes {
-    return this[5].toBytes();
-  }
-
-  get earnedAt(): BigInt {
-    return this[6].toBigInt();
-  }
-
-  get grantedBy(): Address {
-    return this[7].toAddress();
-  }
-
-  get points(): BigInt {
-    return this[8].toBigInt();
-  }
-}
-
-export class Sense__getAchievementsByCategoryResultAchievementsStruct extends ethereum.Tuple {
-  get achievementId(): Bytes {
-    return this[0].toBytes();
-  }
-
-  get profileId(): Bytes {
-    return this[1].toBytes();
-  }
-
-  get name(): string {
-    return this[2].toString();
-  }
-
-  get description(): string {
-    return this[3].toString();
-  }
-
-  get category(): string {
-    return this[4].toString();
-  }
-
-  get data(): Bytes {
-    return this[5].toBytes();
-  }
-
-  get earnedAt(): BigInt {
-    return this[6].toBigInt();
-  }
-
-  get grantedBy(): Address {
-    return this[7].toAddress();
-  }
-
-  get points(): BigInt {
-    return this[8].toBigInt();
-  }
-}
-
-export class Sense__getFeedbackSummaryResultSummaryStruct extends ethereum.Tuple {
-  get totalFeedbacks(): BigInt {
-    return this[0].toBigInt();
-  }
-
-  get positiveFeedbacks(): BigInt {
-    return this[1].toBigInt();
-  }
-
-  get negativeFeedbacks(): BigInt {
-    return this[2].toBigInt();
-  }
-
-  get neutralFeedbacks(): BigInt {
-    return this[3].toBigInt();
-  }
-
-  get averageRating(): BigInt {
-    return this[4].toBigInt();
-  }
-
-  get trustScore(): BigInt {
-    return this[5].toBigInt();
-  }
-}
-
-export class Sense__getFeedbacksResultFeedbacksStruct extends ethereum.Tuple {
-  get feedbackId(): Bytes {
-    return this[0].toBytes();
-  }
-
-  get targetProfileId(): Bytes {
-    return this[1].toBytes();
-  }
-
-  get giver(): Address {
-    return this[2].toAddress();
-  }
-
-  get feedbackType(): i32 {
-    return this[3].toI32();
-  }
-
-  get rating(): i32 {
-    return this[4].toI32();
-  }
-
-  get comment(): string {
-    return this[5].toString();
-  }
-
-  get timestamp(): BigInt {
-    return this[6].toBigInt();
-  }
-
-  get verified(): boolean {
-    return this[7].toBoolean();
-  }
-}
-
-export class Sense__getProfileResultProfileStruct extends ethereum.Tuple {
-  get profileId(): Bytes {
-    return this[0].toBytes();
-  }
-
-  get owner(): Address {
-    return this[1].toAddress();
-  }
-
-  get organizationId(): Bytes {
-    return this[2].toBytes();
-  }
-
-  get metadata(): string {
-    return this[3].toString();
-  }
-
-  get createdAt(): BigInt {
-    return this[4].toBigInt();
-  }
-
-  get updatedAt(): BigInt {
-    return this[5].toBigInt();
-  }
-
-  get active(): boolean {
-    return this[6].toBoolean();
-  }
-
-  get verified(): boolean {
-    return this[7].toBoolean();
-  }
-}
-
-export class Sense__getProfileByOwnerResultProfileStruct extends ethereum.Tuple {
-  get profileId(): Bytes {
-    return this[0].toBytes();
-  }
-
-  get owner(): Address {
-    return this[1].toAddress();
-  }
-
-  get organizationId(): Bytes {
-    return this[2].toBytes();
-  }
-
-  get metadata(): string {
-    return this[3].toString();
-  }
-
-  get createdAt(): BigInt {
-    return this[4].toBigInt();
-  }
-
-  get updatedAt(): BigInt {
-    return this[5].toBigInt();
-  }
-
-  get active(): boolean {
-    return this[6].toBoolean();
-  }
-
-  get verified(): boolean {
-    return this[7].toBoolean();
-  }
-}
-
 export class Sense__getReputationResultReputationStruct extends ethereum.Tuple {
   get experience(): BigInt {
     return this[0].toBigInt();
@@ -791,11 +293,37 @@ export class Sense__getReputationResultReputationStruct extends ethereum.Tuple {
     return this[3].toBigInt();
   }
 
-  get totalFeedbacks(): BigInt {
+  get totalInteractions(): BigInt {
     return this[4].toBigInt();
   }
 
-  get positiveFeedbacks(): BigInt {
+  get positiveInteractions(): BigInt {
+    return this[5].toBigInt();
+  }
+}
+
+export class Sense__getReputationBatchResultReputationsStruct extends ethereum.Tuple {
+  get experience(): BigInt {
+    return this[0].toBigInt();
+  }
+
+  get reputation(): BigInt {
+    return this[1].toBigInt();
+  }
+
+  get trust(): BigInt {
+    return this[2].toBigInt();
+  }
+
+  get lastUpdated(): BigInt {
+    return this[3].toBigInt();
+  }
+
+  get totalInteractions(): BigInt {
+    return this[4].toBigInt();
+  }
+
+  get positiveInteractions(): BigInt {
     return this[5].toBigInt();
   }
 }
@@ -824,38 +352,11 @@ export class Sense__getReputationHistoryResultEventsStruct extends ethereum.Tupl
   get timestamp(): BigInt {
     return this[5].toBigInt();
   }
-
-  get blockNumber(): BigInt {
-    return this[6].toBigInt();
-  }
 }
 
 export class Sense extends ethereum.SmartContract {
   static bind(address: Address): Sense {
     return new Sense("Sense", address);
-  }
-
-  ACHIEVEMENT_GRANTER_ROLE(): Bytes {
-    let result = super.call(
-      "ACHIEVEMENT_GRANTER_ROLE",
-      "ACHIEVEMENT_GRANTER_ROLE():(bytes32)",
-      []
-    );
-
-    return result[0].toBytes();
-  }
-
-  try_ACHIEVEMENT_GRANTER_ROLE(): ethereum.CallResult<Bytes> {
-    let result = super.tryCall(
-      "ACHIEVEMENT_GRANTER_ROLE",
-      "ACHIEVEMENT_GRANTER_ROLE():(bytes32)",
-      []
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
   ADMIN_ROLE(): Bytes {
@@ -896,52 +397,6 @@ export class Sense extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
-  MAX_FEEDBACKS_PER_QUERY(): BigInt {
-    let result = super.call(
-      "MAX_FEEDBACKS_PER_QUERY",
-      "MAX_FEEDBACKS_PER_QUERY():(uint256)",
-      []
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_MAX_FEEDBACKS_PER_QUERY(): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "MAX_FEEDBACKS_PER_QUERY",
-      "MAX_FEEDBACKS_PER_QUERY():(uint256)",
-      []
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  MAX_FEEDBACK_RATING(): BigInt {
-    let result = super.call(
-      "MAX_FEEDBACK_RATING",
-      "MAX_FEEDBACK_RATING():(uint256)",
-      []
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_MAX_FEEDBACK_RATING(): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "MAX_FEEDBACK_RATING",
-      "MAX_FEEDBACK_RATING():(uint256)",
-      []
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
   MAX_REPUTATION_DELTA(): BigInt {
     let result = super.call(
       "MAX_REPUTATION_DELTA",
@@ -956,29 +411,6 @@ export class Sense extends ethereum.SmartContract {
     let result = super.tryCall(
       "MAX_REPUTATION_DELTA",
       "MAX_REPUTATION_DELTA():(uint256)",
-      []
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  MIN_FEEDBACK_RATING(): BigInt {
-    let result = super.call(
-      "MIN_FEEDBACK_RATING",
-      "MIN_FEEDBACK_RATING():(uint256)",
-      []
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_MIN_FEEDBACK_RATING(): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "MIN_FEEDBACK_RATING",
-      "MIN_FEEDBACK_RATING():(uint256)",
       []
     );
     if (result.reverted) {
@@ -1099,29 +531,10 @@ export class Sense extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  VERIFIER_ROLE(): Bytes {
-    let result = super.call("VERIFIER_ROLE", "VERIFIER_ROLE():(bytes32)", []);
-
-    return result[0].toBytes();
-  }
-
-  try_VERIFIER_ROLE(): ethereum.CallResult<Bytes> {
-    let result = super.tryCall(
-      "VERIFIER_ROLE",
-      "VERIFIER_ROLE():(bytes32)",
-      []
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBytes());
-  }
-
   calculateTrustScore(profileId: Bytes): BigInt {
     let result = super.call(
       "calculateTrustScore",
-      "calculateTrustScore(bytes32):(uint256)",
+      "calculateTrustScore(bytes8):(uint256)",
       [ethereum.Value.fromFixedBytes(profileId)]
     );
 
@@ -1131,7 +544,7 @@ export class Sense extends ethereum.SmartContract {
   try_calculateTrustScore(profileId: Bytes): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "calculateTrustScore",
-      "calculateTrustScore(bytes32):(uint256)",
+      "calculateTrustScore(bytes8):(uint256)",
       [ethereum.Value.fromFixedBytes(profileId)]
     );
     if (result.reverted) {
@@ -1144,7 +557,7 @@ export class Sense extends ethereum.SmartContract {
   calculateVotingWeight(profileId: Bytes, baseWeight: BigInt): BigInt {
     let result = super.call(
       "calculateVotingWeight",
-      "calculateVotingWeight(bytes32,uint256):(uint256)",
+      "calculateVotingWeight(bytes8,uint256):(uint256)",
       [
         ethereum.Value.fromFixedBytes(profileId),
         ethereum.Value.fromUnsignedBigInt(baseWeight)
@@ -1160,7 +573,7 @@ export class Sense extends ethereum.SmartContract {
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "calculateVotingWeight",
-      "calculateVotingWeight(bytes32,uint256):(uint256)",
+      "calculateVotingWeight(bytes8,uint256):(uint256)",
       [
         ethereum.Value.fromFixedBytes(profileId),
         ethereum.Value.fromUnsignedBigInt(baseWeight)
@@ -1173,375 +586,33 @@ export class Sense extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  createProfile(organizationId: Bytes, metadata: string): Bytes {
+  getExperience(profileId: Bytes): BigInt {
     let result = super.call(
-      "createProfile",
-      "createProfile(bytes8,string):(bytes32)",
-      [
-        ethereum.Value.fromFixedBytes(organizationId),
-        ethereum.Value.fromString(metadata)
-      ]
-    );
-
-    return result[0].toBytes();
-  }
-
-  try_createProfile(
-    organizationId: Bytes,
-    metadata: string
-  ): ethereum.CallResult<Bytes> {
-    let result = super.tryCall(
-      "createProfile",
-      "createProfile(bytes8,string):(bytes32)",
-      [
-        ethereum.Value.fromFixedBytes(organizationId),
-        ethereum.Value.fromString(metadata)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBytes());
-  }
-
-  exportReputation(
-    profileId: Bytes
-  ): Sense__exportReputationResultExportDataStruct {
-    let result = super.call(
-      "exportReputation",
-      "exportReputation(bytes32):((bytes32,address,bytes8,(uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,bytes32,string,string,string,bytes,uint256,address,uint256)[],(uint256,uint256,uint256,uint256,uint256,uint256),uint256,bytes32))",
+      "getExperience",
+      "getExperience(bytes8):(uint256)",
       [ethereum.Value.fromFixedBytes(profileId)]
-    );
-
-    return changetype<Sense__exportReputationResultExportDataStruct>(
-      result[0].toTuple()
-    );
-  }
-
-  try_exportReputation(
-    profileId: Bytes
-  ): ethereum.CallResult<Sense__exportReputationResultExportDataStruct> {
-    let result = super.tryCall(
-      "exportReputation",
-      "exportReputation(bytes32):((bytes32,address,bytes8,(uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,bytes32,string,string,string,bytes,uint256,address,uint256)[],(uint256,uint256,uint256,uint256,uint256,uint256),uint256,bytes32))",
-      [ethereum.Value.fromFixedBytes(profileId)]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(
-      changetype<Sense__exportReputationResultExportDataStruct>(
-        value[0].toTuple()
-      )
-    );
-  }
-
-  getAchievements(
-    profileId: Bytes
-  ): Array<Sense__getAchievementsResultAchievementsStruct> {
-    let result = super.call(
-      "getAchievements",
-      "getAchievements(bytes32):((bytes32,bytes32,string,string,string,bytes,uint256,address,uint256)[])",
-      [ethereum.Value.fromFixedBytes(profileId)]
-    );
-
-    return result[0].toTupleArray<
-      Sense__getAchievementsResultAchievementsStruct
-    >();
-  }
-
-  try_getAchievements(
-    profileId: Bytes
-  ): ethereum.CallResult<
-    Array<Sense__getAchievementsResultAchievementsStruct>
-  > {
-    let result = super.tryCall(
-      "getAchievements",
-      "getAchievements(bytes32):((bytes32,bytes32,string,string,string,bytes,uint256,address,uint256)[])",
-      [ethereum.Value.fromFixedBytes(profileId)]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(
-      value[0].toTupleArray<Sense__getAchievementsResultAchievementsStruct>()
-    );
-  }
-
-  getAchievementsByCategory(
-    profileId: Bytes,
-    category: string
-  ): Array<Sense__getAchievementsByCategoryResultAchievementsStruct> {
-    let result = super.call(
-      "getAchievementsByCategory",
-      "getAchievementsByCategory(bytes32,string):((bytes32,bytes32,string,string,string,bytes,uint256,address,uint256)[])",
-      [
-        ethereum.Value.fromFixedBytes(profileId),
-        ethereum.Value.fromString(category)
-      ]
-    );
-
-    return result[0].toTupleArray<
-      Sense__getAchievementsByCategoryResultAchievementsStruct
-    >();
-  }
-
-  try_getAchievementsByCategory(
-    profileId: Bytes,
-    category: string
-  ): ethereum.CallResult<
-    Array<Sense__getAchievementsByCategoryResultAchievementsStruct>
-  > {
-    let result = super.tryCall(
-      "getAchievementsByCategory",
-      "getAchievementsByCategory(bytes32,string):((bytes32,bytes32,string,string,string,bytes,uint256,address,uint256)[])",
-      [
-        ethereum.Value.fromFixedBytes(profileId),
-        ethereum.Value.fromString(category)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(
-      value[0].toTupleArray<
-        Sense__getAchievementsByCategoryResultAchievementsStruct
-      >()
-    );
-  }
-
-  getCategoryReputation(profileId: Bytes, category: Bytes): BigInt {
-    let result = super.call(
-      "getCategoryReputation",
-      "getCategoryReputation(bytes32,bytes32):(uint256)",
-      [
-        ethereum.Value.fromFixedBytes(profileId),
-        ethereum.Value.fromFixedBytes(category)
-      ]
     );
 
     return result[0].toBigInt();
   }
 
-  try_getCategoryReputation(
-    profileId: Bytes,
-    category: Bytes
-  ): ethereum.CallResult<BigInt> {
+  try_getExperience(profileId: Bytes): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "getCategoryReputation",
-      "getCategoryReputation(bytes32,bytes32):(uint256)",
-      [
-        ethereum.Value.fromFixedBytes(profileId),
-        ethereum.Value.fromFixedBytes(category)
-      ]
+      "getExperience",
+      "getExperience(bytes8):(uint256)",
+      [ethereum.Value.fromFixedBytes(profileId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getFeedbackSummary(
-    profileId: Bytes
-  ): Sense__getFeedbackSummaryResultSummaryStruct {
-    let result = super.call(
-      "getFeedbackSummary",
-      "getFeedbackSummary(bytes32):((uint256,uint256,uint256,uint256,uint256,uint256))",
-      [ethereum.Value.fromFixedBytes(profileId)]
-    );
-
-    return changetype<Sense__getFeedbackSummaryResultSummaryStruct>(
-      result[0].toTuple()
-    );
-  }
-
-  try_getFeedbackSummary(
-    profileId: Bytes
-  ): ethereum.CallResult<Sense__getFeedbackSummaryResultSummaryStruct> {
-    let result = super.tryCall(
-      "getFeedbackSummary",
-      "getFeedbackSummary(bytes32):((uint256,uint256,uint256,uint256,uint256,uint256))",
-      [ethereum.Value.fromFixedBytes(profileId)]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(
-      changetype<Sense__getFeedbackSummaryResultSummaryStruct>(
-        value[0].toTuple()
-      )
-    );
-  }
-
-  getFeedbacks(
-    profileId: Bytes,
-    offset: BigInt,
-    limit: BigInt
-  ): Array<Sense__getFeedbacksResultFeedbacksStruct> {
-    let result = super.call(
-      "getFeedbacks",
-      "getFeedbacks(bytes32,uint256,uint256):((bytes32,bytes32,address,uint8,uint8,string,uint256,bool)[])",
-      [
-        ethereum.Value.fromFixedBytes(profileId),
-        ethereum.Value.fromUnsignedBigInt(offset),
-        ethereum.Value.fromUnsignedBigInt(limit)
-      ]
-    );
-
-    return result[0].toTupleArray<Sense__getFeedbacksResultFeedbacksStruct>();
-  }
-
-  try_getFeedbacks(
-    profileId: Bytes,
-    offset: BigInt,
-    limit: BigInt
-  ): ethereum.CallResult<Array<Sense__getFeedbacksResultFeedbacksStruct>> {
-    let result = super.tryCall(
-      "getFeedbacks",
-      "getFeedbacks(bytes32,uint256,uint256):((bytes32,bytes32,address,uint8,uint8,string,uint256,bool)[])",
-      [
-        ethereum.Value.fromFixedBytes(profileId),
-        ethereum.Value.fromUnsignedBigInt(offset),
-        ethereum.Value.fromUnsignedBigInt(limit)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(
-      value[0].toTupleArray<Sense__getFeedbacksResultFeedbacksStruct>()
-    );
-  }
-
-  getProfile(profileId: Bytes): Sense__getProfileResultProfileStruct {
-    let result = super.call(
-      "getProfile",
-      "getProfile(bytes32):((bytes32,address,bytes8,string,uint256,uint256,bool,bool))",
-      [ethereum.Value.fromFixedBytes(profileId)]
-    );
-
-    return changetype<Sense__getProfileResultProfileStruct>(
-      result[0].toTuple()
-    );
-  }
-
-  try_getProfile(
-    profileId: Bytes
-  ): ethereum.CallResult<Sense__getProfileResultProfileStruct> {
-    let result = super.tryCall(
-      "getProfile",
-      "getProfile(bytes32):((bytes32,address,bytes8,string,uint256,uint256,bool,bool))",
-      [ethereum.Value.fromFixedBytes(profileId)]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(
-      changetype<Sense__getProfileResultProfileStruct>(value[0].toTuple())
-    );
-  }
-
-  getProfileByOwner(
-    owner: Address,
-    organizationId: Bytes
-  ): Sense__getProfileByOwnerResultProfileStruct {
-    let result = super.call(
-      "getProfileByOwner",
-      "getProfileByOwner(address,bytes8):((bytes32,address,bytes8,string,uint256,uint256,bool,bool))",
-      [
-        ethereum.Value.fromAddress(owner),
-        ethereum.Value.fromFixedBytes(organizationId)
-      ]
-    );
-
-    return changetype<Sense__getProfileByOwnerResultProfileStruct>(
-      result[0].toTuple()
-    );
-  }
-
-  try_getProfileByOwner(
-    owner: Address,
-    organizationId: Bytes
-  ): ethereum.CallResult<Sense__getProfileByOwnerResultProfileStruct> {
-    let result = super.tryCall(
-      "getProfileByOwner",
-      "getProfileByOwner(address,bytes8):((bytes32,address,bytes8,string,uint256,uint256,bool,bool))",
-      [
-        ethereum.Value.fromAddress(owner),
-        ethereum.Value.fromFixedBytes(organizationId)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(
-      changetype<Sense__getProfileByOwnerResultProfileStruct>(
-        value[0].toTuple()
-      )
-    );
-  }
-
-  getProfileCount(): BigInt {
-    let result = super.call(
-      "getProfileCount",
-      "getProfileCount():(uint256)",
-      []
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getProfileCount(): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getProfileCount",
-      "getProfileCount():(uint256)",
-      []
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getProfilesByOrganization(organizationId: Bytes): Array<Bytes> {
-    let result = super.call(
-      "getProfilesByOrganization",
-      "getProfilesByOrganization(bytes8):(bytes32[])",
-      [ethereum.Value.fromFixedBytes(organizationId)]
-    );
-
-    return result[0].toBytesArray();
-  }
-
-  try_getProfilesByOrganization(
-    organizationId: Bytes
-  ): ethereum.CallResult<Array<Bytes>> {
-    let result = super.tryCall(
-      "getProfilesByOrganization",
-      "getProfilesByOrganization(bytes8):(bytes32[])",
-      [ethereum.Value.fromFixedBytes(organizationId)]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBytesArray());
   }
 
   getReputation(profileId: Bytes): Sense__getReputationResultReputationStruct {
     let result = super.call(
       "getReputation",
-      "getReputation(bytes32):((uint256,uint256,uint256,uint256,uint256,uint256))",
+      "getReputation(bytes8):((uint256,uint256,uint256,uint256,uint256,uint256))",
       [ethereum.Value.fromFixedBytes(profileId)]
     );
 
@@ -1555,7 +626,7 @@ export class Sense extends ethereum.SmartContract {
   ): ethereum.CallResult<Sense__getReputationResultReputationStruct> {
     let result = super.tryCall(
       "getReputation",
-      "getReputation(bytes32):((uint256,uint256,uint256,uint256,uint256,uint256))",
+      "getReputation(bytes8):((uint256,uint256,uint256,uint256,uint256,uint256))",
       [ethereum.Value.fromFixedBytes(profileId)]
     );
     if (result.reverted) {
@@ -1567,12 +638,45 @@ export class Sense extends ethereum.SmartContract {
     );
   }
 
+  getReputationBatch(
+    profileIds: Array<Bytes>
+  ): Array<Sense__getReputationBatchResultReputationsStruct> {
+    let result = super.call(
+      "getReputationBatch",
+      "getReputationBatch(bytes8[]):((uint256,uint256,uint256,uint256,uint256,uint256)[])",
+      [ethereum.Value.fromFixedBytesArray(profileIds)]
+    );
+
+    return result[0].toTupleArray<
+      Sense__getReputationBatchResultReputationsStruct
+    >();
+  }
+
+  try_getReputationBatch(
+    profileIds: Array<Bytes>
+  ): ethereum.CallResult<
+    Array<Sense__getReputationBatchResultReputationsStruct>
+  > {
+    let result = super.tryCall(
+      "getReputationBatch",
+      "getReputationBatch(bytes8[]):((uint256,uint256,uint256,uint256,uint256,uint256)[])",
+      [ethereum.Value.fromFixedBytesArray(profileIds)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      value[0].toTupleArray<Sense__getReputationBatchResultReputationsStruct>()
+    );
+  }
+
   getReputationHistory(
     profileId: Bytes
   ): Array<Sense__getReputationHistoryResultEventsStruct> {
     let result = super.call(
       "getReputationHistory",
-      "getReputationHistory(bytes32):((bytes32,uint8,int256,bytes32,address,uint256,uint256)[])",
+      "getReputationHistory(bytes8):((bytes8,uint8,int256,bytes32,address,uint256)[])",
       [ethereum.Value.fromFixedBytes(profileId)]
     );
 
@@ -1586,7 +690,7 @@ export class Sense extends ethereum.SmartContract {
   ): ethereum.CallResult<Array<Sense__getReputationHistoryResultEventsStruct>> {
     let result = super.tryCall(
       "getReputationHistory",
-      "getReputationHistory(bytes32):((bytes32,uint8,int256,bytes32,address,uint256,uint256)[])",
+      "getReputationHistory(bytes8):((bytes8,uint8,int256,bytes32,address,uint256)[])",
       [ethereum.Value.fromFixedBytes(profileId)]
     );
     if (result.reverted) {
@@ -1619,68 +723,27 @@ export class Sense extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
-  getTopProfiles(organizationId: Bytes, limit: BigInt): Array<Bytes> {
+  getTrustScore(profileId: Bytes): BigInt {
     let result = super.call(
-      "getTopProfiles",
-      "getTopProfiles(bytes8,uint256):(bytes32[])",
-      [
-        ethereum.Value.fromFixedBytes(organizationId),
-        ethereum.Value.fromUnsignedBigInt(limit)
-      ]
+      "getTrustScore",
+      "getTrustScore(bytes8):(uint256)",
+      [ethereum.Value.fromFixedBytes(profileId)]
     );
 
-    return result[0].toBytesArray();
+    return result[0].toBigInt();
   }
 
-  try_getTopProfiles(
-    organizationId: Bytes,
-    limit: BigInt
-  ): ethereum.CallResult<Array<Bytes>> {
+  try_getTrustScore(profileId: Bytes): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
-      "getTopProfiles",
-      "getTopProfiles(bytes8,uint256):(bytes32[])",
-      [
-        ethereum.Value.fromFixedBytes(organizationId),
-        ethereum.Value.fromUnsignedBigInt(limit)
-      ]
+      "getTrustScore",
+      "getTrustScore(bytes8):(uint256)",
+      [ethereum.Value.fromFixedBytes(profileId)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBytesArray());
-  }
-
-  hasAchievement(profileId: Bytes, achievementId: Bytes): boolean {
-    let result = super.call(
-      "hasAchievement",
-      "hasAchievement(bytes32,bytes32):(bool)",
-      [
-        ethereum.Value.fromFixedBytes(profileId),
-        ethereum.Value.fromFixedBytes(achievementId)
-      ]
-    );
-
-    return result[0].toBoolean();
-  }
-
-  try_hasAchievement(
-    profileId: Bytes,
-    achievementId: Bytes
-  ): ethereum.CallResult<boolean> {
-    let result = super.tryCall(
-      "hasAchievement",
-      "hasAchievement(bytes32,bytes32):(bool)",
-      [
-        ethereum.Value.fromFixedBytes(profileId),
-        ethereum.Value.fromFixedBytes(achievementId)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBoolean());
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   hasRole(role: Bytes, account: Address): boolean {
@@ -1749,27 +812,6 @@ export class Sense extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
-  profileExists(profileId: Bytes): boolean {
-    let result = super.call("profileExists", "profileExists(bytes32):(bool)", [
-      ethereum.Value.fromFixedBytes(profileId)
-    ]);
-
-    return result[0].toBoolean();
-  }
-
-  try_profileExists(profileId: Bytes): ethereum.CallResult<boolean> {
-    let result = super.tryCall(
-      "profileExists",
-      "profileExists(bytes32):(bool)",
-      [ethereum.Value.fromFixedBytes(profileId)]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBoolean());
-  }
-
   registry(): Address {
     let result = super.call("registry", "registry():(address)", []);
 
@@ -1783,49 +825,6 @@ export class Sense extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toAddress());
-  }
-
-  submitFeedback(
-    targetProfileId: Bytes,
-    feedbackType: i32,
-    rating: i32,
-    comment: string
-  ): Bytes {
-    let result = super.call(
-      "submitFeedback",
-      "submitFeedback(bytes32,uint8,uint8,string):(bytes32)",
-      [
-        ethereum.Value.fromFixedBytes(targetProfileId),
-        ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(feedbackType)),
-        ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(rating)),
-        ethereum.Value.fromString(comment)
-      ]
-    );
-
-    return result[0].toBytes();
-  }
-
-  try_submitFeedback(
-    targetProfileId: Bytes,
-    feedbackType: i32,
-    rating: i32,
-    comment: string
-  ): ethereum.CallResult<Bytes> {
-    let result = super.tryCall(
-      "submitFeedback",
-      "submitFeedback(bytes32,uint8,uint8,string):(bytes32)",
-      [
-        ethereum.Value.fromFixedBytes(targetProfileId),
-        ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(feedbackType)),
-        ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(rating)),
-        ethereum.Value.fromString(comment)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
   supportsInterface(interfaceId: Bytes): boolean {
@@ -1893,41 +892,41 @@ export class ConstructorCall__Outputs {
   }
 }
 
-export class CreateProfileCall extends ethereum.Call {
-  get inputs(): CreateProfileCall__Inputs {
-    return new CreateProfileCall__Inputs(this);
+export class AwardExperienceCall extends ethereum.Call {
+  get inputs(): AwardExperienceCall__Inputs {
+    return new AwardExperienceCall__Inputs(this);
   }
 
-  get outputs(): CreateProfileCall__Outputs {
-    return new CreateProfileCall__Outputs(this);
-  }
-}
-
-export class CreateProfileCall__Inputs {
-  _call: CreateProfileCall;
-
-  constructor(call: CreateProfileCall) {
-    this._call = call;
-  }
-
-  get organizationId(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
-  }
-
-  get metadata(): string {
-    return this._call.inputValues[1].value.toString();
+  get outputs(): AwardExperienceCall__Outputs {
+    return new AwardExperienceCall__Outputs(this);
   }
 }
 
-export class CreateProfileCall__Outputs {
-  _call: CreateProfileCall;
+export class AwardExperienceCall__Inputs {
+  _call: AwardExperienceCall;
 
-  constructor(call: CreateProfileCall) {
+  constructor(call: AwardExperienceCall) {
     this._call = call;
   }
 
   get profileId(): Bytes {
-    return this._call.outputValues[0].value.toBytes();
+    return this._call.inputValues[0].value.toBytes();
+  }
+
+  get amount(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
+  }
+
+  get reason(): Bytes {
+    return this._call.inputValues[2].value.toBytes();
+  }
+}
+
+export class AwardExperienceCall__Outputs {
+  _call: AwardExperienceCall;
+
+  constructor(call: AwardExperienceCall) {
+    this._call = call;
   }
 }
 
@@ -1983,126 +982,6 @@ export class EmergencyUnpauseCall__Outputs {
   }
 }
 
-export class GrantAchievementCall extends ethereum.Call {
-  get inputs(): GrantAchievementCall__Inputs {
-    return new GrantAchievementCall__Inputs(this);
-  }
-
-  get outputs(): GrantAchievementCall__Outputs {
-    return new GrantAchievementCall__Outputs(this);
-  }
-}
-
-export class GrantAchievementCall__Inputs {
-  _call: GrantAchievementCall;
-
-  constructor(call: GrantAchievementCall) {
-    this._call = call;
-  }
-
-  get profileId(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
-  }
-
-  get achievementId(): Bytes {
-    return this._call.inputValues[1].value.toBytes();
-  }
-
-  get name(): string {
-    return this._call.inputValues[2].value.toString();
-  }
-
-  get description(): string {
-    return this._call.inputValues[3].value.toString();
-  }
-
-  get category(): string {
-    return this._call.inputValues[4].value.toString();
-  }
-
-  get points(): BigInt {
-    return this._call.inputValues[5].value.toBigInt();
-  }
-
-  get data(): Bytes {
-    return this._call.inputValues[6].value.toBytes();
-  }
-}
-
-export class GrantAchievementCall__Outputs {
-  _call: GrantAchievementCall;
-
-  constructor(call: GrantAchievementCall) {
-    this._call = call;
-  }
-}
-
-export class GrantAchievementWithParamsCall extends ethereum.Call {
-  get inputs(): GrantAchievementWithParamsCall__Inputs {
-    return new GrantAchievementWithParamsCall__Inputs(this);
-  }
-
-  get outputs(): GrantAchievementWithParamsCall__Outputs {
-    return new GrantAchievementWithParamsCall__Outputs(this);
-  }
-}
-
-export class GrantAchievementWithParamsCall__Inputs {
-  _call: GrantAchievementWithParamsCall;
-
-  constructor(call: GrantAchievementWithParamsCall) {
-    this._call = call;
-  }
-
-  get granter(): Address {
-    return this._call.inputValues[0].value.toAddress();
-  }
-
-  get profileId(): Bytes {
-    return this._call.inputValues[1].value.toBytes();
-  }
-
-  get params(): GrantAchievementWithParamsCallParamsStruct {
-    return changetype<GrantAchievementWithParamsCallParamsStruct>(
-      this._call.inputValues[2].value.toTuple()
-    );
-  }
-}
-
-export class GrantAchievementWithParamsCall__Outputs {
-  _call: GrantAchievementWithParamsCall;
-
-  constructor(call: GrantAchievementWithParamsCall) {
-    this._call = call;
-  }
-}
-
-export class GrantAchievementWithParamsCallParamsStruct extends ethereum.Tuple {
-  get achievementId(): Bytes {
-    return this[0].toBytes();
-  }
-
-  get name(): string {
-    return this[1].toString();
-  }
-
-  get description(): string {
-    return this[2].toString();
-  }
-
-  get category(): string {
-    return this[3].toString();
-  }
-
-  get points(): BigInt {
-    return this[4].toBigInt();
-  }
-
-  get data(): Bytes {
-    return this[5].toBytes();
-  }
-}
-
 export class GrantRoleCall extends ethereum.Call {
   get inputs(): GrantRoleCall__Inputs {
     return new GrantRoleCall__Inputs(this);
@@ -2134,176 +1013,6 @@ export class GrantRoleCall__Outputs {
 
   constructor(call: GrantRoleCall) {
     this._call = call;
-  }
-}
-
-export class ImportReputationCall extends ethereum.Call {
-  get inputs(): ImportReputationCall__Inputs {
-    return new ImportReputationCall__Inputs(this);
-  }
-
-  get outputs(): ImportReputationCall__Outputs {
-    return new ImportReputationCall__Outputs(this);
-  }
-}
-
-export class ImportReputationCall__Inputs {
-  _call: ImportReputationCall;
-
-  constructor(call: ImportReputationCall) {
-    this._call = call;
-  }
-
-  get profileId(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
-  }
-
-  get exportData(): ImportReputationCallExportDataStruct {
-    return changetype<ImportReputationCallExportDataStruct>(
-      this._call.inputValues[1].value.toTuple()
-    );
-  }
-
-  get value2(): Bytes {
-    return this._call.inputValues[2].value.toBytes();
-  }
-}
-
-export class ImportReputationCall__Outputs {
-  _call: ImportReputationCall;
-
-  constructor(call: ImportReputationCall) {
-    this._call = call;
-  }
-}
-
-export class ImportReputationCallExportDataStruct extends ethereum.Tuple {
-  get sourceProfileId(): Bytes {
-    return this[0].toBytes();
-  }
-
-  get owner(): Address {
-    return this[1].toAddress();
-  }
-
-  get sourceOrganizationId(): Bytes {
-    return this[2].toBytes();
-  }
-
-  get reputation(): ImportReputationCallExportDataReputationStruct {
-    return changetype<ImportReputationCallExportDataReputationStruct>(
-      this[3].toTuple()
-    );
-  }
-
-  get achievements(): Array<ImportReputationCallExportDataAchievementsStruct> {
-    return this[4].toTupleArray<
-      ImportReputationCallExportDataAchievementsStruct
-    >();
-  }
-
-  get feedbackSummary(): ImportReputationCallExportDataFeedbackSummaryStruct {
-    return changetype<ImportReputationCallExportDataFeedbackSummaryStruct>(
-      this[5].toTuple()
-    );
-  }
-
-  get exportedAt(): BigInt {
-    return this[6].toBigInt();
-  }
-
-  get merkleRoot(): Bytes {
-    return this[7].toBytes();
-  }
-}
-
-export class ImportReputationCallExportDataReputationStruct extends ethereum.Tuple {
-  get experience(): BigInt {
-    return this[0].toBigInt();
-  }
-
-  get reputation(): BigInt {
-    return this[1].toBigInt();
-  }
-
-  get trust(): BigInt {
-    return this[2].toBigInt();
-  }
-
-  get lastUpdated(): BigInt {
-    return this[3].toBigInt();
-  }
-
-  get totalFeedbacks(): BigInt {
-    return this[4].toBigInt();
-  }
-
-  get positiveFeedbacks(): BigInt {
-    return this[5].toBigInt();
-  }
-}
-
-export class ImportReputationCallExportDataAchievementsStruct extends ethereum.Tuple {
-  get achievementId(): Bytes {
-    return this[0].toBytes();
-  }
-
-  get profileId(): Bytes {
-    return this[1].toBytes();
-  }
-
-  get name(): string {
-    return this[2].toString();
-  }
-
-  get description(): string {
-    return this[3].toString();
-  }
-
-  get category(): string {
-    return this[4].toString();
-  }
-
-  get data(): Bytes {
-    return this[5].toBytes();
-  }
-
-  get earnedAt(): BigInt {
-    return this[6].toBigInt();
-  }
-
-  get grantedBy(): Address {
-    return this[7].toAddress();
-  }
-
-  get points(): BigInt {
-    return this[8].toBigInt();
-  }
-}
-
-export class ImportReputationCallExportDataFeedbackSummaryStruct extends ethereum.Tuple {
-  get totalFeedbacks(): BigInt {
-    return this[0].toBigInt();
-  }
-
-  get positiveFeedbacks(): BigInt {
-    return this[1].toBigInt();
-  }
-
-  get negativeFeedbacks(): BigInt {
-    return this[2].toBigInt();
-  }
-
-  get neutralFeedbacks(): BigInt {
-    return this[3].toBigInt();
-  }
-
-  get averageRating(): BigInt {
-    return this[4].toBigInt();
-  }
-
-  get trustScore(): BigInt {
-    return this[5].toBigInt();
   }
 }
 
@@ -2415,6 +1124,44 @@ export class PauseCall__Outputs {
   }
 }
 
+export class RecordInteractionCall extends ethereum.Call {
+  get inputs(): RecordInteractionCall__Inputs {
+    return new RecordInteractionCall__Inputs(this);
+  }
+
+  get outputs(): RecordInteractionCall__Outputs {
+    return new RecordInteractionCall__Outputs(this);
+  }
+}
+
+export class RecordInteractionCall__Inputs {
+  _call: RecordInteractionCall;
+
+  constructor(call: RecordInteractionCall) {
+    this._call = call;
+  }
+
+  get profileId(): Bytes {
+    return this._call.inputValues[0].value.toBytes();
+  }
+
+  get positive(): boolean {
+    return this._call.inputValues[1].value.toBoolean();
+  }
+
+  get reason(): Bytes {
+    return this._call.inputValues[2].value.toBytes();
+  }
+}
+
+export class RecordInteractionCall__Outputs {
+  _call: RecordInteractionCall;
+
+  constructor(call: RecordInteractionCall) {
+    this._call = call;
+  }
+}
+
 export class RenounceRoleCall extends ethereum.Call {
   get inputs(): RenounceRoleCall__Inputs {
     return new RenounceRoleCall__Inputs(this);
@@ -2483,52 +1230,6 @@ export class RevokeRoleCall__Outputs {
   }
 }
 
-export class SubmitFeedbackCall extends ethereum.Call {
-  get inputs(): SubmitFeedbackCall__Inputs {
-    return new SubmitFeedbackCall__Inputs(this);
-  }
-
-  get outputs(): SubmitFeedbackCall__Outputs {
-    return new SubmitFeedbackCall__Outputs(this);
-  }
-}
-
-export class SubmitFeedbackCall__Inputs {
-  _call: SubmitFeedbackCall;
-
-  constructor(call: SubmitFeedbackCall) {
-    this._call = call;
-  }
-
-  get targetProfileId(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
-  }
-
-  get feedbackType(): i32 {
-    return this._call.inputValues[1].value.toI32();
-  }
-
-  get rating(): i32 {
-    return this._call.inputValues[2].value.toI32();
-  }
-
-  get comment(): string {
-    return this._call.inputValues[3].value.toString();
-  }
-}
-
-export class SubmitFeedbackCall__Outputs {
-  _call: SubmitFeedbackCall;
-
-  constructor(call: SubmitFeedbackCall) {
-    this._call = call;
-  }
-
-  get feedbackId(): Bytes {
-    return this._call.outputValues[0].value.toBytes();
-  }
-}
-
 export class UnpauseCall extends ethereum.Call {
   get inputs(): UnpauseCall__Inputs {
     return new UnpauseCall__Inputs(this);
@@ -2551,82 +1252,6 @@ export class UnpauseCall__Outputs {
   _call: UnpauseCall;
 
   constructor(call: UnpauseCall) {
-    this._call = call;
-  }
-}
-
-export class UpdateCategoryReputationCall extends ethereum.Call {
-  get inputs(): UpdateCategoryReputationCall__Inputs {
-    return new UpdateCategoryReputationCall__Inputs(this);
-  }
-
-  get outputs(): UpdateCategoryReputationCall__Outputs {
-    return new UpdateCategoryReputationCall__Outputs(this);
-  }
-}
-
-export class UpdateCategoryReputationCall__Inputs {
-  _call: UpdateCategoryReputationCall;
-
-  constructor(call: UpdateCategoryReputationCall) {
-    this._call = call;
-  }
-
-  get profileId(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
-  }
-
-  get category(): Bytes {
-    return this._call.inputValues[1].value.toBytes();
-  }
-
-  get delta(): BigInt {
-    return this._call.inputValues[2].value.toBigInt();
-  }
-
-  get reason(): Bytes {
-    return this._call.inputValues[3].value.toBytes();
-  }
-}
-
-export class UpdateCategoryReputationCall__Outputs {
-  _call: UpdateCategoryReputationCall;
-
-  constructor(call: UpdateCategoryReputationCall) {
-    this._call = call;
-  }
-}
-
-export class UpdateProfileCall extends ethereum.Call {
-  get inputs(): UpdateProfileCall__Inputs {
-    return new UpdateProfileCall__Inputs(this);
-  }
-
-  get outputs(): UpdateProfileCall__Outputs {
-    return new UpdateProfileCall__Outputs(this);
-  }
-}
-
-export class UpdateProfileCall__Inputs {
-  _call: UpdateProfileCall;
-
-  constructor(call: UpdateProfileCall) {
-    this._call = call;
-  }
-
-  get profileId(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
-  }
-
-  get metadata(): string {
-    return this._call.inputValues[1].value.toString();
-  }
-}
-
-export class UpdateProfileCall__Outputs {
-  _call: UpdateProfileCall;
-
-  constructor(call: UpdateProfileCall) {
     this._call = call;
   }
 }
@@ -2669,40 +1294,6 @@ export class UpdateReputationCall__Outputs {
   _call: UpdateReputationCall;
 
   constructor(call: UpdateReputationCall) {
-    this._call = call;
-  }
-}
-
-export class VerifyProfileCall extends ethereum.Call {
-  get inputs(): VerifyProfileCall__Inputs {
-    return new VerifyProfileCall__Inputs(this);
-  }
-
-  get outputs(): VerifyProfileCall__Outputs {
-    return new VerifyProfileCall__Outputs(this);
-  }
-}
-
-export class VerifyProfileCall__Inputs {
-  _call: VerifyProfileCall;
-
-  constructor(call: VerifyProfileCall) {
-    this._call = call;
-  }
-
-  get profileId(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
-  }
-
-  get level(): i32 {
-    return this._call.inputValues[1].value.toI32();
-  }
-}
-
-export class VerifyProfileCall__Outputs {
-  _call: VerifyProfileCall;
-
-  constructor(call: VerifyProfileCall) {
     this._call = call;
   }
 }

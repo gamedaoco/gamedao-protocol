@@ -1,62 +1,129 @@
 import { BigInt, Bytes, log } from '@graphprotocol/graph-ts'
 import {
-  ProfileCreated,
+  ExperienceAwarded,
+  ReputationUpdated,
+  InteractionRecorded,
 } from '../generated/Sense/Sense'
 import {
   Profile,
-  Organization,
-  Member,
+  ReputationEvent,
 } from '../generated/schema'
-import { getOrganizationIdString } from './utils/ids'
 
-export function handleProfileCreated(event: ProfileCreated): void {
-  let profileId = event.params.profileId.toHexString()
-  let profile = new Profile(profileId)
+/**
+ * Convert bytes8 profile ID to string for use as entity ID
+ */
+function getProfileIdString(profileIdBytes8: Bytes): string {
+  // Convert bytes directly to ASCII characters
+  let result = ''
+  for (let i = 0; i < 8; i++) {
+    const byteValue = profileIdBytes8[i]
+    result += String.fromCharCode(byteValue)
+  }
+  return result
+}
 
-  // Load organization
-  let organizationId = getOrganizationIdString(event.params.organizationId)
-  let organization = Organization.load(organizationId)
-  if (!organization) {
-    log.warning('Organization not found, continuing with profile creation: {}', [organizationId])
+export function handleExperienceAwarded(event: ExperienceAwarded): void {
+  let profileId = getProfileIdString(event.params.profileId)
+  let profile = Profile.load(profileId)
+
+  if (!profile) {
+    log.error('Profile not found for experience award: {}', [profileId])
+    return
   }
 
-  // Load member - try to find existing member or create reference
-  let memberId = organizationId + '-' + event.params.owner.toHexString()
-  let member = Member.load(memberId)
-  if (!member) {
-    log.warning('Member not found, using owner address: {}', [event.params.owner.toHexString()])
-  }
-
-  // Parse metadata (could be JSON with username, bio, etc.)
-  let metadata = event.params.metadata
-  let username = 'User-' + event.params.profileId.toHexString().slice(0, 8)
-
-  // Try to parse metadata as JSON (if it contains structured data)
-  // For now, use metadata as username if it's short enough
-  if (metadata.length > 0 && metadata.length < 50) {
-    username = metadata
-  }
-
-  // Set profile data
-  profile.organization = organizationId
-  profile.owner = memberId
-  profile.username = username
-  profile.bio = ''
-  profile.avatar = ''
-  profile.website = ''
-  profile.verificationLevel = 'NONE'
-  profile.experience = BigInt.fromI32(0)
-  profile.reputation = BigInt.fromI32(1000) // Default reputation
-  profile.trustScore = BigInt.fromI32(0)
-  profile.convictionScore = BigInt.fromI32(0)
-  profile.achievementCount = BigInt.fromI32(0)
-  profile.feedbackCount = BigInt.fromI32(0)
-  profile.positiveFeedbacks = BigInt.fromI32(0)
-  profile.negativeFeedbacks = BigInt.fromI32(0)
-  profile.createdAt = event.block.timestamp
-  profile.updatedAt = event.block.timestamp
-
+  // Update experience
+  profile.experience = profile.experience.plus(event.params.amount)
+  profile.updatedAt = event.params.timestamp
   profile.save()
 
-  log.info('Profile created: {} for user {}', [profileId, event.params.owner.toHexString()])
+  // Create reputation event
+  let eventId = event.transaction.hash.toHexString() + '-' + event.logIndex.toString()
+  let reputationEvent = new ReputationEvent(eventId)
+  reputationEvent.profile = profileId
+  reputationEvent.repType = 'EXPERIENCE'
+  reputationEvent.delta = event.params.amount
+  reputationEvent.reason = event.params.reason
+  reputationEvent.updatedBy = event.params.awardedBy
+  reputationEvent.timestamp = event.params.timestamp
+  reputationEvent.blockNumber = event.block.number
+  reputationEvent.transactionHash = event.transaction.hash
+  reputationEvent.save()
+
+  log.info('Experience awarded: {} points to profile: {}', [
+    event.params.amount.toString(),
+    profileId
+  ])
+}
+
+export function handleReputationUpdated(event: ReputationUpdated): void {
+  let profileId = getProfileIdString(event.params.profileId)
+  let profile = Profile.load(profileId)
+
+  if (!profile) {
+    log.error('Profile not found for reputation update: {}', [profileId])
+    return
+  }
+
+  // Map reputation type enum
+  let repType = 'REPUTATION'
+  if (event.params.repType == 0) repType = 'EXPERIENCE'
+  else if (event.params.repType == 1) repType = 'REPUTATION'
+  else if (event.params.repType == 2) repType = 'TRUST'
+
+  // Update profile based on reputation type
+  if (repType == 'EXPERIENCE') {
+    profile.experience = profile.experience.plus(event.params.delta)
+  } else if (repType == 'REPUTATION') {
+    profile.reputation = profile.reputation.plus(event.params.delta)
+  } else if (repType == 'TRUST') {
+    profile.trustScore = profile.trustScore.plus(event.params.delta)
+  }
+
+  profile.updatedAt = event.params.timestamp
+  profile.save()
+
+  // Create reputation event
+  let eventId = event.transaction.hash.toHexString() + '-' + event.logIndex.toString()
+  let reputationEvent = new ReputationEvent(eventId)
+  reputationEvent.profile = profileId
+  reputationEvent.repType = repType
+  reputationEvent.delta = event.params.delta
+  reputationEvent.reason = event.params.reason
+  reputationEvent.updatedBy = event.params.updatedBy
+  reputationEvent.timestamp = event.params.timestamp
+  reputationEvent.blockNumber = event.block.number
+  reputationEvent.transactionHash = event.transaction.hash
+  reputationEvent.save()
+
+  log.info('Reputation updated: {} {} for profile: {}', [
+    event.params.delta.toString(),
+    repType,
+    profileId
+  ])
+}
+
+export function handleInteractionRecorded(event: InteractionRecorded): void {
+  let profileId = getProfileIdString(event.params.profileId)
+  let profile = Profile.load(profileId)
+
+  if (!profile) {
+    log.error('Profile not found for interaction: {}', [profileId])
+    return
+  }
+
+  // Update interaction counts
+  if (event.params.positive) {
+    profile.positiveFeedbacks = profile.positiveFeedbacks.plus(BigInt.fromI32(1))
+  } else {
+    profile.negativeFeedbacks = profile.negativeFeedbacks.plus(BigInt.fromI32(1))
+  }
+
+  profile.feedbackCount = profile.positiveFeedbacks.plus(profile.negativeFeedbacks)
+  profile.updatedAt = event.params.timestamp
+  profile.save()
+
+  log.info('Interaction recorded: {} for profile: {}', [
+    event.params.positive ? 'positive' : 'negative',
+    profileId
+  ])
 }

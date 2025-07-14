@@ -776,6 +776,19 @@ const _abi = [
     stateMutability: "nonpayable",
     type: "function",
   },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
+      },
+    ],
+    name: "withdrawStake",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ] as const;
 
 export class IControl__factory {

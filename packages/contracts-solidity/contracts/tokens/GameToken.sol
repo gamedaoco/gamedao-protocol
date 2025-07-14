@@ -6,11 +6,11 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 
 /**
- * @title MockGameToken
- * @dev Clean, standard ERC20 token for testing (no staking functionality)
+ * @title GameToken
+ * @dev Standard ERC20 token for the GameDAO ecosystem
  * @author GameDAO AG
  */
-contract MockGameToken is ERC20, AccessControl, Pausable {
+contract GameToken is ERC20, AccessControl, Pausable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
