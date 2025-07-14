@@ -9,12 +9,12 @@ GameDAO Protocol is a modular, decentralized platform for gaming community gover
 ### Core Architecture
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│     CONTROL     │    │      FLOW       │    │     SIGNAL      │    │      SENSE      │
+│     CONTROL     │    │      FLOW       │    │     SIGNAL      │    │    IDENTITY     │
 │                 │    │                 │    │                 │    │                 │
 │ Organization    │    │ Campaign        │    │ Proposal        │    │ Profile         │
-│ Management      │    │ Fundraising     │    │ Governance      │    │ Reputation      │
-│ Member Access   │    │ Treasury        │    │ Voting          │    │ Achievements    │
-│ Role System     │    │ Rewards         │    │ Consensus       │    │ Social Graph    │
+│ Management      │    │ Fundraising     │    │ Governance      │    │ Management      │
+│ Member Access   │    │ Treasury        │    │ Voting          │    │ Name Registry   │
+│ Role System     │    │ Rewards         │    │ Consensus       │    │ Verification    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │                       │
          └───────────────────────┼───────────────────────┼───────────────────────┘
@@ -23,7 +23,34 @@ GameDAO Protocol is a modular, decentralized platform for gaming community gover
                     │              GAMEDAO REGISTRY                       │
                     │         Central coordination and state              │
                     └─────────────────────────────────────────────────────┘
+                                                 │
+                    ┌─────────────────────────────────────────────────────┐
+                    │            SENSESIMPLIFIED                          │
+                    │     Reputation • XP • Trust • Voting Weight        │
+                    └─────────────────────────────────────────────────────┘
 ```
+
+### New Modular Architecture (2025)
+
+The protocol has been redesigned with a modular architecture that separates concerns and enables future extensibility:
+
+#### Core Modules
+- **Control**: Organization management and treasury operations
+- **Flow**: Campaign fundraising and reward distribution
+- **Signal**: Governance proposals and voting mechanisms
+- **Identity**: Profile management and name registry system
+- **SenseSimplified**: Reputation scoring and trust metrics
+
+#### Supporting Infrastructure
+- **GameId Library**: Hierarchical ID generation system
+- **GameDAO Registry**: Central module coordination
+- **Treasury**: Multi-token asset management
+
+#### Future Extensions
+- **Social Module**: User interactions and messaging
+- **Achievement Module**: Comprehensive gamification system
+- **Interoperability Module**: Cross-DAO interactions
+- **Analytics Module**: Advanced metrics and insights
 
 ## 📋 Protocol Specifications
 
@@ -31,13 +58,15 @@ GameDAO Protocol is a modular, decentralized platform for gaming community gover
 - [Protocol Specifications](./specifications/README.md) - Technical protocol specifications
 - [Core Protocol](./specifications/core-protocol.md) - Foundation architecture
 - [Interface Standards](./specifications/interfaces.md) - Standard interfaces
+- [GameId System](./specifications/gameid-system.md) - Hierarchical ID generation
 
 ### Module Documentation
 - [Module Overview](./modules/README.md) - All protocol modules
 - [Control Module](./modules/control/) - DAO management and treasury
 - [Flow Module](./modules/flow/) - Crowdfunding and campaigns
 - [Signal Module](./modules/signal/) - Governance and voting
-- [Sense Module](./modules/sense/) - Identity and reputation
+- [Identity Module](./modules/identity/) - Profile and name management
+- [SenseSimplified Module](./modules/sense/) - Reputation and trust
 - [Battlepass Module](./modules/battlepass/) - Gamified engagement
 
 ### Token Economics
@@ -73,18 +102,26 @@ GameDAO Protocol is a modular, decentralized platform for gaming community gover
 ### Implementation Progress
 - **Phase 1**: Core Infrastructure ✅ (100%)
 - **Phase 2**: Multi-Module Development ✅ (100%)
-- **Phase 3**: Frontend Integration 🔄 (65%)
-- **Phase 4**: Cross-Chain Support ⏳ (planned)
-- **Phase 5**: Mobile & Advanced Features ⏳ (planned)
+- **Phase 3**: Modular Architecture Redesign ✅ (100%)
+- **Phase 4**: Frontend Integration 🔄 (70%)
+- **Phase 5**: Cross-Chain Support ⏳ (planned)
+- **Phase 6**: Mobile & Advanced Features ⏳ (planned)
 
-### Module Completion
-| Module | Smart Contracts | Testing | Frontend | Subgraph | Status |
-|--------|----------------|---------|----------|----------|---------|
-| Control | ✅ 100% | ✅ 100% | 🔄 70% | ✅ 100% | Complete |
-| Flow | ✅ 100% | ✅ 100% | 🔄 60% | ✅ 100% | Complete |
-| Signal | ✅ 100% | ✅ 100% | 🔄 50% | ✅ 100% | Complete |
-| Sense | ✅ 100% | ✅ 100% | 🔄 40% | ✅ 100% | Complete |
-| Battlepass | ⏳ 0% | ⏳ 0% | ⏳ 0% | ⏳ 0% | Planned |
+### Module Completion Status
+| Module | Smart Contracts | Testing | Frontend | Subgraph | Contract Size | Status |
+|--------|----------------|---------|----------|----------|---------------|---------|
+| Control | ✅ 100% | ✅ 100% | 🔄 70% | ✅ 100% | Under limit | Complete |
+| Flow | ✅ 100% | ✅ 100% | 🔄 60% | ✅ 100% | Under limit | Complete |
+| Signal | ✅ 100% | ✅ 100% | 🔄 50% | ✅ 100% | Under limit | Complete |
+| Identity | ✅ 100% | ✅ 100% | 🔄 40% | 🔄 80% | 13.144 KiB | Complete |
+| SenseSimplified | ✅ 100% | ✅ 100% | 🔄 40% | 🔄 80% | 9.826 KiB | Complete |
+| Battlepass | ⏳ 0% | ⏳ 0% | ⏳ 0% | ⏳ 0% | - | Planned |
+
+### Architecture Improvements (2025)
+- **Contract Size Optimization**: All modules now under 24KB limit
+- **Modular Design**: Clean separation of concerns
+- **Hierarchical IDs**: Consistent ID system across all entities
+- **Future Extensibility**: Architecture supports seamless module additions
 
 ### Network Support
 - **Ethereum Mainnet**: ⏳ Ready for deployment
@@ -100,11 +137,12 @@ GameDAO Protocol is a modular, decentralized platform for gaming community gover
 - **Access Control**: Role-based permission system
 - **Reentrancy Protection**: Guard against common attacks
 - **Input Validation**: Comprehensive parameter checking
+- **Modular Security**: Isolated security boundaries per module
 
 ### Audit Status
 - **Internal Review**: ✅ Complete
-- **External Audit**: ⏳ Scheduled
-- **Bug Bounty**: ⏳ Planned
+- **External Audit**: ⏳ Scheduled for Q1 2025
+- **Bug Bounty**: ⏳ Planned for Q2 2025
 - **Formal Verification**: ⏳ Under consideration
 
 ### Known Security Features
@@ -112,26 +150,30 @@ GameDAO Protocol is a modular, decentralized platform for gaming community gover
 - Custom error handling for gas efficiency
 - Multi-signature support for critical operations
 - Emergency pause mechanisms
+- Module-level access controls
 
 ## 💡 Protocol Features
 
 ### For Gaming Organizations
-- **Easy DAO Creation**: One-click organization setup
+- **Easy DAO Creation**: One-click organization setup with hierarchical IDs
 - **Treasury Management**: Multi-token treasury with spending controls
 - **Member Management**: Flexible membership and access models
 - **Governance Tools**: Proposal creation and voting systems
+- **Identity Management**: Comprehensive profile and name registry
 
 ### For Community Members
 - **Participation Rewards**: GAME token staking and rewards
-- **Reputation System**: XP, REP, and TRUST metrics
+- **Reputation System**: XP, REP, and TRUST metrics via SenseSimplified
 - **Governance Rights**: Voting power based on stake and reputation
-- **Achievement System**: Gamified engagement and progression
+- **Profile System**: Rich profiles with verification tiers
+- **Name Registry**: Human-readable names with economic incentives
 
 ### For Developers
 - **Modular Architecture**: Clean separation of concerns
 - **Standard Interfaces**: Consistent API across modules
 - **Event-Driven**: Rich events for integration
 - **Extensible Design**: Easy to add new modules
+- **GameId System**: Hierarchical ID generation for all entities
 
 ## 🔗 Integration Points
 
@@ -140,18 +182,49 @@ GameDAO Protocol is a modular, decentralized platform for gaming community gover
 - **Module Interfaces**: Standard integration patterns
 - **Event System**: Real-time updates and notifications
 - **Cross-Module Communication**: Seamless interaction
+- **GameId Library**: Consistent ID generation across modules
 
 ### Frontend Integration
 - **React Hooks**: Custom hooks for each module
 - **TypeScript Support**: Full type safety
 - **Real-time Updates**: WebSocket and polling support
 - **Mobile Ready**: Responsive design patterns
+- **Hierarchical Navigation**: ID-based routing system
 
 ### External Integrations
 - **The Graph**: Decentralized data indexing
 - **IPFS**: Decentralized content storage
 - **Wallet Support**: Multi-wallet compatibility
 - **DeFi Protocols**: Yield farming and liquidity provision
+
+## 🔮 Future Extensibility
+
+### Planned Module Extensions
+1. **Social Module** (Q2 2025)
+   - User-to-user messaging
+   - Social interactions and feeds
+   - Community building tools
+
+2. **Achievement Module** (Q3 2025)
+   - Comprehensive badge system
+   - Achievement tracking
+   - Gamification mechanics
+
+3. **Interoperability Module** (Q4 2025)
+   - Cross-DAO interactions
+   - Reputation portability
+   - Multi-chain support
+
+4. **Analytics Module** (Q1 2026)
+   - Advanced metrics dashboard
+   - Reputation analytics
+   - Performance insights
+
+### Extension Architecture
+- **Module Registry**: Dynamic module discovery
+- **Interface Standards**: Consistent module APIs
+- **Event System**: Cross-module communication
+- **Dependency Management**: Module interdependency handling
 
 ## 📚 Learning Resources
 
@@ -160,12 +233,14 @@ GameDAO Protocol is a modular, decentralized platform for gaming community gover
 - [Integration Examples](../development/integration/examples/)
 - [API Reference](../development/api/README.md)
 - [Testing Strategies](../development/testing/)
+- [Module Development Guide](../development/modules/creating-modules.md)
 
 ### Protocol Deep Dives
 - [Architecture Analysis](../development/architecture/technical-analysis.md)
 - [Security Patterns](../development/security/best-practices.md)
 - [Performance Optimization](../development/deployment/production.md)
 - [Upgrade Mechanisms](./governance/upgrades.md)
+- [Modular Design Principles](../development/architecture/modular-design.md)
 
 ## 🤝 Community & Governance
 
@@ -183,6 +258,7 @@ GameDAO Protocol is a modular, decentralized platform for gaming community gover
 
 ---
 
-**Protocol Version**: 1.0.0
-**Last Updated**: December 2024
-**Next Review**: January 2025
+**Protocol Version**: 2.0.0
+**Last Updated**: January 2025
+**Next Review**: February 2025
+**Architecture**: Modular with Identity and SenseSimplified separation
