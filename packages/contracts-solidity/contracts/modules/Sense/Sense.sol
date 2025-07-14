@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "../../core/GameDAOModule.sol";
 import "../../interfaces/ISense.sol";
@@ -42,6 +42,20 @@ contract Sense is ISense, GameDAOModule {
     mapping(address => mapping(bytes8 => bytes32)) private _ownerToProfile; // owner -> orgId -> profileId
     EnumerableSet.Bytes32Set private _allProfiles;
     mapping(bytes8 => EnumerableSet.Bytes32Set) private _organizationProfiles; // orgId -> profileIds
+
+    // Name claiming system
+    mapping(bytes8 => address) private _nameOwners; // name -> owner
+    mapping(bytes8 => uint256) private _nameStakes; // name -> staked amount
+    mapping(bytes8 => uint256) private _nameExpirations; // name -> expiration timestamp
+    mapping(address => bytes8[]) private _ownerNames; // owner -> names
+    mapping(bytes8 => NameClaim) private _nameClaims; // name -> claim details
+
+    // Name claiming configuration
+    uint256 public constant MIN_NAME_STAKE = 100 * 10**18; // 100 GAME tokens
+    uint256 public constant MAX_NAME_STAKE = 10000 * 10**18; // 10,000 GAME tokens
+    uint256 public constant MIN_STAKE_DURATION = 30 days;
+    uint256 public constant MAX_STAKE_DURATION = 365 days;
+    uint256 public constant NAME_LENGTH = 8;
 
     // Reputation storage
     mapping(bytes32 => ReputationData) private _reputations;
@@ -976,5 +990,191 @@ contract Sense is ISense, GameDAOModule {
         if (!control.isOrganizationActive(organizationId)) {
             revert OrganizationNotFound(organizationId);
         }
+    }
+
+    // =============================================================
+    // NAME CLAIMING SYSTEM
+    // =============================================================
+
+    /**
+     * @dev Claim an 8-byte name with GAME token staking
+     */
+    function claimName(
+        bytes8 name,
+        uint256 stakeAmount,
+        uint256 stakeDuration,
+        NameType nameType
+    ) external override onlyInitialized whenNotPaused nonReentrant returns (bool success) {
+        // Validate name format
+        if (!validateNameFormat(name)) {
+            revert InvalidNameFormat(name);
+        }
+
+        // Check if name is available
+        if (!isNameAvailable(name)) {
+            revert NameAlreadyClaimed(name);
+        }
+
+        // Validate stake parameters
+        if (stakeAmount < MIN_NAME_STAKE || stakeAmount > MAX_NAME_STAKE) {
+            revert InvalidStakeAmount(stakeAmount);
+        }
+
+        if (stakeDuration < MIN_STAKE_DURATION || stakeDuration > MAX_STAKE_DURATION) {
+            revert InvalidStakeDuration(stakeDuration);
+        }
+
+        // Get GAME token from registry
+        address gameTokenAddress = _getGameTokenAddress();
+        IERC20 gameToken = IERC20(gameTokenAddress);
+
+        // Check user balance
+        uint256 userBalance = gameToken.balanceOf(_msgSender());
+        if (userBalance < stakeAmount) {
+            revert InsufficientTokenBalance(gameTokenAddress, stakeAmount, userBalance);
+        }
+
+        // Transfer GAME tokens to this contract
+        require(
+            gameToken.transferFrom(_msgSender(), address(this), stakeAmount),
+            "GAME token transfer failed"
+        );
+
+        // Create name claim
+        uint256 expiresAt = block.timestamp + stakeDuration;
+        _nameClaims[name] = NameClaim({
+            name: name,
+            owner: _msgSender(),
+            stakeAmount: stakeAmount,
+            stakeDuration: stakeDuration,
+            claimedAt: block.timestamp,
+            expiresAt: expiresAt,
+            isActive: true,
+            nameType: nameType
+        });
+
+        // Update mappings
+        _nameOwners[name] = _msgSender();
+        _nameStakes[name] = stakeAmount;
+        _nameExpirations[name] = expiresAt;
+        _ownerNames[_msgSender()].push(name);
+
+        emit NameClaimed(name, _msgSender(), stakeAmount, stakeDuration, nameType, block.timestamp);
+
+        return true;
+    }
+
+    /**
+     * @dev Release a claimed name and recover staked tokens
+     */
+    function releaseName(bytes8 name) external override onlyInitialized whenNotPaused nonReentrant returns (uint256 stakeAmount) {
+        NameClaim storage claim = _nameClaims[name];
+
+        // Check if name is claimed
+        if (!claim.isActive) {
+            revert NameNotClaimed(name);
+        }
+
+        // Check ownership
+        if (claim.owner != _msgSender()) {
+            revert UnauthorizedNameAccess(name, _msgSender());
+        }
+
+        // Check if name has expired
+        if (block.timestamp < claim.expiresAt) {
+            revert NameNotExpired(name);
+        }
+
+        stakeAmount = claim.stakeAmount;
+
+        // Update claim status
+        claim.isActive = false;
+
+        // Clear mappings
+        delete _nameOwners[name];
+        delete _nameStakes[name];
+        delete _nameExpirations[name];
+
+        // Remove from owner's names array
+        bytes8[] storage ownerNames = _ownerNames[_msgSender()];
+        for (uint256 i = 0; i < ownerNames.length; i++) {
+            if (ownerNames[i] == name) {
+                ownerNames[i] = ownerNames[ownerNames.length - 1];
+                ownerNames.pop();
+                break;
+            }
+        }
+
+        // Return staked tokens
+        address gameTokenAddress = _getGameTokenAddress();
+        IERC20 gameToken = IERC20(gameTokenAddress);
+        require(gameToken.transfer(_msgSender(), stakeAmount), "GAME token transfer failed");
+
+        emit NameReleased(name, _msgSender(), stakeAmount, block.timestamp);
+
+        return stakeAmount;
+    }
+
+    /**
+     * @dev Check if a name is available for claiming
+     */
+    function isNameAvailable(bytes8 name) public view override returns (bool available) {
+        NameClaim storage claim = _nameClaims[name];
+
+        // Name is available if:
+        // 1. Never claimed, OR
+        // 2. Previously claimed but expired and not active
+        return !claim.isActive || block.timestamp >= claim.expiresAt;
+    }
+
+    /**
+     * @dev Get name claim details
+     */
+    function getNameClaim(bytes8 name) external view override returns (NameClaim memory claim) {
+        return _nameClaims[name];
+    }
+
+    /**
+     * @dev Get names owned by an address
+     */
+    function getNamesOwnedBy(address owner) external view override returns (bytes8[] memory names) {
+        return _ownerNames[owner];
+    }
+
+    /**
+     * @dev Validate name format (8 characters, alphanumeric)
+     */
+    function validateNameFormat(bytes8 name) public pure override returns (bool valid) {
+        // Convert bytes8 to bytes for validation
+        bytes memory nameBytes = new bytes(8);
+        for (uint256 i = 0; i < 8; i++) {
+            nameBytes[i] = name[i];
+        }
+
+        // Check each character is alphanumeric (A-Z, 0-9)
+        for (uint256 i = 0; i < 8; i++) {
+            bytes1 char = nameBytes[i];
+
+            // Check if character is 0-9 or A-Z
+            if (!((char >= 0x30 && char <= 0x39) || (char >= 0x41 && char <= 0x5A))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // =============================================================
+    // INTERNAL HELPERS
+    // =============================================================
+
+    /**
+     * @dev Get GAME token address from registry
+     */
+    function _getGameTokenAddress() internal view returns (address) {
+        // This would typically get the GAME token address from the registry
+        // For now, we'll need to add this to the module initialization
+        // TODO: Implement proper GAME token address retrieval
+        return address(0); // Placeholder
     }
 }

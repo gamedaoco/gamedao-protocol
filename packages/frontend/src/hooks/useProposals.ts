@@ -13,7 +13,7 @@ import { useToast } from './useToast'
 
 
 export interface Proposal {
-  id: string
+  id: string // Now hierarchical ID like "GAMEDAO-P-PROP001"
   title: string
   description: string
   organization: {
@@ -31,11 +31,15 @@ export interface Proposal {
   endTime: number
   votesFor: number
   votesAgainst: number
+  votesAbstain: number
   totalVotes: number
   quorum?: number
   threshold?: number
   createdAt: number
   updatedAt: number
+  // New fields for enhanced voting
+  convictionSupported: boolean
+  delegationSupported: boolean
 }
 
 export interface ProposalStats {
@@ -156,9 +160,12 @@ export function useProposals(organizationId?: string) {
     endTime: parseInt(prop.endTime) || 0,
     votesFor: parseInt(prop.votesFor) || 0,
     votesAgainst: parseInt(prop.votesAgainst) || 0,
+    votesAbstain: parseInt(prop.votesAbstain) || 0,
     totalVotes: parseInt(prop.totalVotes) || 0,
     createdAt: parseInt(prop.createdAt) || Math.floor(Date.now() / 1000),
     updatedAt: parseInt(prop.updatedAt) || Math.floor(Date.now() / 1000),
+    convictionSupported: prop.convictionSupported || true, // New contracts support conviction voting
+    delegationSupported: prop.delegationSupported || true, // New contracts support delegation
   })) || []
 
   // Filter by organization if specified
@@ -183,21 +190,19 @@ export function useProposals(organizationId?: string) {
     }
   }, [filteredProposals, userVotes])
 
-    // Cast vote function
+    // Cast vote function with hierarchical IDs
   const castVote = async (proposalId: string, choice: 0 | 1 | 2, reason?: string) => {
     if (!isConnected || !address) {
       throw new Error('Wallet not connected')
     }
 
     try {
-      // Convert proposalId string to bytes32 format for contract call
-      const proposalIdBytes32 = proposalId.startsWith('0x') ? proposalId as `0x${string}` : `0x${proposalId}` as `0x${string}`
-
+      // Use hierarchical ID directly (no conversion needed)
       await writeVote({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
         functionName: 'castVote',
-        args: [proposalIdBytes32, choice, reason || ''],
+        args: [proposalId, choice, reason || ''],
       })
 
       // Refetch data after voting
@@ -271,6 +276,72 @@ export function useProposals(organizationId?: string) {
       refetchCount()
     } catch (error) {
       console.error('Error creating proposal:', error)
+      throw error
+    }
+  }
+
+  // New V2 function with hierarchical IDs
+  const createProposalV2 = async (proposalData: {
+    organizationId: string
+    title: string
+    description: string
+    proposalType: number
+    votingType: number
+    votingPeriod: number
+    gameDeposit?: string // GAME token deposit for proposal creation
+  }) => {
+    if (!isConnected || !address) {
+      throw new Error('Wallet not connected')
+    }
+
+    try {
+      console.log('🔍 Creating proposal V2 with hierarchical ID:', {
+        organizationId: proposalData.organizationId,
+        title: proposalData.title,
+        gameDeposit: proposalData.gameDeposit
+      })
+
+      // Handle GAME token approval for proposal deposits if needed
+      if (proposalData.gameDeposit && parseFloat(proposalData.gameDeposit) > 0) {
+        console.log('🔍 GAME token deposit required for proposal:', proposalData.gameDeposit)
+
+        const approvalNeeded = await handleTokenApproval({
+          token: 'GAME',
+          spender: contracts.SIGNAL,
+          amount: proposalData.gameDeposit,
+          purpose: 'proposal creation'
+        })
+
+        if (!approvalNeeded) {
+          // Approval is pending, proposal creation will be handled after approval
+          return
+        }
+      }
+
+      // Proceed with proposal creation using V2 function
+      await writeCreateProposal({
+        address: contracts.SIGNAL,
+        abi: ABIS.SIGNAL,
+        functionName: 'createProposalV2',
+        args: [
+          toContractId(proposalData.organizationId), // Convert to bytes8 format
+          proposalData.title,
+          proposalData.description,
+          '', // metadataURI
+          proposalData.proposalType,
+          proposalData.votingType,
+          1, // votingPower (TokenWeighted)
+          proposalData.votingPeriod,
+          '0x', // executionData
+          '0x0000000000000000000000000000000000000000', // targetContract
+        ],
+      })
+
+      // Refetch data after creation
+      refetch()
+      refetchCount()
+    } catch (error) {
+      console.error('Error creating proposal V2:', error)
       throw error
     }
   }
@@ -369,6 +440,78 @@ export function useProposals(organizationId?: string) {
     }
   }
 
+  // Conviction voting function
+  const castVoteWithConviction = async (proposalId: string, choice: 0 | 1 | 2, convictionTime: number, reason?: string) => {
+    if (!isConnected || !address) {
+      throw new Error('Wallet not connected')
+    }
+
+    try {
+      console.log('🔍 Casting conviction vote:', {
+        proposalId,
+        choice,
+        convictionTime,
+        reason
+      })
+
+      await writeVote({
+        address: contracts.SIGNAL,
+        abi: ABIS.SIGNAL,
+        functionName: 'castVoteWithConviction',
+        args: [
+          proposalId, // Use hierarchical ID directly
+          choice,
+          convictionTime,
+          reason || ''
+        ],
+      })
+
+      // Refetch data after voting
+      refetch()
+      refetchCount()
+    } catch (error) {
+      console.error('Error casting conviction vote:', error)
+      throw error
+    }
+  }
+
+  // Delegation functions
+  const delegateVotingPower = async (delegatee: string, amount: number) => {
+    if (!isConnected || !address) {
+      throw new Error('Wallet not connected')
+    }
+
+    try {
+      await writeVote({
+        address: contracts.SIGNAL,
+        abi: ABIS.SIGNAL,
+        functionName: 'delegateVotingPower',
+        args: [delegatee, BigInt(amount)],
+      })
+    } catch (error) {
+      console.error('Error delegating voting power:', error)
+      throw error
+    }
+  }
+
+  const undelegateVotingPower = async (delegatee: string, amount: number) => {
+    if (!isConnected || !address) {
+      throw new Error('Wallet not connected')
+    }
+
+    try {
+      await writeVote({
+        address: contracts.SIGNAL,
+        abi: ABIS.SIGNAL,
+        functionName: 'undelegateVotingPower',
+        args: [delegatee, BigInt(amount)],
+      })
+    } catch (error) {
+      console.error('Error undelegating voting power:', error)
+      throw error
+    }
+  }
+
   return {
     // Data
     proposals: filteredProposals,
@@ -377,7 +520,11 @@ export function useProposals(organizationId?: string) {
 
     // Actions
     castVote,
+    castVoteWithConviction, // Conviction voting function
     createProposal,
+    createProposalV2, // New V2 function with hierarchical IDs
+    delegateVotingPower, // Delegation functions
+    undelegateVotingPower,
 
     // Status
     isLoading: loading && filteredProposals.length === 0,
@@ -432,11 +579,14 @@ export function useProposal(proposalId: string) {
     endTime: parseInt(data.proposal.endTime),
     votesFor: parseInt(data.proposal.votesFor),
     votesAgainst: parseInt(data.proposal.votesAgainst),
+    votesAbstain: parseInt(data.proposal.votesAbstain) || 0,
     totalVotes: parseInt(data.proposal.totalVotes),
     quorum: parseInt(data.proposal.quorum),
     threshold: parseInt(data.proposal.threshold),
     createdAt: parseInt(data.proposal.createdAt),
     updatedAt: parseInt(data.proposal.updatedAt),
+    convictionSupported: true, // New contracts support conviction voting
+    delegationSupported: true, // New contracts support delegation
   } : {
     id: proposalId || '',
     title: '',
@@ -450,9 +600,12 @@ export function useProposal(proposalId: string) {
     endTime: 0,
     votesFor: 0,
     votesAgainst: 0,
+    votesAbstain: 0,
     totalVotes: 0,
     createdAt: 0,
     updatedAt: 0,
+    convictionSupported: true,
+    delegationSupported: true,
   }
 
   return {

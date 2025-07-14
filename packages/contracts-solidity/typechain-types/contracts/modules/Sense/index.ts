@@ -2,3 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { Sense } from "./Sense";
+export type { SenseSimplified } from "./SenseSimplified";

@@ -17,6 +17,7 @@ const navigation = [
       { name: 'All Organizations', href: '/control', icon: '🏢' },
       { name: 'Create DAO', href: '/control/create', icon: '➕' },
       { name: 'My Organizations', href: '/control/my-orgs', icon: '👥' },
+      { name: 'Claim Name', href: '/control/claim-name', icon: '🏷️' },
       { name: 'Treasury', href: '/control/treasury', icon: '💰' },
     ]
   },
@@ -64,6 +65,7 @@ const navigation = [
     children: [
       { name: 'My Profile', href: '/sense', icon: '🆔' },
       { name: 'Create Profile', href: '/sense/create', icon: '➕' },
+      { name: 'Claim Name', href: '/sense/claim-name', icon: '🏷️' },
       { name: 'Achievements', href: '/sense/achievements', icon: '🏆' },
       { name: 'Reputation', href: '/sense/reputation', icon: '⭐' },
     ]

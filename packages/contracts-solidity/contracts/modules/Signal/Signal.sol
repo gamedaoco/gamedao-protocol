@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.20;
 
-import "../../core/GameDAOModule.sol";
 import "../../interfaces/ISignal.sol";
+import "../../interfaces/IGameDAOModule.sol";
+import "../../interfaces/IGameDAORegistry.sol";
+import "../../core/GameDAOModule.sol";
+import "../../libraries/GameId.sol";
 import "../../interfaces/IControl.sol";
 import "../../interfaces/IGameToken.sol";
-import "../../libraries/IdUtils.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -179,9 +181,9 @@ contract Signal is GameDAOModule, ISignal {
             revert InvalidVotingPeriod(votingPeriod);
         }
 
-        // Generate hierarchical ID
+        // Generate hierarchical ID: "ORGID123-P-PROP001"
         uint256 proposalCounter = ++_organizationProposalCounters[organizationId];
-        hierarchicalId = IdUtils.generateProposalId(organizationId, proposalCounter);
+        hierarchicalId = GameId.generateProposalId(organizationId, proposalCounter);
 
         // Create proposal
         Proposal storage proposal = _proposals[hierarchicalId];

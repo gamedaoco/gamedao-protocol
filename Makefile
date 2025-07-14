@@ -93,10 +93,19 @@ help:
 	@echo "  make scaffold-full    Generate and copy test data to frontend"
 	@echo "  make scaffold-data-only Generate new test data without redeploying contracts"
 	@echo "  make test-interactions Run extended interaction testing with user key pairs"
+	@echo "  make test-hierarchical-ids Test hierarchical ID system (GIP-006)"
+	@echo "  make test-hierarchical-performance Run hierarchical ID performance benchmarks"
+	@echo "  make validate-gip-006 Complete GIP-006 validation (deploy + test + scaffold)"
+	@echo "  make deploy-testnet   Deploy contracts to testnet"
+	@echo "  make test-e2e-testnet Run end-to-end testnet tests"
+	@echo "  make validate-testnet Validate testnet deployment"
+	@echo "  make testnet-full     Complete testnet deployment and validation"
 	@echo "  make create-profiles  Generate realistic profiles with faker.js (USERS=N)"
 	@echo "  make create-profiles-large Generate large ecosystem (50 users, 15 orgs, 25 campaigns)"
 	@echo "  make send-tokens     Send tokens to account (RECIPIENT=0x... ETH=1.0 GAME=10000 USDC=5000)"
 	@echo "  make dev-scaffold     Full dev setup with test data"
+	@echo "  make dev-setup-hierarchical Setup dev environment with hierarchical IDs"
+	@echo "  make dev-full-hierarchical Complete dev environment (contracts + graph + frontend + hierarchical IDs)"
 	@echo ""
 	@echo "$(YELLOW)📝 Examples:$(NC)"
 	@echo "  make deploy NETWORK=sepolia"
@@ -208,14 +217,7 @@ deploy-localhost:
 	@cd $(CONTRACTS_DIR) && npm run deploy:localhost
 	@echo "$(GREEN)✅ Local deployment complete$(NC)"
 
-deploy-testnet:
-	@echo "$(BLUE)🚀 Deploying to testnet...$(NC)"
-	@if [ -z "$(DEPLOYER_PRIVATE_KEY)" ]; then \
-		echo "$(RED)❌ DEPLOYER_PRIVATE_KEY not set$(NC)"; \
-		exit 1; \
-	fi
-	@cd $(CONTRACTS_DIR) && npm run deploy:testnet
-	@echo "$(GREEN)✅ Testnet deployment complete$(NC)"
+# deploy-testnet target moved to end of file (line 629)
 
 deploy-mainnet:
 	@echo "$(RED)🚨 MAINNET DEPLOYMENT - ARE YOU SURE? (y/N)$(NC)"
@@ -445,6 +447,56 @@ test-interactions:
 	@echo "$(GREEN)✅ Extended interactions generated successfully$(NC)"
 	@echo "$(CYAN)💡 Check extended-interactions-output.json for detailed results$(NC)"
 
+test-hierarchical-ids:
+	@echo "$(BLUE)🔍 Testing Hierarchical ID System (GIP-006)...$(NC)"
+	@echo "$(YELLOW)⚠️  Ensure contracts are deployed first (run 'make deploy-localhost')$(NC)"
+	@cd $(CONTRACTS_DIR) && npx hardhat run scripts/test-hierarchical-ids.ts --network localhost
+	@echo "$(GREEN)✅ Hierarchical ID testing completed successfully$(NC)"
+	@echo "$(CYAN)💾 Check hierarchical-id-test-results.json for detailed results$(NC)"
+
+test-hierarchical-performance:
+	@echo "$(BLUE)⚡ Running hierarchical ID performance benchmarks...$(NC)"
+	@echo "$(YELLOW)⚠️  This will create multiple proposals for performance testing$(NC)"
+	@cd $(CONTRACTS_DIR) && PERF_TEST=true npx hardhat run scripts/test-hierarchical-ids.ts --network localhost
+	@echo "$(GREEN)✅ Performance benchmarks completed$(NC)"
+
+validate-gip-006:
+	@echo "$(BLUE)🎯 Validating GIP-006 Implementation...$(NC)"
+	@echo "$(CYAN)1️⃣  Deploying contracts with hierarchical ID support...$(NC)"
+	@make deploy-localhost
+	@echo "$(CYAN)2️⃣  Testing hierarchical ID functionality...$(NC)"
+	@make test-hierarchical-ids
+	@echo "$(CYAN)3️⃣  Generating scaffold data with hierarchical IDs...$(NC)"
+	@make scaffold-full
+	@echo "$(CYAN)4️⃣  Running extended interaction tests...$(NC)"
+	@make test-interactions
+	@echo "$(GREEN)✅ GIP-006 validation completed successfully$(NC)"
+	@echo "$(PURPLE)🎉 Hierarchical ID system is ready for production!$(NC)"
+
+dev-setup-hierarchical:
+	@echo "$(BLUE)🚀 Setting up development environment with hierarchical IDs...$(NC)"
+	@echo "$(CYAN)1️⃣  Deploying contracts...$(NC)"
+	@make deploy-localhost
+	@echo "$(CYAN)2️⃣  Creating test organizations and proposals...$(NC)"
+	@cd $(CONTRACTS_DIR) && npx hardhat run scripts/dev-setup-hierarchical.ts --network localhost
+	@echo "$(CYAN)3️⃣  Generating scaffold data...$(NC)"
+	@make scaffold-full
+	@echo "$(GREEN)✅ Development environment ready with hierarchical ID support$(NC)"
+	@echo "$(PURPLE)🎮 Start frontend with: make dev-frontend$(NC)"
+
+dev-full-hierarchical:
+	@echo "$(BLUE)🌟 Complete development environment with hierarchical IDs...$(NC)"
+	@echo "$(CYAN)1️⃣  Setting up development environment...$(NC)"
+	@make dev-setup-hierarchical
+	@echo "$(CYAN)2️⃣  Starting Graph node...$(NC)"
+	@make graph-node
+	@echo "$(CYAN)3️⃣  Deploying subgraph...$(NC)"
+	@make graph-deploy
+	@echo "$(CYAN)4️⃣  Starting frontend...$(NC)"
+	@make dev-frontend
+	@echo "$(GREEN)✅ Complete development environment running$(NC)"
+	@echo "$(PURPLE)🎉 Ready for GIP-006 development and testing!$(NC)"
+
 create-profiles:
 	@echo "$(BLUE)🎭 Creating realistic profiles with faker.js...$(NC)"
 	@echo "$(CYAN)📊 Generating $(or $(USERS),10) users with organizations, campaigns, and proposals$(NC)"
@@ -566,6 +618,29 @@ check-deps:
 # Error handling
 .ONESHELL:
 .SHELLFLAGS = -e
+
+# Testnet deployment and testing
+deploy-testnet:
+	@echo "🚀 Deploying to testnet..."
+	cd packages/contracts-solidity && npx hardhat run scripts/deploy-core-testnet.ts --network testnet
+
+deploy-testnet-local:
+	@echo "🚀 Deploying to localhost (for testing)..."
+	cd packages/contracts-solidity && npx hardhat run scripts/deploy-core-testnet.ts --network localhost
+
+test-e2e-testnet:
+	@echo "🧪 Running end-to-end testnet tests..."
+	cd packages/contracts-solidity && npx hardhat run scripts/test-e2e-testnet.ts --network testnet
+
+validate-testnet:
+	@echo "✅ Validating testnet deployment..."
+	cd packages/contracts-solidity && npx hardhat run scripts/validate-deployment.ts --network testnet
+
+testnet-full:
+	@echo "🚀 Complete testnet deployment and validation..."
+	$(MAKE) deploy-testnet
+	$(MAKE) test-e2e-testnet
+	$(MAKE) validate-testnet
 
 # Make sure we fail fast if any command fails
 .DELETE_ON_ERROR:

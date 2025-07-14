@@ -170,6 +170,37 @@ export declare namespace ISense {
     verified: boolean;
   };
 
+  export type NameClaimStruct = {
+    name: BytesLike;
+    owner: AddressLike;
+    stakeAmount: BigNumberish;
+    stakeDuration: BigNumberish;
+    claimedAt: BigNumberish;
+    expiresAt: BigNumberish;
+    isActive: boolean;
+    nameType: BigNumberish;
+  };
+
+  export type NameClaimStructOutput = [
+    name: string,
+    owner: string,
+    stakeAmount: bigint,
+    stakeDuration: bigint,
+    claimedAt: bigint,
+    expiresAt: bigint,
+    isActive: boolean,
+    nameType: bigint
+  ] & {
+    name: string;
+    owner: string;
+    stakeAmount: bigint;
+    stakeDuration: bigint;
+    claimedAt: bigint;
+    expiresAt: bigint;
+    isActive: boolean;
+    nameType: bigint;
+  };
+
   export type ProfileStruct = {
     profileId: BytesLike;
     owner: AddressLike;
@@ -260,6 +291,7 @@ export interface ISenseInterface extends Interface {
     nameOrSignature:
       | "calculateTrustScore"
       | "calculateVotingWeight"
+      | "claimName"
       | "createProfile"
       | "exportReputation"
       | "getAchievements"
@@ -267,6 +299,8 @@ export interface ISenseInterface extends Interface {
       | "getCategoryReputation"
       | "getFeedbackSummary"
       | "getFeedbacks"
+      | "getNameClaim"
+      | "getNamesOwnedBy"
       | "getProfile"
       | "getProfileByOwner"
       | "getProfileCount"
@@ -278,11 +312,14 @@ export interface ISenseInterface extends Interface {
       | "grantAchievementWithParams"
       | "hasAchievement"
       | "importReputation"
+      | "isNameAvailable"
       | "profileExists"
+      | "releaseName"
       | "submitFeedback"
       | "updateCategoryReputation"
       | "updateProfile"
       | "updateReputation"
+      | "validateNameFormat"
       | "verifyProfile"
   ): FunctionFragment;
 
@@ -290,6 +327,9 @@ export interface ISenseInterface extends Interface {
     nameOrSignatureOrTopic:
       | "AchievementGranted"
       | "FeedbackSubmitted"
+      | "NameClaimed"
+      | "NameExpired"
+      | "NameReleased"
       | "ProfileCreated"
       | "ProfileUpdated"
       | "ProfileVerified"
@@ -305,6 +345,10 @@ export interface ISenseInterface extends Interface {
   encodeFunctionData(
     functionFragment: "calculateVotingWeight",
     values: [BytesLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "claimName",
+    values: [BytesLike, BigNumberish, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "createProfile",
@@ -333,6 +377,14 @@ export interface ISenseInterface extends Interface {
   encodeFunctionData(
     functionFragment: "getFeedbacks",
     values: [BytesLike, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getNameClaim",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getNamesOwnedBy",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getProfile",
@@ -387,7 +439,15 @@ export interface ISenseInterface extends Interface {
     values: [BytesLike, ISense.ReputationExportStruct, BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "isNameAvailable",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "profileExists",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "releaseName",
     values: [BytesLike]
   ): string;
   encodeFunctionData(
@@ -407,6 +467,10 @@ export interface ISenseInterface extends Interface {
     values: [BytesLike, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "validateNameFormat",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "verifyProfile",
     values: [BytesLike, BigNumberish]
   ): string;
@@ -419,6 +483,7 @@ export interface ISenseInterface extends Interface {
     functionFragment: "calculateVotingWeight",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "claimName", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "createProfile",
     data: BytesLike
@@ -445,6 +510,14 @@ export interface ISenseInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getFeedbacks",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getNameClaim",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getNamesOwnedBy",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getProfile", data: BytesLike): Result;
@@ -489,7 +562,15 @@ export interface ISenseInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "isNameAvailable",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "profileExists",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "releaseName",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -506,6 +587,10 @@ export interface ISenseInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "updateReputation",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "validateNameFormat",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -568,6 +653,80 @@ export namespace FeedbackSubmittedEvent {
     giver: string;
     feedbackType: bigint;
     rating: bigint;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace NameClaimedEvent {
+  export type InputTuple = [
+    name: BytesLike,
+    owner: AddressLike,
+    stakeAmount: BigNumberish,
+    stakeDuration: BigNumberish,
+    nameType: BigNumberish,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    name: string,
+    owner: string,
+    stakeAmount: bigint,
+    stakeDuration: bigint,
+    nameType: bigint,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    name: string;
+    owner: string;
+    stakeAmount: bigint;
+    stakeDuration: bigint;
+    nameType: bigint;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace NameExpiredEvent {
+  export type InputTuple = [
+    name: BytesLike,
+    owner: AddressLike,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [name: string, owner: string, timestamp: bigint];
+  export interface OutputObject {
+    name: string;
+    owner: string;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace NameReleasedEvent {
+  export type InputTuple = [
+    name: BytesLike,
+    owner: AddressLike,
+    stakeAmount: BigNumberish,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    name: string,
+    owner: string,
+    stakeAmount: bigint,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    name: string;
+    owner: string;
+    stakeAmount: bigint;
     timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -792,6 +951,17 @@ export interface ISense extends BaseContract {
     "view"
   >;
 
+  claimName: TypedContractMethod<
+    [
+      name: BytesLike,
+      stakeAmount: BigNumberish,
+      stakeDuration: BigNumberish,
+      nameType: BigNumberish
+    ],
+    [boolean],
+    "nonpayable"
+  >;
+
   createProfile: TypedContractMethod<
     [organizationId: BytesLike, metadata: string],
     [string],
@@ -831,6 +1001,18 @@ export interface ISense extends BaseContract {
   getFeedbacks: TypedContractMethod<
     [profileId: BytesLike, offset: BigNumberish, limit: BigNumberish],
     [ISense.FeedbackStructOutput[]],
+    "view"
+  >;
+
+  getNameClaim: TypedContractMethod<
+    [name: BytesLike],
+    [ISense.NameClaimStructOutput],
+    "view"
+  >;
+
+  getNamesOwnedBy: TypedContractMethod<
+    [owner: AddressLike],
+    [string[]],
     "view"
   >;
 
@@ -912,7 +1094,11 @@ export interface ISense extends BaseContract {
     "nonpayable"
   >;
 
+  isNameAvailable: TypedContractMethod<[name: BytesLike], [boolean], "view">;
+
   profileExists: TypedContractMethod<[profileId: BytesLike], [boolean], "view">;
+
+  releaseName: TypedContractMethod<[name: BytesLike], [bigint], "nonpayable">;
 
   submitFeedback: TypedContractMethod<
     [
@@ -953,6 +1139,8 @@ export interface ISense extends BaseContract {
     "nonpayable"
   >;
 
+  validateNameFormat: TypedContractMethod<[name: BytesLike], [boolean], "view">;
+
   verifyProfile: TypedContractMethod<
     [profileId: BytesLike, level: BigNumberish],
     [void],
@@ -972,6 +1160,18 @@ export interface ISense extends BaseContract {
     [profileId: BytesLike, baseWeight: BigNumberish],
     [bigint],
     "view"
+  >;
+  getFunction(
+    nameOrSignature: "claimName"
+  ): TypedContractMethod<
+    [
+      name: BytesLike,
+      stakeAmount: BigNumberish,
+      stakeDuration: BigNumberish,
+      nameType: BigNumberish
+    ],
+    [boolean],
+    "nonpayable"
   >;
   getFunction(
     nameOrSignature: "createProfile"
@@ -1022,6 +1222,16 @@ export interface ISense extends BaseContract {
     [ISense.FeedbackStructOutput[]],
     "view"
   >;
+  getFunction(
+    nameOrSignature: "getNameClaim"
+  ): TypedContractMethod<
+    [name: BytesLike],
+    [ISense.NameClaimStructOutput],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getNamesOwnedBy"
+  ): TypedContractMethod<[owner: AddressLike], [string[]], "view">;
   getFunction(
     nameOrSignature: "getProfile"
   ): TypedContractMethod<
@@ -1108,8 +1318,14 @@ export interface ISense extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "isNameAvailable"
+  ): TypedContractMethod<[name: BytesLike], [boolean], "view">;
+  getFunction(
     nameOrSignature: "profileExists"
   ): TypedContractMethod<[profileId: BytesLike], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "releaseName"
+  ): TypedContractMethod<[name: BytesLike], [bigint], "nonpayable">;
   getFunction(
     nameOrSignature: "submitFeedback"
   ): TypedContractMethod<
@@ -1154,6 +1370,9 @@ export interface ISense extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "validateNameFormat"
+  ): TypedContractMethod<[name: BytesLike], [boolean], "view">;
+  getFunction(
     nameOrSignature: "verifyProfile"
   ): TypedContractMethod<
     [profileId: BytesLike, level: BigNumberish],
@@ -1174,6 +1393,27 @@ export interface ISense extends BaseContract {
     FeedbackSubmittedEvent.InputTuple,
     FeedbackSubmittedEvent.OutputTuple,
     FeedbackSubmittedEvent.OutputObject
+  >;
+  getEvent(
+    key: "NameClaimed"
+  ): TypedContractEvent<
+    NameClaimedEvent.InputTuple,
+    NameClaimedEvent.OutputTuple,
+    NameClaimedEvent.OutputObject
+  >;
+  getEvent(
+    key: "NameExpired"
+  ): TypedContractEvent<
+    NameExpiredEvent.InputTuple,
+    NameExpiredEvent.OutputTuple,
+    NameExpiredEvent.OutputObject
+  >;
+  getEvent(
+    key: "NameReleased"
+  ): TypedContractEvent<
+    NameReleasedEvent.InputTuple,
+    NameReleasedEvent.OutputTuple,
+    NameReleasedEvent.OutputObject
   >;
   getEvent(
     key: "ProfileCreated"
@@ -1239,6 +1479,39 @@ export interface ISense extends BaseContract {
       FeedbackSubmittedEvent.InputTuple,
       FeedbackSubmittedEvent.OutputTuple,
       FeedbackSubmittedEvent.OutputObject
+    >;
+
+    "NameClaimed(bytes8,address,uint256,uint256,uint8,uint256)": TypedContractEvent<
+      NameClaimedEvent.InputTuple,
+      NameClaimedEvent.OutputTuple,
+      NameClaimedEvent.OutputObject
+    >;
+    NameClaimed: TypedContractEvent<
+      NameClaimedEvent.InputTuple,
+      NameClaimedEvent.OutputTuple,
+      NameClaimedEvent.OutputObject
+    >;
+
+    "NameExpired(bytes8,address,uint256)": TypedContractEvent<
+      NameExpiredEvent.InputTuple,
+      NameExpiredEvent.OutputTuple,
+      NameExpiredEvent.OutputObject
+    >;
+    NameExpired: TypedContractEvent<
+      NameExpiredEvent.InputTuple,
+      NameExpiredEvent.OutputTuple,
+      NameExpiredEvent.OutputObject
+    >;
+
+    "NameReleased(bytes8,address,uint256,uint256)": TypedContractEvent<
+      NameReleasedEvent.InputTuple,
+      NameReleasedEvent.OutputTuple,
+      NameReleasedEvent.OutputObject
+    >;
+    NameReleased: TypedContractEvent<
+      NameReleasedEvent.InputTuple,
+      NameReleasedEvent.OutputTuple,
+      NameReleasedEvent.OutputObject
     >;
 
     "ProfileCreated(bytes32,address,bytes8,string,uint256)": TypedContractEvent<

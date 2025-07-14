@@ -271,6 +271,7 @@ export const FLOW_ABI = [
 ] as const
 
 export const SIGNAL_ABI = [
+  // Core proposal functions
   {
     "inputs": [
       {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
@@ -285,10 +286,145 @@ export const SIGNAL_ABI = [
       {"internalType": "address", "name": "targetContract", "type": "address"}
     ],
     "name": "createProposal",
-    "outputs": [{"internalType": "bytes32", "name": "proposalId", "type": "bytes32"}],
+    "outputs": [{"internalType": "string", "name": "hierarchicalId", "type": "string"}],
     "stateMutability": "nonpayable",
     "type": "function"
   },
+  {
+    "inputs": [
+      {"internalType": "string", "name": "hierarchicalId", "type": "string"}
+    ],
+    "name": "getProposal",
+    "outputs": [
+      {
+        "components": [
+          {"internalType": "string", "name": "hierarchicalId", "type": "string"},
+          {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+          {"internalType": "address", "name": "creator", "type": "address"},
+          {"internalType": "string", "name": "title", "type": "string"},
+          {"internalType": "string", "name": "description", "type": "string"},
+          {"internalType": "string", "name": "metadataURI", "type": "string"},
+          {"internalType": "uint8", "name": "proposalType", "type": "uint8"},
+          {"internalType": "uint8", "name": "votingType", "type": "uint8"},
+          {"internalType": "uint8", "name": "votingPower", "type": "uint8"},
+          {"internalType": "uint8", "name": "state", "type": "uint8"},
+          {"internalType": "uint256", "name": "startTime", "type": "uint256"},
+          {"internalType": "uint256", "name": "endTime", "type": "uint256"},
+          {"internalType": "uint256", "name": "executionTime", "type": "uint256"},
+          {"internalType": "uint256", "name": "forVotes", "type": "uint256"},
+          {"internalType": "uint256", "name": "againstVotes", "type": "uint256"},
+          {"internalType": "uint256", "name": "abstainVotes", "type": "uint256"},
+          {"internalType": "bytes", "name": "executionData", "type": "bytes"},
+          {"internalType": "address", "name": "targetContract", "type": "address"},
+          {"internalType": "address", "name": "executor", "type": "address"},
+          {"internalType": "uint256", "name": "createdAt", "type": "uint256"},
+          {"internalType": "uint256", "name": "executedAt", "type": "uint256"}
+        ],
+        "internalType": "struct ISignal.Proposal",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+
+  // Voting functions
+  {
+    "inputs": [
+      {"internalType": "string", "name": "hierarchicalId", "type": "string"},
+      {"internalType": "uint8", "name": "choice", "type": "uint8"},
+      {"internalType": "string", "name": "reason", "type": "string"}
+    ],
+    "name": "castVote",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "string", "name": "hierarchicalId", "type": "string"},
+      {"internalType": "uint8", "name": "choice", "type": "uint8"},
+      {"internalType": "uint256", "name": "convictionTime", "type": "uint256"},
+      {"internalType": "string", "name": "reason", "type": "string"}
+    ],
+    "name": "castVoteWithConviction",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "string", "name": "hierarchicalId", "type": "string"},
+      {"internalType": "address", "name": "voter", "type": "address"}
+    ],
+    "name": "getVote",
+    "outputs": [
+      {
+        "components": [
+          {"internalType": "address", "name": "voter", "type": "address"},
+          {"internalType": "uint8", "name": "choice", "type": "uint8"},
+          {"internalType": "uint256", "name": "votingPower", "type": "uint256"},
+          {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
+          {"internalType": "string", "name": "reason", "type": "string"},
+          {"internalType": "bool", "name": "hasVoted", "type": "bool"},
+          {"internalType": "uint256", "name": "convictionTime", "type": "uint256"},
+          {"internalType": "uint256", "name": "convictionMultiplier", "type": "uint256"}
+        ],
+        "internalType": "struct ISignal.Vote",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+
+  // Delegation functions
+  {
+    "inputs": [
+      {"internalType": "address", "name": "delegatee", "type": "address"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"}
+    ],
+    "name": "delegateVotingPower",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "address", "name": "delegatee", "type": "address"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"}
+    ],
+    "name": "undelegateVotingPower",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+      {"internalType": "address", "name": "account", "type": "address"},
+      {"internalType": "uint8", "name": "votingPowerType", "type": "uint8"}
+    ],
+    "name": "getVotingPowerWithDelegation",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+
+  // Conviction voting utilities
+  {
+    "inputs": [
+      {"internalType": "uint256", "name": "convictionTime", "type": "uint256"}
+    ],
+    "name": "calculateConvictionMultiplier",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+
+  // Query functions
   {
     "inputs": [],
     "name": "getProposalCount",
@@ -297,119 +433,66 @@ export const SIGNAL_ABI = [
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getActiveProposals",
-    "outputs": [{"internalType": "bytes32[]", "name": "", "type": "bytes32[]"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [{"internalType": "bytes8", "name": "organizationId", "type": "bytes8"}],
     "name": "getProposalsByOrganization",
-    "outputs": [{"internalType": "bytes32[]", "name": "", "type": "bytes32[]"}],
+    "outputs": [{"internalType": "string[]", "name": "", "type": "string[]"}],
     "stateMutability": "view",
     "type": "function"
   },
+
+  // Events
   {
-    "inputs": [{"internalType": "uint8", "name": "state", "type": "uint8"}],
-    "name": "getProposalsByState",
-    "outputs": [{"internalType": "bytes32[]", "name": "", "type": "bytes32[]"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "bytes32", "name": "proposalId", "type": "bytes32"}],
-    "name": "getProposal",
-    "outputs": [
-      {"internalType": "uint256", "name": "index", "type": "uint256"},
-      {"internalType": "bytes32", "name": "proposalId", "type": "bytes32"},
-      {"internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
-      {"internalType": "address", "name": "proposer", "type": "address"},
-      {"internalType": "string", "name": "title", "type": "string"},
-      {"internalType": "string", "name": "description", "type": "string"},
-      {"internalType": "string", "name": "metadataURI", "type": "string"},
-      {"internalType": "uint8", "name": "proposalType", "type": "uint8"},
-      {"internalType": "uint8", "name": "votingType", "type": "uint8"},
-      {"internalType": "uint8", "name": "votingPower", "type": "uint8"},
-      {"internalType": "uint8", "name": "state", "type": "uint8"},
-      {"internalType": "uint256", "name": "startTime", "type": "uint256"},
-      {"internalType": "uint256", "name": "endTime", "type": "uint256"},
-      {"internalType": "uint256", "name": "executionTime", "type": "uint256"},
-      {"internalType": "uint256", "name": "createdAt", "type": "uint256"},
-      {"internalType": "uint256", "name": "updatedAt", "type": "uint256"},
-      {"internalType": "bytes", "name": "executionData", "type": "bytes"},
-      {"internalType": "address", "name": "targetContract", "type": "address"},
-      {"internalType": "uint256", "name": "requiredQuorum", "type": "uint256"},
-      {"internalType": "uint256", "name": "votesFor", "type": "uint256"},
-      {"internalType": "uint256", "name": "votesAgainst", "type": "uint256"},
-      {"internalType": "uint256", "name": "votesAbstain", "type": "uint256"},
-      {"internalType": "uint256", "name": "totalVotingPower", "type": "uint256"},
-      {"internalType": "bool", "name": "executed", "type": "bool"},
-      {"internalType": "bool", "name": "cancelled", "type": "bool"}
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "bytes32", "name": "proposalId", "type": "bytes32"}],
-    "name": "getProposalResult",
-    "outputs": [
-      {"internalType": "bool", "name": "passed", "type": "bool"},
-      {"internalType": "uint256", "name": "forVotes", "type": "uint256"},
-      {"internalType": "uint256", "name": "againstVotes", "type": "uint256"},
-      {"internalType": "uint256", "name": "abstainVotes", "type": "uint256"},
-      {"internalType": "uint256", "name": "quorum", "type": "uint256"}
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
+    "anonymous": false,
     "inputs": [
-      {"internalType": "bytes32", "name": "proposalId", "type": "bytes32"},
-      {"internalType": "address", "name": "voter", "type": "address"}
+      {"indexed": false, "internalType": "string", "name": "hierarchicalId", "type": "string"},
+      {"indexed": true, "internalType": "bytes8", "name": "organizationId", "type": "bytes8"},
+      {"indexed": true, "internalType": "address", "name": "creator", "type": "address"},
+      {"indexed": false, "internalType": "string", "name": "title", "type": "string"},
+      {"indexed": false, "internalType": "uint8", "name": "proposalType", "type": "uint8"},
+      {"indexed": false, "internalType": "uint8", "name": "votingType", "type": "uint8"},
+      {"indexed": false, "internalType": "uint256", "name": "votingPeriod", "type": "uint256"},
+      {"indexed": false, "internalType": "uint256", "name": "startTime", "type": "uint256"},
+      {"indexed": false, "internalType": "uint256", "name": "endTime", "type": "uint256"}
     ],
-    "name": "hasVoted",
-    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-    "stateMutability": "view",
-    "type": "function"
+    "name": "ProposalCreated",
+    "type": "event"
   },
   {
+    "anonymous": false,
     "inputs": [
-      {"internalType": "bytes32", "name": "proposalId", "type": "bytes32"},
-      {"internalType": "address", "name": "voter", "type": "address"}
+      {"indexed": false, "internalType": "string", "name": "hierarchicalId", "type": "string"},
+      {"indexed": true, "internalType": "address", "name": "voter", "type": "address"},
+      {"indexed": false, "internalType": "uint8", "name": "choice", "type": "uint8"},
+      {"indexed": false, "internalType": "uint256", "name": "votingPower", "type": "uint256"},
+      {"indexed": false, "internalType": "string", "name": "reason", "type": "string"}
     ],
-    "name": "canVote",
-    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-    "stateMutability": "view",
-    "type": "function"
+    "name": "VoteCast",
+    "type": "event"
   },
   {
+    "anonymous": false,
     "inputs": [
-      {"internalType": "bytes32", "name": "proposalId", "type": "bytes32"},
-      {"internalType": "address", "name": "voter", "type": "address"}
+      {"indexed": true, "internalType": "string", "name": "hierarchicalId", "type": "string"},
+      {"indexed": true, "internalType": "address", "name": "voter", "type": "address"},
+      {"indexed": false, "internalType": "uint8", "name": "choice", "type": "uint8"},
+      {"indexed": false, "internalType": "uint256", "name": "votingPower", "type": "uint256"},
+      {"indexed": false, "internalType": "uint256", "name": "convictionMultiplier", "type": "uint256"},
+      {"indexed": false, "internalType": "uint256", "name": "convictionTime", "type": "uint256"},
+      {"indexed": false, "internalType": "string", "name": "reason", "type": "string"}
     ],
-    "name": "getVotingPower",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
+    "name": "ConvictionVoteCast",
+    "type": "event"
   },
   {
-    "inputs": [{"internalType": "bytes32", "name": "proposalId", "type": "bytes32"}],
-    "name": "getTimeRemaining",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
+    "anonymous": false,
     "inputs": [
-      {"internalType": "bytes32", "name": "proposalId", "type": "bytes32"},
-      {"internalType": "uint8", "name": "choice", "type": "uint8"},
-      {"internalType": "string", "name": "reason", "type": "string"}
+      {"indexed": true, "internalType": "address", "name": "delegator", "type": "address"},
+      {"indexed": true, "internalType": "address", "name": "delegatee", "type": "address"},
+      {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
+      {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
     ],
-    "name": "castVote",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "name": "VotingPowerDelegated",
+    "type": "event"
   }
 ] as const
 
@@ -444,6 +527,63 @@ export const SENSE_ABI = [
       {"internalType": "uint256", "name": "createdAt", "type": "uint256"}
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  // Name claiming functions
+  {
+    "inputs": [
+      {"internalType": "bytes8", "name": "name", "type": "bytes8"},
+      {"internalType": "uint256", "name": "stakeAmount", "type": "uint256"},
+      {"internalType": "uint256", "name": "stakeDuration", "type": "uint256"},
+      {"internalType": "uint8", "name": "nameType", "type": "uint8"}
+    ],
+    "name": "claimName",
+    "outputs": [{"internalType": "bool", "name": "success", "type": "bool"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes8", "name": "name", "type": "bytes8"}],
+    "name": "releaseName",
+    "outputs": [{"internalType": "uint256", "name": "stakeAmount", "type": "uint256"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes8", "name": "name", "type": "bytes8"}],
+    "name": "isNameAvailable",
+    "outputs": [{"internalType": "bool", "name": "available", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes8", "name": "name", "type": "bytes8"}],
+    "name": "getNameClaim",
+    "outputs": [
+      {"internalType": "bytes8", "name": "name", "type": "bytes8"},
+      {"internalType": "address", "name": "owner", "type": "address"},
+      {"internalType": "uint256", "name": "stakeAmount", "type": "uint256"},
+      {"internalType": "uint256", "name": "stakeDuration", "type": "uint256"},
+      {"internalType": "uint256", "name": "claimedAt", "type": "uint256"},
+      {"internalType": "uint256", "name": "expiresAt", "type": "uint256"},
+      {"internalType": "bool", "name": "isActive", "type": "bool"},
+      {"internalType": "uint8", "name": "nameType", "type": "uint8"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
+    "name": "getNamesOwnedBy",
+    "outputs": [{"internalType": "bytes8[]", "name": "names", "type": "bytes8[]"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes8", "name": "name", "type": "bytes8"}],
+    "name": "validateNameFormat",
+    "outputs": [{"internalType": "bool", "name": "valid", "type": "bool"}],
+    "stateMutability": "pure",
     "type": "function"
   }
 ] as const

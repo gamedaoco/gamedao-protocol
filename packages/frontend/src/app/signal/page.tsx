@@ -154,9 +154,21 @@ export default function SignalPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <Badge variant="outline" className="text-xs">{proposal.id.slice(0, 8)}...</Badge>
+                      <Badge variant="outline" className="text-xs font-mono">{proposal.id}</Badge>
                       <Badge variant="secondary" className="text-xs">{proposal.proposalType}</Badge>
                       <Badge variant="default" className="text-xs">{proposal.state}</Badge>
+                      {proposal.convictionSupported && (
+                        <Badge variant="outline" className="text-xs">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Conviction
+                        </Badge>
+                      )}
+                      {proposal.delegationSupported && (
+                        <Badge variant="outline" className="text-xs">
+                          <Users className="h-3 w-3 mr-1" />
+                          Delegation
+                        </Badge>
+                      )}
                     </div>
                     <h3 className="font-medium text-lg mb-2">{proposal.title || `Proposal ${index + 1}`}</h3>
                     <p className="text-sm text-muted-foreground mb-3">{proposal.description || 'Loading proposal details...'}</p>

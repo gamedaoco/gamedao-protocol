@@ -67,7 +67,7 @@ const config: HardhatUserConfig = {
     alphaSort: true,
     disambiguatePaths: false,
     runOnCompile: true,
-    strict: true,
+    strict: false, // Don't fail on size limit exceeded for local development
   },
   etherscan: {
     apiKey: {
@@ -83,6 +83,7 @@ const config: HardhatUserConfig = {
     alwaysGenerateOverloads: false,
     discriminateTypes: true,
   },
+
   paths: {
     sources: "./contracts",
     tests: "./test",

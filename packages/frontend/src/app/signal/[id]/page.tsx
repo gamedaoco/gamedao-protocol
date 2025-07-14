@@ -14,12 +14,27 @@ import { useState } from 'react'
 import { Vote, Users, Clock, CheckCircle, XCircle, Pause } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import React from 'react'
+import { ConvictionVotingModal } from '@/components/ui/conviction-voting-modal'
+import { DelegationModal } from '@/components/ui/delegation-modal'
 
 // Individual proposal hook (to be implemented)
 function useProposal(id: string) {
   // For now, get from the proposals list
   // TODO: Implement individual proposal fetching
-  const { proposals, isLoading, error, getStateString, castVote, isVoting, canUserVote, hasUserVoted, getVotingPowerForProposal } = useProposals()
+  const {
+    proposals,
+    isLoading,
+    error,
+    getStateString,
+    castVote,
+    castVoteWithConviction,
+    delegateVotingPower,
+    undelegateVotingPower,
+    isVoting,
+    canUserVote,
+    hasUserVoted,
+    getVotingPowerForProposal
+  } = useProposals()
   const { organizations } = useOrganizations()
 
   const proposal = proposals?.find(prop => prop.id === id)
@@ -33,6 +48,9 @@ function useProposal(id: string) {
     // Utility functions
     getStateString,
     castVote,
+    castVoteWithConviction, // New conviction voting function
+    delegateVotingPower, // New delegation functions
+    undelegateVotingPower,
     isVoting,
     canUserVote,
     hasUserVoted,
@@ -55,6 +73,9 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
     error,
     getStateString,
     castVote,
+    castVoteWithConviction,
+    delegateVotingPower,
+    undelegateVotingPower,
     isVoting,
     canUserVote,
     hasUserVoted,
@@ -62,6 +83,8 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
   } = useProposal(id)
 
   const [votingPower, setVotingPower] = useState<number>(0)
+  const [showConvictionModal, setShowConvictionModal] = useState(false)
+  const [showDelegationModal, setShowDelegationModal] = useState(false)
 
   // Load voting power when component mounts
   React.useEffect(() => {
@@ -80,6 +103,37 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
       setVotingPower(0)
     } catch (error) {
       console.error('Error voting:', error)
+    }
+  }
+
+  // Handle conviction voting
+  const handleConvictionVote = async (choice: 0 | 1 | 2, convictionTime: number, reason: string) => {
+    if (!proposal || !canUserVote(proposal.id)) return
+
+    try {
+      await castVoteWithConviction(proposal.id, choice, convictionTime, reason)
+      setVotingPower(0)
+    } catch (error) {
+      console.error('Error conviction voting:', error)
+    }
+  }
+
+  // Handle delegation
+  const handleDelegate = async (delegatee: string, amount: number) => {
+    try {
+      await delegateVotingPower(delegatee, amount)
+      setVotingPower(prev => prev - amount)
+    } catch (error) {
+      console.error('Error delegating:', error)
+    }
+  }
+
+  const handleUndelegate = async (delegatee: string, amount: number) => {
+    try {
+      await undelegateVotingPower(delegatee, amount)
+      setVotingPower(prev => prev + amount)
+    } catch (error) {
+      console.error('Error undelegating:', error)
     }
   }
 
@@ -195,14 +249,19 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
         primaryAction={
           isActive ? {
             label: 'Cast Vote',
-            onClick: () => {
-              // TODO: Implement voting modal
-              console.log('Vote on proposal:', proposal.id)
-            }
+            onClick: () => setShowConvictionModal(true)
           } : undefined
         }
         actions={
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDelegationModal(true)}
+            >
+              <Users className="h-4 w-4 mr-1" />
+              Delegate
+            </Button>
             <Button variant="outline" size="sm">
               Share
             </Button>
@@ -381,6 +440,26 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
             </div>
           </div>
         </div>
+
+        {/* Conviction Voting Modal */}
+        <ConvictionVotingModal
+          isOpen={showConvictionModal}
+          onClose={() => setShowConvictionModal(false)}
+          proposalId={proposal.id}
+          proposalTitle={proposal.title}
+          onVote={handleConvictionVote}
+          isVoting={isVoting}
+        />
+
+        {/* Delegation Modal */}
+        <DelegationModal
+          isOpen={showDelegationModal}
+          onClose={() => setShowDelegationModal(false)}
+          onDelegate={handleDelegate}
+          onUndelegate={handleUndelegate}
+          isDelegating={isVoting}
+          currentVotingPower={votingPower}
+        />
       </DetailPageLayout>
     </ErrorBoundary>
   )

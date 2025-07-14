@@ -24,135 +24,6 @@ import type {
 } from "../../common";
 
 export declare namespace ISignal {
-  export type DelegationStruct = {
-    delegator: AddressLike;
-    delegatee: AddressLike;
-    amount: BigNumberish;
-    timestamp: BigNumberish;
-    active: boolean;
-  };
-
-  export type DelegationStructOutput = [
-    delegator: string,
-    delegatee: string,
-    amount: bigint,
-    timestamp: bigint,
-    active: boolean
-  ] & {
-    delegator: string;
-    delegatee: string;
-    amount: bigint;
-    timestamp: bigint;
-    active: boolean;
-  };
-
-  export type ProposalStruct = {
-    index: BigNumberish;
-    proposalId: BytesLike;
-    organizationId: BytesLike;
-    proposer: AddressLike;
-    title: string;
-    description: string;
-    metadataURI: string;
-    proposalType: BigNumberish;
-    votingType: BigNumberish;
-    votingPower: BigNumberish;
-    state: BigNumberish;
-    startTime: BigNumberish;
-    endTime: BigNumberish;
-    executionTime: BigNumberish;
-    createdAt: BigNumberish;
-    updatedAt: BigNumberish;
-    executionData: BytesLike;
-    targetContract: AddressLike;
-    requiredQuorum: BigNumberish;
-    votesFor: BigNumberish;
-    votesAgainst: BigNumberish;
-    votesAbstain: BigNumberish;
-    totalVotingPower: BigNumberish;
-    executed: boolean;
-    cancelled: boolean;
-  };
-
-  export type ProposalStructOutput = [
-    index: bigint,
-    proposalId: string,
-    organizationId: string,
-    proposer: string,
-    title: string,
-    description: string,
-    metadataURI: string,
-    proposalType: bigint,
-    votingType: bigint,
-    votingPower: bigint,
-    state: bigint,
-    startTime: bigint,
-    endTime: bigint,
-    executionTime: bigint,
-    createdAt: bigint,
-    updatedAt: bigint,
-    executionData: string,
-    targetContract: string,
-    requiredQuorum: bigint,
-    votesFor: bigint,
-    votesAgainst: bigint,
-    votesAbstain: bigint,
-    totalVotingPower: bigint,
-    executed: boolean,
-    cancelled: boolean
-  ] & {
-    index: bigint;
-    proposalId: string;
-    organizationId: string;
-    proposer: string;
-    title: string;
-    description: string;
-    metadataURI: string;
-    proposalType: bigint;
-    votingType: bigint;
-    votingPower: bigint;
-    state: bigint;
-    startTime: bigint;
-    endTime: bigint;
-    executionTime: bigint;
-    createdAt: bigint;
-    updatedAt: bigint;
-    executionData: string;
-    targetContract: string;
-    requiredQuorum: bigint;
-    votesFor: bigint;
-    votesAgainst: bigint;
-    votesAbstain: bigint;
-    totalVotingPower: bigint;
-    executed: boolean;
-    cancelled: boolean;
-  };
-
-  export type VoteStruct = {
-    voter: AddressLike;
-    choice: BigNumberish;
-    votingPower: BigNumberish;
-    timestamp: BigNumberish;
-    reason: string;
-    convictionTime: BigNumberish;
-  };
-
-  export type VoteStructOutput = [
-    voter: string,
-    choice: bigint,
-    votingPower: bigint,
-    timestamp: bigint,
-    reason: string,
-    convictionTime: bigint
-  ] & {
-    voter: string;
-    choice: bigint;
-    votingPower: bigint;
-    timestamp: bigint;
-    reason: string;
-    convictionTime: bigint;
-  };
-
   export type VotingParametersStruct = {
     votingDelay: BigNumberish;
     votingPeriod: BigNumberish;
@@ -177,6 +48,121 @@ export declare namespace ISignal {
     proposalThreshold: bigint;
     requireMembership: boolean;
   };
+
+  export type DelegationStruct = {
+    delegatee: AddressLike;
+    amount: BigNumberish;
+    timestamp: BigNumberish;
+    active: boolean;
+  };
+
+  export type DelegationStructOutput = [
+    delegatee: string,
+    amount: bigint,
+    timestamp: bigint,
+    active: boolean
+  ] & { delegatee: string; amount: bigint; timestamp: bigint; active: boolean };
+
+  export type ProposalStruct = {
+    hierarchicalId: string;
+    organizationId: BytesLike;
+    creator: AddressLike;
+    title: string;
+    description: string;
+    metadataURI: string;
+    proposalType: BigNumberish;
+    votingType: BigNumberish;
+    votingPower: BigNumberish;
+    state: BigNumberish;
+    startTime: BigNumberish;
+    endTime: BigNumberish;
+    executionTime: BigNumberish;
+    forVotes: BigNumberish;
+    againstVotes: BigNumberish;
+    abstainVotes: BigNumberish;
+    executionData: BytesLike;
+    targetContract: AddressLike;
+    executor: AddressLike;
+    createdAt: BigNumberish;
+    executedAt: BigNumberish;
+  };
+
+  export type ProposalStructOutput = [
+    hierarchicalId: string,
+    organizationId: string,
+    creator: string,
+    title: string,
+    description: string,
+    metadataURI: string,
+    proposalType: bigint,
+    votingType: bigint,
+    votingPower: bigint,
+    state: bigint,
+    startTime: bigint,
+    endTime: bigint,
+    executionTime: bigint,
+    forVotes: bigint,
+    againstVotes: bigint,
+    abstainVotes: bigint,
+    executionData: string,
+    targetContract: string,
+    executor: string,
+    createdAt: bigint,
+    executedAt: bigint
+  ] & {
+    hierarchicalId: string;
+    organizationId: string;
+    creator: string;
+    title: string;
+    description: string;
+    metadataURI: string;
+    proposalType: bigint;
+    votingType: bigint;
+    votingPower: bigint;
+    state: bigint;
+    startTime: bigint;
+    endTime: bigint;
+    executionTime: bigint;
+    forVotes: bigint;
+    againstVotes: bigint;
+    abstainVotes: bigint;
+    executionData: string;
+    targetContract: string;
+    executor: string;
+    createdAt: bigint;
+    executedAt: bigint;
+  };
+
+  export type VoteStruct = {
+    voter: AddressLike;
+    choice: BigNumberish;
+    votingPower: BigNumberish;
+    timestamp: BigNumberish;
+    reason: string;
+    hasVoted: boolean;
+    convictionTime: BigNumberish;
+    convictionMultiplier: BigNumberish;
+  };
+
+  export type VoteStructOutput = [
+    voter: string,
+    choice: bigint,
+    votingPower: bigint,
+    timestamp: bigint,
+    reason: string,
+    hasVoted: boolean,
+    convictionTime: bigint,
+    convictionMultiplier: bigint
+  ] & {
+    voter: string;
+    choice: bigint;
+    votingPower: bigint;
+    timestamp: bigint;
+    reason: string;
+    hasVoted: boolean;
+    convictionTime: bigint;
+    convictionMultiplier: bigint;
+  };
 }
 
 export interface ISignalInterface extends Interface {
@@ -192,44 +178,26 @@ export interface ISignalInterface extends Interface {
       | "castVoteWithConviction"
       | "createProposal"
       | "delegateVotingPower"
-      | "emergencyCancel"
-      | "estimateGasForExecution"
       | "executeProposal"
-      | "getActiveProposals"
       | "getDelegatedVotingPower"
       | "getDelegations"
-      | "getExecutionETA"
+      | "getOrganizationProposals"
       | "getProposal"
-      | "getProposalCount"
-      | "getProposalResult"
-      | "getProposalVotes"
-      | "getProposalsByOrganization"
       | "getProposalsByState"
-      | "getQuorumReached"
-      | "getTimeRemaining"
       | "getVote"
       | "getVotingParameters"
-      | "getVotingPower"
-      | "hasVoted"
-      | "isProposalActive"
-      | "previewProposalExecution"
-      | "queueProposal"
-      | "setProposalState"
+      | "getVotingPowerWithDelegation"
       | "setVotingParameters"
       | "undelegateVotingPower"
-      | "updateProposal"
-      | "validateProposalParameters"
   ): FunctionFragment;
 
   getEvent(
     nameOrSignatureOrTopic:
       | "ConvictionDecayApplied"
-      | "ProposalCancelled"
+      | "ConvictionVoteCast"
+      | "ProposalCanceled"
       | "ProposalCreated"
       | "ProposalExecuted"
-      | "ProposalQueued"
-      | "ProposalStateChanged"
-      | "ProposalUpdated"
       | "VoteCast"
       | "VotingParametersUpdated"
       | "VotingPowerDelegated"
@@ -238,7 +206,7 @@ export interface ISignalInterface extends Interface {
 
   encodeFunctionData(
     functionFragment: "applyConvictionDecay",
-    values: [BytesLike, AddressLike]
+    values: [string, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "calculateConvictionMultiplier",
@@ -246,27 +214,24 @@ export interface ISignalInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "calculateVotingPower",
-    values: [BytesLike, AddressLike, BigNumberish]
+    values: [string, AddressLike, BigNumberish]
   ): string;
-  encodeFunctionData(
-    functionFragment: "canExecute",
-    values: [BytesLike]
-  ): string;
+  encodeFunctionData(functionFragment: "canExecute", values: [string]): string;
   encodeFunctionData(
     functionFragment: "canVote",
-    values: [BytesLike, AddressLike]
+    values: [string, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "cancelProposal",
-    values: [BytesLike]
+    values: [string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "castVote",
-    values: [BytesLike, BigNumberish, string]
+    values: [string, BigNumberish, string]
   ): string;
   encodeFunctionData(
     functionFragment: "castVoteWithConviction",
-    values: [BytesLike, BigNumberish, BigNumberish, string]
+    values: [string, BigNumberish, BigNumberish, string]
   ): string;
   encodeFunctionData(
     functionFragment: "createProposal",
@@ -288,20 +253,8 @@ export interface ISignalInterface extends Interface {
     values: [AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "emergencyCancel",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "estimateGasForExecution",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
     functionFragment: "executeProposal",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getActiveProposals",
-    values?: undefined
+    values: [string]
   ): string;
   encodeFunctionData(
     functionFragment: "getDelegatedVotingPower",
@@ -312,72 +265,25 @@ export interface ISignalInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "getExecutionETA",
+    functionFragment: "getOrganizationProposals",
     values: [BytesLike]
   ): string;
-  encodeFunctionData(
-    functionFragment: "getProposal",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getProposalCount",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getProposalResult",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getProposalVotes",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getProposalsByOrganization",
-    values: [BytesLike]
-  ): string;
+  encodeFunctionData(functionFragment: "getProposal", values: [string]): string;
   encodeFunctionData(
     functionFragment: "getProposalsByState",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getQuorumReached",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getTimeRemaining",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
     functionFragment: "getVote",
-    values: [BytesLike, AddressLike]
+    values: [string, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getVotingParameters",
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "getVotingPower",
-    values: [BytesLike, AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "hasVoted",
-    values: [BytesLike, AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isProposalActive",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "previewProposalExecution",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "queueProposal",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setProposalState",
-    values: [BytesLike, BigNumberish]
+    functionFragment: "getVotingPowerWithDelegation",
+    values: [BytesLike, AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "setVotingParameters",
@@ -386,14 +292,6 @@ export interface ISignalInterface extends Interface {
   encodeFunctionData(
     functionFragment: "undelegateVotingPower",
     values: [AddressLike, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "updateProposal",
-    values: [BytesLike, string, string, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "validateProposalParameters",
-    values: [BytesLike, BigNumberish, BigNumberish, BigNumberish, BigNumberish]
   ): string;
 
   decodeFunctionResult(
@@ -428,19 +326,7 @@ export interface ISignalInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "emergencyCancel",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "estimateGasForExecution",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "executeProposal",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getActiveProposals",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -452,7 +338,7 @@ export interface ISignalInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getExecutionETA",
+    functionFragment: "getOrganizationProposals",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -460,31 +346,7 @@ export interface ISignalInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getProposalCount",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getProposalResult",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getProposalVotes",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getProposalsByOrganization",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "getProposalsByState",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getQuorumReached",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getTimeRemaining",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getVote", data: BytesLike): Result;
@@ -493,24 +355,7 @@ export interface ISignalInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getVotingPower",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "hasVoted", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "isProposalActive",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "previewProposalExecution",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "queueProposal",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setProposalState",
+    functionFragment: "getVotingPowerWithDelegation",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -521,33 +366,25 @@ export interface ISignalInterface extends Interface {
     functionFragment: "undelegateVotingPower",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "updateProposal",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "validateProposalParameters",
-    data: BytesLike
-  ): Result;
 }
 
 export namespace ConvictionDecayAppliedEvent {
   export type InputTuple = [
-    proposalId: BytesLike,
+    hierarchicalId: string,
     voter: AddressLike,
     oldPower: BigNumberish,
     newPower: BigNumberish,
     timestamp: BigNumberish
   ];
   export type OutputTuple = [
-    proposalId: string,
+    hierarchicalId: string,
     voter: string,
     oldPower: bigint,
     newPower: bigint,
     timestamp: bigint
   ];
   export interface OutputObject {
-    proposalId: string;
+    hierarchicalId: string;
     voter: string;
     oldPower: bigint;
     newPower: bigint;
@@ -559,21 +396,55 @@ export namespace ConvictionDecayAppliedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace ProposalCancelledEvent {
+export namespace ConvictionVoteCastEvent {
   export type InputTuple = [
-    proposalId: BytesLike,
-    canceller: AddressLike,
-    timestamp: BigNumberish
+    hierarchicalId: string,
+    voter: AddressLike,
+    choice: BigNumberish,
+    votingPower: BigNumberish,
+    convictionMultiplier: BigNumberish,
+    convictionTime: BigNumberish,
+    reason: string
   ];
   export type OutputTuple = [
-    proposalId: string,
-    canceller: string,
-    timestamp: bigint
+    hierarchicalId: string,
+    voter: string,
+    choice: bigint,
+    votingPower: bigint,
+    convictionMultiplier: bigint,
+    convictionTime: bigint,
+    reason: string
   ];
   export interface OutputObject {
-    proposalId: string;
-    canceller: string;
-    timestamp: bigint;
+    hierarchicalId: string;
+    voter: string;
+    choice: bigint;
+    votingPower: bigint;
+    convictionMultiplier: bigint;
+    convictionTime: bigint;
+    reason: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace ProposalCanceledEvent {
+  export type InputTuple = [
+    hierarchicalId: string,
+    canceler: AddressLike,
+    reason: string
+  ];
+  export type OutputTuple = [
+    hierarchicalId: string,
+    canceler: string,
+    reason: string
+  ];
+  export interface OutputObject {
+    hierarchicalId: string;
+    canceler: string;
+    reason: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -583,40 +454,37 @@ export namespace ProposalCancelledEvent {
 
 export namespace ProposalCreatedEvent {
   export type InputTuple = [
-    proposalId: BytesLike,
+    hierarchicalId: string,
     organizationId: BytesLike,
-    proposer: AddressLike,
+    creator: AddressLike,
     title: string,
     proposalType: BigNumberish,
     votingType: BigNumberish,
-    votingPower: BigNumberish,
+    votingPeriod: BigNumberish,
     startTime: BigNumberish,
-    endTime: BigNumberish,
-    timestamp: BigNumberish
+    endTime: BigNumberish
   ];
   export type OutputTuple = [
-    proposalId: string,
+    hierarchicalId: string,
     organizationId: string,
-    proposer: string,
+    creator: string,
     title: string,
     proposalType: bigint,
     votingType: bigint,
-    votingPower: bigint,
+    votingPeriod: bigint,
     startTime: bigint,
-    endTime: bigint,
-    timestamp: bigint
+    endTime: bigint
   ];
   export interface OutputObject {
-    proposalId: string;
+    hierarchicalId: string;
     organizationId: string;
-    proposer: string;
+    creator: string;
     title: string;
     proposalType: bigint;
     votingType: bigint;
-    votingPower: bigint;
+    votingPeriod: bigint;
     startTime: bigint;
     endTime: bigint;
-    timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -626,97 +494,22 @@ export namespace ProposalCreatedEvent {
 
 export namespace ProposalExecutedEvent {
   export type InputTuple = [
-    proposalId: BytesLike,
+    hierarchicalId: string,
+    executor: AddressLike,
     success: boolean,
-    returnData: BytesLike,
-    timestamp: BigNumberish
+    returnData: BytesLike
   ];
   export type OutputTuple = [
-    proposalId: string,
+    hierarchicalId: string,
+    executor: string,
     success: boolean,
-    returnData: string,
-    timestamp: bigint
+    returnData: string
   ];
   export interface OutputObject {
-    proposalId: string;
+    hierarchicalId: string;
+    executor: string;
     success: boolean;
     returnData: string;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace ProposalQueuedEvent {
-  export type InputTuple = [
-    proposalId: BytesLike,
-    executionTime: BigNumberish,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    proposalId: string,
-    executionTime: bigint,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    proposalId: string;
-    executionTime: bigint;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace ProposalStateChangedEvent {
-  export type InputTuple = [
-    proposalId: BytesLike,
-    oldState: BigNumberish,
-    newState: BigNumberish,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    proposalId: string,
-    oldState: bigint,
-    newState: bigint,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    proposalId: string;
-    oldState: bigint;
-    newState: bigint;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace ProposalUpdatedEvent {
-  export type InputTuple = [
-    proposalId: BytesLike,
-    title: string,
-    description: string,
-    endTime: BigNumberish,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    proposalId: string,
-    title: string,
-    description: string,
-    endTime: bigint,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    proposalId: string;
-    title: string;
-    description: string;
-    endTime: bigint;
-    timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -726,28 +519,25 @@ export namespace ProposalUpdatedEvent {
 
 export namespace VoteCastEvent {
   export type InputTuple = [
-    proposalId: BytesLike,
+    hierarchicalId: string,
     voter: AddressLike,
     choice: BigNumberish,
     votingPower: BigNumberish,
-    reason: string,
-    timestamp: BigNumberish
+    reason: string
   ];
   export type OutputTuple = [
-    proposalId: string,
+    hierarchicalId: string,
     voter: string,
     choice: bigint,
     votingPower: bigint,
-    reason: string,
-    timestamp: bigint
+    reason: string
   ];
   export interface OutputObject {
-    proposalId: string;
+    hierarchicalId: string;
     voter: string;
     choice: bigint;
     votingPower: bigint;
     reason: string;
-    timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -758,30 +548,15 @@ export namespace VoteCastEvent {
 export namespace VotingParametersUpdatedEvent {
   export type InputTuple = [
     organizationId: BytesLike,
-    votingDelay: BigNumberish,
-    votingPeriod: BigNumberish,
-    executionDelay: BigNumberish,
-    quorumThreshold: BigNumberish,
-    proposalThreshold: BigNumberish,
-    timestamp: BigNumberish
+    parameters: ISignal.VotingParametersStruct
   ];
   export type OutputTuple = [
     organizationId: string,
-    votingDelay: bigint,
-    votingPeriod: bigint,
-    executionDelay: bigint,
-    quorumThreshold: bigint,
-    proposalThreshold: bigint,
-    timestamp: bigint
+    parameters: ISignal.VotingParametersStructOutput
   ];
   export interface OutputObject {
     organizationId: string;
-    votingDelay: bigint;
-    votingPeriod: bigint;
-    executionDelay: bigint;
-    quorumThreshold: bigint;
-    proposalThreshold: bigint;
-    timestamp: bigint;
+    parameters: ISignal.VotingParametersStructOutput;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -885,7 +660,7 @@ export interface ISignal extends BaseContract {
   ): Promise<this>;
 
   applyConvictionDecay: TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike],
+    [hierarchicalId: string, voter: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -897,34 +672,34 @@ export interface ISignal extends BaseContract {
   >;
 
   calculateVotingPower: TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike, powerType: BigNumberish],
+    [hierarchicalId: string, voter: AddressLike, powerType: BigNumberish],
     [bigint],
     "view"
   >;
 
-  canExecute: TypedContractMethod<[proposalId: BytesLike], [boolean], "view">;
+  canExecute: TypedContractMethod<[hierarchicalId: string], [boolean], "view">;
 
   canVote: TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike],
+    [hierarchicalId: string, voter: AddressLike],
     [boolean],
     "view"
   >;
 
   cancelProposal: TypedContractMethod<
-    [proposalId: BytesLike],
+    [hierarchicalId: string, reason: string],
     [void],
     "nonpayable"
   >;
 
   castVote: TypedContractMethod<
-    [proposalId: BytesLike, choice: BigNumberish, reason: string],
+    [hierarchicalId: string, choice: BigNumberish, reason: string],
     [void],
     "nonpayable"
   >;
 
   castVoteWithConviction: TypedContractMethod<
     [
-      proposalId: BytesLike,
+      hierarchicalId: string,
       choice: BigNumberish,
       convictionTime: BigNumberish,
       reason: string
@@ -956,25 +731,11 @@ export interface ISignal extends BaseContract {
     "nonpayable"
   >;
 
-  emergencyCancel: TypedContractMethod<
-    [proposalId: BytesLike],
-    [void],
-    "nonpayable"
-  >;
-
-  estimateGasForExecution: TypedContractMethod<
-    [proposalId: BytesLike],
-    [bigint],
-    "view"
-  >;
-
   executeProposal: TypedContractMethod<
-    [proposalId: BytesLike],
-    [void],
+    [hierarchicalId: string],
+    [[boolean, string] & { success: boolean; returnData: string }],
     "nonpayable"
   >;
-
-  getActiveProposals: TypedContractMethod<[], [string[]], "view">;
 
   getDelegatedVotingPower: TypedContractMethod<
     [delegator: AddressLike],
@@ -988,48 +749,15 @@ export interface ISignal extends BaseContract {
     "view"
   >;
 
-  getExecutionETA: TypedContractMethod<
-    [proposalId: BytesLike],
-    [bigint],
+  getOrganizationProposals: TypedContractMethod<
+    [organizationId: BytesLike],
+    [string[]],
     "view"
   >;
 
   getProposal: TypedContractMethod<
-    [proposalId: BytesLike],
+    [hierarchicalId: string],
     [ISignal.ProposalStructOutput],
-    "view"
-  >;
-
-  getProposalCount: TypedContractMethod<[], [bigint], "view">;
-
-  getProposalResult: TypedContractMethod<
-    [proposalId: BytesLike],
-    [
-      [boolean, bigint, bigint, bigint, bigint] & {
-        passed: boolean;
-        forVotes: bigint;
-        againstVotes: bigint;
-        abstainVotes: bigint;
-        quorum: bigint;
-      }
-    ],
-    "view"
-  >;
-
-  getProposalVotes: TypedContractMethod<
-    [proposalId: BytesLike],
-    [
-      [string[], ISignal.VoteStructOutput[]] & {
-        voters: string[];
-        votes: ISignal.VoteStructOutput[];
-      }
-    ],
-    "view"
-  >;
-
-  getProposalsByOrganization: TypedContractMethod<
-    [organizationId: BytesLike],
-    [string[]],
     "view"
   >;
 
@@ -1039,20 +767,8 @@ export interface ISignal extends BaseContract {
     "view"
   >;
 
-  getQuorumReached: TypedContractMethod<
-    [proposalId: BytesLike],
-    [boolean],
-    "view"
-  >;
-
-  getTimeRemaining: TypedContractMethod<
-    [proposalId: BytesLike],
-    [bigint],
-    "view"
-  >;
-
   getVote: TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike],
+    [hierarchicalId: string, voter: AddressLike],
     [ISignal.VoteStructOutput],
     "view"
   >;
@@ -1063,40 +779,14 @@ export interface ISignal extends BaseContract {
     "view"
   >;
 
-  getVotingPower: TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike],
+  getVotingPowerWithDelegation: TypedContractMethod<
+    [
+      organizationId: BytesLike,
+      account: AddressLike,
+      votingPowerType: BigNumberish
+    ],
     [bigint],
     "view"
-  >;
-
-  hasVoted: TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike],
-    [boolean],
-    "view"
-  >;
-
-  isProposalActive: TypedContractMethod<
-    [proposalId: BytesLike],
-    [boolean],
-    "view"
-  >;
-
-  previewProposalExecution: TypedContractMethod<
-    [proposalId: BytesLike],
-    [[boolean, string] & { success: boolean; returnData: string }],
-    "view"
-  >;
-
-  queueProposal: TypedContractMethod<
-    [proposalId: BytesLike],
-    [void],
-    "nonpayable"
-  >;
-
-  setProposalState: TypedContractMethod<
-    [proposalId: BytesLike, newState: BigNumberish],
-    [void],
-    "nonpayable"
   >;
 
   setVotingParameters: TypedContractMethod<
@@ -1111,29 +801,6 @@ export interface ISignal extends BaseContract {
     "nonpayable"
   >;
 
-  updateProposal: TypedContractMethod<
-    [
-      proposalId: BytesLike,
-      title: string,
-      description: string,
-      endTime: BigNumberish
-    ],
-    [void],
-    "nonpayable"
-  >;
-
-  validateProposalParameters: TypedContractMethod<
-    [
-      organizationId: BytesLike,
-      proposalType: BigNumberish,
-      votingType: BigNumberish,
-      votingPower: BigNumberish,
-      votingPeriod: BigNumberish
-    ],
-    [boolean],
-    "view"
-  >;
-
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
@@ -1141,7 +808,7 @@ export interface ISignal extends BaseContract {
   getFunction(
     nameOrSignature: "applyConvictionDecay"
   ): TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike],
+    [hierarchicalId: string, voter: AddressLike],
     [void],
     "nonpayable"
   >;
@@ -1151,27 +818,31 @@ export interface ISignal extends BaseContract {
   getFunction(
     nameOrSignature: "calculateVotingPower"
   ): TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike, powerType: BigNumberish],
+    [hierarchicalId: string, voter: AddressLike, powerType: BigNumberish],
     [bigint],
     "view"
   >;
   getFunction(
     nameOrSignature: "canExecute"
-  ): TypedContractMethod<[proposalId: BytesLike], [boolean], "view">;
+  ): TypedContractMethod<[hierarchicalId: string], [boolean], "view">;
   getFunction(
     nameOrSignature: "canVote"
   ): TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike],
+    [hierarchicalId: string, voter: AddressLike],
     [boolean],
     "view"
   >;
   getFunction(
     nameOrSignature: "cancelProposal"
-  ): TypedContractMethod<[proposalId: BytesLike], [void], "nonpayable">;
+  ): TypedContractMethod<
+    [hierarchicalId: string, reason: string],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "castVote"
   ): TypedContractMethod<
-    [proposalId: BytesLike, choice: BigNumberish, reason: string],
+    [hierarchicalId: string, choice: BigNumberish, reason: string],
     [void],
     "nonpayable"
   >;
@@ -1179,7 +850,7 @@ export interface ISignal extends BaseContract {
     nameOrSignature: "castVoteWithConviction"
   ): TypedContractMethod<
     [
-      proposalId: BytesLike,
+      hierarchicalId: string,
       choice: BigNumberish,
       convictionTime: BigNumberish,
       reason: string
@@ -1213,17 +884,12 @@ export interface ISignal extends BaseContract {
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "emergencyCancel"
-  ): TypedContractMethod<[proposalId: BytesLike], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "estimateGasForExecution"
-  ): TypedContractMethod<[proposalId: BytesLike], [bigint], "view">;
-  getFunction(
     nameOrSignature: "executeProposal"
-  ): TypedContractMethod<[proposalId: BytesLike], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "getActiveProposals"
-  ): TypedContractMethod<[], [string[]], "view">;
+  ): TypedContractMethod<
+    [hierarchicalId: string],
+    [[boolean, string] & { success: boolean; returnData: string }],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "getDelegatedVotingPower"
   ): TypedContractMethod<[delegator: AddressLike], [bigint], "view">;
@@ -1235,61 +901,22 @@ export interface ISignal extends BaseContract {
     "view"
   >;
   getFunction(
-    nameOrSignature: "getExecutionETA"
-  ): TypedContractMethod<[proposalId: BytesLike], [bigint], "view">;
+    nameOrSignature: "getOrganizationProposals"
+  ): TypedContractMethod<[organizationId: BytesLike], [string[]], "view">;
   getFunction(
     nameOrSignature: "getProposal"
   ): TypedContractMethod<
-    [proposalId: BytesLike],
+    [hierarchicalId: string],
     [ISignal.ProposalStructOutput],
     "view"
   >;
   getFunction(
-    nameOrSignature: "getProposalCount"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "getProposalResult"
-  ): TypedContractMethod<
-    [proposalId: BytesLike],
-    [
-      [boolean, bigint, bigint, bigint, bigint] & {
-        passed: boolean;
-        forVotes: bigint;
-        againstVotes: bigint;
-        abstainVotes: bigint;
-        quorum: bigint;
-      }
-    ],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getProposalVotes"
-  ): TypedContractMethod<
-    [proposalId: BytesLike],
-    [
-      [string[], ISignal.VoteStructOutput[]] & {
-        voters: string[];
-        votes: ISignal.VoteStructOutput[];
-      }
-    ],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getProposalsByOrganization"
-  ): TypedContractMethod<[organizationId: BytesLike], [string[]], "view">;
-  getFunction(
     nameOrSignature: "getProposalsByState"
   ): TypedContractMethod<[state: BigNumberish], [string[]], "view">;
   getFunction(
-    nameOrSignature: "getQuorumReached"
-  ): TypedContractMethod<[proposalId: BytesLike], [boolean], "view">;
-  getFunction(
-    nameOrSignature: "getTimeRemaining"
-  ): TypedContractMethod<[proposalId: BytesLike], [bigint], "view">;
-  getFunction(
     nameOrSignature: "getVote"
   ): TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike],
+    [hierarchicalId: string, voter: AddressLike],
     [ISignal.VoteStructOutput],
     "view"
   >;
@@ -1301,38 +928,15 @@ export interface ISignal extends BaseContract {
     "view"
   >;
   getFunction(
-    nameOrSignature: "getVotingPower"
+    nameOrSignature: "getVotingPowerWithDelegation"
   ): TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike],
+    [
+      organizationId: BytesLike,
+      account: AddressLike,
+      votingPowerType: BigNumberish
+    ],
     [bigint],
     "view"
-  >;
-  getFunction(
-    nameOrSignature: "hasVoted"
-  ): TypedContractMethod<
-    [proposalId: BytesLike, voter: AddressLike],
-    [boolean],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "isProposalActive"
-  ): TypedContractMethod<[proposalId: BytesLike], [boolean], "view">;
-  getFunction(
-    nameOrSignature: "previewProposalExecution"
-  ): TypedContractMethod<
-    [proposalId: BytesLike],
-    [[boolean, string] & { success: boolean; returnData: string }],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "queueProposal"
-  ): TypedContractMethod<[proposalId: BytesLike], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "setProposalState"
-  ): TypedContractMethod<
-    [proposalId: BytesLike, newState: BigNumberish],
-    [void],
-    "nonpayable"
   >;
   getFunction(
     nameOrSignature: "setVotingParameters"
@@ -1348,31 +952,6 @@ export interface ISignal extends BaseContract {
     [void],
     "nonpayable"
   >;
-  getFunction(
-    nameOrSignature: "updateProposal"
-  ): TypedContractMethod<
-    [
-      proposalId: BytesLike,
-      title: string,
-      description: string,
-      endTime: BigNumberish
-    ],
-    [void],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "validateProposalParameters"
-  ): TypedContractMethod<
-    [
-      organizationId: BytesLike,
-      proposalType: BigNumberish,
-      votingType: BigNumberish,
-      votingPower: BigNumberish,
-      votingPeriod: BigNumberish
-    ],
-    [boolean],
-    "view"
-  >;
 
   getEvent(
     key: "ConvictionDecayApplied"
@@ -1382,11 +961,18 @@ export interface ISignal extends BaseContract {
     ConvictionDecayAppliedEvent.OutputObject
   >;
   getEvent(
-    key: "ProposalCancelled"
+    key: "ConvictionVoteCast"
   ): TypedContractEvent<
-    ProposalCancelledEvent.InputTuple,
-    ProposalCancelledEvent.OutputTuple,
-    ProposalCancelledEvent.OutputObject
+    ConvictionVoteCastEvent.InputTuple,
+    ConvictionVoteCastEvent.OutputTuple,
+    ConvictionVoteCastEvent.OutputObject
+  >;
+  getEvent(
+    key: "ProposalCanceled"
+  ): TypedContractEvent<
+    ProposalCanceledEvent.InputTuple,
+    ProposalCanceledEvent.OutputTuple,
+    ProposalCanceledEvent.OutputObject
   >;
   getEvent(
     key: "ProposalCreated"
@@ -1401,27 +987,6 @@ export interface ISignal extends BaseContract {
     ProposalExecutedEvent.InputTuple,
     ProposalExecutedEvent.OutputTuple,
     ProposalExecutedEvent.OutputObject
-  >;
-  getEvent(
-    key: "ProposalQueued"
-  ): TypedContractEvent<
-    ProposalQueuedEvent.InputTuple,
-    ProposalQueuedEvent.OutputTuple,
-    ProposalQueuedEvent.OutputObject
-  >;
-  getEvent(
-    key: "ProposalStateChanged"
-  ): TypedContractEvent<
-    ProposalStateChangedEvent.InputTuple,
-    ProposalStateChangedEvent.OutputTuple,
-    ProposalStateChangedEvent.OutputObject
-  >;
-  getEvent(
-    key: "ProposalUpdated"
-  ): TypedContractEvent<
-    ProposalUpdatedEvent.InputTuple,
-    ProposalUpdatedEvent.OutputTuple,
-    ProposalUpdatedEvent.OutputObject
   >;
   getEvent(
     key: "VoteCast"
@@ -1453,7 +1018,7 @@ export interface ISignal extends BaseContract {
   >;
 
   filters: {
-    "ConvictionDecayApplied(bytes32,address,uint256,uint256,uint256)": TypedContractEvent<
+    "ConvictionDecayApplied(string,address,uint256,uint256,uint256)": TypedContractEvent<
       ConvictionDecayAppliedEvent.InputTuple,
       ConvictionDecayAppliedEvent.OutputTuple,
       ConvictionDecayAppliedEvent.OutputObject
@@ -1464,18 +1029,29 @@ export interface ISignal extends BaseContract {
       ConvictionDecayAppliedEvent.OutputObject
     >;
 
-    "ProposalCancelled(bytes32,address,uint256)": TypedContractEvent<
-      ProposalCancelledEvent.InputTuple,
-      ProposalCancelledEvent.OutputTuple,
-      ProposalCancelledEvent.OutputObject
+    "ConvictionVoteCast(string,address,uint8,uint256,uint256,uint256,string)": TypedContractEvent<
+      ConvictionVoteCastEvent.InputTuple,
+      ConvictionVoteCastEvent.OutputTuple,
+      ConvictionVoteCastEvent.OutputObject
     >;
-    ProposalCancelled: TypedContractEvent<
-      ProposalCancelledEvent.InputTuple,
-      ProposalCancelledEvent.OutputTuple,
-      ProposalCancelledEvent.OutputObject
+    ConvictionVoteCast: TypedContractEvent<
+      ConvictionVoteCastEvent.InputTuple,
+      ConvictionVoteCastEvent.OutputTuple,
+      ConvictionVoteCastEvent.OutputObject
     >;
 
-    "ProposalCreated(bytes32,bytes8,address,string,uint8,uint8,uint8,uint256,uint256,uint256)": TypedContractEvent<
+    "ProposalCanceled(string,address,string)": TypedContractEvent<
+      ProposalCanceledEvent.InputTuple,
+      ProposalCanceledEvent.OutputTuple,
+      ProposalCanceledEvent.OutputObject
+    >;
+    ProposalCanceled: TypedContractEvent<
+      ProposalCanceledEvent.InputTuple,
+      ProposalCanceledEvent.OutputTuple,
+      ProposalCanceledEvent.OutputObject
+    >;
+
+    "ProposalCreated(string,bytes8,address,string,uint8,uint8,uint256,uint256,uint256)": TypedContractEvent<
       ProposalCreatedEvent.InputTuple,
       ProposalCreatedEvent.OutputTuple,
       ProposalCreatedEvent.OutputObject
@@ -1486,7 +1062,7 @@ export interface ISignal extends BaseContract {
       ProposalCreatedEvent.OutputObject
     >;
 
-    "ProposalExecuted(bytes32,bool,bytes,uint256)": TypedContractEvent<
+    "ProposalExecuted(string,address,bool,bytes)": TypedContractEvent<
       ProposalExecutedEvent.InputTuple,
       ProposalExecutedEvent.OutputTuple,
       ProposalExecutedEvent.OutputObject
@@ -1497,40 +1073,7 @@ export interface ISignal extends BaseContract {
       ProposalExecutedEvent.OutputObject
     >;
 
-    "ProposalQueued(bytes32,uint256,uint256)": TypedContractEvent<
-      ProposalQueuedEvent.InputTuple,
-      ProposalQueuedEvent.OutputTuple,
-      ProposalQueuedEvent.OutputObject
-    >;
-    ProposalQueued: TypedContractEvent<
-      ProposalQueuedEvent.InputTuple,
-      ProposalQueuedEvent.OutputTuple,
-      ProposalQueuedEvent.OutputObject
-    >;
-
-    "ProposalStateChanged(bytes32,uint8,uint8,uint256)": TypedContractEvent<
-      ProposalStateChangedEvent.InputTuple,
-      ProposalStateChangedEvent.OutputTuple,
-      ProposalStateChangedEvent.OutputObject
-    >;
-    ProposalStateChanged: TypedContractEvent<
-      ProposalStateChangedEvent.InputTuple,
-      ProposalStateChangedEvent.OutputTuple,
-      ProposalStateChangedEvent.OutputObject
-    >;
-
-    "ProposalUpdated(bytes32,string,string,uint256,uint256)": TypedContractEvent<
-      ProposalUpdatedEvent.InputTuple,
-      ProposalUpdatedEvent.OutputTuple,
-      ProposalUpdatedEvent.OutputObject
-    >;
-    ProposalUpdated: TypedContractEvent<
-      ProposalUpdatedEvent.InputTuple,
-      ProposalUpdatedEvent.OutputTuple,
-      ProposalUpdatedEvent.OutputObject
-    >;
-
-    "VoteCast(bytes32,address,uint8,uint256,string,uint256)": TypedContractEvent<
+    "VoteCast(string,address,uint8,uint256,string)": TypedContractEvent<
       VoteCastEvent.InputTuple,
       VoteCastEvent.OutputTuple,
       VoteCastEvent.OutputObject
@@ -1541,7 +1084,7 @@ export interface ISignal extends BaseContract {
       VoteCastEvent.OutputObject
     >;
 
-    "VotingParametersUpdated(bytes8,uint256,uint256,uint256,uint256,uint256,uint256)": TypedContractEvent<
+    "VotingParametersUpdated(bytes8,tuple)": TypedContractEvent<
       VotingParametersUpdatedEvent.InputTuple,
       VotingParametersUpdatedEvent.OutputTuple,
       VotingParametersUpdatedEvent.OutputObject

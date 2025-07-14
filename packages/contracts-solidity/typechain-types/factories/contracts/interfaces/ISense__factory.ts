@@ -55,6 +55,27 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "address",
+        name: "token",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "required",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "available",
+        type: "uint256",
+      },
+    ],
+    name: "InsufficientTokenBalance",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
         internalType: "uint8",
         name: "rating",
         type: "uint8",
@@ -77,6 +98,17 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+    ],
+    name: "InvalidNameFormat",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
         internalType: "int256",
         name: "delta",
         type: "int256",
@@ -88,12 +120,67 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+    ],
+    name: "InvalidStakeAmount",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "duration",
+        type: "uint256",
+      },
+    ],
+    name: "InvalidStakeDuration",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
         internalType: "enum ISense.VerificationLevel",
         name: "level",
         type: "uint8",
       },
     ],
     name: "InvalidVerificationLevel",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+    ],
+    name: "NameAlreadyClaimed",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+    ],
+    name: "NameNotClaimed",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+    ],
+    name: "NameNotExpired",
     type: "error",
   },
   {
@@ -159,6 +246,22 @@ const _abi = [
       },
     ],
     name: "SelfFeedbackNotAllowed",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+      {
+        internalType: "address",
+        name: "caller",
+        type: "address",
+      },
+    ],
+    name: "UnauthorizedNameAccess",
     type: "error",
   },
   {
@@ -261,6 +364,105 @@ const _abi = [
       },
     ],
     name: "FeedbackSubmitted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "stakeAmount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "stakeDuration",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "enum ISense.NameType",
+        name: "nameType",
+        type: "uint8",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "timestamp",
+        type: "uint256",
+      },
+    ],
+    name: "NameClaimed",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "timestamp",
+        type: "uint256",
+      },
+    ],
+    name: "NameExpired",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "stakeAmount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "timestamp",
+        type: "uint256",
+      },
+    ],
+    name: "NameReleased",
     type: "event",
   },
   {
@@ -508,6 +710,40 @@ const _abi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+      {
+        internalType: "uint256",
+        name: "stakeAmount",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "stakeDuration",
+        type: "uint256",
+      },
+      {
+        internalType: "enum ISense.NameType",
+        name: "nameType",
+        type: "uint8",
+      },
+    ],
+    name: "claimName",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "success",
+        type: "bool",
+      },
+    ],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -984,6 +1220,86 @@ const _abi = [
         internalType: "struct ISense.Feedback[]",
         name: "feedbacks",
         type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+    ],
+    name: "getNameClaim",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "bytes8",
+            name: "name",
+            type: "bytes8",
+          },
+          {
+            internalType: "address",
+            name: "owner",
+            type: "address",
+          },
+          {
+            internalType: "uint256",
+            name: "stakeAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "stakeDuration",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "claimedAt",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "expiresAt",
+            type: "uint256",
+          },
+          {
+            internalType: "bool",
+            name: "isActive",
+            type: "bool",
+          },
+          {
+            internalType: "enum ISense.NameType",
+            name: "nameType",
+            type: "uint8",
+          },
+        ],
+        internalType: "struct ISense.NameClaim",
+        name: "claim",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+    ],
+    name: "getNamesOwnedBy",
+    outputs: [
+      {
+        internalType: "bytes8[]",
+        name: "names",
+        type: "bytes8[]",
       },
     ],
     stateMutability: "view",
@@ -1580,6 +1896,25 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+    ],
+    name: "isNameAvailable",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "available",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "bytes32",
         name: "profileId",
         type: "bytes32",
@@ -1594,6 +1929,25 @@ const _abi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+    ],
+    name: "releaseName",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "stakeAmount",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -1702,6 +2056,25 @@ const _abi = [
     name: "updateReputation",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "name",
+        type: "bytes8",
+      },
+    ],
+    name: "validateNameFormat",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "valid",
+        type: "bool",
+      },
+    ],
+    stateMutability: "pure",
     type: "function",
   },
   {

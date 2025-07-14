@@ -6,5 +6,7 @@ export { IFlow__factory } from "./IFlow__factory";
 export { IGameDAOModule__factory } from "./IGameDAOModule__factory";
 export { IGameDAORegistry__factory } from "./IGameDAORegistry__factory";
 export { IGameToken__factory } from "./IGameToken__factory";
+export { IIdentity__factory } from "./IIdentity__factory";
 export { ISense__factory } from "./ISense__factory";
+export { ISenseSimplified__factory } from "./ISenseSimplified__factory";
 export { ISignal__factory } from "./ISignal__factory";

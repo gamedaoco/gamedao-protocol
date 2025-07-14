@@ -82,9 +82,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IGameToken__factory>;
     getContractFactory(
+      name: "IIdentity",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IIdentity__factory>;
+    getContractFactory(
       name: "ISense",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ISense__factory>;
+    getContractFactory(
+      name: "ISenseSimplified",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ISenseSimplified__factory>;
     getContractFactory(
       name: "ISignal",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -110,9 +118,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Flow__factory>;
     getContractFactory(
+      name: "Identity",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Identity__factory>;
+    getContractFactory(
       name: "Sense",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Sense__factory>;
+    getContractFactory(
+      name: "SenseSimplified",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.SenseSimplified__factory>;
     getContractFactory(
       name: "Signal",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -212,10 +228,20 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IGameToken>;
     getContractAt(
+      name: "IIdentity",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IIdentity>;
+    getContractAt(
       name: "ISense",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.ISense>;
+    getContractAt(
+      name: "ISenseSimplified",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ISenseSimplified>;
     getContractAt(
       name: "ISignal",
       address: string | ethers.Addressable,
@@ -247,10 +273,20 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.Flow>;
     getContractAt(
+      name: "Identity",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Identity>;
+    getContractAt(
       name: "Sense",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.Sense>;
+    getContractAt(
+      name: "SenseSimplified",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.SenseSimplified>;
     getContractAt(
       name: "Signal",
       address: string | ethers.Addressable,
@@ -336,9 +372,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IGameToken>;
     deployContract(
+      name: "IIdentity",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IIdentity>;
+    deployContract(
       name: "ISense",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ISense>;
+    deployContract(
+      name: "ISenseSimplified",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ISenseSimplified>;
     deployContract(
       name: "ISignal",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -364,9 +408,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Flow>;
     deployContract(
+      name: "Identity",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Identity>;
+    deployContract(
       name: "Sense",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Sense>;
+    deployContract(
+      name: "SenseSimplified",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.SenseSimplified>;
     deployContract(
       name: "Signal",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -466,10 +518,20 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IGameToken>;
     deployContract(
+      name: "IIdentity",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IIdentity>;
+    deployContract(
       name: "ISense",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ISense>;
+    deployContract(
+      name: "ISenseSimplified",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ISenseSimplified>;
     deployContract(
       name: "ISignal",
       args: any[],
@@ -501,10 +563,20 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Flow>;
     deployContract(
+      name: "Identity",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Identity>;
+    deployContract(
       name: "Sense",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Sense>;
+    deployContract(
+      name: "SenseSimplified",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.SenseSimplified>;
     deployContract(
       name: "Signal",
       args: any[],
