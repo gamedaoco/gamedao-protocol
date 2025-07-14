@@ -5,6 +5,7 @@ import "../../core/GameDAOModule.sol";
 import "../../interfaces/ISignal.sol";
 import "../../interfaces/IControl.sol";
 import "../../interfaces/IGameToken.sol";
+import "../../libraries/IdUtils.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -12,6 +13,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
  * @title Signal
  * @dev Implementation of the Signal module for governance and proposal management
  * @author GameDAO AG
+ * @notice GameDAO v3 - Hierarchical ID System Only
  */
 contract Signal is GameDAOModule, ISignal {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -28,38 +30,79 @@ contract Signal is GameDAOModule, ISignal {
     uint256 public constant MAX_EXECUTION_DELAY = 30 days;
     uint256 public constant MAX_QUORUM_THRESHOLD = 10000; // 100%
     uint256 public constant BASIS_POINTS = 10000;
-    uint256 public constant CONVICTION_MULTIPLIER_BASE = 10000;
 
-    // State variables
-    mapping(bytes32 => Proposal) private _proposals;
-    mapping(bytes32 => mapping(address => Vote)) private _votes;
-    mapping(bytes32 => EnumerableSet.AddressSet) private _proposalVoters;
+
+    // State variables - Hierarchical ID Only
+    mapping(string => Proposal) private _proposals;
+    mapping(string => mapping(address => Vote)) private _votes;
+    mapping(string => EnumerableSet.AddressSet) private _proposalVoters;
     mapping(bytes8 => EnumerableSet.Bytes32Set) private _organizationProposals;
     mapping(ProposalState => EnumerableSet.Bytes32Set) private _proposalsByState;
     mapping(bytes8 => VotingParameters) private _votingParameters;
     mapping(address => mapping(address => uint256)) private _delegatedVotingPower;
     mapping(address => EnumerableSet.AddressSet) private _delegators;
+    mapping(bytes8 => uint256) private _organizationProposalCounters;
+
+    // Delegation tracking
+    mapping(address => Delegation[]) private _delegations;
+    mapping(address => uint256) private _totalDelegatedOut;
+
+    // Conviction voting
+    mapping(string => mapping(address => uint256)) private _convictionVotes;
+    mapping(string => mapping(address => uint256)) private _convictionStartTime;
 
     EnumerableSet.Bytes32Set private _allProposals;
-    uint256 private _proposalCounter;
 
     // Default voting parameters
     VotingParameters private _defaultParams;
 
+    // Events - Hierarchical ID System
+    event ProposalCreatedHierarchical(
+        string indexed hierarchicalId,
+        bytes8 indexed organizationId,
+        address indexed creator,
+        string title,
+        ProposalType proposalType,
+        VotingType votingType,
+        uint256 votingPeriod,
+        uint256 startTime,
+        uint256 endTime
+    );
+
+    event VoteCastHierarchical(
+        string indexed hierarchicalId,
+        address indexed voter,
+        VoteChoice choice,
+        uint256 votingPower,
+        string reason
+    );
+
+    event ProposalExecutedHierarchical(
+        string indexed hierarchicalId,
+        address indexed executor,
+        bool success,
+        bytes returnData
+    );
+
+    event ProposalCanceledHierarchical(
+        string indexed hierarchicalId,
+        address indexed canceler,
+        string reason
+    );
+
     // Errors
-    error ProposalNotFound(bytes32 proposalId);
-    error ProposalNotActive(bytes32 proposalId);
-    error ProposalAlreadyExecuted(bytes32 proposalId);
+    error ProposalNotFound(string hierarchicalId);
+    error ProposalNotActive(string hierarchicalId);
+    error ProposalAlreadyExecuted(string hierarchicalId);
     error InvalidProposalParameters();
     error InvalidVotingPeriod(uint256 period);
-    error VotingNotActive(bytes32 proposalId);
-    error AlreadyVoted(bytes32 proposalId, address voter);
+    error VotingNotActive(string hierarchicalId);
+    error AlreadyVoted(string hierarchicalId, address voter);
     error InsufficientVotingPower(address voter, uint256 required, uint256 available);
-    error QuorumNotReached(bytes32 proposalId, uint256 required, uint256 actual);
-    error ProposalNotPassed(bytes32 proposalId);
-    error ExecutionFailed(bytes32 proposalId, string reason);
-    error InvalidConvictionTime(uint256 convictionTime);
-    error UnauthorizedProposalAccess(bytes32 proposalId, address caller);
+    error QuorumNotReached(string hierarchicalId, uint256 required, uint256 actual);
+    error ProposalNotPassed(string hierarchicalId);
+    error ExecutionFailed(string hierarchicalId, string reason);
+    error UnauthorizedProposalAccess(string hierarchicalId, address caller);
     error OrganizationNotFound(bytes8 organizationId);
     error InsufficientProposalThreshold(address proposer, uint256 required, uint256 available);
     error InvalidDelegation(address delegator, address delegatee);
@@ -106,7 +149,7 @@ contract Signal is GameDAOModule, ISignal {
     }
 
     /**
-     * @dev Create a new proposal
+     * @dev Create a new proposal with hierarchical ID
      */
     function createProposal(
         bytes8 organizationId,
@@ -119,50 +162,32 @@ contract Signal is GameDAOModule, ISignal {
         uint256 votingPeriod,
         bytes memory executionData,
         address targetContract
-    ) external override onlyInitialized whenNotPaused nonReentrant returns (bytes32 proposalId) {
+    ) external override onlyInitialized whenNotPaused nonReentrant returns (string memory hierarchicalId) {
         // Validate organization exists
-        _validateOrganization(organizationId);
+        if (!_getControlModule().isOrganizationActive(organizationId)) {
+            revert OrganizationNotFound(organizationId);
+        }
 
-        // Validate proposal parameters
-        if (bytes(title).length == 0) revert InvalidProposalParameters();
+        // Check membership requirement
+        VotingParameters memory params = _getVotingParameters(organizationId);
+        if (params.requireMembership && !_getControlModule().isMember(organizationId, _msgSender())) {
+            revert MembershipRequired(organizationId, _msgSender());
+        }
+
+        // Validate voting period
         if (votingPeriod < MIN_VOTING_PERIOD || votingPeriod > MAX_VOTING_PERIOD) {
             revert InvalidVotingPeriod(votingPeriod);
         }
 
-        // Get voting parameters for organization
-        VotingParameters memory params = _getVotingParameters(organizationId);
-
-        // Check if proposer meets threshold requirements
-        if (params.requireMembership) {
-            _validateMembership(organizationId, _msgSender());
-        }
-
-        uint256 proposerPower = _calculateVotingPower(organizationId, _msgSender(), votingPower);
-        uint256 requiredThreshold = _calculateProposalThreshold(organizationId, params.proposalThreshold);
-
-        if (proposerPower < requiredThreshold) {
-            revert InsufficientProposalThreshold(_msgSender(), requiredThreshold, proposerPower);
-        }
-
-        // Generate unique proposal ID
-        proposalId = keccak256(abi.encodePacked(
-            organizationId,
-            _msgSender(),
-            title,
-            block.timestamp,
-            _proposalCounter++
-        ));
-
-        // Calculate timing
-        uint256 startTime = block.timestamp + params.votingDelay;
-        uint256 endTime = startTime + votingPeriod;
+        // Generate hierarchical ID
+        uint256 proposalCounter = ++_organizationProposalCounters[organizationId];
+        hierarchicalId = IdUtils.generateProposalId(organizationId, proposalCounter);
 
         // Create proposal
-        Proposal storage proposal = _proposals[proposalId];
-        proposal.index = _proposalCounter;
-        proposal.proposalId = proposalId;
+        Proposal storage proposal = _proposals[hierarchicalId];
+        proposal.hierarchicalId = hierarchicalId;
         proposal.organizationId = organizationId;
-        proposal.proposer = _msgSender();
+        proposal.creator = _msgSender();
         proposal.title = title;
         proposal.description = description;
         proposal.metadataURI = metadataURI;
@@ -170,635 +195,227 @@ contract Signal is GameDAOModule, ISignal {
         proposal.votingType = votingType;
         proposal.votingPower = votingPower;
         proposal.state = ProposalState.Pending;
-        proposal.startTime = startTime;
-        proposal.endTime = endTime;
-        proposal.executionTime = 0;
-        proposal.createdAt = block.timestamp;
-        proposal.updatedAt = block.timestamp;
+        proposal.startTime = block.timestamp + params.votingDelay;
+        proposal.endTime = proposal.startTime + votingPeriod;
+        proposal.executionTime = proposal.endTime + params.executionDelay;
         proposal.executionData = executionData;
         proposal.targetContract = targetContract;
-        proposal.requiredQuorum = params.quorumThreshold;
-        proposal.votesFor = 0;
-        proposal.votesAgainst = 0;
-        proposal.votesAbstain = 0;
-        proposal.totalVotingPower = 0;
-        proposal.executed = false;
-        proposal.cancelled = false;
+        proposal.createdAt = block.timestamp;
 
         // Add to tracking sets
-        _allProposals.add(proposalId);
-        _organizationProposals[organizationId].add(proposalId);
-        _proposalsByState[ProposalState.Pending].add(proposalId);
+        bytes32 proposalHash = keccak256(bytes(hierarchicalId));
+        _organizationProposals[organizationId].add(proposalHash);
+        _proposalsByState[ProposalState.Pending].add(proposalHash);
+        _allProposals.add(proposalHash);
 
-        emit ProposalCreated(
-            proposalId,
+        emit ProposalCreatedHierarchical(
+            hierarchicalId,
             organizationId,
             _msgSender(),
             title,
             proposalType,
             votingType,
-            votingPower,
-            startTime,
-            endTime,
-            block.timestamp
+            votingPeriod,
+            proposal.startTime,
+            proposal.endTime
         );
 
-        return proposalId;
-    }
+        emit ProposalCreated(
+            hierarchicalId,
+            organizationId,
+            _msgSender(),
+            title,
+            proposalType,
+            votingType,
+            votingPeriod,
+            proposal.startTime,
+            proposal.endTime
+        );
 
-    /**
-     * @dev Update an existing proposal
-     */
-    function updateProposal(
-        bytes32 proposalId,
-        string memory title,
-        string memory description,
-        uint256 endTime
-    ) external override onlyInitialized whenNotPaused {
-        Proposal storage proposal = _proposals[proposalId];
-        if (proposal.proposer == address(0)) revert ProposalNotFound(proposalId);
-
-        // Only proposer or admin can update
-        if (_msgSender() != proposal.proposer && !hasRole(SIGNAL_ADMIN_ROLE, _msgSender())) {
-            revert UnauthorizedProposalAccess(proposalId, _msgSender());
-        }
-
-        // Cannot update if voting has started or proposal is finalized
-        if (proposal.state != ProposalState.Pending) {
-            revert UnauthorizedProposalAccess(proposalId, _msgSender());
-        }
-
-        // Validate new parameters
-        if (bytes(title).length > 0) proposal.title = title;
-        if (bytes(description).length > 0) proposal.description = description;
-        if (endTime > proposal.startTime && endTime > block.timestamp) {
-            proposal.endTime = endTime;
-        }
-
-        proposal.updatedAt = block.timestamp;
-
-        emit ProposalUpdated(proposalId, proposal.title, proposal.description, proposal.endTime, block.timestamp);
-    }
-
-    /**
-     * @dev Cancel a proposal
-     */
-    function cancelProposal(bytes32 proposalId) external override onlyInitialized whenNotPaused {
-        Proposal storage proposal = _proposals[proposalId];
-        if (proposal.proposer == address(0)) revert ProposalNotFound(proposalId);
-
-        // Only proposer or admin can cancel
-        if (_msgSender() != proposal.proposer && !hasRole(SIGNAL_ADMIN_ROLE, _msgSender())) {
-            revert UnauthorizedProposalAccess(proposalId, _msgSender());
-        }
-
-        // Cannot cancel if already executed
-        if (proposal.state == ProposalState.Executed) {
-            revert ProposalAlreadyExecuted(proposalId);
-        }
-
-        _updateProposalState(proposalId, ProposalState.Cancelled);
-        proposal.cancelled = true;
-
-        emit ProposalCancelled(proposalId, _msgSender(), block.timestamp);
+        return hierarchicalId;
     }
 
     /**
      * @dev Cast a vote on a proposal
      */
     function castVote(
-        bytes32 proposalId,
+        string memory hierarchicalId,
         VoteChoice choice,
         string memory reason
     ) external override onlyInitialized whenNotPaused nonReentrant {
-        _castVoteInternal(proposalId, choice, 0, reason);
-    }
-
-    /**
-     * @dev Cast a vote with conviction (time-locking)
-     */
-    function castVoteWithConviction(
-        bytes32 proposalId,
-        VoteChoice choice,
-        uint256 convictionTime,
-        string memory reason
-    ) external override onlyInitialized whenNotPaused nonReentrant {
-        if (convictionTime > MAX_EXECUTION_DELAY) {
-            revert InvalidConvictionTime(convictionTime);
-        }
-        _castVoteInternal(proposalId, choice, convictionTime, reason);
-    }
-
-    /**
-     * @dev Internal function to cast votes
-     */
-    function _castVoteInternal(
-        bytes32 proposalId,
-        VoteChoice choice,
-        uint256 convictionTime,
-        string memory reason
-    ) internal {
-        Proposal storage proposal = _proposals[proposalId];
-        if (proposal.proposer == address(0)) revert ProposalNotFound(proposalId);
-
-        // Check if voting is active
-        if (block.timestamp < proposal.startTime || block.timestamp >= proposal.endTime) {
-            revert VotingNotActive(proposalId);
-        }
-        if (proposal.state != ProposalState.Active && proposal.state != ProposalState.Pending) {
-            revert ProposalNotActive(proposalId);
+        Proposal storage proposal = _proposals[hierarchicalId];
+        if (proposal.creator == address(0)) {
+            revert ProposalNotFound(hierarchicalId);
         }
 
-        // Activate proposal if it's pending and voting period has started
-        if (proposal.state == ProposalState.Pending && block.timestamp >= proposal.startTime) {
-            _updateProposalState(proposalId, ProposalState.Active);
+        // Update proposal state if needed
+        _updateProposalState(hierarchicalId);
+
+        if (proposal.state != ProposalState.Active) {
+            revert VotingNotActive(hierarchicalId);
         }
 
-        // Check if voter has already voted
-        if (_votes[proposalId][_msgSender()].voter != address(0)) {
-            revert AlreadyVoted(proposalId, _msgSender());
+        // Check if already voted
+        if (_votes[hierarchicalId][_msgSender()].hasVoted) {
+            revert AlreadyVoted(hierarchicalId, _msgSender());
         }
 
-        // Calculate voting power
-        uint256 votingPower = _calculateVotingPower(proposal.organizationId, _msgSender(), proposal.votingPower);
-
-        // Apply conviction multiplier if applicable
-        if (proposal.votingPower == VotingPower.Conviction && convictionTime > 0) {
-            uint256 multiplier = _calculateConvictionMultiplier(convictionTime);
-            votingPower = (votingPower * multiplier) / CONVICTION_MULTIPLIER_BASE;
+        // Validate vote choice
+        if (choice == VoteChoice.None) {
+            revert InvalidVoteChoice(choice);
         }
 
+        // Get voting power
+        uint256 votingPower = _getVotingPower(proposal.organizationId, _msgSender(), proposal.votingPower);
         if (votingPower == 0) {
             revert InsufficientVotingPower(_msgSender(), 1, 0);
         }
 
         // Record vote
-        Vote storage vote = _votes[proposalId][_msgSender()];
-        vote.voter = _msgSender();
-        vote.choice = choice;
-        vote.votingPower = votingPower;
-        vote.timestamp = block.timestamp;
-        vote.reason = reason;
-        vote.convictionTime = convictionTime;
-
-        // Add to voters list
-        _proposalVoters[proposalId].add(_msgSender());
+        _votes[hierarchicalId][_msgSender()] = Vote({
+            voter: _msgSender(),
+            choice: choice,
+            votingPower: votingPower,
+            timestamp: block.timestamp,
+            reason: reason,
+            hasVoted: true,
+            convictionTime: 0,
+            convictionMultiplier: 1
+        });
 
         // Update proposal vote counts
         if (choice == VoteChoice.For) {
-            proposal.votesFor += votingPower;
+            proposal.forVotes += votingPower;
         } else if (choice == VoteChoice.Against) {
-            proposal.votesAgainst += votingPower;
-        } else {
-            proposal.votesAbstain += votingPower;
+            proposal.againstVotes += votingPower;
+        } else if (choice == VoteChoice.Abstain) {
+            proposal.abstainVotes += votingPower;
         }
 
-        proposal.totalVotingPower += votingPower;
+        // Add to voters set
+        _proposalVoters[hierarchicalId].add(_msgSender());
 
-        emit VoteCast(proposalId, _msgSender(), choice, votingPower, reason, block.timestamp);
-
-        // Check if proposal should be automatically queued
-        _checkAutoQueue(proposalId);
+        emit VoteCastHierarchical(hierarchicalId, _msgSender(), choice, votingPower, reason);
+        emit VoteCast(hierarchicalId, _msgSender(), choice, votingPower, reason);
     }
 
     /**
-     * @dev Queue a proposal for execution
+     * @dev Execute a proposal
      */
-    function queueProposal(bytes32 proposalId) external override onlyInitialized whenNotPaused {
-        Proposal storage proposal = _proposals[proposalId];
-        if (proposal.proposer == address(0)) revert ProposalNotFound(proposalId);
-
-        // Check if proposal has passed
-        (bool passed, , , , ) = _getProposalResult(proposalId);
-        if (!passed) revert ProposalNotPassed(proposalId);
-
-        // Check if voting period has ended
-        if (block.timestamp < proposal.endTime) {
-            revert VotingNotActive(proposalId);
+    function executeProposal(string memory hierarchicalId)
+        external
+        override
+        onlyInitialized
+        whenNotPaused
+        nonReentrant
+        returns (bool success, bytes memory returnData)
+    {
+        Proposal storage proposal = _proposals[hierarchicalId];
+        if (proposal.creator == address(0)) {
+            revert ProposalNotFound(hierarchicalId);
         }
 
-        VotingParameters memory params = _getVotingParameters(proposal.organizationId);
-        proposal.executionTime = block.timestamp + params.executionDelay;
+        // Update proposal state
+        _updateProposalState(hierarchicalId);
 
-        _updateProposalState(proposalId, ProposalState.Queued);
-
-        emit ProposalQueued(proposalId, proposal.executionTime, block.timestamp);
-    }
-
-    /**
-     * @dev Execute a queued proposal
-     */
-    function executeProposal(bytes32 proposalId) external override onlyInitialized whenNotPaused nonReentrant {
-        Proposal storage proposal = _proposals[proposalId];
-        if (proposal.proposer == address(0)) revert ProposalNotFound(proposalId);
-
-        // Check if proposal is queued and ready for execution
-        if (proposal.state != ProposalState.Queued) {
-            revert ProposalNotActive(proposalId);
+        if (proposal.state != ProposalState.Succeeded) {
+            revert ProposalNotPassed(hierarchicalId);
         }
+
         if (block.timestamp < proposal.executionTime) {
-            revert VotingNotActive(proposalId);
+            revert ProposalNotActive(hierarchicalId);
         }
 
-        proposal.executed = true;
+        // Execute proposal
+        proposal.state = ProposalState.Executed;
+        proposal.executedAt = block.timestamp;
+        proposal.executor = _msgSender();
 
-        // Execute the proposal
-        bool success = false;
-        bytes memory returnData;
+        // Move to executed state
+        bytes32 proposalHash = keccak256(bytes(hierarchicalId));
+        _proposalsByState[ProposalState.Succeeded].remove(proposalHash);
+        _proposalsByState[ProposalState.Executed].add(proposalHash);
 
+        // Execute if there's execution data
         if (proposal.executionData.length > 0 && proposal.targetContract != address(0)) {
             (success, returnData) = proposal.targetContract.call(proposal.executionData);
+            if (!success) {
+                revert ExecutionFailed(hierarchicalId, string(returnData));
+            }
         } else {
-            success = true; // Simple proposals without execution data
+            success = true;
         }
 
-        if (success) {
-            _updateProposalState(proposalId, ProposalState.Executed);
-        } else {
-            _updateProposalState(proposalId, ProposalState.Defeated);
-        }
-
-        emit ProposalExecuted(proposalId, success, returnData, block.timestamp);
-
-        if (!success) {
-            revert ExecutionFailed(proposalId, "Proposal execution failed");
-        }
+        emit ProposalExecutedHierarchical(hierarchicalId, _msgSender(), success, returnData);
+        return (success, returnData);
     }
 
     /**
-     * @dev Delegate voting power to another address
+     * @dev Cancel a proposal
      */
-    function delegateVotingPower(address delegatee, uint256 amount)
+    function cancelProposal(string memory hierarchicalId, string memory reason)
         external
         override
         onlyInitialized
         whenNotPaused
+        nonReentrant
     {
-        if (delegatee == address(0) || delegatee == _msgSender()) {
-            revert InvalidDelegation(_msgSender(), delegatee);
+        Proposal storage proposal = _proposals[hierarchicalId];
+        if (proposal.creator == address(0)) {
+            revert ProposalNotFound(hierarchicalId);
         }
 
-        _delegatedVotingPower[_msgSender()][delegatee] += amount;
-        _delegators[_msgSender()].add(delegatee);
-
-        emit VotingPowerDelegated(_msgSender(), delegatee, amount, block.timestamp);
-    }
-
-    /**
-     * @dev Undelegate voting power from another address
-     */
-    function undelegateVotingPower(address delegatee, uint256 amount)
-        external
-        override
-        onlyInitialized
-        whenNotPaused
-    {
-        uint256 currentDelegation = _delegatedVotingPower[_msgSender()][delegatee];
-        if (currentDelegation < amount) {
-            revert DelegationNotFound(_msgSender(), delegatee);
+        // Only creator or admin can cancel
+        if (_msgSender() != proposal.creator && !hasRole(SIGNAL_ADMIN_ROLE, _msgSender())) {
+            revert UnauthorizedProposalAccess(hierarchicalId, _msgSender());
         }
 
-        _delegatedVotingPower[_msgSender()][delegatee] -= amount;
-
-        if (_delegatedVotingPower[_msgSender()][delegatee] == 0) {
-            _delegators[_msgSender()].remove(delegatee);
+        // Can only cancel pending or active proposals
+        if (proposal.state != ProposalState.Pending && proposal.state != ProposalState.Active) {
+            revert ProposalNotActive(hierarchicalId);
         }
-
-        emit VotingPowerUndelegated(_msgSender(), delegatee, amount, block.timestamp);
-    }
-
-    /**
-     * @dev Apply conviction decay for time-locked votes
-     */
-    function applyConvictionDecay(bytes32 proposalId, address voter)
-        external
-        override
-        onlyInitialized
-        whenNotPaused
-    {
-        Vote storage vote = _votes[proposalId][voter];
-        if (vote.voter == address(0) || vote.convictionTime == 0) return;
-
-        uint256 timeElapsed = block.timestamp - vote.timestamp;
-        if (timeElapsed < vote.convictionTime) return;
-
-        uint256 oldPower = vote.votingPower;
-        uint256 decayFactor = timeElapsed / vote.convictionTime;
-        uint256 newPower = oldPower / (1 + decayFactor);
-
-        vote.votingPower = newPower;
-
-        // Update proposal vote counts
-        Proposal storage proposal = _proposals[proposalId];
-        uint256 powerReduction = oldPower - newPower;
-
-        if (vote.choice == VoteChoice.For) {
-            proposal.votesFor -= powerReduction;
-        } else if (vote.choice == VoteChoice.Against) {
-            proposal.votesAgainst -= powerReduction;
-        } else {
-            proposal.votesAbstain -= powerReduction;
-        }
-
-        proposal.totalVotingPower -= powerReduction;
-
-        emit ConvictionDecayApplied(proposalId, voter, oldPower, newPower, block.timestamp);
-    }
-
-    /**
-     * @dev Set voting parameters for an organization
-     */
-    function setVotingParameters(
-        bytes8 organizationId,
-        VotingParameters memory params
-    ) external override onlyRole(SIGNAL_ADMIN_ROLE) onlyInitialized whenNotPaused {
-        _validateOrganization(organizationId);
-
-        // Validate parameters
-        if (params.votingPeriod < MIN_VOTING_PERIOD || params.votingPeriod > MAX_VOTING_PERIOD) {
-            revert InvalidVotingPeriod(params.votingPeriod);
-        }
-        if (params.executionDelay > MAX_EXECUTION_DELAY) {
-            revert InvalidProposalParameters();
-        }
-        if (params.quorumThreshold > MAX_QUORUM_THRESHOLD) {
-            revert InvalidProposalParameters();
-        }
-
-        _votingParameters[organizationId] = params;
-
-        emit VotingParametersUpdated(
-            organizationId,
-            params.votingDelay,
-            params.votingPeriod,
-            params.executionDelay,
-            params.quorumThreshold,
-            params.proposalThreshold,
-            block.timestamp
-        );
-    }
-
-    /**
-     * @dev Set proposal state (admin only)
-     */
-    function setProposalState(bytes32 proposalId, ProposalState newState)
-        external
-        override
-        onlyRole(SIGNAL_ADMIN_ROLE)
-        onlyInitialized
-        whenNotPaused
-    {
-        _updateProposalState(proposalId, newState);
-    }
-
-    /**
-     * @dev Emergency cancel proposal (admin only)
-     */
-    function emergencyCancel(bytes32 proposalId)
-        external
-        override
-        onlyRole(SIGNAL_ADMIN_ROLE)
-        onlyInitialized
-        whenNotPaused
-    {
-        Proposal storage proposal = _proposals[proposalId];
-        if (proposal.proposer == address(0)) revert ProposalNotFound(proposalId);
-
-        _updateProposalState(proposalId, ProposalState.Cancelled);
-        proposal.cancelled = true;
-
-        emit ProposalCancelled(proposalId, _msgSender(), block.timestamp);
-    }
-
-    // Internal helper functions
-
-    /**
-     * @dev Update proposal state
-     */
-    function _updateProposalState(bytes32 proposalId, ProposalState newState) internal {
-        Proposal storage proposal = _proposals[proposalId];
-        ProposalState oldState = proposal.state;
-
-        if (oldState == newState) return;
-
-        // Remove from old state tracking
-        _proposalsByState[oldState].remove(proposalId);
 
         // Update state
-        proposal.state = newState;
-        proposal.updatedAt = block.timestamp;
+        bytes32 proposalHash = keccak256(bytes(hierarchicalId));
+        _proposalsByState[proposal.state].remove(proposalHash);
+        proposal.state = ProposalState.Canceled;
+        _proposalsByState[ProposalState.Canceled].add(proposalHash);
 
-        // Add to new state tracking
-        _proposalsByState[newState].add(proposalId);
-
-        emit ProposalStateChanged(proposalId, oldState, newState, block.timestamp);
+        emit ProposalCanceledHierarchical(hierarchicalId, _msgSender(), reason);
     }
 
     /**
-     * @dev Check if proposal should be automatically queued
+     * @dev Get proposal by hierarchical ID
      */
-    function _checkAutoQueue(bytes32 proposalId) internal {
-        Proposal storage proposal = _proposals[proposalId];
-
-        // Only check if voting period has ended
-        if (block.timestamp < proposal.endTime) return;
-
-        // Only auto-queue if proposal is still active
-        if (proposal.state != ProposalState.Active) return;
-
-                (bool passed, , , , ) = _getProposalResult(proposalId);
-
-        if (passed) {
-            VotingParameters memory params = _getVotingParameters(proposal.organizationId);
-            proposal.executionTime = block.timestamp + params.executionDelay;
-            _updateProposalState(proposalId, ProposalState.Queued);
-            emit ProposalQueued(proposalId, proposal.executionTime, block.timestamp);
-        } else {
-            _updateProposalState(proposalId, ProposalState.Defeated);
-        }
-    }
-
-    /**
-     * @dev Validate organization exists through Control module
-     */
-    function _validateOrganization(bytes8 organizationId) internal view {
-        address controlModule = getModule(keccak256("CONTROL"));
-        if (controlModule == address(0)) revert OrganizationNotFound(organizationId);
-
-        IControl control = IControl(controlModule);
-        if (!control.isOrganizationActive(organizationId)) {
-            revert OrganizationNotFound(organizationId);
-        }
-    }
-
-    /**
-     * @dev Validate membership in organization
-     */
-    function _validateMembership(bytes8 organizationId, address member) internal view {
-        address controlModule = getModule(keccak256("CONTROL"));
-        if (controlModule == address(0)) revert OrganizationNotFound(organizationId);
-
-        IControl control = IControl(controlModule);
-        if (!control.isMemberActive(organizationId, member)) {
-            revert InsufficientVotingPower(member, 1, 0);
-        }
-    }
-
-    /**
-     * @dev Get voting parameters for organization
-     */
-    function _getVotingParameters(bytes8 organizationId) internal view returns (VotingParameters memory) {
-        VotingParameters memory params = _votingParameters[organizationId];
-
-        // Use default parameters if not set
-        if (params.votingPeriod == 0) {
-            return _defaultParams;
-        }
-
-        return params;
-    }
-
-    /**
-     * @dev Calculate voting power for a voter
-     */
-    function _calculateVotingPower(
-        bytes8 organizationId,
-        address voter,
-        VotingPower powerType
-    ) internal view returns (uint256) {
-        if (powerType == VotingPower.Democratic) {
-            // One person, one vote (if they're a member)
-            address controlModule = getModule(keccak256("CONTROL"));
-            if (controlModule == address(0)) return 0;
-
-            IControl control = IControl(controlModule);
-            return control.isMemberActive(organizationId, voter) ? 1 : 0;
-
-        } else if (powerType == VotingPower.TokenWeighted) {
-            // Based on $GAME token holdings
-            address gameTokenModule = getModule(keccak256("GAME_TOKEN"));
-            if (gameTokenModule == address(0)) return 0;
-
-            IGameToken gameToken = IGameToken(gameTokenModule);
-            return gameToken.getTotalStaked(voter);
-
-        } else if (powerType == VotingPower.Quadratic) {
-            // Quadratic voting based on token holdings
-            address gameTokenModule = getModule(keccak256("GAME_TOKEN"));
-            if (gameTokenModule == address(0)) return 0;
-
-            IGameToken gameToken = IGameToken(gameTokenModule);
-            uint256 balance = gameToken.getTotalStaked(voter);
-            return balance > 0 ? Math.sqrt(balance) : 0;
-
-        } else {
-            // Conviction voting - base power that can be multiplied by conviction time
-            address controlModule = getModule(keccak256("CONTROL"));
-            if (controlModule == address(0)) return 0;
-
-            IControl control = IControl(controlModule);
-            return control.isMemberActive(organizationId, voter) ? 1 : 0;
-        }
-    }
-
-        /**
-     * @dev Calculate proposal threshold for organization
-     */
-    function _calculateProposalThreshold(bytes8 organizationId, uint256 thresholdBasisPoints) internal view returns (uint256) {
-        address controlModule = getModule(keccak256("CONTROL"));
-        if (controlModule == address(0)) return 1;
-
-        IControl control = IControl(controlModule);
-        uint256 totalMembers = control.getMemberCount(organizationId);
-
-        return (totalMembers * thresholdBasisPoints) / BASIS_POINTS;
-    }
-
-    /**
-     * @dev Internal function to calculate conviction multiplier
-     */
-    function _calculateConvictionMultiplier(uint256 convictionTime) internal pure returns (uint256) {
-        if (convictionTime == 0) return CONVICTION_MULTIPLIER_BASE;
-
-        // Conviction multiplier increases with time commitment
-        // Base formula: 1 + (convictionTime / 1 day)
-        uint256 daysCommitted = convictionTime / 1 days;
-        return CONVICTION_MULTIPLIER_BASE + (daysCommitted * 1000); // 10% increase per day
-    }
-
-    /**
-     * @dev Internal function to get proposal result
-     */
-    function _getProposalResult(bytes32 proposalId)
-        internal
-        view
-        returns (bool passed, uint256 forVotes, uint256 againstVotes, uint256 abstainVotes, uint256 quorum)
-    {
-        Proposal storage proposal = _proposals[proposalId];
-
-        forVotes = proposal.votesFor;
-        againstVotes = proposal.votesAgainst;
-        abstainVotes = proposal.votesAbstain;
-
-        uint256 totalVotes = forVotes + againstVotes + abstainVotes;
-
-        // Calculate quorum
-        address controlModule = getModule(keccak256("CONTROL"));
-        if (controlModule != address(0)) {
-            IControl control = IControl(controlModule);
-            uint256 totalEligible = control.getMemberCount(proposal.organizationId);
-            quorum = totalEligible > 0 ? (totalVotes * BASIS_POINTS) / totalEligible : 0;
-        }
-
-        // Check if quorum is reached
-        bool quorumReached = quorum >= proposal.requiredQuorum;
-
-        // Determine if proposal passed based on voting type
-        if (!quorumReached) {
-            passed = false;
-        } else if (proposal.votingType == VotingType.Relative) {
-            passed = forVotes > againstVotes;
-        } else if (proposal.votingType == VotingType.Absolute) {
-            address controlModule2 = getModule(keccak256("CONTROL"));
-            if (controlModule2 != address(0)) {
-                IControl control = IControl(controlModule2);
-                uint256 totalEligible = control.getMemberCount(proposal.organizationId);
-                passed = forVotes > (totalEligible / 2);
-            }
-        } else if (proposal.votingType == VotingType.Supermajority) {
-            uint256 totalVotesForAgainst = forVotes + againstVotes;
-            passed = totalVotesForAgainst > 0 && (forVotes * 3) > (totalVotesForAgainst * 2); // >66.7%
-        } else if (proposal.votingType == VotingType.Unanimous) {
-            passed = againstVotes == 0 && forVotes > 0;
-        }
-    }
-
-    // View Functions Implementation
-    function getProposal(bytes32 proposalId) external view override returns (Proposal memory) {
-        return _proposals[proposalId];
-    }
-
-    function getVote(bytes32 proposalId, address voter) external view override returns (Vote memory) {
-        return _votes[proposalId][voter];
-    }
-
-    function getProposalVotes(bytes32 proposalId)
+    function getProposal(string memory hierarchicalId)
         external
         view
         override
-        returns (address[] memory voters, Vote[] memory votes)
+        returns (Proposal memory)
     {
-        address[] memory voterList = _proposalVoters[proposalId].values();
-        Vote[] memory voteList = new Vote[](voterList.length);
-
-        for (uint256 i = 0; i < voterList.length; i++) {
-            voteList[i] = _votes[proposalId][voterList[i]];
+        Proposal memory proposal = _proposals[hierarchicalId];
+        if (proposal.creator == address(0)) {
+            revert ProposalNotFound(hierarchicalId);
         }
-
-        return (voterList, voteList);
+        return proposal;
     }
 
-    function getProposalsByOrganization(bytes8 organizationId)
+    /**
+     * @dev Get vote for a proposal
+     */
+    function getVote(string memory hierarchicalId, address voter)
+        external
+        view
+        override
+        returns (Vote memory)
+    {
+        return _votes[hierarchicalId][voter];
+    }
+
+    /**
+     * @dev Get organization proposals
+     */
+    function getOrganizationProposals(bytes8 organizationId)
         external
         view
         override
@@ -807,6 +424,9 @@ contract Signal is GameDAOModule, ISignal {
         return _organizationProposals[organizationId].values();
     }
 
+    /**
+     * @dev Get proposals by state
+     */
     function getProposalsByState(ProposalState state)
         external
         view
@@ -816,10 +436,24 @@ contract Signal is GameDAOModule, ISignal {
         return _proposalsByState[state].values();
     }
 
-    function getActiveProposals() external view override returns (bytes32[] memory) {
-        return _proposalsByState[ProposalState.Active].values();
+    /**
+     * @dev Set voting parameters for an organization
+     */
+    function setVotingParameters(
+        bytes8 organizationId,
+        VotingParameters memory params
+    ) external override onlyInitialized {
+        // Only organization members can set parameters (simplified for now)
+        if (!_getControlModule().isMember(organizationId, _msgSender())) {
+            revert MembershipRequired(organizationId, _msgSender());
+        }
+
+        _votingParameters[organizationId] = params;
     }
 
+    /**
+     * @dev Get voting parameters for an organization
+     */
     function getVotingParameters(bytes8 organizationId)
         external
         view
@@ -829,177 +463,343 @@ contract Signal is GameDAOModule, ISignal {
         return _getVotingParameters(organizationId);
     }
 
-    function getVotingPower(bytes32 proposalId, address voter)
-        external
+    /**
+     * @dev Internal function to get voting parameters
+     */
+    function _getVotingParameters(bytes8 organizationId)
+        internal
         view
-        override
-        returns (uint256)
+        returns (VotingParameters memory)
     {
-        Proposal storage proposal = _proposals[proposalId];
-        return _calculateVotingPower(proposal.organizationId, voter, proposal.votingPower);
+        VotingParameters memory params = _votingParameters[organizationId];
+        if (params.votingPeriod == 0) {
+            return _defaultParams;
+        }
+        return params;
     }
 
-    function getDelegatedVotingPower(address delegator) external view override returns (uint256) {
-        return _delegatedVotingPower[delegator][_msgSender()];
+    /**
+     * @dev Update proposal state based on current conditions
+     */
+    function _updateProposalState(string memory hierarchicalId) internal {
+        Proposal storage proposal = _proposals[hierarchicalId];
+        ProposalState oldState = proposal.state;
+        ProposalState newState = _calculateProposalState(proposal);
+
+        if (oldState != newState) {
+            bytes32 proposalHash = keccak256(bytes(hierarchicalId));
+            _proposalsByState[oldState].remove(proposalHash);
+            _proposalsByState[newState].add(proposalHash);
+            proposal.state = newState;
+        }
     }
 
-    function getDelegations(address delegator)
-        external
+    /**
+     * @dev Calculate proposal state based on current conditions
+     */
+    function _calculateProposalState(Proposal memory proposal)
+        internal
         view
-        override
-        returns (Delegation[] memory)
+        returns (ProposalState)
     {
-        address[] memory delegatees = _delegators[delegator].values();
-        Delegation[] memory delegations = new Delegation[](delegatees.length);
-
-        for (uint256 i = 0; i < delegatees.length; i++) {
-            delegations[i] = Delegation({
-                delegator: delegator,
-                delegatee: delegatees[i],
-                amount: _delegatedVotingPower[delegator][delegatees[i]],
-                timestamp: 0, // No timestamp for delegated power
-                active: true
-            });
+        if (proposal.state == ProposalState.Executed || proposal.state == ProposalState.Canceled) {
+            return proposal.state;
         }
 
-        return delegations;
+        if (block.timestamp < proposal.startTime) {
+            return ProposalState.Pending;
+        }
+
+        if (block.timestamp <= proposal.endTime) {
+            return ProposalState.Active;
+        }
+
+        // Voting has ended, check if passed
+        VotingParameters memory params = _getVotingParameters(proposal.organizationId);
+        uint256 totalVotes = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
+        uint256 totalSupply = _getTotalVotingPower(proposal.organizationId, proposal.votingPower);
+        uint256 quorumRequired = (totalSupply * params.quorumThreshold) / BASIS_POINTS;
+
+        if (totalVotes < quorumRequired) {
+            return ProposalState.Defeated;
+        }
+
+        if (proposal.forVotes > proposal.againstVotes) {
+            return ProposalState.Succeeded;
+        }
+
+        return ProposalState.Defeated;
     }
 
-    function hasVoted(bytes32 proposalId, address voter) external view override returns (bool) {
-        return _votes[proposalId][voter].voter != address(0);
-    }
-
-    function canVote(bytes32 proposalId, address voter) external view override returns (bool) {
-        Proposal storage proposal = _proposals[proposalId];
-
-        if (proposal.proposer == address(0)) return false;
-        if (proposal.state != ProposalState.Active && proposal.state != ProposalState.Pending) return false;
-        if (block.timestamp < proposal.startTime || block.timestamp >= proposal.endTime) return false;
-        if (_votes[proposalId][voter].voter != address(0)) return false;
-
-        uint256 votingPower = _calculateVotingPower(proposal.organizationId, voter, proposal.votingPower);
-        return votingPower > 0;
-    }
-
-    function canExecute(bytes32 proposalId) external view override returns (bool) {
-        Proposal storage proposal = _proposals[proposalId];
-
-        if (proposal.proposer == address(0)) return false;
-        if (proposal.state != ProposalState.Queued) return false;
-        if (block.timestamp < proposal.executionTime) return false;
-
-        return true;
-    }
-
-        function getProposalResult(bytes32 proposalId)
-        external
-        view
-        override
-        returns (bool passed, uint256 forVotes, uint256 againstVotes, uint256 abstainVotes, uint256 quorum)
-    {
-        return _getProposalResult(proposalId);
-    }
-
-    function calculateVotingPower(
-        bytes32 proposalId,
-        address voter,
-        VotingPower powerType
-    ) external view override returns (uint256) {
-        Proposal storage proposal = _proposals[proposalId];
-        return _calculateVotingPower(proposal.organizationId, voter, powerType);
-    }
-
-        function calculateConvictionMultiplier(uint256 convictionTime)
-        external
-        pure
-        override
-        returns (uint256)
-    {
-        return _calculateConvictionMultiplier(convictionTime);
-    }
-
-    function getQuorumReached(bytes32 proposalId) external view override returns (bool) {
-        (, , , , uint256 quorum) = _getProposalResult(proposalId);
-        Proposal storage proposal = _proposals[proposalId];
-        return quorum >= proposal.requiredQuorum;
-    }
-
-    function getTimeRemaining(bytes32 proposalId) external view override returns (uint256) {
-        Proposal storage proposal = _proposals[proposalId];
-        if (block.timestamp >= proposal.endTime) return 0;
-        return proposal.endTime - block.timestamp;
-    }
-
-    function getProposalCount() external view override returns (uint256) {
-        return _allProposals.length();
-    }
-
-    function isProposalActive(bytes32 proposalId) external view override returns (bool) {
-        Proposal storage proposal = _proposals[proposalId];
-        return proposal.state == ProposalState.Active &&
-               block.timestamp >= proposal.startTime &&
-               block.timestamp < proposal.endTime;
-    }
-
-    function getExecutionETA(bytes32 proposalId) external view override returns (uint256) {
-        Proposal storage proposal = _proposals[proposalId];
-        return proposal.executionTime;
-    }
-
-    function validateProposalParameters(
+        /**
+     * @dev Get voting power for an address
+     */
+    function _getVotingPower(
         bytes8 organizationId,
-        ProposalType /* proposalType */,
-        VotingType /* votingType */,
-        VotingPower /* votingPower */,
-        uint256 votingPeriod
-    ) external view override returns (bool) {
-        if (votingPeriod < MIN_VOTING_PERIOD || votingPeriod > MAX_VOTING_PERIOD) {
-            return false;
+        address account,
+        VotingPower votingPowerType
+    ) internal view returns (uint256) {
+        // Simplified voting power - just check membership
+        if (_getControlModule().isMember(organizationId, account)) {
+            return 1; // One person, one vote for now
+        }
+        return 0;
+    }
+
+    /**
+     * @dev Get total voting power for an organization
+     */
+    function _getTotalVotingPower(
+        bytes8 organizationId,
+        VotingPower votingPowerType
+    ) internal view returns (uint256) {
+        // Simplified total voting power - just member count
+        return _getControlModule().getMemberCount(organizationId);
+    }
+
+    /**
+     * @dev Get Control module instance
+     */
+    function _getControlModule() internal view returns (IControl) {
+        return IControl(getRegistry().getModule(keccak256("CONTROL")));
+    }
+
+    // ============ DELEGATION FUNCTIONS ============
+
+    /**
+     * @dev Delegate voting power to another address
+     */
+    function delegateVotingPower(address delegatee, uint256 amount) external override onlyInitialized {
+        if (delegatee == address(0) || delegatee == _msgSender()) {
+            revert InvalidDelegation(_msgSender(), delegatee);
         }
 
-        address controlModule = getModule(keccak256("CONTROL"));
-        if (controlModule == address(0)) return false;
+        _delegations[_msgSender()].push(Delegation({
+            delegatee: delegatee,
+            amount: amount,
+            timestamp: block.timestamp,
+            active: true
+        }));
 
-        IControl control = IControl(controlModule);
-        return control.isOrganizationActive(organizationId);
+        _totalDelegatedOut[_msgSender()] += amount;
+        _delegatedVotingPower[_msgSender()][delegatee] += amount;
+        _delegators[delegatee].add(_msgSender());
+
+        emit VotingPowerDelegated(_msgSender(), delegatee, amount, block.timestamp);
     }
 
-    function estimateGasForExecution(bytes32 proposalId) external view override returns (uint256) {
-        Proposal storage proposal = _proposals[proposalId];
-
-        if (proposal.executionData.length == 0 || proposal.targetContract == address(0)) {
-            return 21000; // Base transaction gas
+    /**
+     * @dev Undelegate voting power from another address
+     */
+    function undelegateVotingPower(address delegatee, uint256 amount) external override onlyInitialized {
+        if (_delegatedVotingPower[_msgSender()][delegatee] < amount) {
+            revert DelegationNotFound(_msgSender(), delegatee);
         }
 
-        // Estimate gas for the call (simplified estimation)
-        return 100000 + (proposal.executionData.length * 68);
-    }
+        _delegatedVotingPower[_msgSender()][delegatee] -= amount;
+        _totalDelegatedOut[_msgSender()] -= amount;
 
-    function previewProposalExecution(bytes32 proposalId)
-        external
-        view
-        override
-        returns (bool success, bytes memory returnData)
-    {
-        Proposal storage proposal = _proposals[proposalId];
-
-        if (proposal.executionData.length == 0 || proposal.targetContract == address(0)) {
-            return (true, "");
+        // Update delegation records
+        for (uint256 i = 0; i < _delegations[_msgSender()].length; i++) {
+            if (_delegations[_msgSender()][i].delegatee == delegatee && _delegations[_msgSender()][i].active) {
+                if (_delegations[_msgSender()][i].amount <= amount) {
+                    _delegations[_msgSender()][i].active = false;
+                    amount -= _delegations[_msgSender()][i].amount;
+                } else {
+                    _delegations[_msgSender()][i].amount -= amount;
+                    amount = 0;
+                }
+                if (amount == 0) break;
+            }
         }
 
-        // Use staticcall to preview execution without state changes
-        (success, returnData) = proposal.targetContract.staticcall(proposal.executionData);
+        if (_delegatedVotingPower[_msgSender()][delegatee] == 0) {
+            _delegators[delegatee].remove(_msgSender());
+        }
+
+        emit VotingPowerUndelegated(_msgSender(), delegatee, amount, block.timestamp);
     }
 
-        // Admin functions
-    function setDefaultVotingParameters(VotingParameters memory params)
-        external
-        onlyRole(SIGNAL_ADMIN_ROLE)
-    {
-        _defaultParams = params;
+    /**
+     * @dev Get total delegated voting power for an address
+     */
+    function getDelegatedVotingPower(address delegator) external view override returns (uint256) {
+        return _totalDelegatedOut[delegator];
     }
 
-    function getDefaultVotingParameters() external view returns (VotingParameters memory) {
-        return _defaultParams;
+    /**
+     * @dev Get all delegations for an address
+     */
+    function getDelegations(address delegator) external view override returns (Delegation[] memory) {
+        return _delegations[delegator];
+    }
+
+    /**
+     * @dev Get voting power including delegations
+     */
+    function getVotingPowerWithDelegation(bytes8 organizationId, address account, VotingPower votingPowerType)
+        external view override returns (uint256) {
+        uint256 basePower = _getVotingPower(organizationId, account, votingPowerType);
+
+        // Add delegated power from others
+        uint256 delegatedPower = 0;
+        address[] memory delegators = _delegators[account].values();
+        for (uint256 i = 0; i < delegators.length; i++) {
+            delegatedPower += _delegatedVotingPower[delegators[i]][account];
+        }
+
+        return basePower + delegatedPower;
+    }
+
+    // ============ CONVICTION VOTING FUNCTIONS ============
+
+    /**
+     * @dev Cast a vote with conviction
+     */
+    function castVoteWithConviction(
+        string memory hierarchicalId,
+        VoteChoice choice,
+        uint256 convictionTime,
+        string memory reason
+    ) external override onlyInitialized whenNotPaused nonReentrant {
+        Proposal storage proposal = _proposals[hierarchicalId];
+        if (proposal.creator == address(0)) {
+            revert ProposalNotFound(hierarchicalId);
+        }
+
+        // Update proposal state if needed
+        _updateProposalState(hierarchicalId);
+
+        if (proposal.state != ProposalState.Active) {
+            revert VotingNotActive(hierarchicalId);
+        }
+
+        // Check if already voted
+        if (_votes[hierarchicalId][_msgSender()].hasVoted) {
+            revert AlreadyVoted(hierarchicalId, _msgSender());
+        }
+
+        // Validate vote choice
+        if (choice == VoteChoice.None) {
+            revert InvalidVoteChoice(choice);
+        }
+
+        // Get base voting power
+        uint256 basePower = _getVotingPower(proposal.organizationId, _msgSender(), proposal.votingPower);
+        if (basePower == 0) {
+            revert InsufficientVotingPower(_msgSender(), 1, 0);
+        }
+
+        // Calculate conviction multiplier
+        uint256 convictionMultiplier = this.calculateConvictionMultiplier(convictionTime);
+        uint256 finalVotingPower = basePower * convictionMultiplier;
+
+        // Record vote with conviction
+        _votes[hierarchicalId][_msgSender()] = Vote({
+            voter: _msgSender(),
+            choice: choice,
+            votingPower: finalVotingPower,
+            timestamp: block.timestamp,
+            reason: reason,
+            hasVoted: true,
+            convictionTime: convictionTime,
+            convictionMultiplier: convictionMultiplier
+        });
+
+        // Store conviction data
+        _convictionVotes[hierarchicalId][_msgSender()] = finalVotingPower;
+        _convictionStartTime[hierarchicalId][_msgSender()] = block.timestamp;
+
+        // Update proposal vote counts
+        if (choice == VoteChoice.For) {
+            proposal.forVotes += finalVotingPower;
+        } else if (choice == VoteChoice.Against) {
+            proposal.againstVotes += finalVotingPower;
+        } else if (choice == VoteChoice.Abstain) {
+            proposal.abstainVotes += finalVotingPower;
+        }
+
+        // Add to voters set
+        _proposalVoters[hierarchicalId].add(_msgSender());
+
+        emit ConvictionVoteCast(hierarchicalId, _msgSender(), choice, finalVotingPower, convictionMultiplier, convictionTime, reason);
+    }
+
+    /**
+     * @dev Calculate conviction multiplier based on conviction time
+     */
+    function calculateConvictionMultiplier(uint256 convictionTime) external pure override returns (uint256) {
+        if (convictionTime == 0) return 1;
+
+        // Conviction multiplier: 1x + (time in days / 30) up to 3x max
+        uint256 daysCommitted = convictionTime / 86400; // Convert seconds to days
+        uint256 multiplier = 1 + (daysCommitted * 100) / 3000; // Scale by 100 for precision
+
+        return multiplier > 300 ? 300 : multiplier; // Cap at 3x (300)
+    }
+
+    /**
+     * @dev Apply conviction decay to a vote
+     */
+    function applyConvictionDecay(string memory hierarchicalId, address voter) external override onlyInitialized {
+        Vote storage vote = _votes[hierarchicalId][voter];
+        if (!vote.hasVoted || vote.convictionTime == 0) return;
+
+        uint256 timeElapsed = block.timestamp - _convictionStartTime[hierarchicalId][voter];
+        if (timeElapsed >= vote.convictionTime) {
+            // Conviction period expired, reduce to base power
+            uint256 oldPower = vote.votingPower;
+            uint256 basePower = oldPower / vote.convictionMultiplier;
+            vote.votingPower = basePower;
+            vote.convictionMultiplier = 1;
+
+            // Update proposal vote counts
+            Proposal storage proposal = _proposals[hierarchicalId];
+            if (vote.choice == VoteChoice.For) {
+                proposal.forVotes = proposal.forVotes - oldPower + basePower;
+            } else if (vote.choice == VoteChoice.Against) {
+                proposal.againstVotes = proposal.againstVotes - oldPower + basePower;
+            } else if (vote.choice == VoteChoice.Abstain) {
+                proposal.abstainVotes = proposal.abstainVotes - oldPower + basePower;
+            }
+
+            emit ConvictionDecayApplied(hierarchicalId, voter, oldPower, basePower, block.timestamp);
+        }
+    }
+
+    // ============ ENHANCED VOTING FUNCTIONS ============
+
+    /**
+     * @dev Check if an address can vote on a proposal
+     */
+    function canVote(string memory hierarchicalId, address voter) external view override returns (bool) {
+        Proposal memory proposal = _proposals[hierarchicalId];
+        if (proposal.creator == address(0)) return false;
+        if (proposal.state != ProposalState.Active) return false;
+        if (_votes[hierarchicalId][voter].hasVoted) return false;
+
+        return _getVotingPower(proposal.organizationId, voter, proposal.votingPower) > 0;
+    }
+
+    /**
+     * @dev Check if a proposal can be executed
+     */
+    function canExecute(string memory hierarchicalId) external view override returns (bool) {
+        Proposal memory proposal = _proposals[hierarchicalId];
+        if (proposal.creator == address(0)) return false;
+        if (proposal.state != ProposalState.Succeeded) return false;
+
+        return block.timestamp >= proposal.executionTime;
+    }
+
+    /**
+     * @dev Calculate voting power for a specific proposal and voter
+     */
+    function calculateVotingPower(string memory hierarchicalId, address voter, VotingPower powerType)
+        external view override returns (uint256) {
+        Proposal memory proposal = _proposals[hierarchicalId];
+        if (proposal.creator == address(0)) return 0;
+
+        return _getVotingPower(proposal.organizationId, voter, powerType);
     }
 }
