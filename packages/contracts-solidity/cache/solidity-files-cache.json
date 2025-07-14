@@ -1018,8 +1018,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Signal/Signal.sol": {
-      "lastModificationDate": 1752224537193,
-      "contentHash": "1dabd1307c50a8203d4679088ecbd620",
+      "lastModificationDate": 1752504745132,
+      "contentHash": "4586face79a98c0be7ecde6198dbc6f3",
       "sourceName": "contracts/modules/Signal/Signal.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1047,8 +1047,11 @@
         }
       },
       "imports": [
-        "../../core/GameDAOModule.sol",
         "../../interfaces/ISignal.sol",
+        "../../interfaces/IGameDAOModule.sol",
+        "../../interfaces/IGameDAORegistry.sol",
+        "../../core/GameDAOModule.sol",
+        "../../libraries/GameId.sol",
         "../../interfaces/IControl.sol",
         "../../interfaces/IGameToken.sol",
         "@openzeppelin/contracts/utils/structs/EnumerableSet.sol",
@@ -1062,8 +1065,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/ISignal.sol": {
-      "lastModificationDate": 1752173440040,
-      "contentHash": "3c6f9dd547ff9d1674d5e1595bdb2e98",
+      "lastModificationDate": 1752483945146,
+      "contentHash": "a39c4ebb59df184f1d6519868b85fc0b",
       "sourceName": "contracts/interfaces/ISignal.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1099,8 +1102,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Sense/Sense.sol": {
-      "lastModificationDate": 1752224569255,
-      "contentHash": "49b469ce4986d035f404c795b1a644ec",
+      "lastModificationDate": 1752494067284,
+      "contentHash": "96aae5f694231394ef8258d335f6558c",
       "sourceName": "contracts/modules/Sense/Sense.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1129,6 +1132,7 @@
       },
       "imports": [
         "@openzeppelin/contracts/utils/structs/EnumerableSet.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
         "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol",
         "../../core/GameDAOModule.sol",
         "../../interfaces/ISense.sol",
@@ -1142,8 +1146,8 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/ISense.sol": {
-      "lastModificationDate": 1752173504299,
-      "contentHash": "85e5e4f99249025e67dd297045a0976c",
+      "lastModificationDate": 1752493997240,
+      "contentHash": "ceff21c082312bd1a11e2dea7d2149b7",
       "sourceName": "contracts/interfaces/ISense.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -2219,6 +2223,202 @@
       ],
       "artifacts": [
         "AlphanumericIDTest"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/libraries/GameId.sol": {
+      "lastModificationDate": 1752504718737,
+      "contentHash": "cbf4e131e8c5d186f94ad0a9993fe922",
+      "sourceName": "contracts/libraries/GameId.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "GameId"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IIdentity.sol": {
+      "lastModificationDate": 1752505615705,
+      "contentHash": "c752ded34021c685bb7d6a3e9f362841",
+      "sourceName": "contracts/interfaces/IIdentity.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IIdentity"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Identity/Identity.sol": {
+      "lastModificationDate": 1752505923989,
+      "contentHash": "a04668c78903d4bac06d1b420cdc087a",
+      "sourceName": "contracts/modules/Identity/Identity.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/utils/structs/EnumerableSet.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "../../core/GameDAOModule.sol",
+        "../../interfaces/IIdentity.sol",
+        "../../interfaces/IControl.sol",
+        "../../libraries/GameId.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Identity"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Sense/SenseSimplified.sol": {
+      "lastModificationDate": 1752505768997,
+      "contentHash": "b00169b7d7e378fda6a6066fb1adc23d",
+      "sourceName": "contracts/modules/Sense/SenseSimplified.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../core/GameDAOModule.sol",
+        "../../interfaces/ISenseSimplified.sol",
+        "../../interfaces/IIdentity.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "SenseSimplified"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/ISenseSimplified.sol": {
+      "lastModificationDate": 1752505717116,
+      "contentHash": "474144eec5ee58cf3c62e6915907a285",
+      "sourceName": "contracts/interfaces/ISenseSimplified.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "ISenseSimplified"
       ]
     }
   }

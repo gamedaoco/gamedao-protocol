@@ -92,6 +92,20 @@ interface ISense {
     }
 
     /**
+     * @dev Name claim structure for 8-byte name management
+     */
+    struct NameClaim {
+        bytes8 name;
+        address owner;
+        uint256 stakeAmount;
+        uint256 stakeDuration;
+        uint256 claimedAt;
+        uint256 expiresAt;
+        bool isActive;
+        NameType nameType;
+    }
+
+    /**
      * @dev Reputation export structure for cross-DAO portability
      */
     struct ReputationExport {
@@ -147,6 +161,14 @@ interface ISense {
         BASIC,
         ENHANCED,
         PREMIUM
+    }
+
+    /**
+     * @dev Name type for 8-byte name claiming
+     */
+    enum NameType {
+        PERSONAL,
+        ORGANIZATION
     }
 
     // =============================================================
@@ -240,6 +262,37 @@ interface ISense {
         uint256 timestamp
     );
 
+    /**
+     * @dev Emitted when a name is claimed
+     */
+    event NameClaimed(
+        bytes8 indexed name,
+        address indexed owner,
+        uint256 stakeAmount,
+        uint256 stakeDuration,
+        NameType nameType,
+        uint256 timestamp
+    );
+
+    /**
+     * @dev Emitted when a name is released
+     */
+    event NameReleased(
+        bytes8 indexed name,
+        address indexed owner,
+        uint256 stakeAmount,
+        uint256 timestamp
+    );
+
+    /**
+     * @dev Emitted when a name expires
+     */
+    event NameExpired(
+        bytes8 indexed name,
+        address indexed owner,
+        uint256 timestamp
+    );
+
     // =============================================================
     // ERRORS
     // =============================================================
@@ -257,6 +310,16 @@ interface ISense {
     error InvalidImportProof(bytes32 profileId);
     error OrganizationNotFound(bytes8 organizationId);
     error InsufficientPermissions(address caller, string action);
+
+    // Name claiming errors
+    error NameAlreadyClaimed(bytes8 name);
+    error NameNotClaimed(bytes8 name);
+    error InvalidNameFormat(bytes8 name);
+    error InvalidStakeAmount(uint256 amount);
+    error InvalidStakeDuration(uint256 duration);
+    error NameNotExpired(bytes8 name);
+    error UnauthorizedNameAccess(bytes8 name, address caller);
+    error InsufficientTokenBalance(address token, uint256 required, uint256 available);
 
     // =============================================================
     // PROFILE MANAGEMENT
@@ -310,6 +373,60 @@ interface ISense {
      * @param level The verification level to grant
      */
     function verifyProfile(bytes32 profileId, VerificationLevel level) external;
+
+    // =============================================================
+    // NAME CLAIMING SYSTEM
+    // =============================================================
+
+    /**
+     * @dev Claim an 8-byte name with GAME token staking
+     * @param name The 8-byte name to claim
+     * @param stakeAmount Amount of GAME tokens to stake
+     * @param stakeDuration Duration to stake tokens (in seconds)
+     * @param nameType Type of name (personal or organization)
+     * @return success True if claim was successful
+     */
+    function claimName(
+        bytes8 name,
+        uint256 stakeAmount,
+        uint256 stakeDuration,
+        NameType nameType
+    ) external returns (bool success);
+
+    /**
+     * @dev Release a claimed name and recover staked tokens
+     * @param name The name to release
+     * @return stakeAmount Amount of tokens recovered
+     */
+    function releaseName(bytes8 name) external returns (uint256 stakeAmount);
+
+    /**
+     * @dev Check if a name is available for claiming
+     * @param name The name to check
+     * @return available True if name is available
+     */
+    function isNameAvailable(bytes8 name) external view returns (bool available);
+
+    /**
+     * @dev Get name claim details
+     * @param name The name to query
+     * @return claim The name claim details
+     */
+    function getNameClaim(bytes8 name) external view returns (NameClaim memory claim);
+
+    /**
+     * @dev Get names owned by an address
+     * @param owner The owner address
+     * @return names Array of owned names
+     */
+    function getNamesOwnedBy(address owner) external view returns (bytes8[] memory names);
+
+    /**
+     * @dev Validate name format (8 characters, alphanumeric)
+     * @param name The name to validate
+     * @return valid True if name format is valid
+     */
+    function validateNameFormat(bytes8 name) external pure returns (bool valid);
 
     // =============================================================
     // REPUTATION SYSTEM

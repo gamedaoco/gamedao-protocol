@@ -76,9 +76,7 @@ type User @entity {
 
   # Relationships (derived from other entities)
   memberships: [Member!]! @derivedFrom(field: "user")
-  contributions: [Contribution!]! @derivedFrom(field: "contributor")
-  proposals: [Proposal!]! @derivedFrom(field: "proposer")
-  votes: [Vote!]! @derivedFrom(field: "voter")
+  # Note: contributions, proposals, votes are accessed through Member entities
 }
 
 type Organization @entity {
@@ -104,7 +102,7 @@ type Organization @entity {
   members: [Member!]! @derivedFrom(field: "organization")
   campaigns: [Campaign!]! @derivedFrom(field: "organization")
   proposals: [Proposal!]! @derivedFrom(field: "organization")
-  profiles: [Profile!]! @derivedFrom(field: "organization")
+  # profiles: [Profile!]! @derivedFrom(field: "organization") # DISABLED - Sense module disabled
 
   # Statistics
   memberCount: BigInt!
@@ -132,7 +130,7 @@ type Member @entity {
   contributions: [Contribution!]! @derivedFrom(field: "contributor")
   proposals: [Proposal!]! @derivedFrom(field: "proposer")
   votes: [Vote!]! @derivedFrom(field: "voter")
-  profiles: [Profile!]! @derivedFrom(field: "owner")
+  # profiles: [Profile!]! @derivedFrom(field: "owner") # DISABLED - Sense module disabled
 }
 
 type Treasury @entity {
@@ -378,92 +376,92 @@ type Delegation @entity {
   active: Boolean!
 }
 
-# ===== SENSE MODULE ENTITIES =====
+# ===== SENSE MODULE ENTITIES (DISABLED - contract too large) =====
 
-enum VerificationLevel {
-  NONE
-  BASIC
-  VERIFIED
-  PREMIUM
-}
+# enum VerificationLevel {
+#   NONE
+#   BASIC
+#   VERIFIED
+#   PREMIUM
+# }
 
-type Profile @entity {
-  id: ID! # profile ID (bytes32 hash)
-  organization: Organization!
-  owner: Member!
-  username: String!
+# type Profile @entity {
+#   id: ID! # profile ID (bytes32 hash)
+#   organization: Organization!
+#   owner: Member!
+#   username: String!
 
-  # Profile details
-  bio: String!
-  avatar: String!
-  website: String!
-  verificationLevel: VerificationLevel!
+#   # Profile details
+#   bio: String!
+#   avatar: String!
+#   website: String!
+#   verificationLevel: VerificationLevel!
 
-  # Reputation data
-  experience: BigInt!
-  reputation: BigInt!
-  trustScore: BigInt!
-  convictionScore: BigInt!
+#   # Reputation data
+#   experience: BigInt!
+#   reputation: BigInt!
+#   trustScore: BigInt!
+#   convictionScore: BigInt!
 
-  # Statistics
-  achievementCount: BigInt!
-  feedbackCount: BigInt!
-  positiveFeedbacks: BigInt!
-  negativeFeedbacks: BigInt!
+#   # Statistics
+#   achievementCount: BigInt!
+#   feedbackCount: BigInt!
+#   positiveFeedbacks: BigInt!
+#   negativeFeedbacks: BigInt!
 
-  # Timestamps
-  createdAt: BigInt!
-  updatedAt: BigInt!
+#   # Timestamps
+#   createdAt: BigInt!
+#   updatedAt: BigInt!
 
-  # Relationships
-  achievements: [Achievement!]! @derivedFrom(field: "profile")
-  feedbacksReceived: [Feedback!]! @derivedFrom(field: "target")
-  feedbacksGiven: [Feedback!]! @derivedFrom(field: "author")
-  reputationImports: [ReputationImport!]! @derivedFrom(field: "profile")
-}
+#   # Relationships
+#   achievements: [Achievement!]! @derivedFrom(field: "profile")
+#   feedbacksReceived: [Feedback!]! @derivedFrom(field: "target")
+#   feedbacksGiven: [Feedback!]! @derivedFrom(field: "author")
+#   reputationImports: [ReputationImport!]! @derivedFrom(field: "profile")
+# }
 
-type Achievement @entity {
-  id: ID! # profile ID + achievement ID
-  profile: Profile!
-  achievementId: Bytes!
-  title: String!
-  description: String!
-  category: String!
-  points: BigInt!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-}
+# type Achievement @entity {
+#   id: ID! # profile ID + achievement ID
+#   profile: Profile!
+#   achievementId: Bytes!
+#   title: String!
+#   description: String!
+#   category: String!
+#   points: BigInt!
+#   timestamp: BigInt!
+#   blockNumber: BigInt!
+#   transactionHash: Bytes!
+# }
 
-enum FeedbackType {
-  POSITIVE
-  NEGATIVE
-  NEUTRAL
-}
+# enum FeedbackType {
+#   POSITIVE
+#   NEGATIVE
+#   NEUTRAL
+# }
 
-type Feedback @entity {
-  id: ID! # feedback ID (bytes32 hash)
-  target: Profile!
-  author: Profile!
-  feedbackType: FeedbackType!
-  rating: BigInt!
-  comment: String!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-}
+# type Feedback @entity {
+#   id: ID! # feedback ID (bytes32 hash)
+#   target: Profile!
+#   author: Profile!
+#   feedbackType: FeedbackType!
+#   rating: BigInt!
+#   comment: String!
+#   timestamp: BigInt!
+#   blockNumber: BigInt!
+#   transactionHash: Bytes!
+# }
 
-type ReputationImport @entity {
-  id: ID! # tx hash + log index
-  profile: Profile!
-  sourceProfile: Bytes!
-  importedExperience: BigInt!
-  importedReputation: BigInt!
-  importedTrust: BigInt!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-}
+# type ReputationImport @entity {
+#   id: ID! # tx hash + log index
+#   profile: Profile!
+#   sourceProfile: Bytes!
+#   importedExperience: BigInt!
+#   importedReputation: BigInt!
+#   importedTrust: BigInt!
+#   timestamp: BigInt!
+#   blockNumber: BigInt!
+#   transactionHash: Bytes!
+# }
 
 # ===== GLOBAL STATISTICS =====
 

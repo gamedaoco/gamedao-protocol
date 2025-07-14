@@ -170,6 +170,37 @@ export declare namespace ISense {
     verified: boolean;
   };
 
+  export type NameClaimStruct = {
+    name: BytesLike;
+    owner: AddressLike;
+    stakeAmount: BigNumberish;
+    stakeDuration: BigNumberish;
+    claimedAt: BigNumberish;
+    expiresAt: BigNumberish;
+    isActive: boolean;
+    nameType: BigNumberish;
+  };
+
+  export type NameClaimStructOutput = [
+    name: string,
+    owner: string,
+    stakeAmount: bigint,
+    stakeDuration: bigint,
+    claimedAt: bigint,
+    expiresAt: bigint,
+    isActive: boolean,
+    nameType: bigint
+  ] & {
+    name: string;
+    owner: string;
+    stakeAmount: bigint;
+    stakeDuration: bigint;
+    claimedAt: bigint;
+    expiresAt: bigint;
+    isActive: boolean;
+    nameType: bigint;
+  };
+
   export type ProfileStruct = {
     profileId: BytesLike;
     owner: AddressLike;
@@ -263,8 +294,13 @@ export interface SenseInterface extends Interface {
       | "DEFAULT_ADMIN_ROLE"
       | "MAX_FEEDBACKS_PER_QUERY"
       | "MAX_FEEDBACK_RATING"
+      | "MAX_NAME_STAKE"
       | "MAX_REPUTATION_DELTA"
+      | "MAX_STAKE_DURATION"
       | "MIN_FEEDBACK_RATING"
+      | "MIN_NAME_STAKE"
+      | "MIN_STAKE_DURATION"
+      | "NAME_LENGTH"
       | "OPERATOR_ROLE"
       | "REPUTATION_MANAGER_ROLE"
       | "REPUTATION_SCALE"
@@ -273,6 +309,7 @@ export interface SenseInterface extends Interface {
       | "VERIFIER_ROLE"
       | "calculateTrustScore"
       | "calculateVotingWeight"
+      | "claimName"
       | "createProfile"
       | "emergencyPause"
       | "emergencyUnpause"
@@ -282,6 +319,8 @@ export interface SenseInterface extends Interface {
       | "getCategoryReputation"
       | "getFeedbackSummary"
       | "getFeedbacks"
+      | "getNameClaim"
+      | "getNamesOwnedBy"
       | "getProfile"
       | "getProfileByOwner"
       | "getProfileCount"
@@ -298,6 +337,7 @@ export interface SenseInterface extends Interface {
       | "importReputation"
       | "initialize"
       | "isInitialized"
+      | "isNameAvailable"
       | "moduleId"
       | "onModuleDisabled"
       | "onModuleEnabled"
@@ -305,6 +345,7 @@ export interface SenseInterface extends Interface {
       | "paused"
       | "profileExists"
       | "registry"
+      | "releaseName"
       | "renounceRole"
       | "revokeRole"
       | "submitFeedback"
@@ -313,6 +354,7 @@ export interface SenseInterface extends Interface {
       | "updateCategoryReputation"
       | "updateProfile"
       | "updateReputation"
+      | "validateNameFormat"
       | "verifyProfile"
       | "version"
   ): FunctionFragment;
@@ -324,6 +366,9 @@ export interface SenseInterface extends Interface {
       | "ModuleDisabled"
       | "ModuleEnabled"
       | "ModuleInitialized"
+      | "NameClaimed"
+      | "NameExpired"
+      | "NameReleased"
       | "Paused"
       | "ProfileCreated"
       | "ProfileUpdated"
@@ -358,11 +403,31 @@ export interface SenseInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "MAX_NAME_STAKE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "MAX_REPUTATION_DELTA",
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "MAX_STAKE_DURATION",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "MIN_FEEDBACK_RATING",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "MIN_NAME_STAKE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "MIN_STAKE_DURATION",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "NAME_LENGTH",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -396,6 +461,10 @@ export interface SenseInterface extends Interface {
   encodeFunctionData(
     functionFragment: "calculateVotingWeight",
     values: [BytesLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "claimName",
+    values: [BytesLike, BigNumberish, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "createProfile",
@@ -432,6 +501,14 @@ export interface SenseInterface extends Interface {
   encodeFunctionData(
     functionFragment: "getFeedbacks",
     values: [BytesLike, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getNameClaim",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getNamesOwnedBy",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getProfile",
@@ -505,6 +582,10 @@ export interface SenseInterface extends Interface {
     functionFragment: "isInitialized",
     values?: undefined
   ): string;
+  encodeFunctionData(
+    functionFragment: "isNameAvailable",
+    values: [BytesLike]
+  ): string;
   encodeFunctionData(functionFragment: "moduleId", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "onModuleDisabled",
@@ -521,6 +602,10 @@ export interface SenseInterface extends Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(functionFragment: "registry", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "releaseName",
+    values: [BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "renounceRole",
     values: [BytesLike, AddressLike]
@@ -551,6 +636,10 @@ export interface SenseInterface extends Interface {
     values: [BytesLike, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "validateNameFormat",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "verifyProfile",
     values: [BytesLike, BigNumberish]
   ): string;
@@ -574,11 +663,31 @@ export interface SenseInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "MAX_NAME_STAKE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "MAX_REPUTATION_DELTA",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "MAX_STAKE_DURATION",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "MIN_FEEDBACK_RATING",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "MIN_NAME_STAKE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "MIN_STAKE_DURATION",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "NAME_LENGTH",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -613,6 +722,7 @@ export interface SenseInterface extends Interface {
     functionFragment: "calculateVotingWeight",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "claimName", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "createProfile",
     data: BytesLike
@@ -647,6 +757,14 @@ export interface SenseInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getFeedbacks",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getNameClaim",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getNamesOwnedBy",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getProfile", data: BytesLike): Result;
@@ -701,6 +819,10 @@ export interface SenseInterface extends Interface {
     functionFragment: "isInitialized",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "isNameAvailable",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "moduleId", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "onModuleDisabled",
@@ -717,6 +839,10 @@ export interface SenseInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "registry", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "releaseName",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "renounceRole",
     data: BytesLike
@@ -741,6 +867,10 @@ export interface SenseInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "updateReputation",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "validateNameFormat",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -837,6 +967,80 @@ export namespace ModuleInitializedEvent {
   export type OutputTuple = [registry: string];
   export interface OutputObject {
     registry: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace NameClaimedEvent {
+  export type InputTuple = [
+    name: BytesLike,
+    owner: AddressLike,
+    stakeAmount: BigNumberish,
+    stakeDuration: BigNumberish,
+    nameType: BigNumberish,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    name: string,
+    owner: string,
+    stakeAmount: bigint,
+    stakeDuration: bigint,
+    nameType: bigint,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    name: string;
+    owner: string;
+    stakeAmount: bigint;
+    stakeDuration: bigint;
+    nameType: bigint;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace NameExpiredEvent {
+  export type InputTuple = [
+    name: BytesLike,
+    owner: AddressLike,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [name: string, owner: string, timestamp: bigint];
+  export interface OutputObject {
+    name: string;
+    owner: string;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace NameReleasedEvent {
+  export type InputTuple = [
+    name: BytesLike,
+    owner: AddressLike,
+    stakeAmount: BigNumberish,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    name: string,
+    owner: string,
+    stakeAmount: bigint,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    name: string;
+    owner: string;
+    stakeAmount: bigint;
+    timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -1140,9 +1344,19 @@ export interface Sense extends BaseContract {
 
   MAX_FEEDBACK_RATING: TypedContractMethod<[], [bigint], "view">;
 
+  MAX_NAME_STAKE: TypedContractMethod<[], [bigint], "view">;
+
   MAX_REPUTATION_DELTA: TypedContractMethod<[], [bigint], "view">;
 
+  MAX_STAKE_DURATION: TypedContractMethod<[], [bigint], "view">;
+
   MIN_FEEDBACK_RATING: TypedContractMethod<[], [bigint], "view">;
+
+  MIN_NAME_STAKE: TypedContractMethod<[], [bigint], "view">;
+
+  MIN_STAKE_DURATION: TypedContractMethod<[], [bigint], "view">;
+
+  NAME_LENGTH: TypedContractMethod<[], [bigint], "view">;
 
   OPERATOR_ROLE: TypedContractMethod<[], [string], "view">;
 
@@ -1166,6 +1380,17 @@ export interface Sense extends BaseContract {
     [profileId: BytesLike, baseWeight: BigNumberish],
     [bigint],
     "view"
+  >;
+
+  claimName: TypedContractMethod<
+    [
+      name: BytesLike,
+      stakeAmount: BigNumberish,
+      stakeDuration: BigNumberish,
+      nameType: BigNumberish
+    ],
+    [boolean],
+    "nonpayable"
   >;
 
   createProfile: TypedContractMethod<
@@ -1211,6 +1436,18 @@ export interface Sense extends BaseContract {
   getFeedbacks: TypedContractMethod<
     [profileId: BytesLike, offset: BigNumberish, limit: BigNumberish],
     [ISense.FeedbackStructOutput[]],
+    "view"
+  >;
+
+  getNameClaim: TypedContractMethod<
+    [name: BytesLike],
+    [ISense.NameClaimStructOutput],
+    "view"
+  >;
+
+  getNamesOwnedBy: TypedContractMethod<
+    [owner: AddressLike],
+    [string[]],
     "view"
   >;
 
@@ -1314,6 +1551,8 @@ export interface Sense extends BaseContract {
 
   isInitialized: TypedContractMethod<[], [boolean], "view">;
 
+  isNameAvailable: TypedContractMethod<[name: BytesLike], [boolean], "view">;
+
   moduleId: TypedContractMethod<[], [string], "view">;
 
   onModuleDisabled: TypedContractMethod<[], [void], "nonpayable">;
@@ -1327,6 +1566,8 @@ export interface Sense extends BaseContract {
   profileExists: TypedContractMethod<[profileId: BytesLike], [boolean], "view">;
 
   registry: TypedContractMethod<[], [string], "view">;
+
+  releaseName: TypedContractMethod<[name: BytesLike], [bigint], "nonpayable">;
 
   renounceRole: TypedContractMethod<
     [role: BytesLike, account: AddressLike],
@@ -1387,6 +1628,8 @@ export interface Sense extends BaseContract {
     "nonpayable"
   >;
 
+  validateNameFormat: TypedContractMethod<[name: BytesLike], [boolean], "view">;
+
   verifyProfile: TypedContractMethod<
     [profileId: BytesLike, level: BigNumberish],
     [void],
@@ -1415,10 +1658,25 @@ export interface Sense extends BaseContract {
     nameOrSignature: "MAX_FEEDBACK_RATING"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "MAX_NAME_STAKE"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
     nameOrSignature: "MAX_REPUTATION_DELTA"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "MAX_STAKE_DURATION"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
     nameOrSignature: "MIN_FEEDBACK_RATING"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "MIN_NAME_STAKE"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "MIN_STAKE_DURATION"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "NAME_LENGTH"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "OPERATOR_ROLE"
@@ -1447,6 +1705,18 @@ export interface Sense extends BaseContract {
     [profileId: BytesLike, baseWeight: BigNumberish],
     [bigint],
     "view"
+  >;
+  getFunction(
+    nameOrSignature: "claimName"
+  ): TypedContractMethod<
+    [
+      name: BytesLike,
+      stakeAmount: BigNumberish,
+      stakeDuration: BigNumberish,
+      nameType: BigNumberish
+    ],
+    [boolean],
+    "nonpayable"
   >;
   getFunction(
     nameOrSignature: "createProfile"
@@ -1503,6 +1773,16 @@ export interface Sense extends BaseContract {
     [ISense.FeedbackStructOutput[]],
     "view"
   >;
+  getFunction(
+    nameOrSignature: "getNameClaim"
+  ): TypedContractMethod<
+    [name: BytesLike],
+    [ISense.NameClaimStructOutput],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getNamesOwnedBy"
+  ): TypedContractMethod<[owner: AddressLike], [string[]], "view">;
   getFunction(
     nameOrSignature: "getProfile"
   ): TypedContractMethod<
@@ -1612,6 +1892,9 @@ export interface Sense extends BaseContract {
     nameOrSignature: "isInitialized"
   ): TypedContractMethod<[], [boolean], "view">;
   getFunction(
+    nameOrSignature: "isNameAvailable"
+  ): TypedContractMethod<[name: BytesLike], [boolean], "view">;
+  getFunction(
     nameOrSignature: "moduleId"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -1632,6 +1915,9 @@ export interface Sense extends BaseContract {
   getFunction(
     nameOrSignature: "registry"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "releaseName"
+  ): TypedContractMethod<[name: BytesLike], [bigint], "nonpayable">;
   getFunction(
     nameOrSignature: "renounceRole"
   ): TypedContractMethod<
@@ -1696,6 +1982,9 @@ export interface Sense extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "validateNameFormat"
+  ): TypedContractMethod<[name: BytesLike], [boolean], "view">;
+  getFunction(
     nameOrSignature: "verifyProfile"
   ): TypedContractMethod<
     [profileId: BytesLike, level: BigNumberish],
@@ -1740,6 +2029,27 @@ export interface Sense extends BaseContract {
     ModuleInitializedEvent.InputTuple,
     ModuleInitializedEvent.OutputTuple,
     ModuleInitializedEvent.OutputObject
+  >;
+  getEvent(
+    key: "NameClaimed"
+  ): TypedContractEvent<
+    NameClaimedEvent.InputTuple,
+    NameClaimedEvent.OutputTuple,
+    NameClaimedEvent.OutputObject
+  >;
+  getEvent(
+    key: "NameExpired"
+  ): TypedContractEvent<
+    NameExpiredEvent.InputTuple,
+    NameExpiredEvent.OutputTuple,
+    NameExpiredEvent.OutputObject
+  >;
+  getEvent(
+    key: "NameReleased"
+  ): TypedContractEvent<
+    NameReleasedEvent.InputTuple,
+    NameReleasedEvent.OutputTuple,
+    NameReleasedEvent.OutputObject
   >;
   getEvent(
     key: "Paused"
@@ -1873,6 +2183,39 @@ export interface Sense extends BaseContract {
       ModuleInitializedEvent.InputTuple,
       ModuleInitializedEvent.OutputTuple,
       ModuleInitializedEvent.OutputObject
+    >;
+
+    "NameClaimed(bytes8,address,uint256,uint256,uint8,uint256)": TypedContractEvent<
+      NameClaimedEvent.InputTuple,
+      NameClaimedEvent.OutputTuple,
+      NameClaimedEvent.OutputObject
+    >;
+    NameClaimed: TypedContractEvent<
+      NameClaimedEvent.InputTuple,
+      NameClaimedEvent.OutputTuple,
+      NameClaimedEvent.OutputObject
+    >;
+
+    "NameExpired(bytes8,address,uint256)": TypedContractEvent<
+      NameExpiredEvent.InputTuple,
+      NameExpiredEvent.OutputTuple,
+      NameExpiredEvent.OutputObject
+    >;
+    NameExpired: TypedContractEvent<
+      NameExpiredEvent.InputTuple,
+      NameExpiredEvent.OutputTuple,
+      NameExpiredEvent.OutputObject
+    >;
+
+    "NameReleased(bytes8,address,uint256,uint256)": TypedContractEvent<
+      NameReleasedEvent.InputTuple,
+      NameReleasedEvent.OutputTuple,
+      NameReleasedEvent.OutputObject
+    >;
+    NameReleased: TypedContractEvent<
+      NameReleasedEvent.InputTuple,
+      NameReleasedEvent.OutputTuple,
+      NameReleasedEvent.OutputObject
     >;
 
     "Paused(address)": TypedContractEvent<

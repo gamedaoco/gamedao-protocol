@@ -14,9 +14,9 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
       {
         indexed: true,
@@ -51,24 +51,48 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
       {
         indexed: true,
         internalType: "address",
-        name: "canceller",
+        name: "voter",
         type: "address",
       },
       {
         indexed: false,
+        internalType: "enum ISignal.VoteChoice",
+        name: "choice",
+        type: "uint8",
+      },
+      {
+        indexed: false,
         internalType: "uint256",
-        name: "timestamp",
+        name: "votingPower",
         type: "uint256",
       },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "convictionMultiplier",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "convictionTime",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "reason",
+        type: "string",
+      },
     ],
-    name: "ProposalCancelled",
+    name: "ConvictionVoteCast",
     type: "event",
   },
   {
@@ -76,9 +100,34 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "canceler",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "reason",
+        type: "string",
+      },
+    ],
+    name: "ProposalCanceled",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
       {
         indexed: true,
@@ -89,7 +138,7 @@ const _abi = [
       {
         indexed: true,
         internalType: "address",
-        name: "proposer",
+        name: "creator",
         type: "address",
       },
       {
@@ -112,9 +161,9 @@ const _abi = [
       },
       {
         indexed: false,
-        internalType: "enum ISignal.VotingPower",
-        name: "votingPower",
-        type: "uint8",
+        internalType: "uint256",
+        name: "votingPeriod",
+        type: "uint256",
       },
       {
         indexed: false,
@@ -128,12 +177,6 @@ const _abi = [
         name: "endTime",
         type: "uint256",
       },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
     ],
     name: "ProposalCreated",
     type: "event",
@@ -143,9 +186,15 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "executor",
+        type: "address",
       },
       {
         indexed: false,
@@ -159,12 +208,6 @@ const _abi = [
         name: "returnData",
         type: "bytes",
       },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
     ],
     name: "ProposalExecuted",
     type: "event",
@@ -173,103 +216,10 @@ const _abi = [
     anonymous: false,
     inputs: [
       {
-        indexed: true,
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "executionTime",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "ProposalQueued",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "enum ISignal.ProposalState",
-        name: "oldState",
-        type: "uint8",
-      },
-      {
-        indexed: false,
-        internalType: "enum ISignal.ProposalState",
-        name: "newState",
-        type: "uint8",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "ProposalStateChanged",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-      {
         indexed: false,
         internalType: "string",
-        name: "title",
+        name: "hierarchicalId",
         type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "description",
-        type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "endTime",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "ProposalUpdated",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
       },
       {
         indexed: true,
@@ -295,12 +245,6 @@ const _abi = [
         name: "reason",
         type: "string",
       },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
     ],
     name: "VoteCast",
     type: "event",
@@ -315,40 +259,42 @@ const _abi = [
         type: "bytes8",
       },
       {
+        components: [
+          {
+            internalType: "uint256",
+            name: "votingDelay",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "votingPeriod",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "executionDelay",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "quorumThreshold",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "proposalThreshold",
+            type: "uint256",
+          },
+          {
+            internalType: "bool",
+            name: "requireMembership",
+            type: "bool",
+          },
+        ],
         indexed: false,
-        internalType: "uint256",
-        name: "votingDelay",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "votingPeriod",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "executionDelay",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "quorumThreshold",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "proposalThreshold",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
+        internalType: "struct ISignal.VotingParameters",
+        name: "parameters",
+        type: "tuple",
       },
     ],
     name: "VotingParametersUpdated",
@@ -419,9 +365,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
       {
         internalType: "address",
@@ -456,9 +402,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
       {
         internalType: "address",
@@ -485,9 +431,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
     ],
     name: "canExecute",
@@ -504,9 +450,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
       {
         internalType: "address",
@@ -528,9 +474,14 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "reason",
+        type: "string",
       },
     ],
     name: "cancelProposal",
@@ -541,9 +492,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
       {
         internalType: "enum ISignal.VoteChoice",
@@ -564,9 +515,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
       {
         internalType: "enum ISignal.VoteChoice",
@@ -645,9 +596,9 @@ const _abi = [
     name: "createProposal",
     outputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
     ],
     stateMutability: "nonpayable",
@@ -674,59 +625,25 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-    ],
-    name: "emergencyCancel",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-    ],
-    name: "estimateGasForExecution",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
     ],
     name: "executeProposal",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "getActiveProposals",
     outputs: [
       {
-        internalType: "bytes32[]",
-        name: "",
-        type: "bytes32[]",
+        internalType: "bool",
+        name: "success",
+        type: "bool",
+      },
+      {
+        internalType: "bytes",
+        name: "returnData",
+        type: "bytes",
       },
     ],
-    stateMutability: "view",
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -762,11 +679,6 @@ const _abi = [
         components: [
           {
             internalType: "address",
-            name: "delegator",
-            type: "address",
-          },
-          {
-            internalType: "address",
             name: "delegatee",
             type: "address",
           },
@@ -797,17 +709,17 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
     ],
-    name: "getExecutionETA",
+    name: "getOrganizationProposals",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "bytes32[]",
         name: "",
-        type: "uint256",
+        type: "bytes32[]",
       },
     ],
     stateMutability: "view",
@@ -816,9 +728,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
     ],
     name: "getProposal",
@@ -826,14 +738,9 @@ const _abi = [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
-          },
-          {
-            internalType: "bytes32",
-            name: "proposalId",
-            type: "bytes32",
+            internalType: "string",
+            name: "hierarchicalId",
+            type: "string",
           },
           {
             internalType: "bytes8",
@@ -842,7 +749,7 @@ const _abi = [
           },
           {
             internalType: "address",
-            name: "proposer",
+            name: "creator",
             type: "address",
           },
           {
@@ -897,12 +804,17 @@ const _abi = [
           },
           {
             internalType: "uint256",
-            name: "createdAt",
+            name: "forVotes",
             type: "uint256",
           },
           {
             internalType: "uint256",
-            name: "updatedAt",
+            name: "againstVotes",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "abstainVotes",
             type: "uint256",
           },
           {
@@ -916,171 +828,24 @@ const _abi = [
             type: "address",
           },
           {
+            internalType: "address",
+            name: "executor",
+            type: "address",
+          },
+          {
             internalType: "uint256",
-            name: "requiredQuorum",
+            name: "createdAt",
             type: "uint256",
           },
           {
             internalType: "uint256",
-            name: "votesFor",
+            name: "executedAt",
             type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "votesAgainst",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "votesAbstain",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "totalVotingPower",
-            type: "uint256",
-          },
-          {
-            internalType: "bool",
-            name: "executed",
-            type: "bool",
-          },
-          {
-            internalType: "bool",
-            name: "cancelled",
-            type: "bool",
           },
         ],
         internalType: "struct ISignal.Proposal",
         name: "",
         type: "tuple",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "getProposalCount",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-    ],
-    name: "getProposalResult",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "passed",
-        type: "bool",
-      },
-      {
-        internalType: "uint256",
-        name: "forVotes",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "againstVotes",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "abstainVotes",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "quorum",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-    ],
-    name: "getProposalVotes",
-    outputs: [
-      {
-        internalType: "address[]",
-        name: "voters",
-        type: "address[]",
-      },
-      {
-        components: [
-          {
-            internalType: "address",
-            name: "voter",
-            type: "address",
-          },
-          {
-            internalType: "enum ISignal.VoteChoice",
-            name: "choice",
-            type: "uint8",
-          },
-          {
-            internalType: "uint256",
-            name: "votingPower",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "timestamp",
-            type: "uint256",
-          },
-          {
-            internalType: "string",
-            name: "reason",
-            type: "string",
-          },
-          {
-            internalType: "uint256",
-            name: "convictionTime",
-            type: "uint256",
-          },
-        ],
-        internalType: "struct ISignal.Vote[]",
-        name: "votes",
-        type: "tuple[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "organizationId",
-        type: "bytes8",
-      },
-    ],
-    name: "getProposalsByOrganization",
-    outputs: [
-      {
-        internalType: "bytes32[]",
-        name: "",
-        type: "bytes32[]",
       },
     ],
     stateMutability: "view",
@@ -1108,47 +873,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-    ],
-    name: "getQuorumReached",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-    ],
-    name: "getTimeRemaining",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "string",
+        name: "hierarchicalId",
+        type: "string",
       },
       {
         internalType: "address",
@@ -1186,8 +913,18 @@ const _abi = [
             type: "string",
           },
           {
+            internalType: "bool",
+            name: "hasVoted",
+            type: "bool",
+          },
+          {
             internalType: "uint256",
             name: "convictionTime",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "convictionMultiplier",
             type: "uint256",
           },
         ],
@@ -1253,17 +990,22 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
+        internalType: "bytes8",
+        name: "organizationId",
+        type: "bytes8",
       },
       {
         internalType: "address",
-        name: "voter",
+        name: "account",
         type: "address",
       },
+      {
+        internalType: "enum ISignal.VotingPower",
+        name: "votingPowerType",
+        type: "uint8",
+      },
     ],
-    name: "getVotingPower",
+    name: "getVotingPowerWithDelegation",
     outputs: [
       {
         internalType: "uint256",
@@ -1272,104 +1014,6 @@ const _abi = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-      {
-        internalType: "address",
-        name: "voter",
-        type: "address",
-      },
-    ],
-    name: "hasVoted",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-    ],
-    name: "isProposalActive",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-    ],
-    name: "previewProposalExecution",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "success",
-        type: "bool",
-      },
-      {
-        internalType: "bytes",
-        name: "returnData",
-        type: "bytes",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-    ],
-    name: "queueProposal",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-      {
-        internalType: "enum ISignal.ProposalState",
-        name: "newState",
-        type: "uint8",
-      },
-    ],
-    name: "setProposalState",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -1438,73 +1082,6 @@ const _abi = [
     name: "undelegateVotingPower",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "proposalId",
-        type: "bytes32",
-      },
-      {
-        internalType: "string",
-        name: "title",
-        type: "string",
-      },
-      {
-        internalType: "string",
-        name: "description",
-        type: "string",
-      },
-      {
-        internalType: "uint256",
-        name: "endTime",
-        type: "uint256",
-      },
-    ],
-    name: "updateProposal",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "organizationId",
-        type: "bytes8",
-      },
-      {
-        internalType: "enum ISignal.ProposalType",
-        name: "proposalType",
-        type: "uint8",
-      },
-      {
-        internalType: "enum ISignal.VotingType",
-        name: "votingType",
-        type: "uint8",
-      },
-      {
-        internalType: "enum ISignal.VotingPower",
-        name: "votingPower",
-        type: "uint8",
-      },
-      {
-        internalType: "uint256",
-        name: "votingPeriod",
-        type: "uint256",
-      },
-    ],
-    name: "validateProposalParameters",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
     type: "function",
   },
 ] as const;
