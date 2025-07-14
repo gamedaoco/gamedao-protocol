@@ -75,6 +75,46 @@ async function sendTokens() {
     console.log(`   USDC: ${ethers.formatUnits(deployerUsdcBalance, 6)}`)
     console.log("")
 
+    // Check if deployer has enough GAME tokens, if not mint more
+    const gameAmountWei = parseEther(gameAmount)
+    if (deployerGameBalance < gameAmountWei) {
+      const neededAmount = gameAmountWei - deployerGameBalance
+      console.log(`⚠️  Deployer has insufficient GAME tokens`)
+      console.log(`   Required: ${ethers.formatEther(gameAmountWei)}`)
+      console.log(`   Available: ${ethers.formatEther(deployerGameBalance)}`)
+      console.log(`   Needed: ${ethers.formatEther(neededAmount)}`)
+      console.log(`🪙 Minting additional GAME tokens...`)
+
+      const mintTx = await gameToken.mint(deployer.address, neededAmount)
+      await mintTx.wait()
+      console.log(`✅ Minted ${ethers.formatEther(neededAmount)} GAME tokens to deployer`)
+    }
+
+    // Check if deployer has enough USDC tokens, if not mint more
+    const usdcAmountWei = parseUnits(usdcAmount, 6)
+    if (deployerUsdcBalance < usdcAmountWei) {
+      const neededAmount = usdcAmountWei - deployerUsdcBalance
+      console.log(`⚠️  Deployer has insufficient USDC tokens`)
+      console.log(`   Required: ${ethers.formatUnits(usdcAmountWei, 6)}`)
+      console.log(`   Available: ${ethers.formatUnits(deployerUsdcBalance, 6)}`)
+      console.log(`   Needed: ${ethers.formatUnits(neededAmount, 6)}`)
+      console.log(`🪙 Minting additional USDC tokens...`)
+
+      const mintTx = await usdcToken.mint(deployer.address, neededAmount)
+      await mintTx.wait()
+      console.log(`✅ Minted ${ethers.formatUnits(neededAmount, 6)} USDC tokens to deployer`)
+    }
+
+    // Get updated balances after minting
+    const updatedGameBalance = await gameToken.balanceOf(deployer.address)
+    const updatedUsdcBalance = await usdcToken.balanceOf(deployer.address)
+
+    console.log("💰 Deployer Balances (After Minting):")
+    console.log(`   ETH: ${ethers.formatEther(deployerEthBalance)}`)
+    console.log(`   GAME: ${ethers.formatEther(updatedGameBalance)}`)
+    console.log(`   USDC: ${ethers.formatUnits(updatedUsdcBalance, 6)}`)
+    console.log("")
+
     // Check recipient balances before transfer
     const recipientEthBalance = await ethers.provider.getBalance(recipient)
     const recipientGameBalance = await gameToken.balanceOf(recipient)

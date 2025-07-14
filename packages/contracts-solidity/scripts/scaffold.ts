@@ -133,16 +133,19 @@ async function main() {
   const FLOW_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("FLOW"))
   const SIGNAL_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("SIGNAL"))
   const SENSE_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("SENSE"))
+  const IDENTITY_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("IDENTITY"))
 
   const controlAddress = await registry.getModule(CONTROL_MODULE_ID)
   const flowAddress = await registry.getModule(FLOW_MODULE_ID)
   const signalAddress = await registry.getModule(SIGNAL_MODULE_ID)
   const senseAddress = await registry.getModule(SENSE_MODULE_ID)
+  const identityAddress = await registry.getModule(IDENTITY_MODULE_ID)
 
   const control = await ethers.getContractAt("Control", controlAddress)
   const flow = await ethers.getContractAt("Flow", flowAddress)
   const signal = await ethers.getContractAt("Signal", signalAddress)
   const sense = await ethers.getContractAt("Sense", senseAddress)
+  const identity = await ethers.getContractAt("Identity", identityAddress)
 
   // Get token contracts from deployment
   const gameTokenAddress = deploymentData.gameToken
@@ -169,9 +172,16 @@ async function main() {
   console.log("\n👥 Setting up users...")
   const userAccounts = accounts.slice(0, CONFIG.users)
 
+  // Distribute tokens to users
+  console.log("\n💰 Distributing tokens to users...")
+  const tokenAmountPerUser = ethers.parseEther("100000") // 100,000 GAME tokens per user
+
   for (let i = 0; i < userAccounts.length; i++) {
     const user = userAccounts[i]
     const profile = USERS[i % USERS.length]
+
+    // Transfer tokens from deployer to user
+    await (gameToken as any).connect(deployer).transfer(user.address, tokenAmountPerUser)
 
     result.users.push({
       address: user.address,
@@ -180,9 +190,8 @@ async function main() {
       avatar: profile.avatar,
     })
 
-    console.log(`  ${profile.avatar} ${profile.name} (${user.address.slice(0, 8)}...)`)
+    console.log(`  ${profile.avatar} ${profile.name} (${user.address.slice(0, 8)}...) - ${ethers.formatEther(tokenAmountPerUser)} GAME`)
   }
-
 
 
   // Create DAOs
@@ -196,7 +205,7 @@ async function main() {
       console.log(`  Creating: ${template.name}`)
 
       // Approve and stake GAME tokens for DAO creation
-      const stakeAmount = ethers.parseEther("1000") // 1000 GAME tokens
+      const stakeAmount = ethers.parseEther("10000") // 10,000 GAME tokens
       await (gameToken as any).connect(creator).approve(controlAddress, stakeAmount)
 
       const tx = await control.connect(creator).createOrganization(
@@ -207,7 +216,7 @@ async function main() {
         0, // feeModel
         20, // memberLimit
         0, // membershipFee
-        stakeAmount  // gameStakeRequired: 1000 GAME tokens
+        stakeAmount  // gameStakeRequired: 10,000 GAME tokens
       )
 
       const receipt = await tx.wait()
@@ -288,7 +297,7 @@ async function main() {
     const orgId = userOrg ? userOrg.id : (result.daos[0]?.id || "0x0000000000000000")
 
     try {
-      const tx = await sense.connect(user).createProfile(
+      const tx = await identity.connect(user).createProfile(
         orgId,
         `ipfs://QmProfile${i}` // Mock IPFS metadata URI
       )
@@ -297,45 +306,42 @@ async function main() {
       if (!receipt) continue
 
       // Parse event
-      const event = receipt.logs.find(log => {
+      const event = receipt.logs.find((log: any) => {
         try {
-          const parsed = sense.interface.parseLog(log as any)
+          const parsed = identity.interface.parseLog(log as any)
           return parsed?.name === 'ProfileCreated'
         } catch {
           return false
         }
       })
 
-      if (event) {
-        const parsedEvent = sense.interface.parseLog(event as any)
-        const profileId = parsedEvent?.args[0]
+      if (!event) continue
 
-        // Add some reputation points
-        const experiencePoints = Math.floor(Math.random() * 500) + 100 // 100-600 XP
-        const reputationPoints = Math.floor(Math.random() * 200) + 50  // 50-250 REP
+      const parsedEvent = identity.interface.parseLog(event as any)
+      const profileId = parsedEvent?.args[0]
 
-        try {
-          await sense.updateReputation(profileId, 0, experiencePoints, "Initial scaffolding experience")
-          await sense.updateReputation(profileId, 1, reputationPoints, "Initial scaffolding reputation")
-        } catch {
-          // Ignore reputation update errors
-        }
+      // Add some reputation points
+      const experiencePoints = Math.floor(Math.random() * 500) + 100 // 100-600 XP
+      const reputationPoints = Math.floor(Math.random() * 200) + 50  // 50-250 REP
 
-        result.profiles.push({
-          id: profileId,
-          owner: user.address,
-          username: profile.name,
-          organizationId: orgId,
-          organizationIdAlphanumeric: bytes8ToAlphanumericString(orgId),
-          role: profile.role,
-          avatar: profile.avatar,
-          experience: experiencePoints,
-          reputation: reputationPoints,
-        })
-
-        console.log(`    ✅ ${profile.avatar} ${profile.name} profile created`)
+      try {
+        await sense.updateReputation(profileId, 0, experiencePoints, "Initial scaffolding experience")
+        await sense.updateReputation(profileId, 1, reputationPoints, "Initial scaffolding reputation")
+      } catch {
+        // Ignore reputation errors for now
       }
 
+      result.profiles.push({
+        id: profileId,
+        organizationId: orgId,
+        address: user.address,
+        name: profile.name,
+        metadata: `ipfs://QmProfile${i}`,
+        experiencePoints,
+        reputationPoints,
+      })
+
+      console.log(`    ✅ Created profile for ${profile.name}`)
     } catch (error) {
       console.log(`    ❌ Failed to create profile for ${profile.name}`)
     }
@@ -548,8 +554,8 @@ async function main() {
     const strategy = strategies[i % strategies.length]
 
     try {
-      // Random stake amount between 500-3000 GAME
-      const stakeAmount = ethers.parseEther((Math.random() * 2500 + 500).toFixed(0))
+      // Stake amount that leaves enough for organization creation
+      const stakeAmount = ethers.parseEther("2000") // 2,000 GAME tokens
 
       console.log(`  ${USERS[i].avatar} ${USERS[i].name} staking ${ethers.formatEther(stakeAmount)} GAME`)
 

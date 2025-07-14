@@ -15,9 +15,10 @@ export interface CreateProfileParams {
 }
 
 export interface ClaimNameParams {
-  profileId: string
   name: string
-  gameDeposit?: string // GAME token deposit for name claiming
+  stakeAmount: string
+  stakeDuration: string
+  nameType: number
 }
 
 export function useSense() {
@@ -35,7 +36,7 @@ export function useSense() {
     safeBigInt
   } = useTokenApproval()
 
-  // Contract write for creating profile
+  // Contract write for creating profile (using Identity module)
   const {
     writeContract: createProfile,
     isPending: isCreatingProfile,
@@ -53,7 +54,7 @@ export function useSense() {
     hash: createProfileTxHash,
   })
 
-  // Contract write for claiming name
+  // Contract write for claiming name (using Identity module)
   const {
     writeContract: claimName,
     isPending: isClaimingName,
@@ -73,24 +74,24 @@ export function useSense() {
 
   // Function to create a profile with GAME token approval
   const handleCreateProfile = async (params: CreateProfileParams) => {
-    if (!isConnected || !contracts.SENSE) {
+    if (!isConnected || !contracts.IDENTITY) {
       throw new Error('Wallet not connected or contracts not loaded')
     }
 
     try {
-      console.log('🔍 Creating profile with GAME token approval:', {
+      console.log('🔍 Creating profile with Identity module:', {
         organizationId: params.organizationId,
         metadata: params.metadata,
         gameDeposit: params.gameDeposit
       })
 
-      // Handle GAME token approval for profile creation
+      // Handle GAME token approval for profile creation if needed
       if (params.gameDeposit && parseFloat(params.gameDeposit) > 0) {
         console.log('🔍 GAME token deposit required for profile creation:', params.gameDeposit)
 
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
-          spender: contracts.SENSE,
+          spender: contracts.IDENTITY,
           amount: params.gameDeposit,
           purpose: 'profile creation'
         })
@@ -101,13 +102,16 @@ export function useSense() {
         }
       }
 
-      // Proceed with profile creation
+      // Convert organization ID to bytes8 format
+      const orgIdBytes8 = params.organizationId.padEnd(16, '0') // Convert to 8-byte hex
+
+      // Proceed with profile creation using Identity module
       const result = await createProfile({
-        address: contracts.SENSE,
-        abi: ABIS.SENSE,
+        address: contracts.IDENTITY,
+        abi: ABIS.IDENTITY,
         functionName: 'createProfile',
         args: [
-          params.organizationId,
+          orgIdBytes8,
           params.metadata,
         ],
       })
@@ -123,25 +127,26 @@ export function useSense() {
 
   // Function to claim a name with GAME token approval
   const handleClaimName = async (params: ClaimNameParams) => {
-    if (!isConnected || !contracts.SENSE) {
+    if (!isConnected || !contracts.IDENTITY) {
       throw new Error('Wallet not connected or contracts not loaded')
     }
 
     try {
-      console.log('🔍 Claiming name with GAME token approval:', {
-        profileId: params.profileId,
+      console.log('🔍 Claiming name with Identity module:', {
         name: params.name,
-        gameDeposit: params.gameDeposit
+        stakeAmount: params.stakeAmount,
+        stakeDuration: params.stakeDuration,
+        nameType: params.nameType
       })
 
       // Handle GAME token approval for name claiming
-      if (params.gameDeposit && parseFloat(params.gameDeposit) > 0) {
-        console.log('🔍 GAME token deposit required for name claiming:', params.gameDeposit)
+      if (params.stakeAmount && parseFloat(params.stakeAmount) > 0) {
+        console.log('🔍 GAME token deposit required for name claiming:', params.stakeAmount)
 
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
-          spender: contracts.SENSE,
-          amount: params.gameDeposit,
+          spender: contracts.IDENTITY,
+          amount: params.stakeAmount,
           purpose: 'name claiming'
         })
 
@@ -151,14 +156,19 @@ export function useSense() {
         }
       }
 
-      // Proceed with name claiming (update profile metadata)
+      // Convert name to bytes8 format
+      const nameBytes8 = params.name.padEnd(16, '0') // Convert to 8-byte hex
+
+      // Proceed with name claiming using Identity module
       const result = await claimName({
-        address: contracts.SENSE,
-        abi: ABIS.SENSE,
-        functionName: 'updateProfile',
+        address: contracts.IDENTITY,
+        abi: ABIS.IDENTITY,
+        functionName: 'claimName',
         args: [
-          params.profileId,
-          JSON.stringify({ name: params.name }),
+          nameBytes8,
+          safeBigInt(params.stakeAmount),
+          safeBigInt(params.stakeDuration),
+          params.nameType,
         ],
       })
 
@@ -173,37 +183,43 @@ export function useSense() {
 
   // Function to check if user has a profile in an organization
   const checkUserProfile = (organizationId: string) => {
+    const orgIdBytes8 = organizationId.padEnd(16, '0') // Convert to 8-byte hex
+
     return useReadContract({
-      address: contracts.SENSE,
-      abi: ABIS.SENSE,
+      address: contracts.IDENTITY,
+      abi: ABIS.IDENTITY,
       functionName: 'getProfileByOwner',
-      args: [address, organizationId],
+      args: [address, orgIdBytes8],
       query: {
-        enabled: !!address && !!contracts.SENSE && !!organizationId,
+        enabled: !!address && !!contracts.IDENTITY && !!organizationId,
       },
     })
   }
 
   // Function to get profile information
   const getProfile = (profileId: string) => {
+    const profileIdBytes8 = profileId.padEnd(16, '0') // Convert to 8-byte hex
+
     return useReadContract({
-      address: contracts.SENSE,
-      abi: ABIS.SENSE,
+      address: contracts.IDENTITY,
+      abi: ABIS.IDENTITY,
       functionName: 'getProfile',
-      args: [profileId],
+      args: [profileIdBytes8],
       query: {
-        enabled: !!contracts.SENSE && !!profileId,
+        enabled: !!contracts.IDENTITY && !!profileId,
       },
     })
   }
 
-  // Function to get reputation data
+  // Function to get reputation data (using Sense module)
   const getReputation = (profileId: string) => {
+    const profileIdBytes8 = profileId.padEnd(16, '0') // Convert to 8-byte hex
+
     return useReadContract({
       address: contracts.SENSE,
       abi: ABIS.SENSE,
       functionName: 'getReputation',
-      args: [profileId],
+      args: [profileIdBytes8],
       query: {
         enabled: !!contracts.SENSE && !!profileId,
       },

@@ -12,103 +12,6 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "achievementId",
-        type: "bytes32",
-      },
-    ],
-    name: "AchievementAlreadyGranted",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "achievementId",
-        type: "bytes32",
-      },
-    ],
-    name: "AchievementNotFound",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "caller",
-        type: "address",
-      },
-      {
-        internalType: "string",
-        name: "action",
-        type: "string",
-      },
-    ],
-    name: "InsufficientPermissions",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "required",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "available",
-        type: "uint256",
-      },
-    ],
-    name: "InsufficientTokenBalance",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint8",
-        name: "rating",
-        type: "uint8",
-      },
-    ],
-    name: "InvalidFeedbackRating",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-    ],
-    name: "InvalidImportProof",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "name",
-        type: "bytes8",
-      },
-    ],
-    name: "InvalidNameFormat",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
         internalType: "int256",
         name: "delta",
         type: "int256",
@@ -120,102 +23,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
-      },
-    ],
-    name: "InvalidStakeAmount",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "duration",
-        type: "uint256",
-      },
-    ],
-    name: "InvalidStakeDuration",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "enum ISense.VerificationLevel",
-        name: "level",
-        type: "uint8",
-      },
-    ],
-    name: "InvalidVerificationLevel",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "name",
-        type: "bytes8",
-      },
-    ],
-    name: "NameAlreadyClaimed",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "name",
-        type: "bytes8",
-      },
-    ],
-    name: "NameNotClaimed",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "name",
-        type: "bytes8",
-      },
-    ],
-    name: "NameNotExpired",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "organizationId",
-        type: "bytes8",
-      },
-    ],
-    name: "OrganizationNotFound",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-      {
-        internalType: "bytes8",
-        name: "organizationId",
-        type: "bytes8",
-      },
-    ],
-    name: "ProfileAlreadyExists",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
+        internalType: "string",
         name: "profileId",
-        type: "bytes32",
+        type: "string",
       },
     ],
     name: "ProfileNotFound",
@@ -224,60 +34,12 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-    ],
-    name: "ReputationExportFailed",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "giver",
-        type: "address",
-      },
-      {
-        internalType: "bytes32",
-        name: "targetProfileId",
-        type: "bytes32",
-      },
-    ],
-    name: "SelfFeedbackNotAllowed",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "name",
-        type: "bytes8",
-      },
-      {
         internalType: "address",
         name: "caller",
         type: "address",
       },
     ],
-    name: "UnauthorizedNameAccess",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "address",
-        name: "caller",
-        type: "address",
-      },
-    ],
-    name: "UnauthorizedProfileAccess",
+    name: "UnauthorizedReputationUpdate",
     type: "error",
   },
   {
@@ -285,32 +47,26 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "profileId",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "achievementId",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "name",
-        type: "string",
+        type: "bytes8",
       },
       {
         indexed: false,
         internalType: "uint256",
-        name: "points",
+        name: "amount",
         type: "uint256",
       },
       {
         indexed: false,
+        internalType: "bytes32",
+        name: "reason",
+        type: "bytes32",
+      },
+      {
+        indexed: true,
         internalType: "address",
-        name: "grantedBy",
+        name: "awardedBy",
         type: "address",
       },
       {
@@ -320,50 +76,7 @@ const _abi = [
         type: "uint256",
       },
     ],
-    name: "AchievementGranted",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "feedbackId",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "targetProfileId",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "giver",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "enum ISense.FeedbackType",
-        name: "feedbackType",
-        type: "uint8",
-      },
-      {
-        indexed: false,
-        internalType: "uint8",
-        name: "rating",
-        type: "uint8",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "FeedbackSubmitted",
+    name: "ExperienceAwarded",
     type: "event",
   },
   {
@@ -372,56 +85,25 @@ const _abi = [
       {
         indexed: true,
         internalType: "bytes8",
-        name: "name",
+        name: "profileId",
         type: "bytes8",
+      },
+      {
+        indexed: false,
+        internalType: "bool",
+        name: "positive",
+        type: "bool",
+      },
+      {
+        indexed: false,
+        internalType: "bytes32",
+        name: "reason",
+        type: "bytes32",
       },
       {
         indexed: true,
         internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "stakeAmount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "stakeDuration",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "enum ISense.NameType",
-        name: "nameType",
-        type: "uint8",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "NameClaimed",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes8",
-        name: "name",
-        type: "bytes8",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "owner",
+        name: "recordedBy",
         type: "address",
       },
       {
@@ -431,7 +113,7 @@ const _abi = [
         type: "uint256",
       },
     ],
-    name: "NameExpired",
+    name: "InteractionRecorded",
     type: "event",
   },
   {
@@ -440,194 +122,8 @@ const _abi = [
       {
         indexed: true,
         internalType: "bytes8",
-        name: "name",
+        name: "profileId",
         type: "bytes8",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "stakeAmount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "NameReleased",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "bytes8",
-        name: "organizationId",
-        type: "bytes8",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "metadata",
-        type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "ProfileCreated",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "metadata",
-        type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "ProfileUpdated",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "enum ISense.VerificationLevel",
-        name: "level",
-        type: "uint8",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "verifier",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "ProfileVerified",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "bytes8",
-        name: "targetOrganizationId",
-        type: "bytes8",
-      },
-      {
-        indexed: false,
-        internalType: "bytes32",
-        name: "merkleRoot",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "ReputationExported",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "bytes8",
-        name: "sourceOrganizationId",
-        type: "bytes8",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "importedReputation",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "ReputationImported",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
       },
       {
         indexed: true,
@@ -642,22 +138,16 @@ const _abi = [
         type: "int256",
       },
       {
-        indexed: true,
+        indexed: false,
         internalType: "bytes32",
         name: "reason",
         type: "bytes32",
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "updatedBy",
         type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "newValue",
-        type: "uint256",
       },
       {
         indexed: false,
@@ -672,9 +162,32 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "profileId",
+        type: "bytes8",
+      },
+      {
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes32",
+        name: "reason",
         type: "bytes32",
+      },
+    ],
+    name: "awardExperience",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
+        name: "profileId",
+        type: "bytes8",
       },
     ],
     name: "calculateTrustScore",
@@ -691,9 +204,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "profileId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         internalType: "uint256",
@@ -705,7 +218,7 @@ const _abi = [
     outputs: [
       {
         internalType: "uint256",
-        name: "weight",
+        name: "votingWeight",
         type: "uint256",
       },
     ],
@@ -716,729 +229,15 @@ const _abi = [
     inputs: [
       {
         internalType: "bytes8",
-        name: "name",
-        type: "bytes8",
-      },
-      {
-        internalType: "uint256",
-        name: "stakeAmount",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "stakeDuration",
-        type: "uint256",
-      },
-      {
-        internalType: "enum ISense.NameType",
-        name: "nameType",
-        type: "uint8",
-      },
-    ],
-    name: "claimName",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "success",
-        type: "bool",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "organizationId",
-        type: "bytes8",
-      },
-      {
-        internalType: "string",
-        name: "metadata",
-        type: "string",
-      },
-    ],
-    name: "createProfile",
-    outputs: [
-      {
-        internalType: "bytes32",
         name: "profileId",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-    ],
-    name: "exportReputation",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "bytes32",
-            name: "sourceProfileId",
-            type: "bytes32",
-          },
-          {
-            internalType: "address",
-            name: "owner",
-            type: "address",
-          },
-          {
-            internalType: "bytes8",
-            name: "sourceOrganizationId",
-            type: "bytes8",
-          },
-          {
-            components: [
-              {
-                internalType: "uint256",
-                name: "experience",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "reputation",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "trust",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "lastUpdated",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "totalFeedbacks",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "positiveFeedbacks",
-                type: "uint256",
-              },
-            ],
-            internalType: "struct ISense.ReputationData",
-            name: "reputation",
-            type: "tuple",
-          },
-          {
-            components: [
-              {
-                internalType: "bytes32",
-                name: "achievementId",
-                type: "bytes32",
-              },
-              {
-                internalType: "bytes32",
-                name: "profileId",
-                type: "bytes32",
-              },
-              {
-                internalType: "string",
-                name: "name",
-                type: "string",
-              },
-              {
-                internalType: "string",
-                name: "description",
-                type: "string",
-              },
-              {
-                internalType: "string",
-                name: "category",
-                type: "string",
-              },
-              {
-                internalType: "bytes",
-                name: "data",
-                type: "bytes",
-              },
-              {
-                internalType: "uint256",
-                name: "earnedAt",
-                type: "uint256",
-              },
-              {
-                internalType: "address",
-                name: "grantedBy",
-                type: "address",
-              },
-              {
-                internalType: "uint256",
-                name: "points",
-                type: "uint256",
-              },
-            ],
-            internalType: "struct ISense.Achievement[]",
-            name: "achievements",
-            type: "tuple[]",
-          },
-          {
-            components: [
-              {
-                internalType: "uint256",
-                name: "totalFeedbacks",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "positiveFeedbacks",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "negativeFeedbacks",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "neutralFeedbacks",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "averageRating",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "trustScore",
-                type: "uint256",
-              },
-            ],
-            internalType: "struct ISense.FeedbackSummary",
-            name: "feedbackSummary",
-            type: "tuple",
-          },
-          {
-            internalType: "uint256",
-            name: "exportedAt",
-            type: "uint256",
-          },
-          {
-            internalType: "bytes32",
-            name: "merkleRoot",
-            type: "bytes32",
-          },
-        ],
-        internalType: "struct ISense.ReputationExport",
-        name: "exportData",
-        type: "tuple",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-    ],
-    name: "getAchievements",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "bytes32",
-            name: "achievementId",
-            type: "bytes32",
-          },
-          {
-            internalType: "bytes32",
-            name: "profileId",
-            type: "bytes32",
-          },
-          {
-            internalType: "string",
-            name: "name",
-            type: "string",
-          },
-          {
-            internalType: "string",
-            name: "description",
-            type: "string",
-          },
-          {
-            internalType: "string",
-            name: "category",
-            type: "string",
-          },
-          {
-            internalType: "bytes",
-            name: "data",
-            type: "bytes",
-          },
-          {
-            internalType: "uint256",
-            name: "earnedAt",
-            type: "uint256",
-          },
-          {
-            internalType: "address",
-            name: "grantedBy",
-            type: "address",
-          },
-          {
-            internalType: "uint256",
-            name: "points",
-            type: "uint256",
-          },
-        ],
-        internalType: "struct ISense.Achievement[]",
-        name: "achievements",
-        type: "tuple[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "string",
-        name: "category",
-        type: "string",
-      },
-    ],
-    name: "getAchievementsByCategory",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "bytes32",
-            name: "achievementId",
-            type: "bytes32",
-          },
-          {
-            internalType: "bytes32",
-            name: "profileId",
-            type: "bytes32",
-          },
-          {
-            internalType: "string",
-            name: "name",
-            type: "string",
-          },
-          {
-            internalType: "string",
-            name: "description",
-            type: "string",
-          },
-          {
-            internalType: "string",
-            name: "category",
-            type: "string",
-          },
-          {
-            internalType: "bytes",
-            name: "data",
-            type: "bytes",
-          },
-          {
-            internalType: "uint256",
-            name: "earnedAt",
-            type: "uint256",
-          },
-          {
-            internalType: "address",
-            name: "grantedBy",
-            type: "address",
-          },
-          {
-            internalType: "uint256",
-            name: "points",
-            type: "uint256",
-          },
-        ],
-        internalType: "struct ISense.Achievement[]",
-        name: "achievements",
-        type: "tuple[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "category",
-        type: "bytes32",
-      },
-    ],
-    name: "getCategoryReputation",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "score",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-    ],
-    name: "getFeedbackSummary",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "uint256",
-            name: "totalFeedbacks",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "positiveFeedbacks",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "negativeFeedbacks",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "neutralFeedbacks",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "averageRating",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "trustScore",
-            type: "uint256",
-          },
-        ],
-        internalType: "struct ISense.FeedbackSummary",
-        name: "summary",
-        type: "tuple",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "uint256",
-        name: "offset",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "limit",
-        type: "uint256",
-      },
-    ],
-    name: "getFeedbacks",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "bytes32",
-            name: "feedbackId",
-            type: "bytes32",
-          },
-          {
-            internalType: "bytes32",
-            name: "targetProfileId",
-            type: "bytes32",
-          },
-          {
-            internalType: "address",
-            name: "giver",
-            type: "address",
-          },
-          {
-            internalType: "enum ISense.FeedbackType",
-            name: "feedbackType",
-            type: "uint8",
-          },
-          {
-            internalType: "uint8",
-            name: "rating",
-            type: "uint8",
-          },
-          {
-            internalType: "string",
-            name: "comment",
-            type: "string",
-          },
-          {
-            internalType: "uint256",
-            name: "timestamp",
-            type: "uint256",
-          },
-          {
-            internalType: "bool",
-            name: "verified",
-            type: "bool",
-          },
-        ],
-        internalType: "struct ISense.Feedback[]",
-        name: "feedbacks",
-        type: "tuple[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "name",
         type: "bytes8",
       },
     ],
-    name: "getNameClaim",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "bytes8",
-            name: "name",
-            type: "bytes8",
-          },
-          {
-            internalType: "address",
-            name: "owner",
-            type: "address",
-          },
-          {
-            internalType: "uint256",
-            name: "stakeAmount",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "stakeDuration",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "claimedAt",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "expiresAt",
-            type: "uint256",
-          },
-          {
-            internalType: "bool",
-            name: "isActive",
-            type: "bool",
-          },
-          {
-            internalType: "enum ISense.NameType",
-            name: "nameType",
-            type: "uint8",
-          },
-        ],
-        internalType: "struct ISense.NameClaim",
-        name: "claim",
-        type: "tuple",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-    ],
-    name: "getNamesOwnedBy",
-    outputs: [
-      {
-        internalType: "bytes8[]",
-        name: "names",
-        type: "bytes8[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-    ],
-    name: "getProfile",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "bytes32",
-            name: "profileId",
-            type: "bytes32",
-          },
-          {
-            internalType: "address",
-            name: "owner",
-            type: "address",
-          },
-          {
-            internalType: "bytes8",
-            name: "organizationId",
-            type: "bytes8",
-          },
-          {
-            internalType: "string",
-            name: "metadata",
-            type: "string",
-          },
-          {
-            internalType: "uint256",
-            name: "createdAt",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "updatedAt",
-            type: "uint256",
-          },
-          {
-            internalType: "bool",
-            name: "active",
-            type: "bool",
-          },
-          {
-            internalType: "bool",
-            name: "verified",
-            type: "bool",
-          },
-        ],
-        internalType: "struct ISense.Profile",
-        name: "profile",
-        type: "tuple",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-      {
-        internalType: "bytes8",
-        name: "organizationId",
-        type: "bytes8",
-      },
-    ],
-    name: "getProfileByOwner",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "bytes32",
-            name: "profileId",
-            type: "bytes32",
-          },
-          {
-            internalType: "address",
-            name: "owner",
-            type: "address",
-          },
-          {
-            internalType: "bytes8",
-            name: "organizationId",
-            type: "bytes8",
-          },
-          {
-            internalType: "string",
-            name: "metadata",
-            type: "string",
-          },
-          {
-            internalType: "uint256",
-            name: "createdAt",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "updatedAt",
-            type: "uint256",
-          },
-          {
-            internalType: "bool",
-            name: "active",
-            type: "bool",
-          },
-          {
-            internalType: "bool",
-            name: "verified",
-            type: "bool",
-          },
-        ],
-        internalType: "struct ISense.Profile",
-        name: "profile",
-        type: "tuple",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "getProfileCount",
+    name: "getExperience",
     outputs: [
       {
         internalType: "uint256",
-        name: "count",
+        name: "experience",
         type: "uint256",
       },
     ],
@@ -1449,27 +248,8 @@ const _abi = [
     inputs: [
       {
         internalType: "bytes8",
-        name: "organizationId",
-        type: "bytes8",
-      },
-    ],
-    name: "getProfilesByOrganization",
-    outputs: [
-      {
-        internalType: "bytes32[]",
-        name: "profileIds",
-        type: "bytes32[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
         name: "profileId",
-        type: "bytes32",
+        type: "bytes8",
       },
     ],
     name: "getReputation",
@@ -1498,12 +278,12 @@ const _abi = [
           },
           {
             internalType: "uint256",
-            name: "totalFeedbacks",
+            name: "totalInteractions",
             type: "uint256",
           },
           {
             internalType: "uint256",
-            name: "positiveFeedbacks",
+            name: "positiveInteractions",
             type: "uint256",
           },
         ],
@@ -1518,9 +298,60 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8[]",
+        name: "profileIds",
+        type: "bytes8[]",
+      },
+    ],
+    name: "getReputationBatch",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "uint256",
+            name: "experience",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "reputation",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "trust",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "lastUpdated",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "totalInteractions",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "positiveInteractions",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct ISense.ReputationData[]",
+        name: "reputations",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes8",
         name: "profileId",
-        type: "bytes32",
+        type: "bytes8",
       },
     ],
     name: "getReputationHistory",
@@ -1528,9 +359,9 @@ const _abi = [
       {
         components: [
           {
-            internalType: "bytes32",
+            internalType: "bytes8",
             name: "profileId",
-            type: "bytes32",
+            type: "bytes8",
           },
           {
             internalType: "enum ISense.ReputationType",
@@ -1557,11 +388,6 @@ const _abi = [
             name: "timestamp",
             type: "uint256",
           },
-          {
-            internalType: "uint256",
-            name: "blockNumber",
-            type: "uint256",
-          },
         ],
         internalType: "struct ISense.ReputationEvent[]",
         name: "events",
@@ -1575,357 +401,16 @@ const _abi = [
     inputs: [
       {
         internalType: "bytes8",
-        name: "organizationId",
-        type: "bytes8",
-      },
-      {
-        internalType: "uint256",
-        name: "limit",
-        type: "uint256",
-      },
-    ],
-    name: "getTopProfiles",
-    outputs: [
-      {
-        internalType: "bytes32[]",
-        name: "profileIds",
-        type: "bytes32[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
         name: "profileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "achievementId",
-        type: "bytes32",
-      },
-      {
-        internalType: "string",
-        name: "name",
-        type: "string",
-      },
-      {
-        internalType: "string",
-        name: "description",
-        type: "string",
-      },
-      {
-        internalType: "string",
-        name: "category",
-        type: "string",
-      },
-      {
-        internalType: "uint256",
-        name: "points",
-        type: "uint256",
-      },
-      {
-        internalType: "bytes",
-        name: "data",
-        type: "bytes",
-      },
-    ],
-    name: "grantAchievement",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "granter",
-        type: "address",
-      },
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        components: [
-          {
-            internalType: "bytes32",
-            name: "achievementId",
-            type: "bytes32",
-          },
-          {
-            internalType: "string",
-            name: "name",
-            type: "string",
-          },
-          {
-            internalType: "string",
-            name: "description",
-            type: "string",
-          },
-          {
-            internalType: "string",
-            name: "category",
-            type: "string",
-          },
-          {
-            internalType: "uint256",
-            name: "points",
-            type: "uint256",
-          },
-          {
-            internalType: "bytes",
-            name: "data",
-            type: "bytes",
-          },
-        ],
-        internalType: "struct ISense.AchievementParams",
-        name: "params",
-        type: "tuple",
-      },
-    ],
-    name: "grantAchievementWithParams",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "achievementId",
-        type: "bytes32",
-      },
-    ],
-    name: "hasAchievement",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "hasAchievement",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        components: [
-          {
-            internalType: "bytes32",
-            name: "sourceProfileId",
-            type: "bytes32",
-          },
-          {
-            internalType: "address",
-            name: "owner",
-            type: "address",
-          },
-          {
-            internalType: "bytes8",
-            name: "sourceOrganizationId",
-            type: "bytes8",
-          },
-          {
-            components: [
-              {
-                internalType: "uint256",
-                name: "experience",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "reputation",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "trust",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "lastUpdated",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "totalFeedbacks",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "positiveFeedbacks",
-                type: "uint256",
-              },
-            ],
-            internalType: "struct ISense.ReputationData",
-            name: "reputation",
-            type: "tuple",
-          },
-          {
-            components: [
-              {
-                internalType: "bytes32",
-                name: "achievementId",
-                type: "bytes32",
-              },
-              {
-                internalType: "bytes32",
-                name: "profileId",
-                type: "bytes32",
-              },
-              {
-                internalType: "string",
-                name: "name",
-                type: "string",
-              },
-              {
-                internalType: "string",
-                name: "description",
-                type: "string",
-              },
-              {
-                internalType: "string",
-                name: "category",
-                type: "string",
-              },
-              {
-                internalType: "bytes",
-                name: "data",
-                type: "bytes",
-              },
-              {
-                internalType: "uint256",
-                name: "earnedAt",
-                type: "uint256",
-              },
-              {
-                internalType: "address",
-                name: "grantedBy",
-                type: "address",
-              },
-              {
-                internalType: "uint256",
-                name: "points",
-                type: "uint256",
-              },
-            ],
-            internalType: "struct ISense.Achievement[]",
-            name: "achievements",
-            type: "tuple[]",
-          },
-          {
-            components: [
-              {
-                internalType: "uint256",
-                name: "totalFeedbacks",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "positiveFeedbacks",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "negativeFeedbacks",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "neutralFeedbacks",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "averageRating",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "trustScore",
-                type: "uint256",
-              },
-            ],
-            internalType: "struct ISense.FeedbackSummary",
-            name: "feedbackSummary",
-            type: "tuple",
-          },
-          {
-            internalType: "uint256",
-            name: "exportedAt",
-            type: "uint256",
-          },
-          {
-            internalType: "bytes32",
-            name: "merkleRoot",
-            type: "bytes32",
-          },
-        ],
-        internalType: "struct ISense.ReputationExport",
-        name: "exportData",
-        type: "tuple",
-      },
-      {
-        internalType: "bytes",
-        name: "proof",
-        type: "bytes",
-      },
-    ],
-    name: "importReputation",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "name",
         type: "bytes8",
       },
     ],
-    name: "isNameAvailable",
+    name: "getTrustScore",
     outputs: [
       {
-        internalType: "bool",
-        name: "available",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-    ],
-    name: "profileExists",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "exists",
-        type: "bool",
+        internalType: "uint256",
+        name: "trustScore",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -1935,71 +420,13 @@ const _abi = [
     inputs: [
       {
         internalType: "bytes8",
-        name: "name",
+        name: "profileId",
         type: "bytes8",
       },
-    ],
-    name: "releaseName",
-    outputs: [
       {
-        internalType: "uint256",
-        name: "stakeAmount",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "targetProfileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "enum ISense.FeedbackType",
-        name: "feedbackType",
-        type: "uint8",
-      },
-      {
-        internalType: "uint8",
-        name: "rating",
-        type: "uint8",
-      },
-      {
-        internalType: "string",
-        name: "comment",
-        type: "string",
-      },
-    ],
-    name: "submitFeedback",
-    outputs: [
-      {
-        internalType: "bytes32",
-        name: "feedbackId",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "category",
-        type: "bytes32",
-      },
-      {
-        internalType: "int256",
-        name: "delta",
-        type: "int256",
+        internalType: "bool",
+        name: "positive",
+        type: "bool",
       },
       {
         internalType: "bytes32",
@@ -2007,7 +434,7 @@ const _abi = [
         type: "bytes32",
       },
     ],
-    name: "updateCategoryReputation",
+    name: "recordInteraction",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -2015,27 +442,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes8",
         name: "profileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "string",
-        name: "metadata",
-        type: "string",
-      },
-    ],
-    name: "updateProfile",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
+        type: "bytes8",
       },
       {
         internalType: "enum ISense.ReputationType",
@@ -2054,43 +463,6 @@ const _abi = [
       },
     ],
     name: "updateReputation",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes8",
-        name: "name",
-        type: "bytes8",
-      },
-    ],
-    name: "validateNameFormat",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "valid",
-        type: "bool",
-      },
-    ],
-    stateMutability: "pure",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "profileId",
-        type: "bytes32",
-      },
-      {
-        internalType: "enum ISense.VerificationLevel",
-        name: "level",
-        type: "uint8",
-      },
-    ],
-    name: "verifyProfile",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",

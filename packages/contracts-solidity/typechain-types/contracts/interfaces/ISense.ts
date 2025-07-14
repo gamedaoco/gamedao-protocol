@@ -29,8 +29,8 @@ export declare namespace ISense {
     reputation: BigNumberish;
     trust: BigNumberish;
     lastUpdated: BigNumberish;
-    totalFeedbacks: BigNumberish;
-    positiveFeedbacks: BigNumberish;
+    totalInteractions: BigNumberish;
+    positiveInteractions: BigNumberish;
   };
 
   export type ReputationDataStructOutput = [
@@ -38,198 +38,15 @@ export declare namespace ISense {
     reputation: bigint,
     trust: bigint,
     lastUpdated: bigint,
-    totalFeedbacks: bigint,
-    positiveFeedbacks: bigint
+    totalInteractions: bigint,
+    positiveInteractions: bigint
   ] & {
     experience: bigint;
     reputation: bigint;
     trust: bigint;
     lastUpdated: bigint;
-    totalFeedbacks: bigint;
-    positiveFeedbacks: bigint;
-  };
-
-  export type AchievementStruct = {
-    achievementId: BytesLike;
-    profileId: BytesLike;
-    name: string;
-    description: string;
-    category: string;
-    data: BytesLike;
-    earnedAt: BigNumberish;
-    grantedBy: AddressLike;
-    points: BigNumberish;
-  };
-
-  export type AchievementStructOutput = [
-    achievementId: string,
-    profileId: string,
-    name: string,
-    description: string,
-    category: string,
-    data: string,
-    earnedAt: bigint,
-    grantedBy: string,
-    points: bigint
-  ] & {
-    achievementId: string;
-    profileId: string;
-    name: string;
-    description: string;
-    category: string;
-    data: string;
-    earnedAt: bigint;
-    grantedBy: string;
-    points: bigint;
-  };
-
-  export type FeedbackSummaryStruct = {
-    totalFeedbacks: BigNumberish;
-    positiveFeedbacks: BigNumberish;
-    negativeFeedbacks: BigNumberish;
-    neutralFeedbacks: BigNumberish;
-    averageRating: BigNumberish;
-    trustScore: BigNumberish;
-  };
-
-  export type FeedbackSummaryStructOutput = [
-    totalFeedbacks: bigint,
-    positiveFeedbacks: bigint,
-    negativeFeedbacks: bigint,
-    neutralFeedbacks: bigint,
-    averageRating: bigint,
-    trustScore: bigint
-  ] & {
-    totalFeedbacks: bigint;
-    positiveFeedbacks: bigint;
-    negativeFeedbacks: bigint;
-    neutralFeedbacks: bigint;
-    averageRating: bigint;
-    trustScore: bigint;
-  };
-
-  export type ReputationExportStruct = {
-    sourceProfileId: BytesLike;
-    owner: AddressLike;
-    sourceOrganizationId: BytesLike;
-    reputation: ISense.ReputationDataStruct;
-    achievements: ISense.AchievementStruct[];
-    feedbackSummary: ISense.FeedbackSummaryStruct;
-    exportedAt: BigNumberish;
-    merkleRoot: BytesLike;
-  };
-
-  export type ReputationExportStructOutput = [
-    sourceProfileId: string,
-    owner: string,
-    sourceOrganizationId: string,
-    reputation: ISense.ReputationDataStructOutput,
-    achievements: ISense.AchievementStructOutput[],
-    feedbackSummary: ISense.FeedbackSummaryStructOutput,
-    exportedAt: bigint,
-    merkleRoot: string
-  ] & {
-    sourceProfileId: string;
-    owner: string;
-    sourceOrganizationId: string;
-    reputation: ISense.ReputationDataStructOutput;
-    achievements: ISense.AchievementStructOutput[];
-    feedbackSummary: ISense.FeedbackSummaryStructOutput;
-    exportedAt: bigint;
-    merkleRoot: string;
-  };
-
-  export type FeedbackStruct = {
-    feedbackId: BytesLike;
-    targetProfileId: BytesLike;
-    giver: AddressLike;
-    feedbackType: BigNumberish;
-    rating: BigNumberish;
-    comment: string;
-    timestamp: BigNumberish;
-    verified: boolean;
-  };
-
-  export type FeedbackStructOutput = [
-    feedbackId: string,
-    targetProfileId: string,
-    giver: string,
-    feedbackType: bigint,
-    rating: bigint,
-    comment: string,
-    timestamp: bigint,
-    verified: boolean
-  ] & {
-    feedbackId: string;
-    targetProfileId: string;
-    giver: string;
-    feedbackType: bigint;
-    rating: bigint;
-    comment: string;
-    timestamp: bigint;
-    verified: boolean;
-  };
-
-  export type NameClaimStruct = {
-    name: BytesLike;
-    owner: AddressLike;
-    stakeAmount: BigNumberish;
-    stakeDuration: BigNumberish;
-    claimedAt: BigNumberish;
-    expiresAt: BigNumberish;
-    isActive: boolean;
-    nameType: BigNumberish;
-  };
-
-  export type NameClaimStructOutput = [
-    name: string,
-    owner: string,
-    stakeAmount: bigint,
-    stakeDuration: bigint,
-    claimedAt: bigint,
-    expiresAt: bigint,
-    isActive: boolean,
-    nameType: bigint
-  ] & {
-    name: string;
-    owner: string;
-    stakeAmount: bigint;
-    stakeDuration: bigint;
-    claimedAt: bigint;
-    expiresAt: bigint;
-    isActive: boolean;
-    nameType: bigint;
-  };
-
-  export type ProfileStruct = {
-    profileId: BytesLike;
-    owner: AddressLike;
-    organizationId: BytesLike;
-    metadata: string;
-    createdAt: BigNumberish;
-    updatedAt: BigNumberish;
-    active: boolean;
-    verified: boolean;
-  };
-
-  export type ProfileStructOutput = [
-    profileId: string,
-    owner: string,
-    organizationId: string,
-    metadata: string,
-    createdAt: bigint,
-    updatedAt: bigint,
-    active: boolean,
-    verified: boolean
-  ] & {
-    profileId: string;
-    owner: string;
-    organizationId: string;
-    metadata: string;
-    createdAt: bigint;
-    updatedAt: bigint;
-    active: boolean;
-    verified: boolean;
+    totalInteractions: bigint;
+    positiveInteractions: bigint;
   };
 
   export type ReputationEventStruct = {
@@ -239,7 +56,6 @@ export declare namespace ISense {
     reason: BytesLike;
     updatedBy: AddressLike;
     timestamp: BigNumberish;
-    blockNumber: BigNumberish;
   };
 
   export type ReputationEventStructOutput = [
@@ -248,8 +64,7 @@ export declare namespace ISense {
     delta: bigint,
     reason: string,
     updatedBy: string,
-    timestamp: bigint,
-    blockNumber: bigint
+    timestamp: bigint
   ] & {
     profileId: string;
     repType: bigint;
@@ -257,87 +72,35 @@ export declare namespace ISense {
     reason: string;
     updatedBy: string;
     timestamp: bigint;
-    blockNumber: bigint;
-  };
-
-  export type AchievementParamsStruct = {
-    achievementId: BytesLike;
-    name: string;
-    description: string;
-    category: string;
-    points: BigNumberish;
-    data: BytesLike;
-  };
-
-  export type AchievementParamsStructOutput = [
-    achievementId: string,
-    name: string,
-    description: string,
-    category: string,
-    points: bigint,
-    data: string
-  ] & {
-    achievementId: string;
-    name: string;
-    description: string;
-    category: string;
-    points: bigint;
-    data: string;
   };
 }
 
 export interface ISenseInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "awardExperience"
       | "calculateTrustScore"
       | "calculateVotingWeight"
-      | "claimName"
-      | "createProfile"
-      | "exportReputation"
-      | "getAchievements"
-      | "getAchievementsByCategory"
-      | "getCategoryReputation"
-      | "getFeedbackSummary"
-      | "getFeedbacks"
-      | "getNameClaim"
-      | "getNamesOwnedBy"
-      | "getProfile"
-      | "getProfileByOwner"
-      | "getProfileCount"
-      | "getProfilesByOrganization"
+      | "getExperience"
       | "getReputation"
+      | "getReputationBatch"
       | "getReputationHistory"
-      | "getTopProfiles"
-      | "grantAchievement"
-      | "grantAchievementWithParams"
-      | "hasAchievement"
-      | "importReputation"
-      | "isNameAvailable"
-      | "profileExists"
-      | "releaseName"
-      | "submitFeedback"
-      | "updateCategoryReputation"
-      | "updateProfile"
+      | "getTrustScore"
+      | "recordInteraction"
       | "updateReputation"
-      | "validateNameFormat"
-      | "verifyProfile"
   ): FunctionFragment;
 
   getEvent(
     nameOrSignatureOrTopic:
-      | "AchievementGranted"
-      | "FeedbackSubmitted"
-      | "NameClaimed"
-      | "NameExpired"
-      | "NameReleased"
-      | "ProfileCreated"
-      | "ProfileUpdated"
-      | "ProfileVerified"
-      | "ReputationExported"
-      | "ReputationImported"
+      | "ExperienceAwarded"
+      | "InteractionRecorded"
       | "ReputationUpdated"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "awardExperience",
+    values: [BytesLike, BigNumberish, BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "calculateTrustScore",
     values: [BytesLike]
@@ -347,59 +110,7 @@ export interface ISenseInterface extends Interface {
     values: [BytesLike, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "claimName",
-    values: [BytesLike, BigNumberish, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "createProfile",
-    values: [BytesLike, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "exportReputation",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getAchievements",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getAchievementsByCategory",
-    values: [BytesLike, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getCategoryReputation",
-    values: [BytesLike, BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getFeedbackSummary",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getFeedbacks",
-    values: [BytesLike, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getNameClaim",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getNamesOwnedBy",
-    values: [AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getProfile",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getProfileByOwner",
-    values: [AddressLike, BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getProfileCount",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getProfilesByOrganization",
+    functionFragment: "getExperience",
     values: [BytesLike]
   ): string;
   encodeFunctionData(
@@ -407,74 +118,30 @@ export interface ISenseInterface extends Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "getReputationBatch",
+    values: [BytesLike[]]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getReputationHistory",
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "getTopProfiles",
-    values: [BytesLike, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "grantAchievement",
-    values: [
-      BytesLike,
-      BytesLike,
-      string,
-      string,
-      string,
-      BigNumberish,
-      BytesLike
-    ]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "grantAchievementWithParams",
-    values: [AddressLike, BytesLike, ISense.AchievementParamsStruct]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "hasAchievement",
-    values: [BytesLike, BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "importReputation",
-    values: [BytesLike, ISense.ReputationExportStruct, BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isNameAvailable",
+    functionFragment: "getTrustScore",
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "profileExists",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "releaseName",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "submitFeedback",
-    values: [BytesLike, BigNumberish, BigNumberish, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "updateCategoryReputation",
-    values: [BytesLike, BytesLike, BigNumberish, BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "updateProfile",
-    values: [BytesLike, string]
+    functionFragment: "recordInteraction",
+    values: [BytesLike, boolean, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "updateReputation",
     values: [BytesLike, BigNumberish, BigNumberish, BytesLike]
   ): string;
-  encodeFunctionData(
-    functionFragment: "validateNameFormat",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "verifyProfile",
-    values: [BytesLike, BigNumberish]
-  ): string;
 
+  decodeFunctionResult(
+    functionFragment: "awardExperience",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "calculateTrustScore",
     data: BytesLike
@@ -483,54 +150,8 @@ export interface ISenseInterface extends Interface {
     functionFragment: "calculateVotingWeight",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "claimName", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "createProfile",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "exportReputation",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getAchievements",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getAchievementsByCategory",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getCategoryReputation",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getFeedbackSummary",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getFeedbacks",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getNameClaim",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getNamesOwnedBy",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "getProfile", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "getProfileByOwner",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getProfileCount",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getProfilesByOrganization",
+    functionFragment: "getExperience",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -538,90 +159,47 @@ export interface ISenseInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getReputationBatch",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getReputationHistory",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getTopProfiles",
+    functionFragment: "getTrustScore",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "grantAchievement",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "grantAchievementWithParams",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "hasAchievement",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "importReputation",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "isNameAvailable",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "profileExists",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "releaseName",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "submitFeedback",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "updateCategoryReputation",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "updateProfile",
+    functionFragment: "recordInteraction",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "updateReputation",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "validateNameFormat",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "verifyProfile",
-    data: BytesLike
-  ): Result;
 }
 
-export namespace AchievementGrantedEvent {
+export namespace ExperienceAwardedEvent {
   export type InputTuple = [
     profileId: BytesLike,
-    achievementId: BytesLike,
-    name: string,
-    points: BigNumberish,
-    grantedBy: AddressLike,
+    amount: BigNumberish,
+    reason: BytesLike,
+    awardedBy: AddressLike,
     timestamp: BigNumberish
   ];
   export type OutputTuple = [
     profileId: string,
-    achievementId: string,
-    name: string,
-    points: bigint,
-    grantedBy: string,
+    amount: bigint,
+    reason: string,
+    awardedBy: string,
     timestamp: bigint
   ];
   export interface OutputObject {
     profileId: string;
-    achievementId: string;
-    name: string;
-    points: bigint;
-    grantedBy: string;
+    amount: bigint;
+    reason: string;
+    awardedBy: string;
     timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -630,228 +208,26 @@ export namespace AchievementGrantedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace FeedbackSubmittedEvent {
-  export type InputTuple = [
-    feedbackId: BytesLike,
-    targetProfileId: BytesLike,
-    giver: AddressLike,
-    feedbackType: BigNumberish,
-    rating: BigNumberish,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    feedbackId: string,
-    targetProfileId: string,
-    giver: string,
-    feedbackType: bigint,
-    rating: bigint,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    feedbackId: string;
-    targetProfileId: string;
-    giver: string;
-    feedbackType: bigint;
-    rating: bigint;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace NameClaimedEvent {
-  export type InputTuple = [
-    name: BytesLike,
-    owner: AddressLike,
-    stakeAmount: BigNumberish,
-    stakeDuration: BigNumberish,
-    nameType: BigNumberish,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    name: string,
-    owner: string,
-    stakeAmount: bigint,
-    stakeDuration: bigint,
-    nameType: bigint,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    name: string;
-    owner: string;
-    stakeAmount: bigint;
-    stakeDuration: bigint;
-    nameType: bigint;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace NameExpiredEvent {
-  export type InputTuple = [
-    name: BytesLike,
-    owner: AddressLike,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [name: string, owner: string, timestamp: bigint];
-  export interface OutputObject {
-    name: string;
-    owner: string;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace NameReleasedEvent {
-  export type InputTuple = [
-    name: BytesLike,
-    owner: AddressLike,
-    stakeAmount: BigNumberish,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    name: string,
-    owner: string,
-    stakeAmount: bigint,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    name: string;
-    owner: string;
-    stakeAmount: bigint;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace ProfileCreatedEvent {
+export namespace InteractionRecordedEvent {
   export type InputTuple = [
     profileId: BytesLike,
-    owner: AddressLike,
-    organizationId: BytesLike,
-    metadata: string,
+    positive: boolean,
+    reason: BytesLike,
+    recordedBy: AddressLike,
     timestamp: BigNumberish
   ];
   export type OutputTuple = [
     profileId: string,
-    owner: string,
-    organizationId: string,
-    metadata: string,
+    positive: boolean,
+    reason: string,
+    recordedBy: string,
     timestamp: bigint
   ];
   export interface OutputObject {
     profileId: string;
-    owner: string;
-    organizationId: string;
-    metadata: string;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace ProfileUpdatedEvent {
-  export type InputTuple = [
-    profileId: BytesLike,
-    metadata: string,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    profileId: string,
-    metadata: string,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    profileId: string;
-    metadata: string;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace ProfileVerifiedEvent {
-  export type InputTuple = [
-    profileId: BytesLike,
-    level: BigNumberish,
-    verifier: AddressLike,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    profileId: string,
-    level: bigint,
-    verifier: string,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    profileId: string;
-    level: bigint;
-    verifier: string;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace ReputationExportedEvent {
-  export type InputTuple = [
-    profileId: BytesLike,
-    targetOrganizationId: BytesLike,
-    merkleRoot: BytesLike,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    profileId: string,
-    targetOrganizationId: string,
-    merkleRoot: string,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    profileId: string;
-    targetOrganizationId: string;
-    merkleRoot: string;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace ReputationImportedEvent {
-  export type InputTuple = [
-    profileId: BytesLike,
-    sourceOrganizationId: BytesLike,
-    importedReputation: BigNumberish,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    profileId: string,
-    sourceOrganizationId: string,
-    importedReputation: bigint,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    profileId: string;
-    sourceOrganizationId: string;
-    importedReputation: bigint;
+    positive: boolean;
+    reason: string;
+    recordedBy: string;
     timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -867,7 +243,6 @@ export namespace ReputationUpdatedEvent {
     delta: BigNumberish,
     reason: BytesLike,
     updatedBy: AddressLike,
-    newValue: BigNumberish,
     timestamp: BigNumberish
   ];
   export type OutputTuple = [
@@ -876,7 +251,6 @@ export namespace ReputationUpdatedEvent {
     delta: bigint,
     reason: string,
     updatedBy: string,
-    newValue: bigint,
     timestamp: bigint
   ];
   export interface OutputObject {
@@ -885,7 +259,6 @@ export namespace ReputationUpdatedEvent {
     delta: bigint;
     reason: string;
     updatedBy: string;
-    newValue: bigint;
     timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -939,6 +312,12 @@ export interface ISense extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  awardExperience: TypedContractMethod<
+    [profileId: BytesLike, amount: BigNumberish, reason: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+
   calculateTrustScore: TypedContractMethod<
     [profileId: BytesLike],
     [bigint],
@@ -951,94 +330,17 @@ export interface ISense extends BaseContract {
     "view"
   >;
 
-  claimName: TypedContractMethod<
-    [
-      name: BytesLike,
-      stakeAmount: BigNumberish,
-      stakeDuration: BigNumberish,
-      nameType: BigNumberish
-    ],
-    [boolean],
-    "nonpayable"
-  >;
-
-  createProfile: TypedContractMethod<
-    [organizationId: BytesLike, metadata: string],
-    [string],
-    "nonpayable"
-  >;
-
-  exportReputation: TypedContractMethod<
-    [profileId: BytesLike],
-    [ISense.ReputationExportStructOutput],
-    "view"
-  >;
-
-  getAchievements: TypedContractMethod<
-    [profileId: BytesLike],
-    [ISense.AchievementStructOutput[]],
-    "view"
-  >;
-
-  getAchievementsByCategory: TypedContractMethod<
-    [profileId: BytesLike, category: string],
-    [ISense.AchievementStructOutput[]],
-    "view"
-  >;
-
-  getCategoryReputation: TypedContractMethod<
-    [profileId: BytesLike, category: BytesLike],
-    [bigint],
-    "view"
-  >;
-
-  getFeedbackSummary: TypedContractMethod<
-    [profileId: BytesLike],
-    [ISense.FeedbackSummaryStructOutput],
-    "view"
-  >;
-
-  getFeedbacks: TypedContractMethod<
-    [profileId: BytesLike, offset: BigNumberish, limit: BigNumberish],
-    [ISense.FeedbackStructOutput[]],
-    "view"
-  >;
-
-  getNameClaim: TypedContractMethod<
-    [name: BytesLike],
-    [ISense.NameClaimStructOutput],
-    "view"
-  >;
-
-  getNamesOwnedBy: TypedContractMethod<
-    [owner: AddressLike],
-    [string[]],
-    "view"
-  >;
-
-  getProfile: TypedContractMethod<
-    [profileId: BytesLike],
-    [ISense.ProfileStructOutput],
-    "view"
-  >;
-
-  getProfileByOwner: TypedContractMethod<
-    [owner: AddressLike, organizationId: BytesLike],
-    [ISense.ProfileStructOutput],
-    "view"
-  >;
-
-  getProfileCount: TypedContractMethod<[], [bigint], "view">;
-
-  getProfilesByOrganization: TypedContractMethod<
-    [organizationId: BytesLike],
-    [string[]],
-    "view"
-  >;
+  getExperience: TypedContractMethod<[profileId: BytesLike], [bigint], "view">;
 
   getReputation: TypedContractMethod<
     [profileId: BytesLike],
     [ISense.ReputationDataStructOutput],
+    "view"
+  >;
+
+  getReputationBatch: TypedContractMethod<
+    [profileIds: BytesLike[]],
+    [ISense.ReputationDataStructOutput[]],
     "view"
   >;
 
@@ -1048,82 +350,10 @@ export interface ISense extends BaseContract {
     "view"
   >;
 
-  getTopProfiles: TypedContractMethod<
-    [organizationId: BytesLike, limit: BigNumberish],
-    [string[]],
-    "view"
-  >;
+  getTrustScore: TypedContractMethod<[profileId: BytesLike], [bigint], "view">;
 
-  grantAchievement: TypedContractMethod<
-    [
-      profileId: BytesLike,
-      achievementId: BytesLike,
-      name: string,
-      description: string,
-      category: string,
-      points: BigNumberish,
-      data: BytesLike
-    ],
-    [void],
-    "nonpayable"
-  >;
-
-  grantAchievementWithParams: TypedContractMethod<
-    [
-      granter: AddressLike,
-      profileId: BytesLike,
-      params: ISense.AchievementParamsStruct
-    ],
-    [void],
-    "nonpayable"
-  >;
-
-  hasAchievement: TypedContractMethod<
-    [profileId: BytesLike, achievementId: BytesLike],
-    [boolean],
-    "view"
-  >;
-
-  importReputation: TypedContractMethod<
-    [
-      profileId: BytesLike,
-      exportData: ISense.ReputationExportStruct,
-      proof: BytesLike
-    ],
-    [void],
-    "nonpayable"
-  >;
-
-  isNameAvailable: TypedContractMethod<[name: BytesLike], [boolean], "view">;
-
-  profileExists: TypedContractMethod<[profileId: BytesLike], [boolean], "view">;
-
-  releaseName: TypedContractMethod<[name: BytesLike], [bigint], "nonpayable">;
-
-  submitFeedback: TypedContractMethod<
-    [
-      targetProfileId: BytesLike,
-      feedbackType: BigNumberish,
-      rating: BigNumberish,
-      comment: string
-    ],
-    [string],
-    "nonpayable"
-  >;
-
-  updateCategoryReputation: TypedContractMethod<
-    [
-      profileId: BytesLike,
-      category: BytesLike,
-      delta: BigNumberish,
-      reason: BytesLike
-    ],
-    [void],
-    "nonpayable"
-  >;
-
-  updateProfile: TypedContractMethod<
-    [profileId: BytesLike, metadata: string],
+  recordInteraction: TypedContractMethod<
+    [profileId: BytesLike, positive: boolean, reason: BytesLike],
     [void],
     "nonpayable"
   >;
@@ -1139,18 +369,17 @@ export interface ISense extends BaseContract {
     "nonpayable"
   >;
 
-  validateNameFormat: TypedContractMethod<[name: BytesLike], [boolean], "view">;
-
-  verifyProfile: TypedContractMethod<
-    [profileId: BytesLike, level: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
-
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "awardExperience"
+  ): TypedContractMethod<
+    [profileId: BytesLike, amount: BigNumberish, reason: BytesLike],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "calculateTrustScore"
   ): TypedContractMethod<[profileId: BytesLike], [bigint], "view">;
@@ -1162,101 +391,20 @@ export interface ISense extends BaseContract {
     "view"
   >;
   getFunction(
-    nameOrSignature: "claimName"
-  ): TypedContractMethod<
-    [
-      name: BytesLike,
-      stakeAmount: BigNumberish,
-      stakeDuration: BigNumberish,
-      nameType: BigNumberish
-    ],
-    [boolean],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "createProfile"
-  ): TypedContractMethod<
-    [organizationId: BytesLike, metadata: string],
-    [string],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "exportReputation"
-  ): TypedContractMethod<
-    [profileId: BytesLike],
-    [ISense.ReputationExportStructOutput],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getAchievements"
-  ): TypedContractMethod<
-    [profileId: BytesLike],
-    [ISense.AchievementStructOutput[]],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getAchievementsByCategory"
-  ): TypedContractMethod<
-    [profileId: BytesLike, category: string],
-    [ISense.AchievementStructOutput[]],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getCategoryReputation"
-  ): TypedContractMethod<
-    [profileId: BytesLike, category: BytesLike],
-    [bigint],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getFeedbackSummary"
-  ): TypedContractMethod<
-    [profileId: BytesLike],
-    [ISense.FeedbackSummaryStructOutput],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getFeedbacks"
-  ): TypedContractMethod<
-    [profileId: BytesLike, offset: BigNumberish, limit: BigNumberish],
-    [ISense.FeedbackStructOutput[]],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getNameClaim"
-  ): TypedContractMethod<
-    [name: BytesLike],
-    [ISense.NameClaimStructOutput],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getNamesOwnedBy"
-  ): TypedContractMethod<[owner: AddressLike], [string[]], "view">;
-  getFunction(
-    nameOrSignature: "getProfile"
-  ): TypedContractMethod<
-    [profileId: BytesLike],
-    [ISense.ProfileStructOutput],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getProfileByOwner"
-  ): TypedContractMethod<
-    [owner: AddressLike, organizationId: BytesLike],
-    [ISense.ProfileStructOutput],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getProfileCount"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "getProfilesByOrganization"
-  ): TypedContractMethod<[organizationId: BytesLike], [string[]], "view">;
+    nameOrSignature: "getExperience"
+  ): TypedContractMethod<[profileId: BytesLike], [bigint], "view">;
   getFunction(
     nameOrSignature: "getReputation"
   ): TypedContractMethod<
     [profileId: BytesLike],
     [ISense.ReputationDataStructOutput],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getReputationBatch"
+  ): TypedContractMethod<
+    [profileIds: BytesLike[]],
+    [ISense.ReputationDataStructOutput[]],
     "view"
   >;
   getFunction(
@@ -1267,93 +415,12 @@ export interface ISense extends BaseContract {
     "view"
   >;
   getFunction(
-    nameOrSignature: "getTopProfiles"
+    nameOrSignature: "getTrustScore"
+  ): TypedContractMethod<[profileId: BytesLike], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "recordInteraction"
   ): TypedContractMethod<
-    [organizationId: BytesLike, limit: BigNumberish],
-    [string[]],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "grantAchievement"
-  ): TypedContractMethod<
-    [
-      profileId: BytesLike,
-      achievementId: BytesLike,
-      name: string,
-      description: string,
-      category: string,
-      points: BigNumberish,
-      data: BytesLike
-    ],
-    [void],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "grantAchievementWithParams"
-  ): TypedContractMethod<
-    [
-      granter: AddressLike,
-      profileId: BytesLike,
-      params: ISense.AchievementParamsStruct
-    ],
-    [void],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "hasAchievement"
-  ): TypedContractMethod<
-    [profileId: BytesLike, achievementId: BytesLike],
-    [boolean],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "importReputation"
-  ): TypedContractMethod<
-    [
-      profileId: BytesLike,
-      exportData: ISense.ReputationExportStruct,
-      proof: BytesLike
-    ],
-    [void],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "isNameAvailable"
-  ): TypedContractMethod<[name: BytesLike], [boolean], "view">;
-  getFunction(
-    nameOrSignature: "profileExists"
-  ): TypedContractMethod<[profileId: BytesLike], [boolean], "view">;
-  getFunction(
-    nameOrSignature: "releaseName"
-  ): TypedContractMethod<[name: BytesLike], [bigint], "nonpayable">;
-  getFunction(
-    nameOrSignature: "submitFeedback"
-  ): TypedContractMethod<
-    [
-      targetProfileId: BytesLike,
-      feedbackType: BigNumberish,
-      rating: BigNumberish,
-      comment: string
-    ],
-    [string],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "updateCategoryReputation"
-  ): TypedContractMethod<
-    [
-      profileId: BytesLike,
-      category: BytesLike,
-      delta: BigNumberish,
-      reason: BytesLike
-    ],
-    [void],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "updateProfile"
-  ): TypedContractMethod<
-    [profileId: BytesLike, metadata: string],
+    [profileId: BytesLike, positive: boolean, reason: BytesLike],
     [void],
     "nonpayable"
   >;
@@ -1369,86 +436,20 @@ export interface ISense extends BaseContract {
     [void],
     "nonpayable"
   >;
-  getFunction(
-    nameOrSignature: "validateNameFormat"
-  ): TypedContractMethod<[name: BytesLike], [boolean], "view">;
-  getFunction(
-    nameOrSignature: "verifyProfile"
-  ): TypedContractMethod<
-    [profileId: BytesLike, level: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
 
   getEvent(
-    key: "AchievementGranted"
+    key: "ExperienceAwarded"
   ): TypedContractEvent<
-    AchievementGrantedEvent.InputTuple,
-    AchievementGrantedEvent.OutputTuple,
-    AchievementGrantedEvent.OutputObject
+    ExperienceAwardedEvent.InputTuple,
+    ExperienceAwardedEvent.OutputTuple,
+    ExperienceAwardedEvent.OutputObject
   >;
   getEvent(
-    key: "FeedbackSubmitted"
+    key: "InteractionRecorded"
   ): TypedContractEvent<
-    FeedbackSubmittedEvent.InputTuple,
-    FeedbackSubmittedEvent.OutputTuple,
-    FeedbackSubmittedEvent.OutputObject
-  >;
-  getEvent(
-    key: "NameClaimed"
-  ): TypedContractEvent<
-    NameClaimedEvent.InputTuple,
-    NameClaimedEvent.OutputTuple,
-    NameClaimedEvent.OutputObject
-  >;
-  getEvent(
-    key: "NameExpired"
-  ): TypedContractEvent<
-    NameExpiredEvent.InputTuple,
-    NameExpiredEvent.OutputTuple,
-    NameExpiredEvent.OutputObject
-  >;
-  getEvent(
-    key: "NameReleased"
-  ): TypedContractEvent<
-    NameReleasedEvent.InputTuple,
-    NameReleasedEvent.OutputTuple,
-    NameReleasedEvent.OutputObject
-  >;
-  getEvent(
-    key: "ProfileCreated"
-  ): TypedContractEvent<
-    ProfileCreatedEvent.InputTuple,
-    ProfileCreatedEvent.OutputTuple,
-    ProfileCreatedEvent.OutputObject
-  >;
-  getEvent(
-    key: "ProfileUpdated"
-  ): TypedContractEvent<
-    ProfileUpdatedEvent.InputTuple,
-    ProfileUpdatedEvent.OutputTuple,
-    ProfileUpdatedEvent.OutputObject
-  >;
-  getEvent(
-    key: "ProfileVerified"
-  ): TypedContractEvent<
-    ProfileVerifiedEvent.InputTuple,
-    ProfileVerifiedEvent.OutputTuple,
-    ProfileVerifiedEvent.OutputObject
-  >;
-  getEvent(
-    key: "ReputationExported"
-  ): TypedContractEvent<
-    ReputationExportedEvent.InputTuple,
-    ReputationExportedEvent.OutputTuple,
-    ReputationExportedEvent.OutputObject
-  >;
-  getEvent(
-    key: "ReputationImported"
-  ): TypedContractEvent<
-    ReputationImportedEvent.InputTuple,
-    ReputationImportedEvent.OutputTuple,
-    ReputationImportedEvent.OutputObject
+    InteractionRecordedEvent.InputTuple,
+    InteractionRecordedEvent.OutputTuple,
+    InteractionRecordedEvent.OutputObject
   >;
   getEvent(
     key: "ReputationUpdated"
@@ -1459,117 +460,29 @@ export interface ISense extends BaseContract {
   >;
 
   filters: {
-    "AchievementGranted(bytes32,bytes32,string,uint256,address,uint256)": TypedContractEvent<
-      AchievementGrantedEvent.InputTuple,
-      AchievementGrantedEvent.OutputTuple,
-      AchievementGrantedEvent.OutputObject
+    "ExperienceAwarded(bytes8,uint256,bytes32,address,uint256)": TypedContractEvent<
+      ExperienceAwardedEvent.InputTuple,
+      ExperienceAwardedEvent.OutputTuple,
+      ExperienceAwardedEvent.OutputObject
     >;
-    AchievementGranted: TypedContractEvent<
-      AchievementGrantedEvent.InputTuple,
-      AchievementGrantedEvent.OutputTuple,
-      AchievementGrantedEvent.OutputObject
-    >;
-
-    "FeedbackSubmitted(bytes32,bytes32,address,uint8,uint8,uint256)": TypedContractEvent<
-      FeedbackSubmittedEvent.InputTuple,
-      FeedbackSubmittedEvent.OutputTuple,
-      FeedbackSubmittedEvent.OutputObject
-    >;
-    FeedbackSubmitted: TypedContractEvent<
-      FeedbackSubmittedEvent.InputTuple,
-      FeedbackSubmittedEvent.OutputTuple,
-      FeedbackSubmittedEvent.OutputObject
+    ExperienceAwarded: TypedContractEvent<
+      ExperienceAwardedEvent.InputTuple,
+      ExperienceAwardedEvent.OutputTuple,
+      ExperienceAwardedEvent.OutputObject
     >;
 
-    "NameClaimed(bytes8,address,uint256,uint256,uint8,uint256)": TypedContractEvent<
-      NameClaimedEvent.InputTuple,
-      NameClaimedEvent.OutputTuple,
-      NameClaimedEvent.OutputObject
+    "InteractionRecorded(bytes8,bool,bytes32,address,uint256)": TypedContractEvent<
+      InteractionRecordedEvent.InputTuple,
+      InteractionRecordedEvent.OutputTuple,
+      InteractionRecordedEvent.OutputObject
     >;
-    NameClaimed: TypedContractEvent<
-      NameClaimedEvent.InputTuple,
-      NameClaimedEvent.OutputTuple,
-      NameClaimedEvent.OutputObject
-    >;
-
-    "NameExpired(bytes8,address,uint256)": TypedContractEvent<
-      NameExpiredEvent.InputTuple,
-      NameExpiredEvent.OutputTuple,
-      NameExpiredEvent.OutputObject
-    >;
-    NameExpired: TypedContractEvent<
-      NameExpiredEvent.InputTuple,
-      NameExpiredEvent.OutputTuple,
-      NameExpiredEvent.OutputObject
+    InteractionRecorded: TypedContractEvent<
+      InteractionRecordedEvent.InputTuple,
+      InteractionRecordedEvent.OutputTuple,
+      InteractionRecordedEvent.OutputObject
     >;
 
-    "NameReleased(bytes8,address,uint256,uint256)": TypedContractEvent<
-      NameReleasedEvent.InputTuple,
-      NameReleasedEvent.OutputTuple,
-      NameReleasedEvent.OutputObject
-    >;
-    NameReleased: TypedContractEvent<
-      NameReleasedEvent.InputTuple,
-      NameReleasedEvent.OutputTuple,
-      NameReleasedEvent.OutputObject
-    >;
-
-    "ProfileCreated(bytes32,address,bytes8,string,uint256)": TypedContractEvent<
-      ProfileCreatedEvent.InputTuple,
-      ProfileCreatedEvent.OutputTuple,
-      ProfileCreatedEvent.OutputObject
-    >;
-    ProfileCreated: TypedContractEvent<
-      ProfileCreatedEvent.InputTuple,
-      ProfileCreatedEvent.OutputTuple,
-      ProfileCreatedEvent.OutputObject
-    >;
-
-    "ProfileUpdated(bytes32,string,uint256)": TypedContractEvent<
-      ProfileUpdatedEvent.InputTuple,
-      ProfileUpdatedEvent.OutputTuple,
-      ProfileUpdatedEvent.OutputObject
-    >;
-    ProfileUpdated: TypedContractEvent<
-      ProfileUpdatedEvent.InputTuple,
-      ProfileUpdatedEvent.OutputTuple,
-      ProfileUpdatedEvent.OutputObject
-    >;
-
-    "ProfileVerified(bytes32,uint8,address,uint256)": TypedContractEvent<
-      ProfileVerifiedEvent.InputTuple,
-      ProfileVerifiedEvent.OutputTuple,
-      ProfileVerifiedEvent.OutputObject
-    >;
-    ProfileVerified: TypedContractEvent<
-      ProfileVerifiedEvent.InputTuple,
-      ProfileVerifiedEvent.OutputTuple,
-      ProfileVerifiedEvent.OutputObject
-    >;
-
-    "ReputationExported(bytes32,bytes8,bytes32,uint256)": TypedContractEvent<
-      ReputationExportedEvent.InputTuple,
-      ReputationExportedEvent.OutputTuple,
-      ReputationExportedEvent.OutputObject
-    >;
-    ReputationExported: TypedContractEvent<
-      ReputationExportedEvent.InputTuple,
-      ReputationExportedEvent.OutputTuple,
-      ReputationExportedEvent.OutputObject
-    >;
-
-    "ReputationImported(bytes32,bytes8,uint256,uint256)": TypedContractEvent<
-      ReputationImportedEvent.InputTuple,
-      ReputationImportedEvent.OutputTuple,
-      ReputationImportedEvent.OutputObject
-    >;
-    ReputationImported: TypedContractEvent<
-      ReputationImportedEvent.InputTuple,
-      ReputationImportedEvent.OutputTuple,
-      ReputationImportedEvent.OutputObject
-    >;
-
-    "ReputationUpdated(bytes32,uint8,int256,bytes32,address,uint256,uint256)": TypedContractEvent<
+    "ReputationUpdated(bytes8,uint8,int256,bytes32,address,uint256)": TypedContractEvent<
       ReputationUpdatedEvent.InputTuple,
       ReputationUpdatedEvent.OutputTuple,
       ReputationUpdatedEvent.OutputObject

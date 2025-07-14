@@ -2,4 +2,3 @@
 /* tslint:disable */
 /* eslint-disable */
 export { Sense__factory } from "./Sense__factory";
-export { SenseSimplified__factory } from "./SenseSimplified__factory";

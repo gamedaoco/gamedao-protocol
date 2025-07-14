@@ -4,15 +4,16 @@ pragma solidity ^0.8.20;
 import "../../core/GameDAOModule.sol";
 import "../../core/Treasury.sol";
 import "../../interfaces/IControl.sol";
-import "../../interfaces/IGameToken.sol";
+import "../../interfaces/IGameStaking.sol";
 import "../../libraries/AlphanumericID.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title Control
- * @dev Core DAO management module for GameDAO protocol
+ * @dev Core DAO management module for GameDAO protocol using GameStaking contract
  * @author GameDAO AG
  */
 contract Control is GameDAOModule, IControl {
@@ -24,6 +25,7 @@ contract Control is GameDAOModule, IControl {
     bytes32 public constant MODULE_ID = keccak256("CONTROL");
     uint256 public constant MAX_MEMBER_LIMIT = 10000;
     uint256 public constant MIN_MEMBER_LIMIT = 1;
+    uint256 public constant MIN_STAKE_AMOUNT = 10000 * 10**18; // 10,000 GAME tokens minimum
 
     // State variables
     Counters.Counter private _organizationCounter;
@@ -38,14 +40,14 @@ contract Control is GameDAOModule, IControl {
     mapping(bytes8 => EnumerableSet.AddressSet) private _organizationMembers;
 
     // Organization state mappings
-    mapping(OrgState => mapping(bytes8 => bool)) private _organizationsByState;
+    // mapping(OrgState => mapping(bytes8 => bool)) private _organizationsByState; // Removed to reduce contract size
 
-    // Staking tracking
-    mapping(bytes8 => uint256) private _organizationStakes;
-    mapping(bytes8 => address) private _organizationStakers;
+    // Contract references
+    IERC20 public gameToken;
+    IGameStaking public gameStaking;
 
-    // Game token interface
-    IGameToken public gameToken;
+    // Events
+    event StakeWithdrawn(bytes8 indexed organizationId, address indexed staker, uint256 amount, uint256 timestamp);
 
     // Modifiers
     modifier organizationExists(bytes8 orgId) {
@@ -74,8 +76,20 @@ contract Control is GameDAOModule, IControl {
         _;
     }
 
-    constructor(address _gameToken) GameDAOModule("1.0.0") {
-        gameToken = IGameToken(_gameToken);
+    modifier validStakeAmount(uint256 amount) {
+        require(amount >= MIN_STAKE_AMOUNT, "Stake amount below minimum");
+        _;
+    }
+
+    constructor(
+        address _gameToken,
+        address _gameStaking
+    ) GameDAOModule("1.0.0") {
+        require(_gameToken != address(0), "Invalid game token address");
+        require(_gameStaking != address(0), "Invalid game staking address");
+
+        gameToken = IERC20(_gameToken);
+        gameStaking = IGameStaking(_gameStaking);
     }
 
     /**
@@ -86,7 +100,7 @@ contract Control is GameDAOModule, IControl {
     }
 
     /**
-     * @dev Create a new organization with 8-character alphanumeric ID
+     * @dev Create a new organization with staking through GameStaking contract
      */
     function createOrganization(
         string memory name,
@@ -97,16 +111,8 @@ contract Control is GameDAOModule, IControl {
         uint256 memberLimit,
         uint256 membershipFee,
         uint256 gameStakeRequired
-    ) external override validMemberLimit(memberLimit) returns (bytes8) {
+    ) external override validMemberLimit(memberLimit) validStakeAmount(gameStakeRequired) nonReentrant returns (bytes8) {
         require(bytes(name).length > 0, "Organization name cannot be empty");
-
-        // Handle GAME token staking requirement
-        if (gameStakeRequired > 0) {
-            require(
-                gameToken.transferFrom(msg.sender, address(this), gameStakeRequired),
-                "GAME token stake transfer failed"
-            );
-        }
 
         // Generate unique 8-character alphanumeric ID
         _organizationCounter.increment();
@@ -116,8 +122,23 @@ contract Control is GameDAOModule, IControl {
         // Ensure ID is unique (extremely unlikely to collide, but safety first)
         require(!_organizationExists[orgId], "Organization ID collision");
 
+        // Handle GAME token staking through GameStaking contract
+        // User must first approve this contract to spend their tokens
+        require(
+            gameToken.allowance(msg.sender, address(this)) >= gameStakeRequired,
+            "Insufficient token allowance for stake"
+        );
+
+        // Transfer tokens from user to this contract
+        gameToken.transferFrom(msg.sender, address(this), gameStakeRequired);
+
+        // Approve GameStaking contract to spend tokens
+        gameToken.approve(address(gameStaking), gameStakeRequired);
+
+        // Create stake in GameStaking contract
+        gameStaking.stakeForOrganization(orgId, msg.sender, gameStakeRequired);
+
         // Create treasury for the organization
-        // Convert bytes8 ID to bytes32 for Treasury compatibility
         bytes32 orgIdBytes32 = keccak256(abi.encodePacked(orgId));
         Treasury treasury = new Treasury(orgIdBytes32, address(this), msg.sender);
 
@@ -146,13 +167,7 @@ contract Control is GameDAOModule, IControl {
         _organizations[orgId] = newOrg;
         _organizationExists[orgId] = true;
         _organizationIds.push(orgId);
-        _organizationsByState[OrgState.Active][orgId] = true;
-
-        // Track staking
-        if (gameStakeRequired > 0) {
-            _organizationStakes[orgId] = gameStakeRequired;
-            _organizationStakers[orgId] = msg.sender;
-        }
+        // _organizationsByState[OrgState.Active][orgId] = true; // Removed to reduce contract size
 
         // Add creator as first member
         _addMemberInternal(orgId, msg.sender);
@@ -160,6 +175,66 @@ contract Control is GameDAOModule, IControl {
         emit OrganizationCreated(orgId, name, msg.sender, address(treasury), block.timestamp);
 
         return orgId;
+    }
+
+    /**
+     * @dev Withdraw stake from an organization through GameStaking contract
+     */
+    function withdrawStake(bytes8 organizationId)
+        external
+        override
+        organizationExists(organizationId)
+        onlyOrganizationCreator(organizationId)
+        nonReentrant
+    {
+        // Check if organization is in the correct state
+        Organization storage org = _organizations[organizationId];
+        require(
+            org.state == OrgState.Inactive || org.state == OrgState.Dissolved,
+            "Organization must be inactive or dissolved"
+        );
+
+        // Check if stake can be withdrawn
+        require(
+            gameStaking.canWithdrawOrganizationStake(organizationId),
+            "Stake cannot be withdrawn yet"
+        );
+
+        // Get stake info before withdrawal
+        IGameStaking.OrganizationStake memory stake = gameStaking.getOrganizationStake(organizationId);
+        require(stake.active, "No active stake for organization");
+        require(stake.staker == msg.sender, "Not the staker");
+
+        // Withdraw stake through GameStaking contract
+        gameStaking.withdrawOrganizationStake(organizationId, msg.sender);
+
+        emit StakeWithdrawn(organizationId, msg.sender, stake.amount, block.timestamp);
+    }
+
+    /**
+     * @dev Get organization stake information
+     */
+    function getOrganizationStake(bytes8 organizationId)
+        external
+        view
+        organizationExists(organizationId)
+        returns (IGameStaking.OrganizationStake memory)
+    {
+        return gameStaking.getOrganizationStake(organizationId);
+    }
+
+    /**
+     * @dev Check if organization stake can be withdrawn
+     */
+    function canWithdrawStake(bytes8 organizationId)
+        external
+        view
+        organizationExists(organizationId)
+        returns (bool)
+    {
+        Organization storage org = _organizations[organizationId];
+        return (org.state == OrgState.Inactive || org.state == OrgState.Dissolved) &&
+               gameStaking.canWithdrawOrganizationStake(organizationId);
     }
 
     /**
@@ -245,8 +320,8 @@ contract Control is GameDAOModule, IControl {
         org.updatedAt = block.timestamp;
 
         // Update state mappings
-        _organizationsByState[oldState][organizationId] = false;
-        _organizationsByState[state][organizationId] = true;
+        // _organizationsByState[oldState][organizationId] = false; // Removed to reduce contract size
+        // _organizationsByState[state][organizationId] = true; // Removed to reduce contract size
 
         emit OrganizationStateChanged(organizationId, oldState, state, block.timestamp);
     }
@@ -316,11 +391,8 @@ contract Control is GameDAOModule, IControl {
     }
 
     function getAllOrganizations() external view override returns (Organization[] memory) {
-        Organization[] memory orgs = new Organization[](_organizationIds.length);
-        for (uint256 i = 0; i < _organizationIds.length; i++) {
-            orgs[i] = _organizations[_organizationIds[i]];
-        }
-        return orgs;
+        // Removed to reduce contract size - use events and subgraph instead
+        revert("Use subgraph for bulk queries");
     }
 
     function getOrganizationsByState(OrgState state)
@@ -329,24 +401,8 @@ contract Control is GameDAOModule, IControl {
         override
         returns (Organization[] memory)
     {
-        // Count organizations in this state
-        uint256 count = 0;
-        for (uint256 i = 0; i < _organizationIds.length; i++) {
-            if (_organizationsByState[state][_organizationIds[i]]) {
-                count++;
-            }
-        }
-
-        // Create array and populate
-        Organization[] memory orgs = new Organization[](count);
-        uint256 index = 0;
-        for (uint256 i = 0; i < _organizationIds.length; i++) {
-            if (_organizationsByState[state][_organizationIds[i]]) {
-                orgs[index] = _organizations[_organizationIds[i]];
-                index++;
-            }
-        }
-        return orgs;
+        // Removed to reduce contract size - use events and subgraph instead
+        revert("Use subgraph for state queries");
     }
 
     function getMemberCount(bytes8 organizationId)

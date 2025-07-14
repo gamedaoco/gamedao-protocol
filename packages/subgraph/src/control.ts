@@ -10,7 +10,8 @@ import {
 import {
   Organization,
   Member,
-  Treasury
+  Treasury,
+  User
 } from "../generated/schema"
 import { updateIndexingStatus } from "./utils/indexing"
 import { getOrganizationIdString } from "./utils/ids"
@@ -39,24 +40,23 @@ function mapAccessModel(accessModel: number): string {
 }
 
 // Helper function to create or update User entity
-// TODO: Uncomment after schema regeneration
-// function createOrUpdateUser(address: Address, timestamp: BigInt): void {
-//   let userId = address.toHex().toLowerCase()
-//   let user = User.load(userId)
-//
-//   if (!user) {
-//     user = new User(userId)
-//     user.address = address
-//     user.totalOrganizations = BigInt.zero()
-//     user.totalContributions = BigInt.zero()
-//     user.totalProposals = BigInt.zero()
-//     user.totalVotes = BigInt.zero()
-//     user.firstSeenAt = timestamp
-//   }
-//
-//   user.lastActiveAt = timestamp
-//   user.save()
-// }
+function createOrUpdateUser(address: Address, timestamp: BigInt): void {
+  let userId = address.toHex().toLowerCase()
+  let user = User.load(userId)
+
+  if (!user) {
+    user = new User(userId)
+    user.address = address
+    user.totalOrganizations = BigInt.zero()
+    user.totalContributions = BigInt.zero()
+    user.totalProposals = BigInt.zero()
+    user.totalVotes = BigInt.zero()
+    user.firstSeenAt = timestamp
+  }
+
+  user.lastActiveAt = timestamp
+  user.save()
+}
 
 export function handleOrganizationCreated(event: OrganizationCreated): void {
   // Track indexing progress
@@ -140,8 +140,24 @@ export function handleMemberAdded(event: MemberAdded): void {
   let orgId = getOrganizationIdString(event.params.organizationId)
   let memberId = orgId + "-" + event.params.member.toHex()
 
+  // Create or load user
+  let userId = event.params.member.toHex().toLowerCase()
+  let user = User.load(userId)
+  if (!user) {
+    user = new User(userId)
+    user.address = event.params.member
+    user.totalOrganizations = BigInt.zero()
+    user.totalContributions = BigInt.zero()
+    user.totalProposals = BigInt.zero()
+    user.totalVotes = BigInt.zero()
+    user.firstSeenAt = event.params.timestamp
+  }
+  user.lastActiveAt = event.params.timestamp
+  user.save()
+
   let member = new Member(memberId)
   member.organization = orgId
+  member.user = userId
   member.address = event.params.member
   member.state = "ACTIVE"
   member.role = "MEMBER"

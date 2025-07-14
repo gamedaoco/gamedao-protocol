@@ -5,6 +5,7 @@ import "hardhat-contract-sizer";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import * as dotenv from "dotenv";
+import { task } from "hardhat/config";
 
 dotenv.config();
 
@@ -14,9 +15,9 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 800, // Reduced from 10000 to balance size and compilation
       },
-      viaIR: true,
+      viaIR: true, // Re-enabled to handle stack too deep
     },
   },
   networks: {
@@ -91,5 +92,28 @@ const config: HardhatUserConfig = {
     artifacts: "./artifacts",
   },
 };
+
+// Custom task for sending tokens
+task("send-tokens", "Send tokens to a specific address")
+  .addParam("recipient", "The recipient address")
+  .addOptionalParam("eth", "Amount of ETH to send", "1.0")
+  .addOptionalParam("game", "Amount of GAME tokens to send", "10000")
+  .addOptionalParam("usdc", "Amount of USDC tokens to send", "5000")
+  .setAction(async (taskArgs, hre) => {
+    // Ensure we're using localhost network if not specified
+    if (hre.network.name === "hardhat") {
+      console.log("⚠️  Note: Using hardhat network. Consider using --network localhost for deployed contracts");
+    }
+
+    // Set environment variables for the script
+    process.env.RECIPIENT = taskArgs.recipient;
+    process.env.ETH = taskArgs.eth;
+    process.env.GAME = taskArgs.game;
+    process.env.USDC = taskArgs.usdc;
+
+    // Import and run the send-tokens script
+    const { sendTokens } = await import("./scripts/send-tokens");
+    await sendTokens();
+  });
 
 export default config;

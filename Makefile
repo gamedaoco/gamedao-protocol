@@ -77,6 +77,7 @@ help:
 	@echo "  make dev-frontend     Start frontend development server"
 	@echo "  make scaffold         Generate test data"
 	@echo "  make scaffold-clean   Clean scaffold data"
+	@echo "  make send-tokens      Send tokens to specific address"
 	@echo ""
 	@echo "$(GREEN)📚 Documentation & Quality:$(NC)"
 	@echo "  make docs             Generate documentation"
@@ -88,6 +89,7 @@ help:
 	@echo "  make deploy NETWORK=sepolia"
 	@echo "  make dev-reset        # Clean restart of development environment"
 	@echo "  make dev-full         # Start everything: contracts + graph + frontend"
+	@echo "  make send-tokens RECIPIENT=0x123... ETH=2.0 GAME=20000 USDC=10000"
 
 # Installation targets
 install:
@@ -334,6 +336,24 @@ scaffold-clean:
 	@rm -f $(FRONTEND_DIR)/public/scaffold-data.json
 	@rm -f $(FRONTEND_DIR)/src/lib/scaffold-data.ts
 	@echo "$(GREEN)✅ Scaffold data cleaned$(NC)"
+
+# Token transfer targets
+send-tokens:
+	@echo "$(BLUE)💰 Sending tokens...$(NC)"
+	@if [ -z "$(RECIPIENT)" ]; then \
+		echo "$(RED)❌ Error: RECIPIENT address is required$(NC)"; \
+		echo "$(YELLOW)Usage: make send-tokens RECIPIENT=0x123... [ETH=1.0] [GAME=10000] [USDC=5000]$(NC)"; \
+		echo "$(CYAN)Alternative: npx hardhat send-tokens --recipient 0x123... --eth 1.0 --game 10000 --usdc 5000$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(CYAN)📋 Transfer Details:$(NC)"
+	@echo "  Recipient: $(RECIPIENT)"
+	@echo "  ETH: $(or $(ETH),1.0)"
+	@echo "  GAME: $(or $(GAME),10000)"
+	@echo "  USDC: $(or $(USDC),5000)"
+	@echo "$(YELLOW)⚠️  Ensure local node is running and contracts are deployed$(NC)"
+	@cd $(CONTRACTS_DIR) && RECIPIENT=$(RECIPIENT) ETH=$(or $(ETH),1.0) GAME=$(or $(GAME),10000) USDC=$(or $(USDC),5000) npm run send-tokens
+	@echo "$(GREEN)✅ Token transfer completed$(NC)"
 
 # Documentation targets
 docs:

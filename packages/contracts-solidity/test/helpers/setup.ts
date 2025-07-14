@@ -1,16 +1,16 @@
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import {
-  GameDAORegistry,
   Control,
   Flow,
-  Signal,
   Identity,
-  SenseSimplified,
-  Treasury,
+  Sense,
+  Signal,
+  GameDAORegistry,
   GameStaking,
   MockGameToken,
-  MockUSDC
+  MockUSDC,
+  Treasury,
 } from "../../typechain-types";
 
 export interface TestSetup {
@@ -19,7 +19,7 @@ export interface TestSetup {
   flow: Flow;
   signal: Signal;
   identity: Identity;
-  senseSimplified: SenseSimplified;
+  sense: Sense;
   treasury: Treasury;
   gameStaking: GameStaking;
   gameToken: MockGameToken;
@@ -65,10 +65,10 @@ export async function deployTestSetup(): Promise<TestSetup> {
   const identity = await IdentityFactory.deploy();
   await identity.waitForDeployment();
 
-  // Deploy SenseSimplified Module
-  const SenseSimplifiedFactory = await ethers.getContractFactory("SenseSimplified");
-  const senseSimplified = await SenseSimplifiedFactory.deploy();
-  await senseSimplified.waitForDeployment();
+  // Deploy Sense Module
+  const SenseFactory = await ethers.getContractFactory("Sense");
+  const sense = await SenseFactory.deploy();
+  await sense.waitForDeployment();
 
   // Deploy Treasury
   const TreasuryFactory = await ethers.getContractFactory("Treasury");
@@ -99,7 +99,7 @@ export async function deployTestSetup(): Promise<TestSetup> {
   await registry.registerModule(await flow.getAddress());
   await registry.registerModule(await signal.getAddress());
   await registry.registerModule(await identity.getAddress());
-  await registry.registerModule(await senseSimplified.getAddress());
+  await registry.registerModule(await sense.getAddress());
 
   await registry.enableModule(CONTROL_MODULE_ID);
   await registry.enableModule(FLOW_MODULE_ID);
@@ -112,7 +112,7 @@ export async function deployTestSetup(): Promise<TestSetup> {
   await flow.initialize(await registry.getAddress());
   await signal.initialize(await registry.getAddress());
   await identity.initialize(await registry.getAddress());
-  await senseSimplified.initialize(await registry.getAddress());
+  await sense.initialize(await registry.getAddress());
 
   return {
     registry,
@@ -120,7 +120,7 @@ export async function deployTestSetup(): Promise<TestSetup> {
     flow,
     signal,
     identity,
-    senseSimplified,
+    sense,
     treasury,
     gameStaking,
     gameToken,

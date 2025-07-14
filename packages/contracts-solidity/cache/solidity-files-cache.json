@@ -10,7 +10,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -54,7 +54,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -91,7 +91,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -502,15 +502,15 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Control/Control.sol": {
-      "lastModificationDate": 1752318494829,
-      "contentHash": "2c751225ecb367397aa32756aa8acad3",
+      "lastModificationDate": 1752525999654,
+      "contentHash": "e20294b1c332ac15444f75e800f4fd72",
       "sourceName": "contracts/modules/Control/Control.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -534,8 +534,9 @@
         "../../core/GameDAOModule.sol",
         "../../core/Treasury.sol",
         "../../interfaces/IControl.sol",
-        "../../interfaces/IGameToken.sol",
+        "../../interfaces/IGameStaking.sol",
         "../../libraries/AlphanumericID.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
         "@openzeppelin/contracts/utils/structs/EnumerableSet.sol",
         "@openzeppelin/contracts/utils/Counters.sol",
         "@openzeppelin/contracts/security/ReentrancyGuard.sol"
@@ -548,15 +549,15 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IGameToken.sol": {
-      "lastModificationDate": 1752138916908,
-      "contentHash": "b32a52dcd8cfef5d00f12acc4f1718dd",
+      "lastModificationDate": 1752525829307,
+      "contentHash": "1371d33ac5255221301ad7cfb7e25e99",
       "sourceName": "contracts/interfaces/IGameToken.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -583,19 +584,19 @@
         "^0.8.20"
       ],
       "artifacts": [
-        "IGameToken"
+        "IGameTokenDeprecated"
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IControl.sol": {
-      "lastModificationDate": 1752173224871,
-      "contentHash": "d2239ec70d20b77555827859e28d27ce",
+      "lastModificationDate": 1752518624711,
+      "contentHash": "fa79270082d794fd8d4aa9716d29f2a6",
       "sourceName": "contracts/interfaces/IControl.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -632,7 +633,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -901,7 +902,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -945,7 +946,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -982,7 +983,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1026,7 +1027,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1073,7 +1074,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1102,15 +1103,15 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Sense/Sense.sol": {
-      "lastModificationDate": 1752494067284,
-      "contentHash": "96aae5f694231394ef8258d335f6558c",
+      "lastModificationDate": 1752516281479,
+      "contentHash": "c08aef61e3c20c8492989ac1ffd6b420",
       "sourceName": "contracts/modules/Sense/Sense.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1131,12 +1132,9 @@
         }
       },
       "imports": [
-        "@openzeppelin/contracts/utils/structs/EnumerableSet.sol",
-        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
-        "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol",
         "../../core/GameDAOModule.sol",
         "../../interfaces/ISense.sol",
-        "../../interfaces/IControl.sol"
+        "../../interfaces/IIdentity.sol"
       ],
       "versionPragmas": [
         "^0.8.20"
@@ -1146,15 +1144,15 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/ISense.sol": {
-      "lastModificationDate": 1752493997240,
-      "contentHash": "ceff21c082312bd1a11e2dea7d2149b7",
+      "lastModificationDate": 1752516298102,
+      "contentHash": "1dcab839462560e343891c949589a93b",
       "sourceName": "contracts/interfaces/ISense.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1220,15 +1218,15 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/mocks/MockGameToken.sol": {
-      "lastModificationDate": 1752138956722,
-      "contentHash": "c55ac1ee2ce74f3035a82226d069e067",
+      "lastModificationDate": 1752525929120,
+      "contentHash": "6c18f6ca7f2bc082bb74f474a180df93",
       "sourceName": "contracts/mocks/MockGameToken.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1251,7 +1249,7 @@
       "imports": [
         "@openzeppelin/contracts/token/ERC20/ERC20.sol",
         "@openzeppelin/contracts/access/AccessControl.sol",
-        "../interfaces/IGameToken.sol"
+        "@openzeppelin/contracts/security/Pausable.sol"
       ],
       "versionPragmas": [
         "^0.8.20"
@@ -1269,7 +1267,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1301,15 +1299,15 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/staking/GameStaking.sol": {
-      "lastModificationDate": 1752138938589,
-      "contentHash": "b6941c72b8996b6f2a1c219e1f9a1853",
+      "lastModificationDate": 1752525612649,
+      "contentHash": "d2022ffb878a28c1687cfe9d1c6572d2",
       "sourceName": "contracts/staking/GameStaking.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1433,7 +1431,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1470,7 +1468,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1507,7 +1505,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1546,7 +1544,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1588,7 +1586,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1625,7 +1623,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1665,7 +1663,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1704,7 +1702,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1741,7 +1739,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1778,7 +1776,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1815,7 +1813,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1852,7 +1850,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1889,7 +1887,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1930,7 +1928,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1969,7 +1967,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2010,7 +2008,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2047,7 +2045,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2084,7 +2082,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2158,7 +2156,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2195,7 +2193,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2234,7 +2232,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2263,15 +2261,15 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IIdentity.sol": {
-      "lastModificationDate": 1752505615705,
-      "contentHash": "c752ded34021c685bb7d6a3e9f362841",
+      "lastModificationDate": 1752516152047,
+      "contentHash": "1b1049e7f1f4d2898c3fe709813a9761",
       "sourceName": "contracts/interfaces/IIdentity.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2300,15 +2298,15 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Identity/Identity.sol": {
-      "lastModificationDate": 1752505923989,
-      "contentHash": "a04668c78903d4bac06d1b420cdc087a",
+      "lastModificationDate": 1752517613908,
+      "contentHash": "31c11aa265e7ac8d6d5f4bd3a4473f01",
       "sourceName": "contracts/modules/Identity/Identity.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2334,7 +2332,7 @@
         "../../core/GameDAOModule.sol",
         "../../interfaces/IIdentity.sol",
         "../../interfaces/IControl.sol",
-        "../../libraries/GameId.sol"
+        "../../libraries/AlphanumericID.sol"
       ],
       "versionPragmas": [
         "^0.8.20"
@@ -2343,16 +2341,16 @@
         "Identity"
       ]
     },
-    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Sense/SenseSimplified.sol": {
-      "lastModificationDate": 1752505768997,
-      "contentHash": "b00169b7d7e378fda6a6066fb1adc23d",
-      "sourceName": "contracts/modules/Sense/SenseSimplified.sol",
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/tokens/GameToken.sol": {
+      "lastModificationDate": 1752525534862,
+      "contentHash": "f38639338b1dcee47f35adaca4bfb68a",
+      "sourceName": "contracts/tokens/GameToken.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2373,27 +2371,27 @@
         }
       },
       "imports": [
-        "../../core/GameDAOModule.sol",
-        "../../interfaces/ISenseSimplified.sol",
-        "../../interfaces/IIdentity.sol"
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+        "@openzeppelin/contracts/access/AccessControl.sol",
+        "@openzeppelin/contracts/security/Pausable.sol"
       ],
       "versionPragmas": [
         "^0.8.20"
       ],
       "artifacts": [
-        "SenseSimplified"
+        "GameToken"
       ]
     },
-    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/ISenseSimplified.sol": {
-      "lastModificationDate": 1752505717116,
-      "contentHash": "474144eec5ee58cf3c62e6915907a285",
-      "sourceName": "contracts/interfaces/ISenseSimplified.sol",
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IGameStaking.sol": {
+      "lastModificationDate": 1752525633470,
+      "contentHash": "e0c8b7f0f0b83fd375f9ea4e921b0b2c",
+      "sourceName": "contracts/interfaces/IGameStaking.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1000
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2418,7 +2416,46 @@
         "^0.8.20"
       ],
       "artifacts": [
-        "ISenseSimplified"
+        "IGameStaking"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IGameTokenClean.sol": {
+      "lastModificationDate": 1752526013233,
+      "contentHash": "05dc6e8c70e3b768f2e50c22c88a1752",
+      "sourceName": "contracts/interfaces/IGameTokenClean.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IGameToken"
       ]
     }
   }

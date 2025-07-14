@@ -37,466 +37,7 @@ type ModuleUpgrade @entity {
   transactionHash: Bytes!
 }
 
-# ===== CONTROL MODULE ENTITIES =====
-
-enum OrganizationState {
-  INACTIVE
-  ACTIVE
-  LOCKED
-}
-
-enum AccessModel {
-  OPEN
-  VOTING
-  INVITE
-}
-
-enum MemberState {
-  NONE
-  PENDING
-  ACTIVE
-  INACTIVE
-  KICKED
-}
-
-# User entity for efficient user-centric queries
-type User @entity {
-  id: ID! # wallet address (lowercase)
-  address: Bytes! # original wallet address
-
-  # Aggregated stats
-  totalOrganizations: BigInt!
-  totalContributions: BigInt!
-  totalProposals: BigInt!
-  totalVotes: BigInt!
-
-  # Timestamps
-  firstSeenAt: BigInt!
-  lastActiveAt: BigInt!
-
-  # Relationships (derived from other entities)
-  memberships: [Member!]! @derivedFrom(field: "user")
-  # Note: contributions, proposals, votes are accessed through Member entities
-}
-
-type Organization @entity {
-  id: ID! # organization ID (8-character alphanumeric string)
-  creator: Bytes! # creator address
-  prime: Bytes! # prime member address
-  treasury: Treasury! # treasury contract
-  name: String! # organization name
-  metadataURI: String # IPFS URI for organization metadata
-  orgType: String! # organization type (INDIVIDUAL, COMPANY, etc.)
-  accessModel: AccessModel! # access control model
-  state: OrganizationState! # current state
-  memberLimit: BigInt! # maximum number of members
-  membershipFee: BigInt! # fee to join organization
-
-  # Timestamps
-  createdAt: BigInt!
-  updatedAt: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-
-  # Relationships
-  members: [Member!]! @derivedFrom(field: "organization")
-  campaigns: [Campaign!]! @derivedFrom(field: "organization")
-  proposals: [Proposal!]! @derivedFrom(field: "organization")
-  # profiles: [Profile!]! @derivedFrom(field: "organization") # DISABLED - Sense module disabled
-
-  # Statistics
-  memberCount: BigInt!
-  totalCampaigns: BigInt!
-  totalProposals: BigInt!
-
-  # Events
-  stakeEvents: [StakeEvent!]! @derivedFrom(field: "organization")
-}
-
-type Member @entity {
-  id: ID! # organization ID + member address
-  organization: Organization!
-  user: User! # reference to User entity
-  address: Bytes! # kept for backward compatibility
-  state: MemberState!
-  role: String! # PRIME, MEMBER, etc.
-  fee: BigInt! # fee paid to join
-  joinedAt: BigInt!
-  removedAt: BigInt # timestamp when removed (optional)
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-
-  # Relationships
-  contributions: [Contribution!]! @derivedFrom(field: "contributor")
-  proposals: [Proposal!]! @derivedFrom(field: "proposer")
-  votes: [Vote!]! @derivedFrom(field: "voter")
-  # profiles: [Profile!]! @derivedFrom(field: "owner") # DISABLED - Sense module disabled
-}
-
-type Treasury @entity {
-  id: ID! # treasury identifier
-  organization: Organization!
-  address: Bytes!
-  balance: BigDecimal!
-  createdAt: BigInt!
-  updatedAt: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-
-  # Events
-  deposits: [TreasuryDeposit!]! @derivedFrom(field: "treasury")
-  withdrawals: [TreasuryWithdrawal!]! @derivedFrom(field: "treasury")
-}
-
-type TreasuryDeposit @entity {
-  id: ID! # tx hash + log index
-  treasury: Treasury!
-  token: Bytes! # token address (0x0 for ETH)
-  amount: BigDecimal!
-  depositor: Bytes!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-}
-
-type TreasuryWithdrawal @entity {
-  id: ID! # tx hash + log index
-  treasury: Treasury!
-  token: Bytes! # token address (0x0 for ETH)
-  amount: BigDecimal!
-  recipient: Bytes!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-}
-
-type StakeEvent @entity {
-  id: ID! # tx hash + log index
-  organization: Organization!
-  member: Bytes!
-  amount: BigDecimal!
-  reason: String!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-}
-
-# ===== FLOW MODULE ENTITIES =====
-
-enum FlowType {
-  GRANT
-  RAISE
-  LEND
-  LOAN
-  SHARE
-  POOL
-}
-
-enum CampaignState {
-  CREATED
-  ACTIVE
-  PAUSED
-  SUCCEEDED
-  FAILED
-  FINALIZED
-  CANCELLED
-}
-
-type Campaign @entity {
-  id: ID! # campaign ID (bytes32 hash)
-  organization: Organization!
-  creator: Bytes!
-  flowType: FlowType!
-
-  # Campaign details
-  title: String!
-  description: String!
-  target: BigDecimal!
-  deposit: BigDecimal!
-  expiry: BigInt!
-  state: CampaignState!
-
-  # Financial tracking
-  raised: BigDecimal!
-  contributorCount: BigInt!
-  protocolFee: BigDecimal!
-
-  # Reward system
-  rewardToken: Bytes # reward token address
-  totalRewards: BigDecimal!
-  rewardsDistributed: BigDecimal!
-
-  # Timestamps
-  createdAt: BigInt!
-  updatedAt: BigInt!
-  finalizedAt: BigInt
-
-  # Relationships
-  contributions: [Contribution!]! @derivedFrom(field: "campaign")
-  rewards: [Reward!]! @derivedFrom(field: "campaign")
-  refunds: [Refund!]! @derivedFrom(field: "campaign")
-}
-
-type Contribution @entity {
-  id: ID! # campaign ID + contributor + index
-  campaign: Campaign!
-  contributor: Member!
-  token: Bytes! # contribution token address (0x0 for ETH)
-  amount: BigDecimal!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-
-  # Reward tracking
-  rewardEligible: Boolean!
-  rewardReceived: BigDecimal!
-}
-
-type Reward @entity {
-  id: ID! # tx hash + log index
-  campaign: Campaign!
-  recipient: Bytes!
-  token: Bytes!
-  amount: BigDecimal!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-}
-
-type Refund @entity {
-  id: ID! # tx hash + log index
-  campaign: Campaign!
-  recipient: Bytes!
-  token: Bytes!
-  amount: BigDecimal!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-}
-
-type ProtocolFee @entity {
-  id: ID! # tx hash + log index
-  campaign: Campaign!
-  amount: BigDecimal!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-}
-
-# ===== SIGNAL MODULE ENTITIES =====
-
-enum ProposalType {
-  SIMPLE
-  PARAMETRIC
-  TREASURY
-  MEMBER
-  CONSTITUTIONAL
-}
-
-enum VotingType {
-  RELATIVE
-  ABSOLUTE
-  SUPERMAJORITY
-  UNANIMOUS
-}
-
-enum VotingPowerModel {
-  DEMOCRATIC
-  TOKEN_WEIGHTED
-  QUADRATIC
-  CONVICTION
-}
-
-enum ProposalState {
-  PENDING
-  ACTIVE
-  QUEUED
-  EXECUTED
-  DEFEATED
-  CANCELLED
-  EXPIRED
-}
-
-type Proposal @entity {
-  id: ID! # proposal ID (bytes32 hash)
-  organization: Organization!
-  proposer: Member!
-
-  # Proposal details
-  proposalType: ProposalType!
-  votingType: VotingType!
-  votingPowerModel: VotingPowerModel!
-  title: String!
-  description: String!
-  executionData: Bytes!
-
-  # Voting parameters
-  quorum: BigInt!
-  threshold: BigInt!
-  startTime: BigInt!
-  endTime: BigInt!
-  state: ProposalState!
-
-  # Voting results
-  votesFor: BigDecimal!
-  votesAgainst: BigDecimal!
-  totalVotes: BigInt!
-
-  # Execution
-  executedAt: BigInt
-  executionSuccess: Boolean
-
-  # Timestamps
-  createdAt: BigInt!
-  updatedAt: BigInt!
-
-  # Relationships
-  votes: [Vote!]! @derivedFrom(field: "proposal")
-}
-
-type Vote @entity {
-  id: ID! # proposal ID + voter address
-  proposal: Proposal!
-  voter: Member!
-  support: Boolean! # true for yes, false for no
-  votingPower: BigDecimal!
-  conviction: BigInt! # conviction multiplier
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
-}
-
-type Delegation @entity {
-  id: ID! # organization ID + delegator + delegatee
-  organization: Organization!
-  delegator: Bytes!
-  delegatee: Bytes!
-  votingPower: BigDecimal!
-  timestamp: BigInt!
-  active: Boolean!
-}
-
-# ===== SENSE MODULE ENTITIES (DISABLED - contract too large) =====
-
-# enum VerificationLevel {
-#   NONE
-#   BASIC
-#   VERIFIED
-#   PREMIUM
-# }
-
-# type Profile @entity {
-#   id: ID! # profile ID (bytes32 hash)
-#   organization: Organization!
-#   owner: Member!
-#   username: String!
-
-#   # Profile details
-#   bio: String!
-#   avatar: String!
-#   website: String!
-#   verificationLevel: VerificationLevel!
-
-#   # Reputation data
-#   experience: BigInt!
-#   reputation: BigInt!
-#   trustScore: BigInt!
-#   convictionScore: BigInt!
-
-#   # Statistics
-#   achievementCount: BigInt!
-#   feedbackCount: BigInt!
-#   positiveFeedbacks: BigInt!
-#   negativeFeedbacks: BigInt!
-
-#   # Timestamps
-#   createdAt: BigInt!
-#   updatedAt: BigInt!
-
-#   # Relationships
-#   achievements: [Achievement!]! @derivedFrom(field: "profile")
-#   feedbacksReceived: [Feedback!]! @derivedFrom(field: "target")
-#   feedbacksGiven: [Feedback!]! @derivedFrom(field: "author")
-#   reputationImports: [ReputationImport!]! @derivedFrom(field: "profile")
-# }
-
-# type Achievement @entity {
-#   id: ID! # profile ID + achievement ID
-#   profile: Profile!
-#   achievementId: Bytes!
-#   title: String!
-#   description: String!
-#   category: String!
-#   points: BigInt!
-#   timestamp: BigInt!
-#   blockNumber: BigInt!
-#   transactionHash: Bytes!
-# }
-
-# enum FeedbackType {
-#   POSITIVE
-#   NEGATIVE
-#   NEUTRAL
-# }
-
-# type Feedback @entity {
-#   id: ID! # feedback ID (bytes32 hash)
-#   target: Profile!
-#   author: Profile!
-#   feedbackType: FeedbackType!
-#   rating: BigInt!
-#   comment: String!
-#   timestamp: BigInt!
-#   blockNumber: BigInt!
-#   transactionHash: Bytes!
-# }
-
-# type ReputationImport @entity {
-#   id: ID! # tx hash + log index
-#   profile: Profile!
-#   sourceProfile: Bytes!
-#   importedExperience: BigInt!
-#   importedReputation: BigInt!
-#   importedTrust: BigInt!
-#   timestamp: BigInt!
-#   blockNumber: BigInt!
-#   transactionHash: Bytes!
-# }
-
-# ===== GLOBAL STATISTICS =====
-
-type GlobalStats @entity {
-  id: ID! # "global"
-
-  # Module statistics
-  totalModules: BigInt!
-  activeModules: BigInt!
-
-  # Organization statistics
-  totalOrganizations: BigInt!
-  activeOrganizations: BigInt!
-  totalMembers: BigInt!
-
-  # Campaign statistics
-  totalCampaigns: BigInt!
-  activeCampaigns: BigInt!
-  totalRaised: BigDecimal!
-
-  # Governance statistics
-  totalProposals: BigInt!
-  activeProposals: BigInt!
-  totalVotes: BigInt!
-
-  # Identity statistics
-  totalProfiles: BigInt!
-  verifiedProfiles: BigInt!
-  totalAchievements: BigInt!
-
-  # Last updated
-  updatedAt: BigInt!
-}
-
-# ===== STAKING MODULE ENTITIES =====
+# ===== STAKING ENTITIES =====
 
 enum StakingPurpose {
   GOVERNANCE
@@ -511,160 +52,159 @@ enum UnstakingStrategy {
   PATIENT
 }
 
-type StakingPool @entity {
-  id: ID! # StakingPurpose as string
-  purpose: StakingPurpose!
-  totalStaked: BigDecimal!
-  rewardRate: BigInt! # APY in basis points
-  totalRewardsDistributed: BigDecimal!
-  active: Boolean!
-  lastUpdateTime: BigInt!
+type OrganizationStake @entity {
+  id: ID! # organization ID
+  organizationId: Bytes! # bytes8 organization ID
+  staker: User! # user who staked
+  amount: BigInt! # amount staked
+  stakedAt: BigInt! # timestamp when staked
+  active: Boolean! # whether stake is active
+  organization: Organization! # link to organization
 
-  # Relationships
-  stakes: [UserStake!]! @derivedFrom(field: "pool")
-  rewardDistributions: [RewardDistribution!]! @derivedFrom(field: "pool")
-
-  # Statistics
-  stakersCount: BigInt!
-  averageStakeAmount: BigDecimal!
-  totalRewardsClaimed: BigDecimal!
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
 }
 
 type UserStake @entity {
   id: ID! # user address + purpose
-  user: Bytes!
-  pool: StakingPool!
-  amount: BigDecimal!
-  stakedAt: BigInt!
-  lastClaimTime: BigInt!
-  preferredStrategy: UnstakingStrategy!
-  pendingRewards: BigDecimal!
-  totalRewardsClaimed: BigDecimal!
+  user: User! # user who staked
+  purpose: StakingPurpose! # staking purpose
+  amount: BigInt! # amount staked
+  stakedAt: BigInt! # timestamp when staked
+  lastClaimTime: BigInt! # last reward claim time
+  preferredStrategy: UnstakingStrategy! # preferred unstaking strategy
+  pendingRewards: BigInt! # pending rewards
 
-  # Relationships
-  unstakeRequests: [UnstakeRequest!]! @derivedFrom(field: "userStake")
-  rewardClaims: [RewardClaim!]! @derivedFrom(field: "userStake")
-  slashEvents: [SlashEvent!]! @derivedFrom(field: "userStake")
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
 }
 
 type UnstakeRequest @entity {
   id: ID! # user address + request ID
-  userStake: UserStake!
-  amount: BigDecimal!
-  strategy: UnstakingStrategy!
-  requestTime: BigInt!
-  unlockTime: BigInt!
-  processed: Boolean!
-  processedAt: BigInt
-  penalty: BigDecimal!
-  finalAmount: BigDecimal!
+  user: User! # user requesting unstake
+  purpose: StakingPurpose! # staking purpose
+  amount: BigInt! # amount to unstake
+  requestTime: BigInt! # timestamp of request
+  strategy: UnstakingStrategy! # unstaking strategy
+  processed: Boolean! # whether request is processed
 
-  # Transaction info
-  requestTxHash: Bytes!
-  processTxHash: Bytes
-}
-
-type RewardClaim @entity {
-  id: ID! # tx hash + log index
-  userStake: UserStake!
-  amount: BigDecimal!
-  strategyBonus: BigDecimal!
-  totalAmount: BigDecimal!
-  timestamp: BigInt!
+  # Tracking
   blockNumber: BigInt!
   transactionHash: Bytes!
 }
 
-type RewardDistribution @entity {
-  id: ID! # tx hash + log index
-  pool: StakingPool!
-  amount: BigDecimal!
-  distributor: Bytes!
-  timestamp: BigInt!
+type StakingPool @entity {
+  id: ID! # staking purpose
+  purpose: StakingPurpose! # staking purpose
+  totalStaked: BigInt! # total amount staked
+  rewardRate: BigInt! # annual reward rate in basis points
+  totalRewardsDistributed: BigInt! # total rewards distributed
+  active: Boolean! # whether pool is active
+
+  # Derived relationships
+  stakes: [UserStake!]! @derivedFrom(field: "purpose")
+  unstakeRequests: [UnstakeRequest!]! @derivedFrom(field: "purpose")
+}
+
+# ===== CONTROL MODULE ENTITIES =====
+
+enum OrganizationState {
+  INACTIVE
+  ACTIVE
+  LOCKED
+  DISSOLVED
+}
+
+enum AccessModel {
+  OPEN
+  VOTING
+  INVITE
+}
+
+enum FeeModel {
+  NONE
+  FIXED
+  PERCENTAGE
+}
+
+enum OrgType {
+  INDIVIDUAL
+  COMPANY
+  DAO
+  HYBRID
+}
+
+type Organization @entity {
+  id: ID! # bytes8 organization ID
+  name: String! # organization name
+  metadataURI: String! # IPFS metadata URI
+  creator: User! # organization creator
+  treasury: Bytes! # treasury contract address
+  orgType: OrgType! # organization type
+  accessModel: AccessModel! # access model
+  feeModel: FeeModel! # fee model
+  memberLimit: BigInt! # member limit
+  memberCount: BigInt! # current member count
+  totalCampaigns: BigInt! # total campaigns created
+  totalProposals: BigInt! # total proposals created
+  membershipFee: BigInt! # membership fee
+  gameStakeRequired: BigInt! # GAME tokens required to stake
+  state: OrganizationState! # current state
+  createdAt: BigInt! # creation timestamp
+  updatedAt: BigInt! # last update timestamp
+
+  # Derived relationships
+  members: [Member!]! @derivedFrom(field: "organization")
+  campaigns: [Campaign!]! @derivedFrom(field: "organization")
+  proposals: [Proposal!]! @derivedFrom(field: "organization")
+  stake: OrganizationStake @derivedFrom(field: "organization")
+
+  # Tracking
   blockNumber: BigInt!
   transactionHash: Bytes!
 }
 
-type SlashEvent @entity {
-  id: ID! # tx hash + log index
-  userStake: UserStake!
-  amount: BigDecimal!
-  slasher: Bytes!
-  reason: String!
-  timestamp: BigInt!
+type Member @entity {
+  id: ID! # organization ID + member address
+  organization: Organization! # organization
+  user: User! # user who is a member
+  state: MemberState! # member state
+  joinedAt: BigInt! # timestamp when joined
+  reputation: BigInt! # member reputation
+  stake: BigInt! # member stake amount
+
+  # Tracking
   blockNumber: BigInt!
   transactionHash: Bytes!
 }
 
-type StakingPoolUpdate @entity {
-  id: ID! # tx hash + log index
-  pool: StakingPool!
-  oldRewardRate: BigInt!
-  newRewardRate: BigInt!
-  active: Boolean!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
+enum MemberState {
+  INACTIVE
+  ACTIVE
+  PAUSED
+  BANNED
 }
 
-# Global staking statistics
-type StakingStats @entity {
-  id: ID! # "global"
-  totalStaked: BigDecimal!
-  totalRewardsDistributed: BigDecimal!
-  totalRewardsClaimed: BigDecimal!
-  totalSlashed: BigDecimal!
-  activeStakers: BigInt!
-  totalStakingPools: BigInt!
-  lastUpdated: BigInt!
-}
+type User @entity {
+  id: ID! # user address
+  address: Bytes! # user address
+  totalOrganizations: BigInt! # total organizations created
+  totalMemberships: BigInt! # total memberships
+  totalContributions: BigInt! # total contributions made
+  totalProposals: BigInt! # total proposals created
+  totalVotes: BigInt! # total votes cast
+  firstSeenAt: BigInt! # first interaction timestamp
+  lastActiveAt: BigInt! # last activity timestamp
 
-# ===== INDEXING STATUS =====
-
-type SubgraphIndexingStatus @entity {
-  id: ID! # "indexing-status"
-
-  # Current indexing state
-  currentBlock: BigInt! # Last processed block number
-  latestBlock: BigInt! # Latest block on the network (when last checked)
-  isFullySynced: Boolean! # Whether subgraph is caught up
-
-  # Indexing progress
-  totalBlocks: BigInt! # Total blocks to process
-  blocksRemaining: BigInt! # Blocks remaining to process
-  syncPercentage: BigDecimal! # Percentage synced (0-100)
-
-  # Performance metrics
-  blocksPerSecond: BigDecimal! # Average blocks processed per second
-  estimatedTimeToSync: BigInt! # Estimated seconds until fully synced
-
-  # Last update info
-  lastUpdatedAt: BigInt! # Timestamp of last update
-  lastUpdatedBlock: BigInt! # Block number when last updated
-
-  # Error tracking
-  hasErrors: Boolean! # Whether there are any indexing errors
-  lastError: String # Last error message (if any)
-  errorCount: BigInt! # Total number of errors encountered
-}
-
-# ===== BLOCK TRACKING =====
-
-type BlockInfo @entity {
-  id: ID! # block number as string
-  number: BigInt! # block number
-  timestamp: BigInt! # block timestamp
-  hash: Bytes! # block hash
-
-  # Processing info
-  processedAt: BigInt! # when this block was processed by subgraph
-  transactionCount: BigInt! # number of transactions in block
-  eventCount: BigInt! # number of relevant events processed
-
-  # Module activity in this block
-  organizationEvents: BigInt! # control module events
-  campaignEvents: BigInt! # flow module events
-  proposalEvents: BigInt! # signal module events
-  profileEvents: BigInt! # sense module events
-  stakingEvents: BigInt! # staking module events
+  # Derived relationships
+  organizations: [Organization!]! @derivedFrom(field: "creator")
+  memberships: [Member!]! @derivedFrom(field: "user")
+  campaigns: [Campaign!]! @derivedFrom(field: "creator")
+  proposals: [Proposal!]! @derivedFrom(field: "creator")
+  votes: [Vote!]! @derivedFrom(field: "voter")
+  stakes: [UserStake!]! @derivedFrom(field: "user")
+  organizationStakes: [OrganizationStake!]! @derivedFrom(field: "staker")
+  unstakeRequests: [UnstakeRequest!]! @derivedFrom(field: "user")
 }

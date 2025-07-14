@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  * @title GameStaking
- * @dev Advanced staking contract with rewards, slashing, and flexible unstaking
+ * @dev Advanced staking contract with rewards, slashing, and organization-specific stakes
  * @author GameDAO AG
  */
 contract GameStaking is AccessControl, ReentrancyGuard, Pausable {
@@ -21,6 +21,7 @@ contract GameStaking is AccessControl, ReentrancyGuard, Pausable {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant SLASHER_ROLE = keccak256("SLASHER_ROLE");
     bytes32 public constant REWARD_DISTRIBUTOR_ROLE = keccak256("REWARD_DISTRIBUTOR_ROLE");
+    bytes32 public constant ORGANIZATION_MANAGER_ROLE = keccak256("ORGANIZATION_MANAGER_ROLE");
 
     // Constants
     uint256 public constant PRECISION = 1e18;
@@ -28,6 +29,7 @@ contract GameStaking is AccessControl, ReentrancyGuard, Pausable {
     uint256 public constant MIN_STAKE_AMOUNT = 1e18; // 1 GAME minimum
     uint256 public constant RAGE_QUIT_PENALTY = 2000; // 20% penalty for rage quit
     uint256 public constant BASIS_POINTS = 10000;
+    uint256 public constant ORGANIZATION_STAKE_LOCK_PERIOD = 30 days; // 30 days lock period
 
     // Staking purposes with different reward rates
     enum StakingPurpose {
@@ -69,6 +71,15 @@ contract GameStaking is AccessControl, ReentrancyGuard, Pausable {
         bool processed;
     }
 
+    // Organization-specific stake tracking
+    struct OrganizationStake {
+        bytes8 organizationId;
+        address staker;
+        uint256 amount;
+        uint256 stakedAt;
+        bool active;
+    }
+
     // State variables
     IERC20 public immutable gameToken;
     address public treasury;
@@ -82,6 +93,10 @@ contract GameStaking is AccessControl, ReentrancyGuard, Pausable {
     // Unstake requests: user => request ID => request
     mapping(address => mapping(uint256 => UnstakeRequest)) public unstakeRequests;
     mapping(address => uint256) public userUnstakeRequestCount;
+
+    // Organization stakes: organizationId => stake info
+    mapping(bytes8 => OrganizationStake) public organizationStakes;
+    mapping(address => bytes8[]) public userOrganizationStakes;
 
     // Reward tracking
     uint256 public totalRewardsPool;
@@ -97,6 +112,20 @@ contract GameStaking is AccessControl, ReentrancyGuard, Pausable {
         StakingPurpose indexed purpose,
         uint256 amount,
         UnstakingStrategy strategy,
+        uint256 timestamp
+    );
+
+    event OrganizationStaked(
+        bytes8 indexed organizationId,
+        address indexed staker,
+        uint256 amount,
+        uint256 timestamp
+    );
+
+    event OrganizationStakeWithdrawn(
+        bytes8 indexed organizationId,
+        address indexed staker,
+        uint256 amount,
         uint256 timestamp
     );
 
@@ -161,6 +190,7 @@ contract GameStaking is AccessControl, ReentrancyGuard, Pausable {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
         _grantRole(REWARD_DISTRIBUTOR_ROLE, msg.sender);
+        _grantRole(ORGANIZATION_MANAGER_ROLE, msg.sender);
 
         // Initialize staking pools with different reward rates
         _initializePools();
@@ -571,5 +601,96 @@ contract GameStaking is AccessControl, ReentrancyGuard, Pausable {
 
     function emergencyWithdraw(address token, uint256 amount) external onlyRole(ADMIN_ROLE) {
         IERC20(token).safeTransfer(treasury, amount);
+    }
+
+    /**
+     * @dev Stake tokens for organization creation (called by Control module)
+     */
+    function stakeForOrganization(
+        bytes8 organizationId,
+        address staker,
+        uint256 amount
+    ) external onlyRole(ORGANIZATION_MANAGER_ROLE) nonReentrant whenNotPaused {
+        require(amount > 0, "Amount must be greater than 0");
+        require(staker != address(0), "Invalid staker address");
+        require(organizationStakes[organizationId].amount == 0, "Organization already has stake");
+
+        // Transfer tokens from staker to this contract
+        gameToken.safeTransferFrom(staker, address(this), amount);
+
+        // Create organization stake record
+        organizationStakes[organizationId] = OrganizationStake({
+            organizationId: organizationId,
+            staker: staker,
+            amount: amount,
+            stakedAt: block.timestamp,
+            active: true
+        });
+
+        // Track user's organization stakes
+        userOrganizationStakes[staker].push(organizationId);
+
+        emit OrganizationStaked(organizationId, staker, amount, block.timestamp);
+    }
+
+    /**
+     * @dev Withdraw organization stake (called by Control module)
+     */
+    function withdrawOrganizationStake(
+        bytes8 organizationId,
+        address staker
+    ) external onlyRole(ORGANIZATION_MANAGER_ROLE) nonReentrant {
+        OrganizationStake storage stake = organizationStakes[organizationId];
+        require(stake.active, "No active stake for organization");
+        require(stake.staker == staker, "Not the staker");
+        require(
+            block.timestamp >= stake.stakedAt + ORGANIZATION_STAKE_LOCK_PERIOD,
+            "Stake still locked"
+        );
+
+        uint256 amount = stake.amount;
+
+        // Mark stake as inactive
+        stake.active = false;
+
+        // Transfer tokens back to staker
+        gameToken.safeTransfer(staker, amount);
+
+        emit OrganizationStakeWithdrawn(organizationId, staker, amount, block.timestamp);
+    }
+
+    /**
+     * @dev Get organization stake info
+     */
+    function getOrganizationStake(bytes8 organizationId)
+        external
+        view
+        returns (OrganizationStake memory)
+    {
+        return organizationStakes[organizationId];
+    }
+
+    /**
+     * @dev Get user's organization stakes
+     */
+    function getUserOrganizationStakes(address user)
+        external
+        view
+        returns (bytes8[] memory)
+    {
+        return userOrganizationStakes[user];
+    }
+
+    /**
+     * @dev Check if organization stake can be withdrawn
+     */
+    function canWithdrawOrganizationStake(bytes8 organizationId)
+        external
+        view
+        returns (bool)
+    {
+        OrganizationStake storage stake = organizationStakes[organizationId];
+        return stake.active &&
+               block.timestamp >= stake.stakedAt + ORGANIZATION_STAKE_LOCK_PERIOD;
     }
 }

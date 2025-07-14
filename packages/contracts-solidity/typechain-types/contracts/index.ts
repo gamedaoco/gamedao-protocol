@@ -15,3 +15,5 @@ import type * as staking from "./staking";
 export type { staking };
 import type * as test from "./test";
 export type { test };
+import type * as tokens from "./tokens";
+export type { tokens };

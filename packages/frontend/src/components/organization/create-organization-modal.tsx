@@ -96,7 +96,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
     feeModel: 0, // Default to No Fees
     memberLimit: 0, // Default to no limit (unlimited)
     membershipFee: '0',
-    gameStakeRequired: '0',
+    gameStakeRequired: '10000',
     website: '',
     twitter: '',
     discord: '',
@@ -266,7 +266,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         feeModel: 0,
         memberLimit: 0, // Default to no limit (unlimited)
         membershipFee: '0',
-        gameStakeRequired: '0',
+        gameStakeRequired: '10000',
         website: '',
         twitter: '',
         discord: '',
@@ -337,7 +337,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         feeModel: 0,
         memberLimit: 0, // Default to no limit (unlimited)
         membershipFee: '0',
-        gameStakeRequired: '0',
+        gameStakeRequired: '10000',
         website: '',
         twitter: '',
         discord: '',
@@ -370,8 +370,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         const hasEnoughEth = parseFloat(ethBalance.balance) >= 0.01
 
         // Check GAME balance if required
-        const hasEnoughGame = formData.gameStakeRequired === '0' ||
-                             parseFloat(gameBalance.balance) >= parseFloat(formData.gameStakeRequired)
+        const hasEnoughGame = parseFloat(gameBalance.balance) >= parseFloat(formData.gameStakeRequired)
 
         return hasEnoughEth && hasEnoughGame
 
@@ -774,14 +773,14 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                 <Input
                   id="gameStakeRequired"
                   type="number"
-                  min="0"
+                  min="10000"
                   step="1"
                   value={formData.gameStakeRequired}
                   onChange={(e) => setFormData(prev => ({ ...prev, gameStakeRequired: e.target.value }))}
                   className="mt-1"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  GAME tokens that members must stake (0 for no requirement)
+                  GAME tokens required to create organization (minimum 10000 GAME)
                 </p>
               </div>
             </div>
@@ -872,7 +871,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                     )}
 
                     {/* GAME tokens if required */}
-                    {formData.gameStakeRequired !== '0' && parseFloat(gameBalance.balance) < parseFloat(formData.gameStakeRequired) && (
+                    {parseFloat(gameBalance.balance) < parseFloat(formData.gameStakeRequired) && (
                       <InsufficientBalanceWarning
                         requiredToken="GAME"
                         requiredAmount={formData.gameStakeRequired}
@@ -882,7 +881,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
 
                     {/* Show success if balances are sufficient */}
                     {parseFloat(ethBalance.balance) >= 0.01 &&
-                     (formData.gameStakeRequired === '0' || parseFloat(gameBalance.balance) >= parseFloat(formData.gameStakeRequired)) && (
+                     parseFloat(gameBalance.balance) >= parseFloat(formData.gameStakeRequired) && (
                       <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                         <CheckCircle className="h-4 w-4 text-green-600" />
                         <span className="text-sm text-green-800">
