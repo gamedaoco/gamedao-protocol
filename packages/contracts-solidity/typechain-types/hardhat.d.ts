@@ -70,6 +70,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IFlow__factory>;
     getContractFactory(
+      name: "IGameDAOMembership",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IGameDAOMembership__factory>;
+    getContractFactory(
       name: "IGameDAOModule",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IGameDAOModule__factory>;
@@ -106,6 +110,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.AlphanumericID__factory>;
     getContractFactory(
+      name: "GameDAOMembership",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.GameDAOMembership__factory>;
+    getContractFactory(
       name: "MockGameToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.MockGameToken__factory>;
@@ -113,6 +121,10 @@ declare module "hardhat/types/runtime" {
       name: "MockUSDC",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.MockUSDC__factory>;
+    getContractFactory(
+      name: "Control",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Control__factory>;
     getContractFactory(
       name: "Control",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -217,6 +229,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IFlow>;
     getContractAt(
+      name: "IGameDAOMembership",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IGameDAOMembership>;
+    getContractAt(
       name: "IGameDAOModule",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -262,6 +279,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.AlphanumericID>;
     getContractAt(
+      name: "GameDAOMembership",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.GameDAOMembership>;
+    getContractAt(
       name: "MockGameToken",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -271,6 +293,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.MockUSDC>;
+    getContractAt(
+      name: "Control",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Control>;
     getContractAt(
       name: "Control",
       address: string | ethers.Addressable,
@@ -369,6 +396,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IFlow>;
     deployContract(
+      name: "IGameDAOMembership",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IGameDAOMembership>;
+    deployContract(
       name: "IGameDAOModule",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IGameDAOModule>;
@@ -405,6 +436,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.AlphanumericID>;
     deployContract(
+      name: "GameDAOMembership",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.GameDAOMembership>;
+    deployContract(
       name: "MockGameToken",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.MockGameToken>;
@@ -412,6 +447,10 @@ declare module "hardhat/types/runtime" {
       name: "MockUSDC",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.MockUSDC>;
+    deployContract(
+      name: "Control",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Control>;
     deployContract(
       name: "Control",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -516,6 +555,11 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IFlow>;
     deployContract(
+      name: "IGameDAOMembership",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IGameDAOMembership>;
+    deployContract(
       name: "IGameDAOModule",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -561,6 +605,11 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.AlphanumericID>;
     deployContract(
+      name: "GameDAOMembership",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.GameDAOMembership>;
+    deployContract(
       name: "MockGameToken",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -570,6 +619,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.MockUSDC>;
+    deployContract(
+      name: "Control",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Control>;
     deployContract(
       name: "Control",
       args: any[],

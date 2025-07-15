@@ -7,6 +7,7 @@ import type * as iGameTokenCleanSol from "./IGameTokenClean.sol";
 export type { iGameTokenCleanSol };
 export type { IControl } from "./IControl";
 export type { IFlow } from "./IFlow";
+export type { IGameDAOMembership } from "./IGameDAOMembership";
 export type { IGameDAOModule } from "./IGameDAOModule";
 export type { IGameDAORegistry } from "./IGameDAORegistry";
 export type { IGameStaking } from "./IGameStaking";
