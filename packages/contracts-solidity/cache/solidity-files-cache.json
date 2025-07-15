@@ -10,7 +10,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -54,7 +54,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -91,7 +91,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -502,15 +502,15 @@
       ]
     },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Control/Control.sol": {
-      "lastModificationDate": 1752525999654,
-      "contentHash": "e20294b1c332ac15444f75e800f4fd72",
+      "lastModificationDate": 1752526455189,
+      "contentHash": "e20efbf7f979aa2d8dbf6ca41f0c60e1",
       "sourceName": "contracts/modules/Control/Control.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -557,7 +557,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -596,7 +596,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -633,7 +633,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -902,7 +902,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -946,7 +946,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -983,7 +983,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1027,7 +1027,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1074,7 +1074,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1111,7 +1111,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1152,7 +1152,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1226,7 +1226,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1267,7 +1267,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1307,7 +1307,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1431,7 +1431,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1468,7 +1468,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1505,7 +1505,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1544,7 +1544,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1586,7 +1586,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1623,7 +1623,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1663,7 +1663,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1702,7 +1702,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1739,7 +1739,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1776,7 +1776,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1813,7 +1813,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1850,7 +1850,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1887,7 +1887,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1928,7 +1928,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -1967,7 +1967,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2008,7 +2008,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2045,7 +2045,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2082,7 +2082,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2156,7 +2156,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2193,7 +2193,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2232,7 +2232,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2269,7 +2269,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2306,7 +2306,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2350,7 +2350,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2391,7 +2391,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2428,7 +2428,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 1000
+            "runs": 800
           },
           "viaIR": true,
           "evmVersion": "paris",
@@ -2456,6 +2456,136 @@
       ],
       "artifacts": [
         "IGameToken"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/modules/Control/ControlRefactored.sol": {
+      "lastModificationDate": 1752596310653,
+      "contentHash": "59221e87806e8bc8b5ece7c6d79ad901",
+      "sourceName": "contracts/modules/Control/ControlRefactored.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 800
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../core/GameDAOModule.sol",
+        "../../core/Treasury.sol",
+        "../../interfaces/IControl.sol",
+        "../../interfaces/IGameStaking.sol",
+        "../../interfaces/IGameDAOMembership.sol",
+        "../../libraries/AlphanumericID.sol",
+        "@openzeppelin/contracts/utils/Counters.sol",
+        "@openzeppelin/contracts/security/ReentrancyGuard.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Control"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/interfaces/IGameDAOMembership.sol": {
+      "lastModificationDate": 1752595440162,
+      "contentHash": "fe38d8784b9b42f41490a0e296cbbe7f",
+      "sourceName": "contracts/interfaces/IGameDAOMembership.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 800
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IGameDAOMembership"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/membership/GameDAOMembership.sol": {
+      "lastModificationDate": 1752595554277,
+      "contentHash": "e65cba99d4e1ede999372b34bea6ead5",
+      "sourceName": "contracts/membership/GameDAOMembership.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 800
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/AccessControl.sol",
+        "@openzeppelin/contracts/security/ReentrancyGuard.sol",
+        "@openzeppelin/contracts/security/Pausable.sol",
+        "@openzeppelin/contracts/utils/structs/EnumerableSet.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
+        "../interfaces/IGameDAOMembership.sol",
+        "../interfaces/IIdentity.sol",
+        "../interfaces/IControl.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "GameDAOMembership"
       ]
     }
   }

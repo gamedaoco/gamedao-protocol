@@ -5,6 +5,7 @@ export * as iGameTokenSol from "./IGameToken.sol";
 export * as iGameTokenCleanSol from "./IGameTokenClean.sol";
 export { IControl__factory } from "./IControl__factory";
 export { IFlow__factory } from "./IFlow__factory";
+export { IGameDAOMembership__factory } from "./IGameDAOMembership__factory";
 export { IGameDAOModule__factory } from "./IGameDAOModule__factory";
 export { IGameDAORegistry__factory } from "./IGameDAORegistry__factory";
 export { IGameStaking__factory } from "./IGameStaking__factory";

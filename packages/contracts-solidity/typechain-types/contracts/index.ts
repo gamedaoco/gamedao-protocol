@@ -7,6 +7,8 @@ import type * as interfaces from "./interfaces";
 export type { interfaces };
 import type * as libraries from "./libraries";
 export type { libraries };
+import type * as membership from "./membership";
+export type { membership };
 import type * as mocks from "./mocks";
 export type { mocks };
 import type * as modules from "./modules";
