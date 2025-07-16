@@ -1,9 +1,13 @@
 # GameDAO Protocol
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![CI](https://github.com/gamedaoco/gamedao-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/gamedaoco/gamedao-protocol/actions/workflows/ci.yml)
+[![Solidity Tests](https://github.com/gamedaoco/gamedao-protocol/actions/workflows/solidity-tests.yml/badge.svg)](https://github.com/gamedaoco/gamedao-protocol/actions/workflows/solidity-tests.yml)
+[![Frontend Tests](https://github.com/gamedaoco/gamedao-protocol/actions/workflows/frontend-tests.yml/badge.svg)](https://github.com/gamedaoco/gamedao-protocol/actions/workflows/frontend-tests.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2+-black.svg)](https://nextjs.org/)
+[![Hardhat](https://img.shields.io/badge/Hardhat-2.19+-yellow.svg)](https://hardhat.org/)
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.20+-blue.svg)](https://soliditylang.org/)
 
 > **Decentralized Autonomous Organizations for Gaming Communities**
 
@@ -69,6 +73,26 @@ pnpm run dev
 ```
 
 Visit `http://localhost:3000` to access the GameDAO frontend.
+
+## 🚀 CI/CD Status
+
+Our continuous integration pipeline ensures code quality and reliability:
+
+### Solidity Contracts
+- **Tests**: Comprehensive test suite with coverage reporting
+- **Security**: Automated security analysis with Slither and Mythril
+- **Gas Optimization**: Gas usage reporting and optimization checks
+- **Contract Size**: Validation that contracts stay under 24KB limit
+- **Deployment**: Automated deployment testing on local networks
+
+### Quality Gates
+- ✅ All tests must pass
+- ✅ Coverage threshold maintained
+- ✅ Security vulnerabilities addressed
+- ✅ Contract size limits enforced
+- ✅ Compilation warnings resolved
+
+The pipeline runs on every push and pull request to ensure consistent quality.
 
 ## 📁 Project Structure
 

@@ -1,0 +1,72 @@
+name: Frontend Tests
+
+on:
+  push:
+    branches: [ main, develop, feat/* ]
+    paths:
+      - 'packages/frontend/**'
+      - 'packages/shared/**'
+      - '.github/workflows/frontend-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'packages/frontend/**'
+      - 'packages/shared/**'
+      - '.github/workflows/frontend-tests.yml'
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  test:
+    name: Run Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: |
+          cd packages/shared
+          pnpm build
+
+      - name: Run linting
+        run: |
+          cd packages/frontend
+          pnpm lint
+
+      - name: Run type checking
+        run: |
+          cd packages/frontend
+          pnpm type-check
+
+      - name: Run tests
+        run: |
+          cd packages/frontend
+          pnpm test
+
+      - name: Build frontend
+        run: |
+          cd packages/frontend
+          pnpm build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: packages/frontend/.next/

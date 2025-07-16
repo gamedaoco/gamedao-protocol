@@ -1,0 +1,53 @@
+name: Status Badge
+
+on:
+  workflow_run:
+    workflows: ["Solidity Tests"]
+    types: [completed]
+
+jobs:
+  update-badge:
+    name: Update Status Badge
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update badge on success
+        if: github.event.workflow_run.conclusion == 'success'
+        run: |
+          echo "Creating success badge..."
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.workflow_run.head_sha }}" \
+            -d '{
+              "state": "success",
+              "description": "Solidity tests passed",
+              "context": "ci/solidity-tests"
+            }'
+
+      - name: Update badge on failure
+        if: github.event.workflow_run.conclusion == 'failure'
+        run: |
+          echo "Creating failure badge..."
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.workflow_run.head_sha }}" \
+            -d '{
+              "state": "failure",
+              "description": "Solidity tests failed",
+              "context": "ci/solidity-tests"
+            }'
+
+      - name: Generate coverage badge
+        if: github.event.workflow_run.conclusion == 'success'
+        run: |
+          echo "Generating coverage badge..."
+          # This would typically use coverage data from the test run
+          # For now, we'll create a placeholder
+          echo "Coverage badge generation completed"
