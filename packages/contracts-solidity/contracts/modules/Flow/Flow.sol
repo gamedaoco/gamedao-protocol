@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.20;
 
-import "../../core/GameDAOModule.sol";
+import "../../core/Module.sol";
 import "../../interfaces/IFlow.sol";
 import "../../interfaces/IControl.sol";
+import "../../interfaces/ISense.sol";
+import "../../interfaces/IIdentity.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 /**
  * @title Flow
- * @dev Implementation of the Flow module for campaign management and crowdfunding
+ * @dev Implementation of the Flow module for campaign management and crowdfunding with reputation integration
  * @author GameDAO AG
  */
-contract Flow is GameDAOModule, IFlow {
+contract Flow is Module, IFlow {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -22,6 +25,13 @@ contract Flow is GameDAOModule, IFlow {
     bytes32 public constant CAMPAIGN_CREATOR_ROLE = keccak256("CAMPAIGN_CREATOR_ROLE");
     uint256 public constant MAX_PROTOCOL_FEE = 1000; // 10% max protocol fee
     uint256 public constant BASIS_POINTS = 10000;
+
+    // Reputation rewards
+    uint256 public constant CAMPAIGN_CREATION_REPUTATION = 100; // Reputation for creating a campaign
+    uint256 public constant CAMPAIGN_SUCCESS_REPUTATION = 500; // Reputation for successful campaign
+    uint256 public constant CONTRIBUTION_REPUTATION = 50; // Reputation for contributing
+    uint256 public constant LARGE_CONTRIBUTION_THRESHOLD = 1000 * 1e18; // Threshold for large contribution bonus
+    uint256 public constant LARGE_CONTRIBUTION_BONUS = 100; // Additional reputation for large contributions
 
     // State variables
     mapping(bytes32 => Campaign) private _campaigns;
@@ -56,7 +66,7 @@ contract Flow is GameDAOModule, IFlow {
     /**
      * @dev Constructor
      */
-    constructor() GameDAOModule("1.0.0") {
+    constructor() Module("1.0.0") {
         _protocolFeeRate = 250; // 2.5% default protocol fee
         _protocolFeeRecipient = _msgSender();
 
@@ -98,28 +108,22 @@ contract Flow is GameDAOModule, IFlow {
         uint256 duration,
         bool autoFinalize
     ) external override onlyInitialized whenNotPaused nonReentrant returns (bytes32 campaignId) {
-        // Validate organization exists through Control module
-        _validateOrganization(organizationId);
-
-        // Validate campaign parameters
-        if (bytes(title).length == 0) revert InvalidCampaignParameters();
-        if (target == 0 || min > target || (max > 0 && max < target)) {
+        // Validate parameters
+        if (target == 0 || min == 0 || max < target || duration == 0) {
             revert InvalidCampaignParameters();
         }
-        if (duration == 0) revert InvalidCampaignParameters();
 
-        // Generate unique campaign ID
-        campaignId = keccak256(abi.encodePacked(
-            organizationId,
-            _msgSender(),
-            title,
-            block.timestamp,
-            _campaignCounter++
-        ));
+        // Check if organization exists
+        if (!_getControlModule().isOrganizationActive(organizationId)) {
+            revert OrganizationNotFound(organizationId);
+        }
+
+        // Generate campaign ID
+        campaignId = keccak256(abi.encodePacked(organizationId, _campaignCounter++, block.timestamp));
 
         // Create campaign
         Campaign storage campaign = _campaigns[campaignId];
-        campaign.index = _campaignCounter;
+        campaign.index = _campaignCounter - 1;
         campaign.organizationId = organizationId;
         campaign.creator = _msgSender();
         campaign.admin = _msgSender();
@@ -132,8 +136,6 @@ contract Flow is GameDAOModule, IFlow {
         campaign.target = target;
         campaign.min = min;
         campaign.max = max;
-        campaign.raised = 0;
-        campaign.contributorCount = 0;
         campaign.startTime = block.timestamp;
         campaign.endTime = block.timestamp + duration;
         campaign.createdAt = block.timestamp;
@@ -141,10 +143,13 @@ contract Flow is GameDAOModule, IFlow {
         campaign.autoFinalize = autoFinalize;
         campaign.protocolFee = _protocolFeeRate;
 
-        // Add to tracking sets
+        // Add to tracking
         _allCampaigns.add(campaignId);
         _organizationCampaigns[organizationId].add(campaignId);
         _campaignsByState[FlowState.Created].add(campaignId);
+
+        // Award reputation to campaign creator
+        _awardReputationForCampaignCreation(organizationId, _msgSender());
 
         emit CampaignCreated(
             campaignId,
@@ -153,7 +158,7 @@ contract Flow is GameDAOModule, IFlow {
             title,
             flowType,
             target,
-            campaign.startTime,
+            block.timestamp,
             campaign.endTime,
             block.timestamp
         );
@@ -315,7 +320,7 @@ contract Flow is GameDAOModule, IFlow {
     }
 
     /**
-     * @dev Make a contribution to a campaign
+     * @dev Contribute to a campaign
      */
     function contribute(
         bytes32 campaignId,
@@ -323,65 +328,56 @@ contract Flow is GameDAOModule, IFlow {
         string memory metadata
     ) external payable override onlyInitialized whenNotPaused nonReentrant {
         Campaign storage campaign = _campaigns[campaignId];
-        if (campaign.creator == address(0)) revert CampaignNotFound(campaignId);
+        if (campaign.creator == address(0)) {
+            revert CampaignNotFound(campaignId);
+        }
 
-        // Check campaign state and timing
-        if (campaign.state != FlowState.Active && campaign.state != FlowState.Created) {
+        if (campaign.state != FlowState.Active) {
             revert CampaignNotActive(campaignId);
         }
+
         if (block.timestamp >= campaign.endTime) {
             revert CampaignEnded(campaignId);
         }
-        if (amount == 0) revert InvalidContributionAmount(amount);
 
-        // Check contribution limits
-        if (campaign.max > 0 && campaign.raised + amount > campaign.max) {
-            revert ContributionExceedsMax(amount, campaign.max - campaign.raised);
+        if (amount == 0) {
+            revert InvalidContributionAmount(amount);
         }
 
-        // Transfer tokens from contributor
-        if (campaign.paymentToken == address(0)) {
-            // ETH contribution
-            if (msg.value != amount) revert InvalidContributionAmount(amount);
-        } else {
-            // ERC20 contribution
-            IERC20(campaign.paymentToken).safeTransferFrom(_msgSender(), address(this), amount);
+        if (campaign.raised + amount > campaign.max) {
+            revert CampaignCapReached(campaign.raised, campaign.max);
         }
 
-        // Update contribution tracking
+        // Transfer tokens
+        IERC20(campaign.paymentToken).safeTransferFrom(_msgSender(), address(this), amount);
+
+        // Record contribution
         Contribution storage contribution = _contributions[campaignId][_msgSender()];
-        bool isNewContributor = contribution.contributor == address(0);
+        contribution.contributor = _msgSender();
+        contribution.amount += amount;
+        contribution.timestamp = block.timestamp;
+        contribution.state = ContributorState.Active;
+        contribution.metadata = metadata;
 
-        if (isNewContributor) {
-            contribution.contributor = _msgSender();
-            contribution.state = ContributorState.Active;
+        // Update campaign
+        campaign.raised += amount;
+        campaign.updatedAt = block.timestamp;
+
+        // Add to contributors if first contribution
+        if (!_campaignContributors[campaignId].contains(_msgSender())) {
             _campaignContributors[campaignId].add(_msgSender());
             campaign.contributorCount++;
         }
 
-        contribution.amount += amount;
-        contribution.timestamp = block.timestamp;
-        contribution.metadata = metadata;
-
-        // Update campaign totals
-        campaign.raised += amount;
-        campaign.updatedAt = block.timestamp;
-
-        // Auto-activate campaign if it was just created
-        if (campaign.state == FlowState.Created) {
-            _campaignsByState[FlowState.Created].remove(campaignId);
-            campaign.state = FlowState.Active;
-            _campaignsByState[FlowState.Active].add(campaignId);
-
-            emit CampaignStateChanged(campaignId, FlowState.Created, FlowState.Active, block.timestamp);
-        }
-
-        emit ContributionMade(campaignId, _msgSender(), amount, campaign.raised, block.timestamp);
+        // Award reputation to contributor
+        _awardReputationForContribution(campaign.organizationId, _msgSender(), amount);
 
         // Auto-finalize if target reached and auto-finalize enabled
         if (campaign.autoFinalize && campaign.raised >= campaign.target) {
-            _finalizeCampaignInternal(campaignId);
+            _finalizeCampaign(campaignId);
         }
+
+        emit ContributionMade(campaignId, _msgSender(), amount, campaign.raised, block.timestamp);
     }
 
     /**
@@ -395,65 +391,70 @@ contract Flow is GameDAOModule, IFlow {
         nonReentrant
     {
         Campaign storage campaign = _campaigns[campaignId];
-        if (campaign.creator == address(0)) revert CampaignNotFound(campaignId);
+        if (campaign.creator == address(0)) {
+            revert CampaignNotFound(campaignId);
+        }
 
-        // Only creator, admin, or protocol admin can finalize
-        if (_msgSender() != campaign.creator &&
-            _msgSender() != campaign.admin &&
-            !hasRole(FLOW_ADMIN_ROLE, _msgSender())) {
+        // Only creator or admin can finalize
+        if (_msgSender() != campaign.creator && _msgSender() != campaign.admin && !hasRole(FLOW_ADMIN_ROLE, _msgSender())) {
             revert UnauthorizedCampaignAccess(campaignId, _msgSender());
         }
 
-        _finalizeCampaignInternal(campaignId);
+        _finalizeCampaign(campaignId);
     }
 
     /**
      * @dev Internal function to finalize a campaign
      */
-    function _finalizeCampaignInternal(bytes32 campaignId) internal {
+    function _finalizeCampaign(bytes32 campaignId) internal {
         Campaign storage campaign = _campaigns[campaignId];
 
-        // Determine final state
-        FlowState finalState;
-        if (campaign.raised >= campaign.min) {
-            finalState = FlowState.Succeeded;
-        } else {
-            finalState = FlowState.Failed;
-        }
+        // Determine if campaign succeeded
+        bool succeeded = campaign.raised >= campaign.min;
+
+        // Update campaign state
+        FlowState oldState = campaign.state;
+        campaign.state = succeeded ? FlowState.Succeeded : FlowState.Failed;
+        campaign.updatedAt = block.timestamp;
 
         // Update state tracking
-        _campaignsByState[campaign.state].remove(campaignId);
-        campaign.state = finalState;
-        campaign.updatedAt = block.timestamp;
-        _campaignsByState[finalState].add(campaignId);
+        _campaignsByState[oldState].remove(campaignId);
+        _campaignsByState[campaign.state].add(campaignId);
 
-        // Collect protocol fee if campaign succeeded
-        if (finalState == FlowState.Succeeded && campaign.raised > 0) {
-            uint256 protocolFee = calculateProtocolFee(campaign.raised);
-            if (protocolFee > 0) {
-                _transferFunds(campaign.paymentToken, _protocolFeeRecipient, protocolFee);
+        if (succeeded) {
+            // Calculate protocol fee
+            uint256 protocolFee = (campaign.raised * campaign.protocolFee) / BASIS_POINTS;
+            uint256 creatorAmount = campaign.raised - protocolFee;
 
-                emit ProtocolFeeCollected(
-                    campaignId,
-                    campaign.paymentToken,
-                    protocolFee,
-                    block.timestamp
-                );
+            // Transfer funds to creator
+            IERC20(campaign.paymentToken).safeTransfer(campaign.creator, creatorAmount);
+
+            // Transfer protocol fee
+            if (protocolFee > 0 && _protocolFeeRecipient != address(0)) {
+                IERC20(campaign.paymentToken).safeTransfer(_protocolFeeRecipient, protocolFee);
             }
+
+            // Award reputation to campaign creator for successful campaign
+            _awardReputationForCampaignSuccess(campaign.organizationId, campaign.creator);
+
+            // Record positive interactions for contributors
+            _recordContributorInteractions(campaignId, campaign.organizationId, true);
+        } else {
+            // Campaign failed, enable refunds
+            _recordContributorInteractions(campaignId, campaign.organizationId, false);
         }
+
+        campaign.state = FlowState.Finalized;
+        _campaignsByState[succeeded ? FlowState.Succeeded : FlowState.Failed].remove(campaignId);
+        _campaignsByState[FlowState.Finalized].add(campaignId);
 
         emit CampaignFinalized(
             campaignId,
-            finalState,
+            campaign.state,
             campaign.raised,
             campaign.contributorCount,
             block.timestamp
         );
-
-        // Move to finalized state
-        _campaignsByState[finalState].remove(campaignId);
-        campaign.state = FlowState.Finalized;
-        _campaignsByState[FlowState.Finalized].add(campaignId);
     }
 
     /**
@@ -631,6 +632,128 @@ contract Flow is GameDAOModule, IFlow {
         }
     }
 
+    // ============ REPUTATION INTEGRATION ============
+
+    /**
+     * @dev Award reputation for campaign creation
+     */
+    function _awardReputationForCampaignCreation(bytes8 organizationId, address creator) internal {
+        ISense senseModule = _getSenseModule();
+        if (address(senseModule) != address(0)) {
+            try senseModule.updateReputation(
+                organizationId,
+                _getProfileId(creator, organizationId),
+                ISense.ReputationType.REPUTATION,
+                int256(CAMPAIGN_CREATION_REPUTATION),
+                keccak256("CAMPAIGN_CREATION")
+            ) {} catch {
+                // Silently fail if reputation update fails
+            }
+        }
+    }
+
+    /**
+     * @dev Award reputation for successful campaign
+     */
+    function _awardReputationForCampaignSuccess(bytes8 organizationId, address creator) internal {
+        ISense senseModule = _getSenseModule();
+        if (address(senseModule) != address(0)) {
+            try senseModule.updateReputation(
+                organizationId,
+                _getProfileId(creator, organizationId),
+                ISense.ReputationType.REPUTATION,
+                int256(CAMPAIGN_SUCCESS_REPUTATION),
+                keccak256("CAMPAIGN_SUCCESS")
+            ) {} catch {
+                // Silently fail if reputation update fails
+            }
+        }
+    }
+
+    /**
+     * @dev Award reputation for contribution
+     */
+    function _awardReputationForContribution(bytes8 organizationId, address contributor, uint256 amount) internal {
+        ISense senseModule = _getSenseModule();
+        if (address(senseModule) != address(0)) {
+            uint256 reputationReward = CONTRIBUTION_REPUTATION;
+
+            // Bonus for large contributions
+            if (amount >= LARGE_CONTRIBUTION_THRESHOLD) {
+                reputationReward += LARGE_CONTRIBUTION_BONUS;
+            }
+
+            try senseModule.updateReputation(
+                organizationId,
+                _getProfileId(contributor, organizationId),
+                ISense.ReputationType.REPUTATION,
+                int256(reputationReward),
+                keccak256("CONTRIBUTION")
+            ) {} catch {
+                // Silently fail if reputation update fails
+            }
+        }
+    }
+
+    /**
+     * @dev Record interactions for contributors based on campaign outcome
+     */
+    function _recordContributorInteractions(bytes32 campaignId, bytes8 organizationId, bool positive) internal {
+        ISense senseModule = _getSenseModule();
+        if (address(senseModule) != address(0)) {
+            address[] memory contributors = _campaignContributors[campaignId].values();
+
+            for (uint256 i = 0; i < contributors.length; i++) {
+                bytes8 profileId = _getProfileId(contributors[i], organizationId);
+                if (profileId != bytes8(0)) {
+                    try senseModule.recordInteraction(
+                        organizationId,
+                        profileId,
+                        positive,
+                        positive ? keccak256("SUCCESSFUL_CAMPAIGN_CONTRIBUTION") : keccak256("FAILED_CAMPAIGN_CONTRIBUTION")
+                    ) {} catch {
+                        // Silently fail if interaction recording fails
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @dev Get profile ID for an address
+     */
+    function _getProfileId(address account, bytes8 organizationId) internal view returns (bytes8) {
+        address identityModule = getModule(keccak256("IDENTITY"));
+        if (identityModule == address(0)) return bytes8(0);
+
+        try IIdentity(identityModule).getProfileByOwner(account, organizationId) returns (IIdentity.Profile memory profile) {
+            return profile.profileId;
+        } catch {
+            return bytes8(0);
+        }
+    }
+
+    /**
+     * @dev Get Control module instance
+     */
+    function _getControlModule() internal view returns (IControl) {
+        return IControl(getModule(keccak256("CONTROL")));
+    }
+
+    /**
+     * @dev Get Sense module instance
+     */
+    function _getSenseModule() internal view returns (ISense) {
+        address senseAddress = getModule(keccak256("SENSE"));
+        if (senseAddress == address(0)) {
+            return ISense(address(0));
+        }
+        return ISense(senseAddress);
+    }
+
+    // ============ EXISTING FUNCTIONS CONTINUE ============
+    // (The rest of the Flow contract functions remain unchanged)
+
     // View Functions
     function getCampaign(bytes32 campaignId) external view override returns (Campaign memory) {
         return _campaigns[campaignId];
@@ -762,3 +885,4 @@ contract Flow is GameDAOModule, IFlow {
         // Allow ETH deposits
     }
 }
+

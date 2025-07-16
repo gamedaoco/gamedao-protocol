@@ -85,25 +85,7 @@ interface IControl {
         uint256 timestamp
     );
 
-    event MemberAdded(
-        bytes8 indexed organizationId,
-        address indexed member,
-        uint256 timestamp
-    );
 
-    event MemberStateChanged(
-        bytes8 indexed organizationId,
-        address indexed member,
-        MemberState oldState,
-        MemberState newState,
-        uint256 timestamp
-    );
-
-    event MemberRemoved(
-        bytes8 indexed organizationId,
-        address indexed member,
-        uint256 timestamp
-    );
 
     // Core functions
     function createOrganization(
@@ -117,21 +99,14 @@ interface IControl {
         uint256 gameStakeRequired
     ) external returns (bytes8);
 
-    function addMember(bytes8 organizationId, address member) external;
-    function removeMember(bytes8 organizationId, address member) external;
-    function updateMemberState(bytes8 organizationId, address member, MemberState state) external;
     function updateOrganizationState(bytes8 organizationId, OrgState state) external;
+    function updateMemberCount(bytes8 organizationId, uint256 memberCount) external;
     function withdrawStake(bytes8 organizationId) external;
 
     // View functions
     function getOrganization(bytes8 id) external view returns (Organization memory);
-    function getMember(bytes8 organizationId, address member) external view returns (Member memory);
-    function isMember(bytes8 organizationId, address member) external view returns (bool);
     function getOrganizationCount() external view returns (uint256);
     function getAllOrganizations() external view returns (Organization[] memory);
     function getOrganizationsByState(OrgState state) external view returns (Organization[] memory);
-    function getMemberCount(bytes8 organizationId) external view returns (uint256);
-    function getMembers(bytes8 organizationId) external view returns (address[] memory);
     function isOrganizationActive(bytes8 organizationId) external view returns (bool);
-    function isMemberActive(bytes8 organizationId, address member) external view returns (bool);
 }
