@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      contracts: ${{ steps.changes.outputs.contracts }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      shared: ${{ steps.changes.outputs.shared }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            contracts:
+              - 'packages/contracts-solidity/**'
+            frontend:
+              - 'packages/frontend/**'
+            shared:
+              - 'packages/shared/**'
+
+  solidity-tests:
+    name: Solidity Tests
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/solidity-tests.yml
+
+  frontend-tests:
+    name: Frontend Tests
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true'
+    uses: ./.github/workflows/frontend-tests.yml
+
+  integration-tests:
+    name: Integration Tests
+    needs: [solidity-tests, frontend-tests]
+    if: always() && (needs.solidity-tests.result == 'success' || needs.solidity-tests.result == 'skipped') && (needs.frontend-tests.result == 'success' || needs.frontend-tests.result == 'skipped')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start services
+        run: |
+          # Start Hardhat node
+          cd packages/contracts-solidity
+          npx hardhat node &
+          HARDHAT_PID=$!
+          echo "HARDHAT_PID=$HARDHAT_PID" >> $GITHUB_ENV
+          sleep 10
+
+          # Deploy contracts
+          npx hardhat run scripts/deploy.ts --network localhost
+
+          # Start frontend
+          cd ../frontend
+          pnpm build
+          pnpm start &
+          FRONTEND_PID=$!
+          echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
+          sleep 10
+
+      - name: Run integration tests
+        run: |
+          # Add integration test commands here
+          echo "Running integration tests..."
+          # curl -f http://localhost:3000 || exit 1
+
+      - name: Cleanup
+        if: always()
+        run: |
+          kill $HARDHAT_PID || true
+          kill $FRONTEND_PID || true
+
+  quality-gate:
+    name: Quality Gate
+    needs: [solidity-tests, frontend-tests, integration-tests]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check results
+        run: |
+          echo "Solidity Tests: ${{ needs.solidity-tests.result }}"
+          echo "Frontend Tests: ${{ needs.frontend-tests.result }}"
+          echo "Integration Tests: ${{ needs.integration-tests.result }}"
+
+          if [[ "${{ needs.solidity-tests.result }}" == "failure" ]]; then
+            echo "❌ Solidity tests failed"
+            exit 1
+          fi
+
+          if [[ "${{ needs.frontend-tests.result }}" == "failure" ]]; then
+            echo "❌ Frontend tests failed"
+            exit 1
+          fi
+
+          if [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
+            echo "❌ Integration tests failed"
+            exit 1
+          fi
+
+          echo "✅ All quality gates passed!"
