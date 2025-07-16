@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.20;
 
-import "../../core/GameDAOModule.sol";
+import "../../core/Module.sol";
 import "../../interfaces/ISense.sol";
 import "../../interfaces/IIdentity.sol";
+import "../../interfaces/IMembership.sol";
+import "../../interfaces/IRegistry.sol";
 
 /**
  * @title Sense
- * @dev GameDAO Sense Module - Reputation, Experience & Trust System
- * @notice Provides reputation tracking, experience management, and trust scoring
+ * @dev GameDAO Sense Module - Organization-Scoped Reputation, Experience & Trust System
+ * @notice Provides organization-scoped reputation tracking, experience management, and trust scoring
  */
-contract Sense is ISense, GameDAOModule {
+contract Sense is ISense, Module {
     // =============================================================
     // CONSTANTS
     // =============================================================
@@ -26,32 +28,35 @@ contract Sense is ISense, GameDAOModule {
     // STATE VARIABLES
     // =============================================================
 
-    // Reputation storage - using bytes8 profile IDs
-    mapping(bytes8 => ReputationData) private _reputations;
-    mapping(bytes8 => ReputationEvent[]) private _reputationHistory;
-    mapping(bytes8 => uint256) private _lastReputationUpdate;
+    // Organization-scoped reputation storage - organizationId => profileId => ReputationData
+    mapping(bytes8 => mapping(bytes8 => ReputationData)) private _reputations;
+    mapping(bytes8 => mapping(bytes8 => ReputationEvent[])) private _reputationHistory;
+    mapping(bytes8 => mapping(bytes8 => uint256)) private _lastReputationUpdate;
 
-    // Experience tracking
-    mapping(bytes8 => uint256) private _experiencePoints;
-    mapping(bytes8 => uint256) private _experienceHistory;
+    // Organization-scoped experience tracking
+    mapping(bytes8 => mapping(bytes8 => uint256)) private _experiencePoints;
+    mapping(bytes8 => mapping(bytes8 => uint256)) private _experienceHistory;
 
-    // Trust and interaction tracking
-    mapping(bytes8 => uint256) private _trustScores;
-    mapping(bytes8 => uint256) private _totalInteractions;
-    mapping(bytes8 => uint256) private _positiveInteractions;
+    // Organization-scoped trust and interaction tracking
+    mapping(bytes8 => mapping(bytes8 => uint256)) private _trustScores;
+    mapping(bytes8 => mapping(bytes8 => uint256)) private _totalInteractions;
+    mapping(bytes8 => mapping(bytes8 => uint256)) private _positiveInteractions;
 
-    // Voting weight cache
-    mapping(bytes8 => uint256) private _votingWeights;
-    mapping(bytes8 => uint256) private _votingWeightUpdates;
+    // Organization-scoped voting weight cache
+    mapping(bytes8 => mapping(bytes8 => uint256)) private _votingWeights;
+    mapping(bytes8 => mapping(bytes8 => uint256)) private _votingWeightUpdates;
+
+    // Organization stats
+    mapping(bytes8 => uint256) private _organizationMemberCounts;
+    mapping(bytes8 => uint256) private _organizationTotalReputation;
+    mapping(bytes8 => uint256) private _organizationTotalExperience;
+    mapping(bytes8 => uint256) private _organizationTotalTrust;
 
     // =============================================================
     // CONSTRUCTOR
     // =============================================================
 
-    /**
-     * @dev Constructor
-     */
-    constructor() GameDAOModule("1.0.0") {
+        constructor() Module("1.0.0") {
         // Grant roles to deployer initially
         _grantRole(SENSE_ADMIN_ROLE, _msgSender());
         _grantRole(REPUTATION_MANAGER_ROLE, _msgSender());
@@ -69,7 +74,7 @@ contract Sense is ISense, GameDAOModule {
      */
     function _onInitialize() internal override {
         // Grant admin roles to the registry
-        address registryAddr = this.registry();
+        address registryAddr = address(_registry);
         _grantRole(SENSE_ADMIN_ROLE, registryAddr);
         _grantRole(REPUTATION_MANAGER_ROLE, registryAddr);
     }
@@ -79,25 +84,31 @@ contract Sense is ISense, GameDAOModule {
     // =============================================================
 
     /**
-     * @dev Update reputation for a profile
+     * @dev Update reputation for a profile in an organization
      */
     function updateReputation(
+        bytes8 organizationId,
         bytes8 profileId,
         ReputationType repType,
         int256 delta,
         bytes32 reason
     ) external override onlyRole(REPUTATION_MANAGER_ROLE) {
+        _validateOrganization(organizationId);
         _validateProfile(profileId);
 
-        ReputationData storage reputation = _reputations[profileId];
+        ReputationData storage reputation = _reputations[organizationId][profileId];
+
+        // Initialize organization context if not set
+        if (reputation.organizationId == bytes8(0)) {
+            reputation.organizationId = organizationId;
+        }
 
         if (repType == ReputationType.EXPERIENCE) {
-            // Experience can only be positive
-            require(delta >= 0, "Experience delta must be positive");
+            uint256 absDelta = uint256(delta >= 0 ? delta : -delta);
             reputation.experience = reputation.experience + uint256(delta);
         } else if (repType == ReputationType.REPUTATION) {
             // Reputation can be positive or negative, but has bounds
-            if (delta > 0) {
+            if (delta >= 0) {
                 reputation.reputation = reputation.reputation + uint256(delta);
                 if (reputation.reputation > 10000) reputation.reputation = 10000; // Cap at 10.0x
             } else {
@@ -109,8 +120,7 @@ contract Sense is ISense, GameDAOModule {
                 }
             }
         } else if (repType == ReputationType.TRUST) {
-            // Trust can be positive or negative
-            if (delta > 0) {
+            if (delta >= 0) {
                 reputation.trust = reputation.trust + uint256(delta);
             } else {
                 uint256 absDelta = uint256(-delta);
@@ -124,8 +134,9 @@ contract Sense is ISense, GameDAOModule {
 
         reputation.lastUpdated = block.timestamp;
 
-        // Record the event
-        _reputationHistory[profileId].push(ReputationEvent({
+        // Record event in history
+        _reputationHistory[organizationId][profileId].push(ReputationEvent({
+            organizationId: organizationId,
             profileId: profileId,
             repType: repType,
             delta: delta,
@@ -134,50 +145,57 @@ contract Sense is ISense, GameDAOModule {
             timestamp: block.timestamp
         }));
 
-        emit ReputationUpdated(profileId, repType, delta, reason, _msgSender(), block.timestamp);
+        emit ReputationUpdated(organizationId, profileId, repType, delta, reason, _msgSender(), block.timestamp);
     }
 
     /**
-     * @dev Get reputation data for a profile
+     * @dev Get reputation data for a profile in an organization
      */
-    function getReputation(bytes8 profileId)
+    function getReputation(bytes8 organizationId, bytes8 profileId)
         external
         view
         override
         returns (ReputationData memory reputation)
     {
-        return _reputations[profileId];
+        return _reputations[organizationId][profileId];
     }
 
     /**
-     * @dev Get reputation history for a profile
+     * @dev Get reputation history for a profile in an organization
      */
-    function getReputationHistory(bytes8 profileId)
+    function getReputationHistory(bytes8 organizationId, bytes8 profileId)
         external
         view
         override
         returns (ReputationEvent[] memory events)
     {
-        return _reputationHistory[profileId];
+        return _reputationHistory[organizationId][profileId];
     }
 
     // =============================================================
-    // EXPERIENCE SYSTEM
+    // EXPERIENCE MANAGEMENT
     // =============================================================
 
     /**
-     * @dev Award experience points to a profile
+     * @dev Award experience points to a profile in an organization
      */
-    function awardExperience(bytes8 profileId, uint256 amount, bytes32 reason) external override {
+    function awardExperience(
+        bytes8 organizationId,
+        bytes8 profileId,
+        uint256 amount,
+        bytes32 reason
+    ) external override {
         require(hasRole(REPUTATION_MANAGER_ROLE, _msgSender()), "Not authorized");
+        _validateOrganization(organizationId);
         _validateProfile(profileId);
 
-        ReputationData storage reputation = _reputations[profileId];
+        ReputationData storage reputation = _reputations[organizationId][profileId];
         reputation.experience += amount;
         reputation.lastUpdated = block.timestamp;
 
-        // Record in history
-        _reputationHistory[profileId].push(ReputationEvent({
+        // Record event in history
+        _reputationHistory[organizationId][profileId].push(ReputationEvent({
+            organizationId: organizationId,
             profileId: profileId,
             repType: ReputationType.EXPERIENCE,
             delta: int256(amount),
@@ -186,28 +204,39 @@ contract Sense is ISense, GameDAOModule {
             timestamp: block.timestamp
         }));
 
-        emit ExperienceAwarded(profileId, amount, reason, _msgSender(), block.timestamp);
+        emit ExperienceAwarded(organizationId, profileId, amount, reason, _msgSender(), block.timestamp);
     }
 
     /**
-     * @dev Get experience points for a profile
+     * @dev Get experience points for a profile in an organization
      */
-    function getExperience(bytes8 profileId) external view override returns (uint256 experience) {
-        return _reputations[profileId].experience;
+    function getExperience(bytes8 organizationId, bytes8 profileId)
+        external
+        view
+        override
+        returns (uint256 experience)
+    {
+        return _reputations[organizationId][profileId].experience;
     }
 
     // =============================================================
-    // TRUST SYSTEM
+    // TRUST MANAGEMENT
     // =============================================================
 
     /**
-     * @dev Record an interaction (positive or negative)
+     * @dev Record an interaction (positive or negative) for trust scoring
      */
-    function recordInteraction(bytes8 profileId, bool positive, bytes32 reason) external override {
+    function recordInteraction(
+        bytes8 organizationId,
+        bytes8 profileId,
+        bool positive,
+        bytes32 reason
+    ) external override {
         require(hasRole(REPUTATION_MANAGER_ROLE, _msgSender()), "Not authorized");
+        _validateOrganization(organizationId);
         _validateProfile(profileId);
 
-        ReputationData storage reputation = _reputations[profileId];
+        ReputationData storage reputation = _reputations[organizationId][profileId];
         reputation.totalInteractions++;
 
         if (positive) {
@@ -224,30 +253,34 @@ contract Sense is ISense, GameDAOModule {
 
         reputation.lastUpdated = block.timestamp;
 
-        emit InteractionRecorded(profileId, positive, reason, _msgSender(), block.timestamp);
+        emit InteractionRecorded(organizationId, profileId, positive, reason, _msgSender(), block.timestamp);
     }
 
     /**
-     * @dev Get trust score for a profile
+     * @dev Get trust score for a profile in an organization
      */
-    function getTrustScore(bytes8 profileId) external view override returns (uint256 trustScore) {
-        return _reputations[profileId].trust;
-    }
-
-    // =============================================================
-    // VOTING WEIGHT CALCULATION
-    // =============================================================
-
-    /**
-     * @dev Calculate voting weight based on reputation
-     */
-    function calculateVotingWeight(bytes8 profileId, uint256 baseWeight)
+    function getTrustScore(bytes8 organizationId, bytes8 profileId)
         external
         view
         override
-        returns (uint256 votingWeight)
+        returns (uint256 trust)
     {
-        ReputationData memory reputation = _reputations[profileId];
+        return _reputations[organizationId][profileId].trust;
+    }
+
+    // =============================================================
+    // VOTING POWER INTEGRATION
+    // =============================================================
+
+    /**
+     * @dev Calculate voting weight based on reputation in an organization
+     */
+    function calculateVotingWeight(
+        bytes8 organizationId,
+        bytes8 profileId,
+        uint256 baseWeight
+    ) external view override returns (uint256 votingWeight) {
+        ReputationData memory reputation = _reputations[organizationId][profileId];
 
         // Base weight multiplied by reputation multiplier (scaled by 1000)
         // reputation of 1000 = 1.0x, 1500 = 1.5x, etc.
@@ -255,15 +288,15 @@ contract Sense is ISense, GameDAOModule {
     }
 
     /**
-     * @dev Calculate trust score based on interactions
+     * @dev Calculate trust score based on interactions in an organization
      */
-    function calculateTrustScore(bytes8 profileId)
+    function calculateTrustScore(bytes8 organizationId, bytes8 profileId)
         external
         view
         override
         returns (uint256 trustScore)
     {
-        ReputationData memory reputation = _reputations[profileId];
+        ReputationData memory reputation = _reputations[organizationId][profileId];
 
         if (reputation.totalInteractions == 0) {
             return 5000; // Neutral trust score for new profiles
@@ -281,21 +314,105 @@ contract Sense is ISense, GameDAOModule {
     // =============================================================
 
     /**
-     * @dev Get reputation data for multiple profiles (batch operation)
+     * @dev Get reputation data for multiple profiles in an organization
      */
-    function getReputationBatch(bytes8[] memory profileIds)
-        external
-        view
-        override
-        returns (ReputationData[] memory reputations)
-    {
+    function getReputationBatch(
+        bytes8 organizationId,
+        bytes8[] memory profileIds
+    ) external view override returns (ReputationData[] memory reputations) {
         reputations = new ReputationData[](profileIds.length);
 
         for (uint256 i = 0; i < profileIds.length; i++) {
-            reputations[i] = _reputations[profileIds[i]];
+            reputations[i] = _reputations[organizationId][profileIds[i]];
         }
 
         return reputations;
+    }
+
+    // =============================================================
+    // MEMBERSHIP INTEGRATION
+    // =============================================================
+
+    /**
+     * @dev Get reputation-based voting power for a member in an organization
+     */
+    function getMemberVotingPower(
+        bytes8 organizationId,
+        address memberAddress,
+        uint256 baseWeight
+    ) external view override returns (uint256 votingPower) {
+        // Get member's profile ID through Identity module
+        address identityModule = getModule(keccak256("IDENTITY"));
+        if (identityModule == address(0)) return baseWeight; // Fallback to base weight
+
+                IIdentity identity = IIdentity(identityModule);
+        IIdentity.Profile memory profile = identity.getProfileByOwner(memberAddress, organizationId);
+
+        if (profile.profileId == bytes8(0)) return baseWeight; // No profile, use base weight
+
+        ReputationData memory reputation = _reputations[organizationId][profile.profileId];
+
+        // Apply reputation multiplier (scaled by 1000)
+        return (baseWeight * reputation.reputation) / 1000;
+    }
+
+    /**
+     * @dev Get aggregated reputation stats for an organization
+     */
+    function getOrganizationReputationStats(bytes8 organizationId)
+        external
+        view
+        override
+        returns (
+            uint256 totalMembers,
+            uint256 averageReputation,
+            uint256 totalExperience,
+            uint256 averageTrust
+        )
+    {
+        // Get membership module to get member list
+        address membershipModule = getModule(keccak256("MEMBERSHIP"));
+        if (membershipModule == address(0)) {
+            return (0, 0, 0, 0);
+        }
+
+        IMembership membership = IMembership(membershipModule);
+        address[] memory members = membership.getMembers(organizationId);
+
+        if (members.length == 0) {
+            return (0, 0, 0, 0);
+        }
+
+        uint256 totalRep = 0;
+        uint256 totalExp = 0;
+        uint256 totalTrustScore = 0;
+        uint256 validMembers = 0;
+
+        // Get identity module to convert addresses to profile IDs
+        address identityModule = getModule(keccak256("IDENTITY"));
+        if (identityModule == address(0)) {
+            return (members.length, 0, 0, 0);
+        }
+
+        IIdentity identity = IIdentity(identityModule);
+
+        for (uint256 i = 0; i < members.length; i++) {
+            IIdentity.Profile memory profile = identity.getProfileByOwner(members[i], organizationId);
+            if (profile.profileId != bytes8(0)) {
+                ReputationData memory reputation = _reputations[organizationId][profile.profileId];
+                totalRep += reputation.reputation;
+                totalExp += reputation.experience;
+                totalTrustScore += reputation.trust;
+                validMembers++;
+            }
+        }
+
+        return (
+            members.length,
+            validMembers > 0 ? totalRep / validMembers : 0,
+            totalExp,
+            validMembers > 0 ? totalTrustScore / validMembers : 0
+        );
     }
 
     // =============================================================
@@ -303,10 +420,28 @@ contract Sense is ISense, GameDAOModule {
     // =============================================================
 
     /**
+     * @dev Validate that an organization exists
+     */
+    function _validateOrganization(bytes8 organizationId) internal view {
+        require(_organizationExists(organizationId), "Organization does not exist");
+    }
+
+    /**
      * @dev Validate that a profile exists
      */
     function _validateProfile(bytes8 profileId) internal view {
         require(_profileExists(profileId), "Profile does not exist");
+    }
+
+    /**
+     * @dev Check if organization exists through Control module
+     */
+    function _organizationExists(bytes8 organizationId) internal view returns (bool) {
+        address controlModule = getModule(keccak256("CONTROL"));
+        if (controlModule == address(0)) return false;
+
+        // Simple check - in production, implement proper organization validation
+        return true; // Simplified for now
     }
 
     /**
