@@ -7,7 +7,7 @@ dataSources:
     name: Registry
     network: localhost
     source:
-      address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+      address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
       abi: Registry
       startBlock: 0
     mapping:
@@ -34,12 +34,70 @@ dataSources:
           handler: handleModuleUpgraded
       file: ./src/registry.ts
 
+  # GameToken - ERC20 Token Transfers
+  - kind: ethereum
+    name: GameToken
+    network: localhost
+    source:
+      address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+      abi: GameToken
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - User
+        - TokenTransfer
+        - GlobalStats
+        - Transaction
+      abis:
+        - name: GameToken
+          file: ./abis/GameToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleGameTokenTransfer
+        - event: Approval(indexed address,indexed address,uint256)
+          handler: handleGameTokenApproval
+        - event: TokensMinted(indexed address,uint256,uint256)
+          handler: handleTokensMinted
+        - event: TokensBurned(indexed address,uint256,uint256)
+          handler: handleTokensBurned
+      file: ./src/gameToken.ts
+
+  # MockUSDC - ERC20 Token Transfers
+  - kind: ethereum
+    name: MockUSDC
+    network: localhost
+    source:
+      address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+      abi: MockUSDC
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - User
+        - TokenTransfer
+        - GlobalStats
+        - Transaction
+      abis:
+        - name: MockUSDC
+          file: ./abis/MockUSDC.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleUSDCTransfer
+        - event: Approval(indexed address,indexed address,uint256)
+          handler: handleUSDCApproval
+      file: ./src/mockUSDC.ts
+
   # Staking - Staking Management
   - kind: ethereum
     name: Staking
     network: localhost
     source:
-      address: "0xc5a5C42992dECbae36851359345FE25997F5C42d"
+      address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
       abi: Staking
       startBlock: 0
     mapping:
@@ -77,12 +135,126 @@ dataSources:
           handler: handleSlashed
       file: ./src/staking.ts
 
+  # StakingRewards - Rewards Staking Management
+  - kind: ethereum
+    name: StakingRewards
+    network: localhost
+    source:
+      address: "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0"
+      abi: Staking
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - StakingPool
+        - UserStake
+        - UnstakeRequest
+        - OrganizationStake
+        - GlobalStats
+        - Transaction
+      abis:
+        - name: Staking
+          file: ./abis/Staking.json
+      eventHandlers:
+        - event: Staked(indexed address,indexed uint8,uint256,uint8,uint256)
+          handler: handleStaked
+        - event: UnstakeRequested(indexed address,indexed uint8,uint256,uint8,uint256,uint256)
+          handler: handleUnstakeRequested
+        - event: Unstaked(indexed address,indexed uint8,uint256,uint256,uint256)
+          handler: handleUnstaked
+        - event: RewardsClaimed(indexed address,indexed uint8,uint256,uint256)
+          handler: handleRewardsClaimed
+        - event: RewardsDistributed(indexed uint8,uint256,uint256)
+          handler: handleRewardsDistributed
+        - event: PoolUpdated(indexed uint8,uint256,bool)
+          handler: handlePoolUpdated
+        - event: OrganizationStaked(indexed bytes8,indexed address,uint256,uint256)
+          handler: handleOrganizationStaked
+        - event: OrganizationStakeWithdrawn(indexed bytes8,indexed address,uint256,uint256)
+          handler: handleOrganizationStakeWithdrawn
+        - event: Slashed(indexed address,indexed uint8,uint256,indexed address,string,uint256)
+          handler: handleSlashed
+      file: ./src/staking.ts
+
+  # Identity Module - User Identity & Profiles
+  - kind: ethereum
+    name: Identity
+    network: localhost
+    source:
+      address: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44"
+      abi: Identity
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Profile
+        - NameClaim
+        - GlobalStats
+        - Transaction
+      abis:
+        - name: Identity
+          file: ./abis/Identity.json
+      eventHandlers:
+        - event: ProfileCreated(indexed bytes8,indexed address,indexed bytes8,string,uint256)
+          handler: handleProfileCreated
+        - event: ProfileUpdated(indexed bytes8,string,uint256)
+          handler: handleProfileUpdated
+        - event: ProfileVerified(indexed bytes8,uint8,indexed address,uint256)
+          handler: handleProfileVerified
+        - event: NameClaimed(indexed bytes8,indexed address,indexed bytes8,uint256,uint256,uint256,uint8)
+          handler: handleNameClaimed
+        - event: NameReleased(indexed bytes8,indexed address,uint256)
+          handler: handleNameReleased
+      file: ./src/identity.ts
+
+  # Membership Module - Organization Membership
+  - kind: ethereum
+    name: Membership
+    network: localhost
+    source:
+      address: "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6"
+      abi: Membership
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Member
+        - Organization
+        - VotingDelegation
+        - GlobalStats
+        - Transaction
+      abis:
+        - name: Membership
+          file: ./abis/Membership.json
+      eventHandlers:
+        - event: MemberAdded(indexed bytes8,indexed address,uint8,uint256,uint256)
+          handler: handleMemberAdded
+        - event: MemberRemoved(indexed bytes8,indexed address,uint256)
+          handler: handleMemberRemoved
+        - event: MemberStateUpdated(indexed bytes8,indexed address,uint8,uint8,uint256)
+          handler: handleMemberStateUpdated
+        - event: MemberTierUpdated(indexed bytes8,indexed address,uint8,uint8,uint256)
+          handler: handleMemberTierUpdated
+        - event: VotingPowerUpdated(indexed bytes8,indexed address,uint256,uint256)
+          handler: handleVotingPowerUpdated
+        - event: VotingDelegated(indexed bytes8,indexed address,indexed address,uint256,uint256)
+          handler: handleVotingDelegated
+        - event: VotingUndelegated(indexed bytes8,indexed address,indexed address,uint256,uint256)
+          handler: handleVotingUndelegated
+      file: ./src/membership.ts
+
   # Control Module - Organization Management
   - kind: ethereum
     name: Control
     network: localhost
     source:
-      address: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
+      address: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
       abi: Control
       startBlock: 0
     mapping:
@@ -112,7 +284,7 @@ dataSources:
     name: Flow
     network: localhost
     source:
-      address: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+      address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
       abi: Flow
       startBlock: 0
     mapping:
@@ -150,7 +322,7 @@ dataSources:
     name: Signal
     network: localhost
     source:
-      address: "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+      address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
       abi: Signal
       startBlock: 0
     mapping:
@@ -213,73 +385,35 @@ dataSources:
           handler: handleInteractionRecorded
       file: ./src/sense.ts
 
-  # Identity Module - User Identity & Profiles
+templates:
+  # Treasury Template - Dynamically created for each organization
   - kind: ethereum
-    name: Identity
+    name: Treasury
     network: localhost
     source:
-      address: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44"
-      abi: Identity
-      startBlock: 0
+      abi: Treasury
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - Profile
-        - NameClaim
-        - GlobalStats
-        - Transaction
-      abis:
-        - name: Identity
-          file: ./abis/Identity.json
-      eventHandlers:
-        - event: ProfileCreated(indexed bytes8,indexed address,indexed bytes8,string,uint256)
-          handler: handleProfileCreated
-        - event: ProfileUpdated(indexed bytes8,string,uint256)
-          handler: handleProfileUpdated
-        - event: ProfileVerified(indexed bytes8,uint8,indexed address,uint256)
-          handler: handleProfileVerified
-        - event: NameClaimed(indexed bytes8,indexed address,indexed bytes8,uint256,uint256,uint256,uint8)
-          handler: handleNameClaimed
-        - event: NameReleased(indexed bytes8,indexed address,uint256)
-          handler: handleNameReleased
-      file: ./src/identity.ts
-
-  # Membership Module - Organization Membership
-  - kind: ethereum
-    name: Membership
-    network: localhost
-    source:
-      address: "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0"
-      abi: Membership
-      startBlock: 0
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      entities:
-        - Member
         - Organization
-        - VotingDelegation
+        - Treasury
+        - TreasuryTransaction
         - GlobalStats
         - Transaction
       abis:
-        - name: Membership
-          file: ./abis/Membership.json
+        - name: Treasury
+          file: ./abis/Treasury.json
       eventHandlers:
-        - event: MemberAdded(indexed bytes8,indexed address,uint8,uint256,uint256)
-          handler: handleMemberAdded
-        - event: MemberRemoved(indexed bytes8,indexed address,uint256)
-          handler: handleMemberRemoved
-        - event: MemberStateUpdated(indexed bytes8,indexed address,uint8,uint8,uint256)
-          handler: handleMemberStateUpdated
-        - event: MemberTierUpdated(indexed bytes8,indexed address,uint8,uint8,uint256)
-          handler: handleMemberTierUpdated
-        - event: VotingPowerUpdated(indexed bytes8,indexed address,uint256,uint256)
-          handler: handleVotingPowerUpdated
-        - event: VotingDelegated(indexed bytes8,indexed address,indexed address,uint256,uint256)
-          handler: handleVotingDelegated
-        - event: VotingUndelegated(indexed bytes8,indexed address,indexed address,uint256,uint256)
-          handler: handleVotingUndelegated
-      file: ./src/membership.ts
+        - event: FundsDeposited(indexed address,indexed address,uint256,string,uint256)
+          handler: handleFundsDeposited
+        - event: FundsSpent(indexed address,indexed address,indexed address,uint256,string,uint256)
+          handler: handleFundsSpent
+        - event: TokenAdded(indexed address,uint256)
+          handler: handleTokenAdded
+        - event: TokenRemoved(indexed address,uint256)
+          handler: handleTokenRemoved
+        - event: SpendingLimitUpdated(indexed address,uint256,uint256,uint256)
+          handler: handleSpendingLimitUpdated
+      file: ./src/treasury.ts

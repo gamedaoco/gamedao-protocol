@@ -2,17 +2,17 @@ import { BigInt, BigDecimal, Address } from "@graphprotocol/graph-ts"
 import {
   OrganizationCreated,
   OrganizationStateChanged,
-  MemberAdded,
-  MemberRemoved,
-  MemberStateChanged,
+  StakeWithdrawn,
   Control
 } from "../generated/Control/Control"
 import {
   Organization,
-  Member,
+  OrganizationStake,
   Treasury,
-  User
+  User,
+  GlobalStats
 } from "../generated/schema"
+import { Treasury as TreasuryTemplate } from "../generated/templates"
 import { updateIndexingStatus } from "./utils/indexing"
 import { getOrganizationIdString } from "./utils/ids"
 
@@ -29,6 +29,7 @@ function mapOrgState(state: number): string {
   if (state == 0) return "INACTIVE"
   if (state == 1) return "ACTIVE"
   if (state == 2) return "LOCKED"
+  if (state == 3) return "DISSOLVED"
   return "ACTIVE" // Default
 }
 
@@ -59,77 +60,158 @@ function createOrUpdateUser(address: Address, timestamp: BigInt): void {
 }
 
 export function handleOrganizationCreated(event: OrganizationCreated): void {
-  // Track indexing progress
   updateIndexingStatus(event.block, 'OrganizationCreated')
 
-  // Get organization ID as alphanumeric string
-  let orgId = getOrganizationIdString(event.params.id)
+  let organizationId = getOrganizationIdString(event.params.id)
+  let organization = new Organization(organizationId)
 
-  let organization = new Organization(orgId)
-  organization.creator = event.params.creator
-  organization.prime = event.params.creator // Creator is the prime initially
+  // Get or create creator user
+  let creatorId = event.params.creator.toHex()
+  let creator = User.load(creatorId)
+  if (!creator) {
+    creator = new User(creatorId)
+    creator.address = event.params.creator
+    creator.totalOrganizations = BigInt.fromI32(0)
+    creator.totalMemberships = BigInt.fromI32(0)
+    creator.totalContributions = BigInt.fromI32(0)
+    creator.totalProposals = BigInt.fromI32(0)
+    creator.totalVotes = BigInt.fromI32(0)
+    creator.firstSeenAt = event.block.timestamp
+    creator.lastActiveAt = event.block.timestamp
+  }
+  creator.totalOrganizations = creator.totalOrganizations.plus(BigInt.fromI32(1))
+  creator.lastActiveAt = event.block.timestamp
+  creator.save()
+
+  // Set organization data
   organization.name = event.params.name
+  organization.metadataURI = "" // Will be set later if needed
+  organization.creator = creatorId
+  organization.treasuryAddress = event.params.treasury
+  organization.orgType = "DAO" // Default, should be updated
+  organization.accessModel = "OPEN" // Default, should be updated
+  organization.feeModel = "NONE" // Default, should be updated
+  organization.memberLimit = BigInt.fromI32(1000) // Default
+  organization.memberCount = BigInt.fromI32(0)
+  organization.totalCampaigns = BigInt.fromI32(0)
+  organization.totalProposals = BigInt.fromI32(0)
+  organization.membershipFee = BigInt.fromI32(0)
+  organization.gameStakeRequired = BigInt.fromI32(0)
+  organization.state = "ACTIVE" // Default
   organization.createdAt = event.params.timestamp
   organization.updatedAt = event.params.timestamp
   organization.blockNumber = event.block.number
   organization.transactionHash = event.transaction.hash
 
-  // Read the full organization data from the contract
-  let controlContract = Control.bind(event.address)
-  let orgData = controlContract.getOrganization(event.params.id)
+  organization.save()
 
-  // Map the organization data from contract
-  organization.metadataURI = orgData.metadataURI
-  organization.orgType = mapOrgType(orgData.orgType)
-  organization.state = mapOrgState(orgData.state)
-  organization.accessModel = mapAccessModel(orgData.accessModel)
-  organization.memberLimit = orgData.memberLimit
-  organization.membershipFee = orgData.membershipFee
-  organization.memberCount = orgData.memberCount
-  organization.totalCampaigns = orgData.totalCampaigns
-  organization.totalProposals = orgData.totalProposals
-
-  // Create treasury
-  let treasuryId = orgId + "-treasury"
+  // Create Treasury entity
+  let treasuryId = event.params.treasury.toHex()
   let treasury = new Treasury(treasuryId)
-  treasury.organization = orgId
+  treasury.organization = organizationId
   treasury.address = event.params.treasury
-  treasury.balance = BigDecimal.zero()
   treasury.createdAt = event.params.timestamp
-  treasury.updatedAt = event.params.timestamp
-  treasury.blockNumber = event.block.number
-  treasury.transactionHash = event.transaction.hash
+  treasury.lastActivityAt = event.params.timestamp
+  treasury.totalDeposits = BigDecimal.fromString("0")
+  treasury.totalSpent = BigDecimal.fromString("0")
   treasury.save()
 
+  // Link treasury to organization
   organization.treasury = treasuryId
   organization.save()
 
-  // Create prime member
-  let primeMemberId = orgId + "-" + event.params.creator.toHex()
-  let primeMember = new Member(primeMemberId)
-  primeMember.organization = orgId
-  primeMember.address = event.params.creator
-  primeMember.state = "ACTIVE"
-  primeMember.role = "PRIME"
-  primeMember.fee = BigInt.zero()
-  primeMember.joinedAt = event.params.timestamp
-  primeMember.blockNumber = event.block.number
-  primeMember.transactionHash = event.transaction.hash
-  primeMember.save()
+  // Start indexing the Treasury contract
+  TreasuryTemplate.create(event.params.treasury)
+
+  // Update global stats
+  let globalStats = GlobalStats.load('global')
+  if (!globalStats) {
+    globalStats = new GlobalStats('global')
+    globalStats.totalModules = BigInt.fromI32(0)
+    globalStats.activeModules = BigInt.fromI32(0)
+    globalStats.totalOrganizations = BigInt.fromI32(0)
+    globalStats.activeOrganizations = BigInt.fromI32(0)
+    globalStats.totalMembers = BigInt.fromI32(0)
+    globalStats.totalCampaigns = BigInt.fromI32(0)
+    globalStats.activeCampaigns = BigInt.fromI32(0)
+    globalStats.totalRaised = BigDecimal.fromString("0")
+    globalStats.totalProposals = BigInt.fromI32(0)
+    globalStats.activeProposals = BigInt.fromI32(0)
+    globalStats.totalVotes = BigInt.fromI32(0)
+    globalStats.totalProfiles = BigInt.fromI32(0)
+    globalStats.verifiedProfiles = BigInt.fromI32(0)
+    globalStats.totalAchievements = BigInt.fromI32(0)
+    globalStats.totalTokenTransfers = BigInt.fromI32(0)
+    globalStats.totalTreasuryTransactions = BigInt.fromI32(0)
+    globalStats.updatedAt = event.block.timestamp
+  }
+  globalStats.totalOrganizations = globalStats.totalOrganizations.plus(BigInt.fromI32(1))
+  globalStats.activeOrganizations = globalStats.activeOrganizations.plus(BigInt.fromI32(1))
+  globalStats.updatedAt = event.block.timestamp
+  globalStats.save()
 }
 
 export function handleOrganizationStateChanged(event: OrganizationStateChanged): void {
-  // Track indexing progress
   updateIndexingStatus(event.block, 'OrganizationStateChanged')
 
-  let orgId = getOrganizationIdString(event.params.id)
-  let organization = Organization.load(orgId)
+  let organizationId = getOrganizationIdString(event.params.id)
+  let organization = Organization.load(organizationId)
 
-  if (organization) {
-    organization.updatedAt = event.params.timestamp
-    organization.blockNumber = event.block.number
-    organization.transactionHash = event.transaction.hash
-    organization.save()
+  if (!organization) {
+    return
+  }
+
+  // Update organization state
+  let oldState = organization.state
+  organization.state = mapOrgState(event.params.newState)
+  organization.updatedAt = event.params.timestamp
+  organization.save()
+
+  // Update global stats for active organizations
+  let globalStats = GlobalStats.load('global')
+  if (globalStats) {
+    if (oldState != "ACTIVE" && organization.state == "ACTIVE") {
+      globalStats.activeOrganizations = globalStats.activeOrganizations.plus(BigInt.fromI32(1))
+    } else if (oldState == "ACTIVE" && organization.state != "ACTIVE") {
+      globalStats.activeOrganizations = globalStats.activeOrganizations.minus(BigInt.fromI32(1))
+    }
+    globalStats.updatedAt = event.block.timestamp
+    globalStats.save()
+  }
+}
+
+export function handleStakeWithdrawn(event: StakeWithdrawn): void {
+  updateIndexingStatus(event.block, 'StakeWithdrawn')
+
+  let organizationId = getOrganizationIdString(event.params.organizationId)
+  let organization = Organization.load(organizationId)
+
+  if (!organization) {
+    return
+  }
+
+  // Get or create staker user
+  let stakerId = event.params.staker.toHex()
+  let staker = User.load(stakerId)
+  if (!staker) {
+    staker = new User(stakerId)
+    staker.address = event.params.staker
+    staker.totalOrganizations = BigInt.fromI32(0)
+    staker.totalMemberships = BigInt.fromI32(0)
+    staker.totalContributions = BigInt.fromI32(0)
+    staker.totalProposals = BigInt.fromI32(0)
+    staker.totalVotes = BigInt.fromI32(0)
+    staker.firstSeenAt = event.block.timestamp
+    staker.lastActiveAt = event.block.timestamp
+  }
+  staker.lastActiveAt = event.block.timestamp
+  staker.save()
+
+  // Update organization stake if it exists
+  let organizationStake = OrganizationStake.load(organizationId)
+  if (organizationStake) {
+    organizationStake.active = false
+    organizationStake.save()
   }
 }
 
