@@ -6,64 +6,47 @@ import {
   TokensBurned as TokensBurnedEvent,
 } from "../generated/MockGameToken/MockGameToken";
 import { User, TokenTransfer, GlobalStats, Transaction } from "../generated/schema";
-import { getOrCreateUser } from "./utils/ids";
 
 export function handleMockGameTokenTransfer(event: TransferEvent): void {
+  // Create transaction entity
+  let transaction = new Transaction(event.transaction.hash.toHex())
+  transaction.hash = event.transaction.hash
+  transaction.blockNumber = event.block.number
+  transaction.timestamp = event.block.timestamp
+  transaction.save()
+
   log.info("🪙 MockGameToken Transfer: {} -> {} ({})", [
     event.params.from.toHex(),
     event.params.to.toHex(),
     event.params.value.toString(),
   ]);
 
-  let from = getOrCreateUser(event.params.from);
-  let to = getOrCreateUser(event.params.to);
+  // Create or load users
+  let from = User.load(event.params.from.toHex())
+  if (from == null) {
+    from = new User(event.params.from.toHex())
+    from.address = event.params.from
+    from.save()
+  }
+
+  let to = User.load(event.params.to.toHex())
+  if (to == null) {
+    to = new User(event.params.to.toHex())
+    to.address = event.params.to
+    to.save()
+  }
 
   // Create transfer record
-  let transfer = new TokenTransfer(
-    event.transaction.hash.concatI32(event.logIndex.toI32()).toHex()
-  );
-  transfer.from = from.id;
-  transfer.to = to.id;
-  transfer.value = event.params.value;
-  transfer.token = "MockGameToken";
-  transfer.timestamp = event.block.timestamp;
-  transfer.blockNumber = event.block.number;
-  transfer.transactionHash = event.transaction.hash;
-  transfer.save();
-
-  // Create transaction record
-  let transaction = new Transaction(event.transaction.hash.toHex());
-  transaction.hash = event.transaction.hash;
-  transaction.from = event.transaction.from;
-  transaction.to = event.transaction.to;
-  transaction.value = event.transaction.value;
-  transaction.gasLimit = event.transaction.gasLimit;
-  transaction.gasPrice = event.transaction.gasPrice;
-  transaction.timestamp = event.block.timestamp;
-  transaction.blockNumber = event.block.number;
-  transaction.save();
-
-  // Update global stats
-  let stats = GlobalStats.load("global");
-  if (!stats) {
-    stats = new GlobalStats("global");
-    stats.totalUsers = BigInt.fromI32(0);
-    stats.totalOrganizations = BigInt.fromI32(0);
-    stats.totalCampaigns = BigInt.fromI32(0);
-    stats.totalProposals = BigInt.fromI32(0);
-    stats.totalTransactions = BigInt.fromI32(0);
-    stats.totalTokenTransfers = BigInt.fromI32(0);
-    stats.totalVolumeGame = BigInt.fromI32(0);
-    stats.totalVolumeUSDC = BigInt.fromI32(0);
-    stats.lastUpdateTimestamp = event.block.timestamp;
-    stats.lastUpdateBlock = event.block.number;
-  }
-  stats.totalTransactions = stats.totalTransactions.plus(BigInt.fromI32(1));
-  stats.totalTokenTransfers = stats.totalTokenTransfers.plus(BigInt.fromI32(1));
-  stats.totalVolumeGame = stats.totalVolumeGame.plus(event.params.value);
-  stats.lastUpdateTimestamp = event.block.timestamp;
-  stats.lastUpdateBlock = event.block.number;
-  stats.save();
+  let transferId = event.transaction.hash.toHex() + "-" + event.logIndex.toString()
+  let transfer = new TokenTransfer(transferId)
+  transfer.from = from.id
+  transfer.to = to.id
+  transfer.amount = event.params.value.toBigDecimal()
+  transfer.token = event.address
+  transfer.timestamp = event.block.timestamp
+  transfer.blockNumber = event.block.number
+  transfer.transaction = transaction.id
+  transfer.save()
 }
 
 export function handleMockGameTokenApproval(event: ApprovalEvent): void {
@@ -73,121 +56,45 @@ export function handleMockGameTokenApproval(event: ApprovalEvent): void {
     event.params.value.toString(),
   ]);
 
-  let owner = getOrCreateUser(event.params.owner);
-  let spender = getOrCreateUser(event.params.spender);
-
-  // Create transaction record
-  let transaction = new Transaction(event.transaction.hash.toHex());
-  transaction.hash = event.transaction.hash;
-  transaction.from = event.transaction.from;
-  transaction.to = event.transaction.to;
-  transaction.value = event.transaction.value;
-  transaction.gasLimit = event.transaction.gasLimit;
-  transaction.gasPrice = event.transaction.gasPrice;
-  transaction.timestamp = event.block.timestamp;
-  transaction.blockNumber = event.block.number;
-  transaction.save();
-
-  // Update global stats
-  let stats = GlobalStats.load("global");
-  if (!stats) {
-    stats = new GlobalStats("global");
-    stats.totalUsers = BigInt.fromI32(0);
-    stats.totalOrganizations = BigInt.fromI32(0);
-    stats.totalCampaigns = BigInt.fromI32(0);
-    stats.totalProposals = BigInt.fromI32(0);
-    stats.totalTransactions = BigInt.fromI32(0);
-    stats.totalTokenTransfers = BigInt.fromI32(0);
-    stats.totalVolumeGame = BigInt.fromI32(0);
-    stats.totalVolumeUSDC = BigInt.fromI32(0);
-    stats.lastUpdateTimestamp = event.block.timestamp;
-    stats.lastUpdateBlock = event.block.number;
+  let owner = User.load(event.params.owner.toHex());
+  if (owner == null) {
+    owner = new User(event.params.owner.toHex());
+    owner.address = event.params.owner;
+    owner.save();
   }
-  stats.totalTransactions = stats.totalTransactions.plus(BigInt.fromI32(1));
-  stats.lastUpdateTimestamp = event.block.timestamp;
-  stats.lastUpdateBlock = event.block.number;
-  stats.save();
+
+  let spender = User.load(event.params.spender.toHex());
+  if (spender == null) {
+    spender = new User(event.params.spender.toHex());
+    spender.address = event.params.spender;
+    spender.save();
+  }
 }
 
 export function handleMockTokensMinted(event: TokensMintedEvent): void {
-  log.info("🪙 MockGameToken Minted: {} tokens to {}", [
-    event.params.amount.toString(),
+  log.info("🪙 MockGameToken Minted: {} ({})", [
     event.params.to.toHex(),
+    event.params.amount.toString(),
   ]);
 
-  let user = getOrCreateUser(event.params.to);
-
-  // Create transaction record
-  let transaction = new Transaction(event.transaction.hash.toHex());
-  transaction.hash = event.transaction.hash;
-  transaction.from = event.transaction.from;
-  transaction.to = event.transaction.to;
-  transaction.value = event.transaction.value;
-  transaction.gasLimit = event.transaction.gasLimit;
-  transaction.gasPrice = event.transaction.gasPrice;
-  transaction.timestamp = event.block.timestamp;
-  transaction.blockNumber = event.block.number;
-  transaction.save();
-
-  // Update global stats
-  let stats = GlobalStats.load("global");
-  if (!stats) {
-    stats = new GlobalStats("global");
-    stats.totalUsers = BigInt.fromI32(0);
-    stats.totalOrganizations = BigInt.fromI32(0);
-    stats.totalCampaigns = BigInt.fromI32(0);
-    stats.totalProposals = BigInt.fromI32(0);
-    stats.totalTransactions = BigInt.fromI32(0);
-    stats.totalTokenTransfers = BigInt.fromI32(0);
-    stats.totalVolumeGame = BigInt.fromI32(0);
-    stats.totalVolumeUSDC = BigInt.fromI32(0);
-    stats.lastUpdateTimestamp = event.block.timestamp;
-    stats.lastUpdateBlock = event.block.number;
+  let user = User.load(event.params.to.toHex());
+  if (user == null) {
+    user = new User(event.params.to.toHex());
+    user.address = event.params.to;
+    user.save();
   }
-  stats.totalTransactions = stats.totalTransactions.plus(BigInt.fromI32(1));
-  stats.totalVolumeGame = stats.totalVolumeGame.plus(event.params.amount);
-  stats.lastUpdateTimestamp = event.block.timestamp;
-  stats.lastUpdateBlock = event.block.number;
-  stats.save();
 }
 
 export function handleMockTokensBurned(event: TokensBurnedEvent): void {
-  log.info("🪙 MockGameToken Burned: {} tokens from {}", [
-    event.params.amount.toString(),
+  log.info("🪙 MockGameToken Burned: {} ({})", [
     event.params.from.toHex(),
+    event.params.amount.toString(),
   ]);
 
-  let user = getOrCreateUser(event.params.from);
-
-  // Create transaction record
-  let transaction = new Transaction(event.transaction.hash.toHex());
-  transaction.hash = event.transaction.hash;
-  transaction.from = event.transaction.from;
-  transaction.to = event.transaction.to;
-  transaction.value = event.transaction.value;
-  transaction.gasLimit = event.transaction.gasLimit;
-  transaction.gasPrice = event.transaction.gasPrice;
-  transaction.timestamp = event.block.timestamp;
-  transaction.blockNumber = event.block.number;
-  transaction.save();
-
-  // Update global stats
-  let stats = GlobalStats.load("global");
-  if (!stats) {
-    stats = new GlobalStats("global");
-    stats.totalUsers = BigInt.fromI32(0);
-    stats.totalOrganizations = BigInt.fromI32(0);
-    stats.totalCampaigns = BigInt.fromI32(0);
-    stats.totalProposals = BigInt.fromI32(0);
-    stats.totalTransactions = BigInt.fromI32(0);
-    stats.totalTokenTransfers = BigInt.fromI32(0);
-    stats.totalVolumeGame = BigInt.fromI32(0);
-    stats.totalVolumeUSDC = BigInt.fromI32(0);
-    stats.lastUpdateTimestamp = event.block.timestamp;
-    stats.lastUpdateBlock = event.block.number;
+  let user = User.load(event.params.from.toHex());
+  if (user == null) {
+    user = new User(event.params.from.toHex());
+    user.address = event.params.from;
+    user.save();
   }
-  stats.totalTransactions = stats.totalTransactions.plus(BigInt.fromI32(1));
-  stats.lastUpdateTimestamp = event.block.timestamp;
-  stats.lastUpdateBlock = event.block.number;
-  stats.save();
 }
