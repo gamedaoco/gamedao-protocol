@@ -69,12 +69,8 @@ async function main() {
   ];
 
   // Additional new contracts
-  const newContracts = [
-    "OrganizationSettings",
-    "GameDAOMembership",
-    "GameDAOMembershipWithSettings",
-    "ControlWithSettings",
-    "SignalWithGovernance"
+  const newContracts: string[] = [
+    // Removed old contracts that have been deleted
   ];
 
   console.log("\n🔍 Measuring Original Contracts...");

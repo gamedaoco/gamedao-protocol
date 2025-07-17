@@ -4,81 +4,29 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title IGameTokenDeprecated
- * @dev DEPRECATED: Interface for the GAME token with staking functionality
- * @notice This interface is deprecated. Use IGameTokenClean and IGameStaking instead.
+ * @title IGameToken
+ * @dev Clean interface for the GAME token (standard ERC20)
  * @author GameDAO AG
  */
-interface IGameTokenDeprecated is IERC20 {
+interface IGameToken is IERC20 {
     // Events
-    event Staked(
-        address indexed user,
-        bytes32 indexed purpose,
-        uint256 amount,
-        uint256 timestamp
-    );
+    event TokensMinted(address indexed to, uint256 amount, uint256 timestamp);
+    event TokensBurned(address indexed from, uint256 amount, uint256 timestamp);
 
-    event Unstaked(
-        address indexed user,
-        bytes32 indexed purpose,
-        uint256 amount,
-        uint256 timestamp
-    );
+    // Token management functions
+    function mint(address to, uint256 amount) external;
+    function burn(uint256 amount) external;
+    function burnFrom(address from, uint256 amount) external;
 
-    event StakeSlashed(
-        address indexed user,
-        bytes32 indexed purpose,
-        uint256 amount,
-        address indexed slasher,
-        string reason,
-        uint256 timestamp
-    );
+    // Access control functions
+    function addMinter(address minter) external;
+    function removeMinter(address minter) external;
 
-    // Staking Functions
-    function stake(bytes32 purpose, uint256 amount) external;
+    // Pause functionality
+    function pause() external;
+    function unpause() external;
 
-    function stakeFor(address user, bytes32 purpose, uint256 amount) external;
-
-    function unstake(bytes32 purpose, uint256 amount) external;
-
-    function unstakeAll(bytes32 purpose) external;
-
-    function slash(
-        address user,
-        bytes32 purpose,
-        uint256 amount,
-        string memory reason
-    ) external;
-
-    // View Functions
-    function getStakedAmount(address user, bytes32 purpose)
-        external
-        view
-        returns (uint256);
-
-    function getTotalStaked(address user) external view returns (uint256);
-
-    function getTotalStakedForPurpose(bytes32 purpose)
-        external
-        view
-        returns (uint256);
-
-    function getAvailableBalance(address user) external view returns (uint256);
-
-    function canUnstake(
-        address user,
-        bytes32 purpose,
-        uint256 amount
-    ) external view returns (bool);
-
-    function isSlasher(address account) external view returns (bool);
-
-    // Admin Functions
-    function addSlasher(address slasher) external;
-
-    function removeSlasher(address slasher) external;
-
-    function setUnstakingDelay(bytes32 purpose, uint256 delay) external;
-
-    function getUnstakingDelay(bytes32 purpose) external view returns (uint256);
+    // Constants
+    function INITIAL_SUPPLY() external view returns (uint256);
+    function MAX_SUPPLY() external view returns (uint256);
 }

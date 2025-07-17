@@ -41,11 +41,11 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
 
   // Handle copying treasury address
   const handleCopyTreasuryAddress = async () => {
-    if (!organization?.treasury?.address) return
+    if (!organization?.treasury) return
 
     try {
-      await navigator.clipboard.writeText(organization.treasury.address)
-      logUserAction('treasury_address_copied', { organizationId: id, treasuryAddress: organization.treasury.address })
+      await navigator.clipboard.writeText(organization.treasury)
+      logUserAction('treasury_address_copied', { organizationId: id, treasuryAddress: organization.treasury })
       // You could add a toast notification here if you have toast functionality
     } catch (error) {
       console.error('Failed to copy treasury address:', error)
@@ -145,7 +145,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                       </Badge>
                       <div className="flex items-center gap-2 text-white/80 text-sm">
                         <Wallet className="h-4 w-4" />
-                        <span>Treasury: {formatAddress(organization.treasury.address)}</span>
+                        <span>Treasury: {formatAddress(organization.treasury)}</span>
                         <button
                           onClick={handleCopyTreasuryAddress}
                           className="p-1 hover:bg-white/10 rounded transition-colors"

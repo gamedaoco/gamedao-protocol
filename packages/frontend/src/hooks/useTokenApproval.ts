@@ -219,7 +219,7 @@ export function useTokenApproval() {
       setPendingApproval(null)
       resetApprove()
     }
-  }, [approvalSuccess, pendingApproval, resetApprove, toast])
+  }, [approvalSuccess, pendingApproval, resetApprove])
 
   // Handle approval error
   useEffect(() => {
@@ -230,7 +230,7 @@ export function useTokenApproval() {
       toast.error(`${pendingApproval.token} ${pendingApproval.purpose} approval failed`)
       setPendingApproval(null)
     }
-  }, [approveError, approveConfirmError, pendingApproval, toast])
+  }, [approveError, approveConfirmError, pendingApproval])
 
   return {
     // State

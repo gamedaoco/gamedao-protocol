@@ -8,6 +8,7 @@ export interface ContractAddresses {
   SIGNAL: Address
   SENSE: Address
   IDENTITY: Address
+  MEMBERSHIP: Address // New GameDAO Membership contract
   STAKING: Address
   GAME_STAKING: Address // New GameStaking contract
   GAME_TOKEN: Address
@@ -22,6 +23,7 @@ const DEFAULT_ADDRESSES: ContractAddresses = {
   SIGNAL: '0x0000000000000000000000000000000000000000',
   SENSE: '0x0000000000000000000000000000000000000000',
   IDENTITY: '0x0000000000000000000000000000000000000000',
+  MEMBERSHIP: '0x0000000000000000000000000000000000000000', // New GameDAO Membership contract
   STAKING: '0x0000000000000000000000000000000000000000',
   GAME_STAKING: '0x0000000000000000000000000000000000000000', // New GameStaking contract
   GAME_TOKEN: '0x0000000000000000000000000000000000000000',
@@ -51,8 +53,7 @@ function getContractAddressesFromEnv(chainId: number): ContractAddresses {
       suffix = '_ARBITRUM'
       break
     default:
-      console.warn(`Unsupported chain ID: ${chainId}, using default addresses`)
-      return DEFAULT_ADDRESSES
+      suffix = '_LOCAL'
   }
 
   return {
@@ -62,6 +63,7 @@ function getContractAddressesFromEnv(chainId: number): ContractAddresses {
     SIGNAL: (process.env[`NEXT_PUBLIC_SIGNAL_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.SIGNAL,
     SENSE: (process.env[`NEXT_PUBLIC_SENSE_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.SENSE,
     IDENTITY: (process.env[`NEXT_PUBLIC_IDENTITY_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.IDENTITY,
+    MEMBERSHIP: (process.env[`NEXT_PUBLIC_MEMBERSHIP_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.MEMBERSHIP,
     STAKING: (process.env[`NEXT_PUBLIC_STAKING_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.STAKING,
     GAME_STAKING: (process.env[`NEXT_PUBLIC_GAME_STAKING_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.GAME_STAKING,
     GAME_TOKEN: (process.env[`NEXT_PUBLIC_GAME_TOKEN_ADDRESS${suffix}`] as Address) || DEFAULT_ADDRESSES.GAME_TOKEN,
@@ -69,115 +71,160 @@ function getContractAddressesFromEnv(chainId: number): ContractAddresses {
   }
 }
 
-// Fallback hardcoded addresses for development (will be overridden by env vars)
-const FALLBACK_ADDRESSES: Record<number, ContractAddresses> = {
-  // Localhost/Hardhat (31337)
-  31337: {
-    REGISTRY: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
-    CONTROL: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
-    FLOW: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
-    SIGNAL: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
-    SENSE: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
-    IDENTITY: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
-    STAKING: '0x3Aa5ebB10DC797CAC828524e59A333d0A371443c',
-    GAME_STAKING: '0x3Aa5ebB10DC797CAC828524e59A333d0A371443c',
-    GAME_TOKEN: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    USDC_TOKEN: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-  },
-  // Sepolia Testnet (11155111)
-  11155111: { ...DEFAULT_ADDRESSES },
-  // Ethereum Mainnet (1)
-  1: { ...DEFAULT_ADDRESSES },
-  // Polygon (137)
-  137: { ...DEFAULT_ADDRESSES },
-  // Arbitrum One (42161)
-  42161: { ...DEFAULT_ADDRESSES },
+/**
+ * Get contract addresses from deployment file
+ */
+function getContractAddressesFromDeployment(chainId: number): ContractAddresses {
+  try {
+    // Try to import deployment addresses (this would be populated by deployment scripts)
+    // For now, we'll use environment variables as the primary source
+    return getContractAddressesFromEnv(chainId)
+  } catch (error) {
+    console.warn('Could not load deployment addresses, using environment variables')
+    return getContractAddressesFromEnv(chainId)
+  }
 }
 
-// Cache for contract addresses to prevent repeated logging
-const addressCache = new Map<number, ContractAddresses>()
-const loggedChains = new Set<number>()
-
 /**
- * Get contract addresses for a specific chain
- * Prioritizes environment variables, falls back to hardcoded addresses
+ * Get contract addresses with fallback priority:
+ * 1. Environment variables (highest priority)
+ * 2. Deployment file
+ * 3. Default zero addresses (lowest priority)
  */
 export function getContractAddresses(chainId: number): ContractAddresses {
-  // Return cached result if available
-  if (addressCache.has(chainId)) {
-    return addressCache.get(chainId)!
-  }
-
-  // First try to get from environment variables
   const envAddresses = getContractAddressesFromEnv(chainId)
+  const deploymentAddresses = getContractAddressesFromDeployment(chainId)
 
-  let result: ContractAddresses
-  let logMessage = ''
-
-  // Check if we got valid addresses from environment
-  if (validateContractAddresses(envAddresses)) {
-    result = envAddresses
-    logMessage = `✅ Using contract addresses from environment for chain ${chainId}`
-  } else {
-    // Fall back to hardcoded addresses
-    const fallbackAddresses = FALLBACK_ADDRESSES[chainId] || DEFAULT_ADDRESSES
-    if (validateContractAddresses(fallbackAddresses)) {
-      result = fallbackAddresses
-      logMessage = `⚠️  Using fallback contract addresses for chain ${chainId}`
-    } else {
-      // Last resort - return default (zero) addresses
-      result = DEFAULT_ADDRESSES
-      logMessage = `❌ No valid contract addresses found for chain ${chainId}`
-    }
+  // Merge addresses with priority: env > deployment > default
+  const addresses: ContractAddresses = {
+    REGISTRY: envAddresses.REGISTRY !== DEFAULT_ADDRESSES.REGISTRY ? envAddresses.REGISTRY : deploymentAddresses.REGISTRY,
+    CONTROL: envAddresses.CONTROL !== DEFAULT_ADDRESSES.CONTROL ? envAddresses.CONTROL : deploymentAddresses.CONTROL,
+    FLOW: envAddresses.FLOW !== DEFAULT_ADDRESSES.FLOW ? envAddresses.FLOW : deploymentAddresses.FLOW,
+    SIGNAL: envAddresses.SIGNAL !== DEFAULT_ADDRESSES.SIGNAL ? envAddresses.SIGNAL : deploymentAddresses.SIGNAL,
+    SENSE: envAddresses.SENSE !== DEFAULT_ADDRESSES.SENSE ? envAddresses.SENSE : deploymentAddresses.SENSE,
+    IDENTITY: envAddresses.IDENTITY !== DEFAULT_ADDRESSES.IDENTITY ? envAddresses.IDENTITY : deploymentAddresses.IDENTITY,
+    MEMBERSHIP: envAddresses.MEMBERSHIP !== DEFAULT_ADDRESSES.MEMBERSHIP ? envAddresses.MEMBERSHIP : deploymentAddresses.MEMBERSHIP,
+    STAKING: envAddresses.STAKING !== DEFAULT_ADDRESSES.STAKING ? envAddresses.STAKING : deploymentAddresses.STAKING,
+    GAME_STAKING: envAddresses.GAME_STAKING !== DEFAULT_ADDRESSES.GAME_STAKING ? envAddresses.GAME_STAKING : deploymentAddresses.GAME_STAKING,
+    GAME_TOKEN: envAddresses.GAME_TOKEN !== DEFAULT_ADDRESSES.GAME_TOKEN ? envAddresses.GAME_TOKEN : deploymentAddresses.GAME_TOKEN,
+    USDC_TOKEN: envAddresses.USDC_TOKEN !== DEFAULT_ADDRESSES.USDC_TOKEN ? envAddresses.USDC_TOKEN : deploymentAddresses.USDC_TOKEN,
   }
 
-  // Cache the result
-  addressCache.set(chainId, result)
-
-  // Only log once per chain
-  if (!loggedChains.has(chainId)) {
-    console.log(logMessage)
-    loggedChains.add(chainId)
-  }
-
-  return result
+  return addresses
 }
 
 /**
- * Load contract addresses from deployment artifacts
- * This function will be called during build time or runtime to load
- * the latest deployed contract addresses
- */
-export async function loadContractAddresses(chainId: number): Promise<ContractAddresses> {
-  try {
-    // For local development, try to load from deployment artifacts
-    if (chainId === 31337) {
-      // Try to load from the contracts package deployment artifacts
-      const deploymentPath = `../../contracts-solidity/deployments/localhost`
-
-      // This would be dynamically imported in a real implementation
-      // For now, return the configured addresses
-      return getContractAddresses(chainId)
-    }
-
-    // For other networks, return the configured addresses
-    return getContractAddresses(chainId)
-  } catch (error) {
-    console.warn(`Failed to load contract addresses for chain ${chainId}:`, error)
-    return getContractAddresses(chainId)
-  }
-}
-
-/**
- * Validate that all required contracts are deployed
+ * Validate that all required contract addresses are set
  */
 export function validateContractAddresses(addresses: ContractAddresses): boolean {
-  const requiredContracts = ['REGISTRY', 'CONTROL', 'FLOW', 'SIGNAL', 'SENSE'] as const
+  const requiredContracts = ['REGISTRY', 'CONTROL', 'FLOW', 'SIGNAL', 'SENSE', 'IDENTITY', 'MEMBERSHIP', 'GAME_STAKING', 'GAME_TOKEN'] as const
 
-  return requiredContracts.every(contract => {
-    const address = addresses[contract]
-    return address && address !== '0x0000000000000000000000000000000000000000'
-  })
+  for (const contract of requiredContracts) {
+    if (!addresses[contract] || addresses[contract] === DEFAULT_ADDRESSES[contract]) {
+      console.warn(`❌ Missing contract address for ${contract}`)
+      return false
+    }
+  }
+
+  return true
+}
+
+/**
+ * Log contract configuration for debugging
+ */
+export function logContractConfiguration(chainId: number): void {
+  const addresses = getContractAddresses(chainId)
+  const isValid = validateContractAddresses(addresses)
+
+  console.log(`🔧 Contract Configuration for Chain ${chainId}:`)
+  console.log(`   Valid: ${isValid ? '✅' : '❌'}`)
+  console.log(`   REGISTRY: ${addresses.REGISTRY}`)
+  console.log(`   CONTROL:  ${addresses.CONTROL}`)
+  console.log(`   FLOW:     ${addresses.FLOW}`)
+  console.log(`   SIGNAL:   ${addresses.SIGNAL}`)
+  console.log(`   SENSE:    ${addresses.SENSE}`)
+  console.log(`   IDENTITY: ${addresses.IDENTITY}`)
+  console.log(`   MEMBERSHIP: ${addresses.MEMBERSHIP}`)
+  console.log(`   STAKING:  ${addresses.STAKING}`)
+  console.log(`   GAME_STAKING: ${addresses.GAME_STAKING}`)
+  console.log(`   GAME_TOKEN: ${addresses.GAME_TOKEN}`)
+  console.log(`   USDC_TOKEN: ${addresses.USDC_TOKEN}`)
+
+  if (!isValid) {
+    console.warn('⚠️  Some contract addresses are missing. Please check your environment variables or deployment.')
+  }
+}
+
+// Export individual contract address getters for convenience
+export const getRegistryAddress = (chainId: number): Address => getContractAddresses(chainId).REGISTRY
+export const getControlAddress = (chainId: number): Address => getContractAddresses(chainId).CONTROL
+export const getFlowAddress = (chainId: number): Address => getContractAddresses(chainId).FLOW
+export const getSignalAddress = (chainId: number): Address => getContractAddresses(chainId).SIGNAL
+export const getSenseAddress = (chainId: number): Address => getContractAddresses(chainId).SENSE
+export const getIdentityAddress = (chainId: number): Address => getContractAddresses(chainId).IDENTITY
+export const getMembershipAddress = (chainId: number): Address => getContractAddresses(chainId).MEMBERSHIP
+export const getStakingAddress = (chainId: number): Address => getContractAddresses(chainId).STAKING
+export const getGameStakingAddress = (chainId: number): Address => getContractAddresses(chainId).GAME_STAKING
+export const getGameTokenAddress = (chainId: number): Address => getContractAddresses(chainId).GAME_TOKEN
+export const getUSDCTokenAddress = (chainId: number): Address => getContractAddresses(chainId).USDC_TOKEN
+
+// Local development addresses (for reference)
+export const LOCAL_ADDRESSES: ContractAddresses = {
+  REGISTRY: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+  CONTROL: '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318',
+  FLOW: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+  SIGNAL: '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82',
+  SENSE: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
+  IDENTITY: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853', // Same as Sense for now
+  MEMBERSHIP: '0x0165878A594ca255338adfa4d48449f69242Eb8F', // New GameDAO Membership
+  STAKING: '0xc5a5C42992dECbae36851359345FE25997F5C42d',
+  GAME_STAKING: '0xc5a5C42992dECbae36851359345FE25997F5C42d', // New GameStaking contract
+  GAME_TOKEN: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+  USDC_TOKEN: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+}
+
+// Testnet addresses (placeholder - update when deployed)
+export const TESTNET_ADDRESSES: ContractAddresses = {
+  REGISTRY: '0x0000000000000000000000000000000000000000',
+  CONTROL: '0x0000000000000000000000000000000000000000',
+  FLOW: '0x0000000000000000000000000000000000000000',
+  SIGNAL: '0x0000000000000000000000000000000000000000',
+  SENSE: '0x0000000000000000000000000000000000000000',
+  IDENTITY: '0x0000000000000000000000000000000000000000',
+  MEMBERSHIP: '0x0000000000000000000000000000000000000000',
+  STAKING: '0x0000000000000000000000000000000000000000',
+  GAME_STAKING: '0x0000000000000000000000000000000000000000',
+  GAME_TOKEN: '0x0000000000000000000000000000000000000000',
+  USDC_TOKEN: '0x0000000000000000000000000000000000000000',
+}
+
+// Mainnet addresses (placeholder - update when deployed)
+export const MAINNET_ADDRESSES: ContractAddresses = {
+  REGISTRY: '0x0000000000000000000000000000000000000000',
+  CONTROL: '0x0000000000000000000000000000000000000000',
+  FLOW: '0x0000000000000000000000000000000000000000',
+  SIGNAL: '0x0000000000000000000000000000000000000000',
+  SENSE: '0x0000000000000000000000000000000000000000',
+  IDENTITY: '0x0000000000000000000000000000000000000000',
+  MEMBERSHIP: '0x0000000000000000000000000000000000000000',
+  STAKING: '0x0000000000000000000000000000000000000000',
+  GAME_STAKING: '0x0000000000000000000000000000000000000000',
+  GAME_TOKEN: '0x0000000000000000000000000000000000000000',
+  USDC_TOKEN: '0x0000000000000000000000000000000000000000',
+}
+
+// Export network-specific addresses
+export const NETWORK_ADDRESSES: Record<number, ContractAddresses> = {
+  31337: LOCAL_ADDRESSES,
+  11155111: TESTNET_ADDRESSES,
+  1: MAINNET_ADDRESSES,
+  137: MAINNET_ADDRESSES, // Polygon
+  42161: MAINNET_ADDRESSES, // Arbitrum
+}
+
+// Helper function to get addresses by network
+export function getAddressesByNetwork(chainId: number): ContractAddresses {
+  return NETWORK_ADDRESSES[chainId] || LOCAL_ADDRESSES
 }
 
 /**
@@ -260,28 +307,3 @@ export const TEST_DATA = {
   proposalId: (process.env.NEXT_PUBLIC_TEST_PROPOSAL_ID as Address) ||
     '0xb224dd479fcaa620f924106f8c1be276fb8bcc61ecd9321cb522055a5da8b44a',
 } as const
-
-/**
- * Log current contract configuration for debugging
- */
-export function logContractConfiguration(chainId: number): void {
-  const addresses = getContractAddresses(chainId)
-  const isValid = validateContractAddresses(addresses)
-
-  console.log(`\n🔧 Contract Configuration for Chain ${chainId}:`)
-  console.log(`   Valid: ${isValid ? '✅' : '❌'}`)
-  console.log(`   REGISTRY: ${addresses.REGISTRY}`)
-  console.log(`   CONTROL:  ${addresses.CONTROL}`)
-  console.log(`   FLOW:     ${addresses.FLOW}`)
-  console.log(`   SIGNAL:   ${addresses.SIGNAL}`)
-  console.log(`   SENSE:    ${addresses.SENSE}`)
-
-  if (!isValid) {
-    console.log(`\n⚠️  To fix this, update your .env file with:`)
-    console.log(`   NEXT_PUBLIC_REGISTRY_ADDRESS_${chainId === 31337 ? 'LOCAL' : 'SEPOLIA'}=0x...`)
-    console.log(`   NEXT_PUBLIC_CONTROL_ADDRESS_${chainId === 31337 ? 'LOCAL' : 'SEPOLIA'}=0x...`)
-    console.log(`   NEXT_PUBLIC_FLOW_ADDRESS_${chainId === 31337 ? 'LOCAL' : 'SEPOLIA'}=0x...`)
-    console.log(`   NEXT_PUBLIC_SIGNAL_ADDRESS_${chainId === 31337 ? 'LOCAL' : 'SEPOLIA'}=0x...`)
-    console.log(`   NEXT_PUBLIC_SENSE_ADDRESS_${chainId === 31337 ? 'LOCAL' : 'SEPOLIA'}=0x...`)
-  }
-}

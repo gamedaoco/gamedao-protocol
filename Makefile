@@ -96,14 +96,14 @@ install:
 	@echo "$(BLUE)📦 Installing dependencies...$(NC)"
 	@npm install
 	@echo "$(BLUE)📦 Installing contract dependencies...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm install --legacy-peer-deps || npm install --force
+	@cd $(CONTRACTS_DIR) && pnpm install --legacy-peer-deps || pnpm install --force
 	@echo "$(BLUE)📦 Installing frontend dependencies...$(NC)"
 	@if [ -d "$(FRONTEND_DIR)" ]; then \
-		cd $(FRONTEND_DIR) && npm install; \
+		cd $(FRONTEND_DIR) && pnpm install; \
 	fi
 	@echo "$(BLUE)📦 Installing subgraph dependencies...$(NC)"
 	@if [ -d "$(SUBGRAPH_DIR)" ]; then \
-		cd $(SUBGRAPH_DIR) && npm install; \
+		cd $(SUBGRAPH_DIR) && pnpm install; \
 	fi
 	@echo "$(GREEN)✅ Dependencies installed successfully$(NC)"
 
@@ -135,13 +135,13 @@ build: build-contracts build-frontend build-subgraph
 
 build-contracts:
 	@echo "$(BLUE)🏗️  Building smart contracts...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run build
+	@cd $(CONTRACTS_DIR) && pnpm run build
 	@echo "$(GREEN)✅ Contracts built successfully$(NC)"
 
 build-frontend:
 	@echo "$(BLUE)🏗️  Building frontend...$(NC)"
 	@if [ -d "$(FRONTEND_DIR)" ]; then \
-		cd $(FRONTEND_DIR) && npm run build; \
+		cd $(FRONTEND_DIR) && pnpm run build; \
 		echo "$(GREEN)✅ Frontend built successfully$(NC)"; \
 	else \
 		echo "$(YELLOW)⚠️  Frontend directory not found, skipping...$(NC)"; \
@@ -150,7 +150,7 @@ build-frontend:
 build-subgraph:
 	@echo "$(BLUE)🏗️  Building subgraph...$(NC)"
 	@if [ -d "$(SUBGRAPH_DIR)" ]; then \
-		cd $(SUBGRAPH_DIR) && npm run codegen && npm run build; \
+		cd $(SUBGRAPH_DIR) && pnpm run codegen && pnpm run build; \
 		echo "$(GREEN)✅ Subgraph built successfully$(NC)"; \
 	else \
 		echo "$(YELLOW)⚠️  Subgraph directory not found, skipping...$(NC)"; \
@@ -162,32 +162,32 @@ test: test-contracts
 
 test-contracts:
 	@echo "$(BLUE)🧪 Running contract tests...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm test
+	@cd $(CONTRACTS_DIR) && pnpm test
 
 test-coverage:
 	@echo "$(BLUE)🧪 Running tests with coverage...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run test:coverage
+	@cd $(CONTRACTS_DIR) && pnpm run test:coverage
 
 test-gas:
 	@echo "$(BLUE)⛽ Running gas optimization tests...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run test:gas
+	@cd $(CONTRACTS_DIR) && pnpm run test:gas
 
 # Deployment targets
 deploy:
 	@echo "$(BLUE)🚀 Deploying to $(NETWORK)...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run deploy:$(NETWORK)
+	@cd $(CONTRACTS_DIR) && pnpm run deploy:$(NETWORK)
 	@echo "$(GREEN)✅ Deployment to $(NETWORK) complete$(NC)"
 
 deploy-localhost:
 	@echo "$(BLUE)🚀 Deploying to localhost...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run node &
+	@cd $(CONTRACTS_DIR) && pnpm run node &
 	@sleep 5
-	@cd $(CONTRACTS_DIR) && npm run deploy:localhost
+	@cd $(CONTRACTS_DIR) && pnpm run deploy:localhost
 	@echo "$(GREEN)✅ Local deployment complete$(NC)"
 
 deploy-testnet:
 	@echo "$(BLUE)🚀 Deploying to testnet...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run deploy:testnet
+	@cd $(CONTRACTS_DIR) && pnpm run deploy:testnet
 	@echo "$(GREEN)✅ Testnet deployment complete$(NC)"
 
 deploy-mainnet:
@@ -195,7 +195,7 @@ deploy-mainnet:
 	@read -r REPLY; \
 	if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
 		echo "$(BLUE)🚀 Deploying to mainnet...$(NC)"; \
-		cd $(CONTRACTS_DIR) && npm run deploy:mainnet; \
+		cd $(CONTRACTS_DIR) && pnpm run deploy:mainnet; \
 		echo "$(GREEN)✅ Mainnet deployment complete$(NC)"; \
 	else \
 		echo "$(YELLOW)⚠️  Mainnet deployment cancelled$(NC)"; \
@@ -207,7 +207,7 @@ verify:
 		echo "$(RED)❌ ETHERSCAN_API_KEY not set$(NC)"; \
 		exit 1; \
 	fi
-	@cd $(CONTRACTS_DIR) && npm run verify
+	@cd $(CONTRACTS_DIR) && pnpm run verify
 	@echo "$(GREEN)✅ Contract verification complete$(NC)"
 
 # Graph node and subgraph targets
@@ -230,11 +230,11 @@ graph-deploy:
 		exit 1; \
 	fi
 	@echo "$(BLUE)🏗️  Building subgraph...$(NC)"
-	@cd $(SUBGRAPH_DIR) && npm run codegen && npm run build
+	@cd $(SUBGRAPH_DIR) && pnpm run codegen && pnpm run build
 	@echo "$(BLUE)🚀 Creating subgraph...$(NC)"
-	@cd $(SUBGRAPH_DIR) && npm run create-local || echo "$(YELLOW)⚠️  Subgraph already exists$(NC)"
+	@cd $(SUBGRAPH_DIR) && pnpm run create-local || echo "$(YELLOW)⚠️  Subgraph already exists$(NC)"
 	@echo "$(BLUE)🚀 Deploying subgraph...$(NC)"
-	@cd $(SUBGRAPH_DIR) && npm run deploy-local
+	@cd $(SUBGRAPH_DIR) && pnpm run deploy-local
 	@echo "$(GREEN)✅ Subgraph deployed successfully$(NC)"
 	@echo "$(CYAN)📋 Subgraph available at:$(NC)"
 	@echo "  - GraphQL Playground: http://localhost:8000/subgraphs/name/gamedao/protocol"
@@ -264,7 +264,7 @@ graph-status:
 # Development workflow targets
 dev:
 	@echo "$(BLUE)🔧 Starting development environment...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run node &
+	@cd $(CONTRACTS_DIR) && pnpm run node &
 	@echo "$(GREEN)✅ Hardhat node started$(NC)"
 	@echo "$(CYAN)💡 Ready for development!$(NC)"
 	@echo "  - Local node: http://localhost:8545"
@@ -284,11 +284,11 @@ dev-reset:
 	@make scaffold-clean
 	@sleep 2
 	@echo "$(CYAN)4️⃣  Starting Hardhat node...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run node &
+	@cd $(CONTRACTS_DIR) && pnpm run node &
 	@echo "$(YELLOW)⏳ Waiting for node to start...$(NC)"
 	@sleep 5
 	@echo "$(CYAN)5️⃣  Deploying contracts...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run deploy:localhost
+	@cd $(CONTRACTS_DIR) && pnpm run deploy:localhost
 	@echo "$(CYAN)6️⃣  Starting Graph node...$(NC)"
 	@make graph-node
 	@echo "$(CYAN)7️⃣  Deploying subgraph...$(NC)"
@@ -301,7 +301,7 @@ dev-full:
 	@make dev-reset
 	@echo "$(CYAN)8️⃣  Starting frontend...$(NC)"
 	@if [ -d "$(FRONTEND_DIR)" ]; then \
-		cd $(FRONTEND_DIR) && npm run dev & \
+		cd $(FRONTEND_DIR) && pnpm run dev & \
 	fi
 	@echo "$(GREEN)🎉 Complete development environment ready!$(NC)"
 	@echo "$(CYAN)📋 Services available:$(NC)"
@@ -314,7 +314,7 @@ dev-frontend:
 	@echo "$(BLUE)🌐 Starting frontend development server...$(NC)"
 	@if [ -d "$(FRONTEND_DIR)" ]; then \
 		echo "$(CYAN)🚀 Starting Next.js development server...$(NC)"; \
-		cd $(FRONTEND_DIR) && npm run dev; \
+		cd $(FRONTEND_DIR) && pnpm run dev; \
 	else \
 		echo "$(RED)❌ Frontend directory not found: $(FRONTEND_DIR)$(NC)"; \
 		exit 1; \
@@ -324,7 +324,7 @@ dev-frontend:
 scaffold:
 	@echo "$(BLUE)🏗️  Generating test data...$(NC)"
 	@echo "$(YELLOW)⚠️  Ensure local node is running and contracts are deployed$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run scaffold
+	@cd $(CONTRACTS_DIR) && pnpm run scaffold
 	@echo "$(GREEN)✅ Test data generated successfully$(NC)"
 
 scaffold-clean:
@@ -352,7 +352,7 @@ send-tokens:
 	@echo "  GAME: $(or $(GAME),10000)"
 	@echo "  USDC: $(or $(USDC),5000)"
 	@echo "$(YELLOW)⚠️  Ensure local node is running and contracts are deployed$(NC)"
-	@cd $(CONTRACTS_DIR) && RECIPIENT=$(RECIPIENT) ETH=$(or $(ETH),1.0) GAME=$(or $(GAME),10000) USDC=$(or $(USDC),5000) npm run send-tokens
+	@cd $(CONTRACTS_DIR) && RECIPIENT=$(RECIPIENT) ETH=$(or $(ETH),1.0) GAME=$(or $(GAME),10000) USDC=$(or $(USDC),5000) pnpm run send-tokens
 	@echo "$(GREEN)✅ Token transfer completed$(NC)"
 
 # Documentation targets
@@ -370,11 +370,11 @@ docs:
 # Code quality targets
 lint:
 	@echo "$(BLUE)🔍 Running linting...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run lint || echo "$(YELLOW)⚠️  Linting not configured yet$(NC)"
+	@cd $(CONTRACTS_DIR) && pnpm run lint || echo "$(YELLOW)⚠️  Linting not configured yet$(NC)"
 
 format:
 	@echo "$(BLUE)💅 Formatting code...$(NC)"
-	@cd $(CONTRACTS_DIR) && npm run format || echo "$(YELLOW)⚠️  Formatting not configured yet$(NC)"
+	@cd $(CONTRACTS_DIR) && pnpm run format || echo "$(YELLOW)⚠️  Formatting not configured yet$(NC)"
 
 # Status and information targets
 status:

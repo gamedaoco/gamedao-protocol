@@ -50,13 +50,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC165__factory>;
     getContractFactory(
-      name: "GameDAOModule",
+      name: "Module",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.GameDAOModule__factory>;
+    ): Promise<Contracts.Module__factory>;
     getContractFactory(
-      name: "GameDAORegistry",
+      name: "Registry",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.GameDAORegistry__factory>;
+    ): Promise<Contracts.Registry__factory>;
     getContractFactory(
       name: "Treasury",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -70,26 +70,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IFlow__factory>;
     getContractFactory(
-      name: "IGameDAOMembership",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IGameDAOMembership__factory>;
-    getContractFactory(
-      name: "IGameDAOModule",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IGameDAOModule__factory>;
-    getContractFactory(
-      name: "IGameDAORegistry",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IGameDAORegistry__factory>;
-    getContractFactory(
-      name: "IGameStaking",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IGameStaking__factory>;
-    getContractFactory(
-      name: "IGameTokenDeprecated",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IGameTokenDeprecated__factory>;
-    getContractFactory(
       name: "IGameToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IGameToken__factory>;
@@ -97,6 +77,18 @@ declare module "hardhat/types/runtime" {
       name: "IIdentity",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IIdentity__factory>;
+    getContractFactory(
+      name: "IMembership",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IMembership__factory>;
+    getContractFactory(
+      name: "IModule",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IModule__factory>;
+    getContractFactory(
+      name: "IRegistry",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IRegistry__factory>;
     getContractFactory(
       name: "ISense",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -106,13 +98,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ISignal__factory>;
     getContractFactory(
+      name: "IStaking",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IStaking__factory>;
+    getContractFactory(
       name: "AlphanumericID",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.AlphanumericID__factory>;
-    getContractFactory(
-      name: "GameDAOMembership",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.GameDAOMembership__factory>;
     getContractFactory(
       name: "MockGameToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -126,9 +118,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Control__factory>;
     getContractFactory(
-      name: "Control",
+      name: "Factory",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Control__factory>;
+    ): Promise<Contracts.Factory__factory>;
+    getContractFactory(
+      name: "OrganizationFactory",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.OrganizationFactory__factory>;
     getContractFactory(
       name: "Flow",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -138,6 +134,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Identity__factory>;
     getContractFactory(
+      name: "Membership",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Membership__factory>;
+    getContractFactory(
       name: "Sense",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Sense__factory>;
@@ -146,9 +146,9 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Signal__factory>;
     getContractFactory(
-      name: "GameStaking",
+      name: "Staking",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.GameStaking__factory>;
+    ): Promise<Contracts.Staking__factory>;
     getContractFactory(
       name: "AlphanumericIDTest",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -204,15 +204,15 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IERC165>;
     getContractAt(
-      name: "GameDAOModule",
+      name: "Module",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.GameDAOModule>;
+    ): Promise<Contracts.Module>;
     getContractAt(
-      name: "GameDAORegistry",
+      name: "Registry",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.GameDAORegistry>;
+    ): Promise<Contracts.Registry>;
     getContractAt(
       name: "Treasury",
       address: string | ethers.Addressable,
@@ -229,31 +229,6 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IFlow>;
     getContractAt(
-      name: "IGameDAOMembership",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IGameDAOMembership>;
-    getContractAt(
-      name: "IGameDAOModule",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IGameDAOModule>;
-    getContractAt(
-      name: "IGameDAORegistry",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IGameDAORegistry>;
-    getContractAt(
-      name: "IGameStaking",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IGameStaking>;
-    getContractAt(
-      name: "IGameTokenDeprecated",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IGameTokenDeprecated>;
-    getContractAt(
       name: "IGameToken",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -263,6 +238,21 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.IIdentity>;
+    getContractAt(
+      name: "IMembership",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IMembership>;
+    getContractAt(
+      name: "IModule",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IModule>;
+    getContractAt(
+      name: "IRegistry",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IRegistry>;
     getContractAt(
       name: "ISense",
       address: string | ethers.Addressable,
@@ -274,15 +264,15 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.ISignal>;
     getContractAt(
+      name: "IStaking",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IStaking>;
+    getContractAt(
       name: "AlphanumericID",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.AlphanumericID>;
-    getContractAt(
-      name: "GameDAOMembership",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.GameDAOMembership>;
     getContractAt(
       name: "MockGameToken",
       address: string | ethers.Addressable,
@@ -299,10 +289,15 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.Control>;
     getContractAt(
-      name: "Control",
+      name: "Factory",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.Control>;
+    ): Promise<Contracts.Factory>;
+    getContractAt(
+      name: "OrganizationFactory",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.OrganizationFactory>;
     getContractAt(
       name: "Flow",
       address: string | ethers.Addressable,
@@ -314,6 +309,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.Identity>;
     getContractAt(
+      name: "Membership",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Membership>;
+    getContractAt(
       name: "Sense",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -324,10 +324,10 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.Signal>;
     getContractAt(
-      name: "GameStaking",
+      name: "Staking",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.GameStaking>;
+    ): Promise<Contracts.Staking>;
     getContractAt(
       name: "AlphanumericIDTest",
       address: string | ethers.Addressable,
@@ -376,13 +376,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC165>;
     deployContract(
-      name: "GameDAOModule",
+      name: "Module",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.GameDAOModule>;
+    ): Promise<Contracts.Module>;
     deployContract(
-      name: "GameDAORegistry",
+      name: "Registry",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.GameDAORegistry>;
+    ): Promise<Contracts.Registry>;
     deployContract(
       name: "Treasury",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -396,26 +396,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IFlow>;
     deployContract(
-      name: "IGameDAOMembership",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IGameDAOMembership>;
-    deployContract(
-      name: "IGameDAOModule",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IGameDAOModule>;
-    deployContract(
-      name: "IGameDAORegistry",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IGameDAORegistry>;
-    deployContract(
-      name: "IGameStaking",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IGameStaking>;
-    deployContract(
-      name: "IGameTokenDeprecated",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IGameTokenDeprecated>;
-    deployContract(
       name: "IGameToken",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IGameToken>;
@@ -423,6 +403,18 @@ declare module "hardhat/types/runtime" {
       name: "IIdentity",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IIdentity>;
+    deployContract(
+      name: "IMembership",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IMembership>;
+    deployContract(
+      name: "IModule",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IModule>;
+    deployContract(
+      name: "IRegistry",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IRegistry>;
     deployContract(
       name: "ISense",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -432,13 +424,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ISignal>;
     deployContract(
+      name: "IStaking",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IStaking>;
+    deployContract(
       name: "AlphanumericID",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.AlphanumericID>;
-    deployContract(
-      name: "GameDAOMembership",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.GameDAOMembership>;
     deployContract(
       name: "MockGameToken",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -452,9 +444,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Control>;
     deployContract(
-      name: "Control",
+      name: "Factory",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.Control>;
+    ): Promise<Contracts.Factory>;
+    deployContract(
+      name: "OrganizationFactory",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.OrganizationFactory>;
     deployContract(
       name: "Flow",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -464,6 +460,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Identity>;
     deployContract(
+      name: "Membership",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Membership>;
+    deployContract(
       name: "Sense",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Sense>;
@@ -472,9 +472,9 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Signal>;
     deployContract(
-      name: "GameStaking",
+      name: "Staking",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.GameStaking>;
+    ): Promise<Contracts.Staking>;
     deployContract(
       name: "AlphanumericIDTest",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -530,15 +530,15 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC165>;
     deployContract(
-      name: "GameDAOModule",
+      name: "Module",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.GameDAOModule>;
+    ): Promise<Contracts.Module>;
     deployContract(
-      name: "GameDAORegistry",
+      name: "Registry",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.GameDAORegistry>;
+    ): Promise<Contracts.Registry>;
     deployContract(
       name: "Treasury",
       args: any[],
@@ -555,31 +555,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IFlow>;
     deployContract(
-      name: "IGameDAOMembership",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IGameDAOMembership>;
-    deployContract(
-      name: "IGameDAOModule",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IGameDAOModule>;
-    deployContract(
-      name: "IGameDAORegistry",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IGameDAORegistry>;
-    deployContract(
-      name: "IGameStaking",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IGameStaking>;
-    deployContract(
-      name: "IGameTokenDeprecated",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IGameTokenDeprecated>;
-    deployContract(
       name: "IGameToken",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -589,6 +564,21 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IIdentity>;
+    deployContract(
+      name: "IMembership",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IMembership>;
+    deployContract(
+      name: "IModule",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IModule>;
+    deployContract(
+      name: "IRegistry",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IRegistry>;
     deployContract(
       name: "ISense",
       args: any[],
@@ -600,15 +590,15 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ISignal>;
     deployContract(
+      name: "IStaking",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IStaking>;
+    deployContract(
       name: "AlphanumericID",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.AlphanumericID>;
-    deployContract(
-      name: "GameDAOMembership",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.GameDAOMembership>;
     deployContract(
       name: "MockGameToken",
       args: any[],
@@ -625,10 +615,15 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Control>;
     deployContract(
-      name: "Control",
+      name: "Factory",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.Control>;
+    ): Promise<Contracts.Factory>;
+    deployContract(
+      name: "OrganizationFactory",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.OrganizationFactory>;
     deployContract(
       name: "Flow",
       args: any[],
@@ -640,6 +635,11 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Identity>;
     deployContract(
+      name: "Membership",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Membership>;
+    deployContract(
       name: "Sense",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -650,10 +650,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Signal>;
     deployContract(
-      name: "GameStaking",
+      name: "Staking",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.GameStaking>;
+    ): Promise<Contracts.Staking>;
     deployContract(
       name: "AlphanumericIDTest",
       args: any[],

@@ -2,31 +2,19 @@
 pragma solidity ^0.8.20;
 
 import "../../core/Module.sol";
-import "../../core/Treasury.sol";
 import "../../interfaces/IControl.sol";
 import "../../interfaces/IStaking.sol";
-import "../../libraries/AlphanumericID.sol";
+import "./Factory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-
 
 /**
  * @title Control
- * @dev Core organization management module
+ * @dev Organization registry and management module
  * @author GameDAO AG
  */
 contract Control is Module, IControl {
-    using Counters for Counters.Counter;
-    using AlphanumericID for bytes32;
-
     // Constants
     bytes32 public constant MODULE_ID = keccak256("CONTROL");
-    uint256 public constant MAX_MEMBER_LIMIT = 10000;
-    uint256 public constant MIN_MEMBER_LIMIT = 1;
-    uint256 public constant MIN_STAKE_AMOUNT = 10000 * 10**18; // 10,000 GAME tokens minimum
-
-    // State variables
-    Counters.Counter private _organizationCounter;
 
     // Organization storage
     mapping(bytes8 => Organization) private _organizations;
@@ -36,6 +24,7 @@ contract Control is Module, IControl {
     // Contract references
     IERC20 public gameToken;
     IStaking public stakingContract;
+    Factory public factory;
 
     // Events
     event StakeWithdrawn(bytes8 indexed organizationId, address indexed staker, uint256 amount, uint256 timestamp);
@@ -51,16 +40,8 @@ contract Control is Module, IControl {
         _;
     }
 
-    modifier validMemberLimit(uint256 limit) {
-        require(
-            limit >= MIN_MEMBER_LIMIT && limit <= MAX_MEMBER_LIMIT,
-            "Invalid member limit"
-        );
-        _;
-    }
-
-    modifier validStakeAmount(uint256 amount) {
-        require(amount >= MIN_STAKE_AMOUNT, "Stake amount below minimum");
+    modifier onlyFactory() {
+        require(msg.sender == address(factory), "Only factory can call");
         _;
     }
 
@@ -76,6 +57,14 @@ contract Control is Module, IControl {
     }
 
     /**
+     * @dev Set the factory address
+     */
+    function setFactory(address _factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_factory != address(0), "Invalid factory address");
+        factory = Factory(_factory);
+    }
+
+    /**
      * @dev Returns the module ID
      */
     function moduleId() external pure override returns (bytes32) {
@@ -83,7 +72,18 @@ contract Control is Module, IControl {
     }
 
     /**
-     * @dev Create a new organization with staking
+     * @dev Register a new organization (called by factory)
+     */
+    function registerOrganization(bytes8 organizationId, Organization memory org) external override onlyFactory {
+        require(!_organizationExists[organizationId], "Organization already exists");
+
+        _organizations[organizationId] = org;
+        _organizationExists[organizationId] = true;
+        _organizationIds.push(organizationId);
+    }
+
+    /**
+     * @dev Create organization - delegates to factory
      */
     function createOrganization(
         string memory name,
@@ -94,65 +94,21 @@ contract Control is Module, IControl {
         uint256 memberLimit,
         uint256 membershipFee,
         uint256 gameStakeRequired
-    ) external override validMemberLimit(memberLimit) validStakeAmount(gameStakeRequired) nonReentrant returns (bytes8) {
-        require(bytes(name).length > 0, "Organization name cannot be empty");
+    ) external override returns (bytes8) {
+        require(address(factory) != address(0), "Factory not set");
 
-        // Generate unique 8-character alphanumeric ID
-        _organizationCounter.increment();
-        uint256 orgIndex = _organizationCounter.current();
-        bytes8 orgId = AlphanumericID.generateOrganizationID(MODULE_ID, orgIndex, msg.sender, block.timestamp);
-
-        // Ensure ID is unique (extremely unlikely to collide, but safety first)
-        require(!_organizationExists[orgId], "Organization ID collision");
-
-        // Handle GAME token staking
-        require(
-            gameToken.allowance(msg.sender, address(this)) >= gameStakeRequired,
-            "Insufficient token allowance for stake"
+        // Delegate to factory
+        return factory.createOrganization(
+            msg.sender,
+            name,
+            metadataURI,
+            orgType,
+            accessModel,
+            feeModel,
+            memberLimit,
+            membershipFee,
+            gameStakeRequired
         );
-
-        // Transfer tokens from user to this contract
-        gameToken.transferFrom(msg.sender, address(this), gameStakeRequired);
-
-        // Approve staking contract to spend tokens
-        gameToken.approve(address(stakingContract), gameStakeRequired);
-
-        // Create stake in staking contract
-        stakingContract.stakeForOrganization(orgId, msg.sender, gameStakeRequired);
-
-        // Create treasury for the organization
-        bytes32 orgIdBytes32 = keccak256(abi.encodePacked(orgId));
-        Treasury treasury = new Treasury(orgIdBytes32, address(this), msg.sender);
-
-        // Create organization
-        Organization memory newOrg = Organization({
-            id: orgId,
-            name: name,
-            metadataURI: metadataURI,
-            creator: msg.sender,
-            treasury: address(treasury),
-            orgType: orgType,
-            accessModel: accessModel,
-            feeModel: feeModel,
-            memberLimit: memberLimit,
-            memberCount: 1, // Creator is first member
-            totalCampaigns: 0,
-            totalProposals: 0,
-            membershipFee: membershipFee,
-            gameStakeRequired: gameStakeRequired,
-            state: OrgState.Active,
-            createdAt: block.timestamp,
-            updatedAt: block.timestamp
-        });
-
-        // Store organization
-        _organizations[orgId] = newOrg;
-        _organizationExists[orgId] = true;
-        _organizationIds.push(orgId);
-
-        emit OrganizationCreated(orgId, name, msg.sender, address(treasury), block.timestamp);
-
-        return orgId;
     }
 
     /**
@@ -256,7 +212,6 @@ contract Control is Module, IControl {
     }
 
     function getAllOrganizations() external view override returns (Organization[] memory) {
-        // Removed to reduce contract size - use events and subgraph instead
         revert("Use subgraph for bulk queries");
     }
 
@@ -266,7 +221,6 @@ contract Control is Module, IControl {
         override
         returns (Organization[] memory)
     {
-        // Removed to reduce contract size - use events and subgraph instead
         revert("Use subgraph for state queries");
     }
 

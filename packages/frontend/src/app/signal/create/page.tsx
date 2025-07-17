@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader } from '@/components/ui/loader'
 import { EmptyState } from '@/components/ui/empty-state'
+import { TransactionOverlay } from '@/components/ui/transaction-overlay'
 import { ArrowLeft, Vote, FileText, Clock, Users } from 'lucide-react'
 import Link from 'next/link'
 
@@ -108,36 +109,42 @@ export default function CreateProposalPage() {
     isProcessing
   })
 
+  // Check if user has organizations
   if (userOrganizations.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <Vote className="h-12 w-12 text-muted-foreground mx-auto" />
-              <div>
-                <h2 className="text-2xl font-bold mb-2">No Organizations Available</h2>
-                <p className="text-muted-foreground">You need to be a member of an organization to create a proposal.</p>
-                {preselectedOrgId && (
-                  <div className="mt-4 text-sm text-muted-foreground space-y-1">
-                    <p>Preselected org: {preselectedOrgId}</p>
-                    <p>Is member: {isMember ? 'Yes' : 'No'}</p>
-                    <p>Member data: {memberData ? JSON.stringify(memberData) : 'None'}</p>
-                    <p>User organizations: {userOrganizations.length}</p>
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-4 justify-center">
-                <Button onClick={() => router.push('/control')}>
-                  Browse Organizations
-                </Button>
-                <Button variant="outline" onClick={() => router.push('/control/create')}>
-                  Create Organization
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No Organizations Available"
+          description="You need to be a member of an organization to create a proposal."
+          primaryAction={{
+            label: 'Browse Organizations',
+            onClick: () => router.push('/control')
+          }}
+          secondaryAction={{
+            label: 'Create Organization',
+            onClick: () => router.push('/control/create')
+          }}
+        />
+      </div>
+    )
+  }
+
+  // Check if user is a member of the preselected organization
+  if (preselectedOrgId && !membershipLoading && !isMember) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <EmptyState
+          title="Access Denied"
+          description="You must be a member of this organization to create proposals."
+          primaryAction={{
+            label: 'Browse Organizations',
+            onClick: () => router.push('/control')
+          }}
+          secondaryAction={{
+            label: 'Join Organization',
+            onClick: () => router.push(`/control/${preselectedOrgId}`)
+          }}
+        />
       </div>
     )
   }
@@ -181,7 +188,23 @@ export default function CreateProposalPage() {
   ]
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 relative">
+      {/* Transaction Overlay */}
+      <TransactionOverlay
+        isVisible={isProcessing}
+        title="Creating Proposal"
+        description="Please wait while we create your proposal on the blockchain."
+        currentStep={currentStep}
+        progress={progress}
+        error={creationError}
+        onRetry={resetState}
+        successMessage="Proposal created successfully! Redirecting to proposals page..."
+        successAction={{
+          label: 'View Proposals',
+          onClick: () => router.push('/signal')
+        }}
+      />
+
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -194,7 +217,7 @@ export default function CreateProposalPage() {
           <div>
             <h1 className="text-3xl font-bold">Create Proposal</h1>
             <p className="text-muted-foreground">
-              Submit a proposal for your organization to vote on
+              Submit a proposal for community voting
             </p>
           </div>
         </div>
@@ -206,45 +229,19 @@ export default function CreateProposalPage() {
               Proposal Details
             </CardTitle>
             <CardDescription>
-              Provide information about your proposal for the community to consider
+              Fill out the details for your proposal. All fields are required.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Error Display */}
-            {creationError && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm">{creationError}</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={resetState}
-                  className="mt-2"
-                >
-                  Try Again
-                </Button>
-              </div>
-            )}
-
-            {/* Progress Display */}
-            {progress && isProcessing && (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-blue-700 text-sm">{progress}</p>
-                {isApproving && (
-                  <p className="text-blue-600 text-xs mt-1">
-                    Please confirm the transaction in your wallet
-                  </p>
-                )}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Dim the form during transaction */}
+            <form onSubmit={handleSubmit} className={`space-y-6 ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}>
               {/* Organization Selection */}
               <div className="space-y-2">
                 <Label htmlFor="organizationId">Organization *</Label>
                 <Select
                   value={formData.organizationId}
                   onValueChange={(value) => handleInputChange('organizationId', value)}
+                  disabled={!!preselectedOrgId}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select an organization" />
@@ -252,51 +249,46 @@ export default function CreateProposalPage() {
                   <SelectContent>
                     {userOrganizations.map((org) => (
                       <SelectItem key={org.id} value={org.id}>
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          {org.name}
-                        </div>
+                        {org.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {preselectedOrgId && (
                   <p className="text-sm text-muted-foreground">
-                    Pre-selected from organization page
+                    Organization pre-selected from URL
                   </p>
                 )}
               </div>
 
-              {/* Proposal Title */}
+              {/* Title */}
               <div className="space-y-2">
-                <Label htmlFor="title">Proposal Title *</Label>
+                <Label htmlFor="title">Title *</Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
-                  placeholder="Enter a clear, descriptive title"
+                  placeholder="Enter proposal title"
                   required
                 />
               </div>
 
-              {/* Proposal Description */}
+              {/* Description */}
               <div className="space-y-2">
                 <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Describe your proposal in detail. What are you proposing and why?"
+                  placeholder="Describe your proposal in detail..."
                   rows={6}
                   required
                 />
               </div>
 
-
-
               {/* Proposal Type */}
               <div className="space-y-2">
-                <Label htmlFor="proposalType">Proposal Type *</Label>
+                <Label htmlFor="proposalType">Proposal Type</Label>
                 <Select
                   value={formData.proposalType}
                   onValueChange={(value) => handleInputChange('proposalType', value)}
@@ -319,7 +311,7 @@ export default function CreateProposalPage() {
 
               {/* Voting Type */}
               <div className="space-y-2">
-                <Label htmlFor="votingType">Voting Type *</Label>
+                <Label htmlFor="votingType">Voting Type</Label>
                 <Select
                   value={formData.votingType}
                   onValueChange={(value) => handleInputChange('votingType', value)}
@@ -342,52 +334,46 @@ export default function CreateProposalPage() {
 
               {/* Voting Period */}
               <div className="space-y-2">
-                <Label htmlFor="votingPeriod">Voting Period (days) *</Label>
-                <Select
+                <Label htmlFor="votingPeriod">Voting Period (days)</Label>
+                <Input
+                  id="votingPeriod"
+                  type="number"
                   value={formData.votingPeriod}
-                  onValueChange={(value) => handleInputChange('votingPeriod', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select voting duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 day</SelectItem>
-                    <SelectItem value="3">3 days</SelectItem>
-                    <SelectItem value="7">7 days (recommended)</SelectItem>
-                    <SelectItem value="14">14 days</SelectItem>
-                    <SelectItem value="30">30 days</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  How long members will have to vote on this proposal
+                  onChange={(e) => handleInputChange('votingPeriod', e.target.value)}
+                  placeholder="7"
+                  min="1"
+                  max="30"
+                  required
+                />
+                <p className="text-sm text-muted-foreground">
+                  How long should voting be open? (1-30 days)
                 </p>
               </div>
 
               {/* GAME Deposit */}
               <div className="space-y-2">
-                <Label htmlFor="gameDeposit">GAME Deposit (Required) *</Label>
+                <Label htmlFor="gameDeposit">GAME Token Deposit</Label>
                 <Input
                   id="gameDeposit"
                   type="number"
                   value={formData.gameDeposit}
                   onChange={(e) => handleInputChange('gameDeposit', e.target.value)}
                   placeholder="100"
+                  min="0"
                   required
-                  min="1"
                 />
                 <p className="text-sm text-muted-foreground">
-                  GAME tokens required to submit this proposal (helps prevent spam)
+                  GAME tokens required as deposit for proposal creation
                 </p>
               </div>
 
-              {/* Submit Button */}
               <div className="flex gap-4 pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
                   className="flex-1"
+                  disabled={isProcessing}
                 >
                   Cancel
                 </Button>
@@ -396,11 +382,7 @@ export default function CreateProposalPage() {
                   disabled={isProcessing || !formData.organizationId || !formData.title || !formData.description}
                   className="flex-1"
                 >
-                  {isProcessing ? (
-                    progress || 'Creating Proposal...'
-                  ) : (
-                    'Create Proposal'
-                  )}
+                  {isProcessing ? 'Creating...' : 'Create Proposal'}
                 </Button>
               </div>
             </form>

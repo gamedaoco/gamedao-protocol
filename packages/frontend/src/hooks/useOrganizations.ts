@@ -316,7 +316,7 @@ export function useOrganizations() {
       setTimeout(() => resetCreate(), 1000)
       toast.success('Organization created successfully!')
     }
-  }, [createSuccess, refetch, refetchUserOrgs, address, resetCreate, toast])
+  }, [createSuccess, refetch, refetchUserOrgs, address, resetCreate])
 
   useEffect(() => {
     if (joinSuccess) {
@@ -331,7 +331,7 @@ export function useOrganizations() {
       setTimeout(() => resetJoin(), 1000)
       toast.success('Organization joined successfully!')
     }
-  }, [joinSuccess, refetch, refetchUserOrgs, address, resetJoin, toast])
+  }, [joinSuccess, refetch, refetchUserOrgs, address, resetJoin])
 
   // Calculate stats from organizations data
   const stats: OrganizationStats = useMemo(() => {

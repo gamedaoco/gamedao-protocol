@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DetailPageLayout } from '@/components/layout/detailPageLayout'
-
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { EmptyState } from '@/components/ui/empty-state'
+import { TransactionOverlay } from '@/components/ui/transaction-overlay'
 import { useProposals } from '@/hooks/useProposals'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useState } from 'react'
@@ -33,7 +33,9 @@ function useProposal(id: string) {
     isVoting,
     canUserVote,
     hasUserVoted,
-    getVotingPowerForProposal
+    getVotingPowerForProposal,
+    voteSuccess,
+    voteError
   } = useProposals()
   const { organizations } = useOrganizations()
 
@@ -54,7 +56,9 @@ function useProposal(id: string) {
     isVoting,
     canUserVote,
     hasUserVoted,
-    getVotingPowerForProposal
+    getVotingPowerForProposal,
+    voteSuccess,
+    voteError
   }
 }
 
@@ -79,12 +83,15 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
     isVoting,
     canUserVote,
     hasUserVoted,
-    getVotingPowerForProposal
+    getVotingPowerForProposal,
+    voteSuccess,
+    voteError
   } = useProposal(id)
 
   const [votingPower, setVotingPower] = useState<number>(0)
   const [showConvictionModal, setShowConvictionModal] = useState(false)
   const [showDelegationModal, setShowDelegationModal] = useState(false)
+  const [currentVoteChoice, setCurrentVoteChoice] = useState<0 | 1 | 2 | null>(null)
 
   // Load voting power when component mounts
   React.useEffect(() => {
@@ -93,10 +100,20 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
     }
   }, [proposal, canUserVote, getVotingPowerForProposal])
 
+  // Handle voting success
+  React.useEffect(() => {
+    if (voteSuccess) {
+      // Reset voting power after successful vote
+      setVotingPower(0)
+      setCurrentVoteChoice(null)
+    }
+  }, [voteSuccess])
+
   // Handle voting
   const handleVote = async (choice: 0 | 1 | 2) => {
     if (!proposal || !canUserVote(proposal.id)) return
 
+    setCurrentVoteChoice(choice)
     try {
       await castVote(proposal.id, choice)
       // Voting power will be recalculated after vote
@@ -110,6 +127,7 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
   const handleConvictionVote = async (choice: 0 | 1 | 2, convictionTime: number, reason: string) => {
     if (!proposal || !canUserVote(proposal.id)) return
 
+    setCurrentVoteChoice(choice)
     try {
       await castVoteWithConviction(proposal.id, choice, convictionTime, reason)
       setVotingPower(0)
@@ -212,8 +230,38 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
 
   const status = getProposalStatus()
 
+  const getVoteChoiceLabel = (choice: 0 | 1 | 2) => {
+    switch (choice) {
+      case 1: return 'For'
+      case 0: return 'Against'
+      case 2: return 'Abstain'
+      default: return 'Unknown'
+    }
+  }
+
   return (
     <ErrorBoundary>
+      {/* Transaction Overlay for Voting */}
+      <TransactionOverlay
+        isVisible={isVoting}
+        title="Casting Vote"
+        description={`Please wait while we cast your vote ${currentVoteChoice !== null ? `"${getVoteChoiceLabel(currentVoteChoice)}"` : ''} on this proposal.`}
+        currentStep={voteSuccess ? 'success' : isVoting ? 'creating' : voteError ? 'error' : 'idle'}
+        error={voteError ? (voteError as Error).message : null}
+        onRetry={() => {
+          // Reset vote error and try again
+          if (currentVoteChoice !== null) {
+            handleVote(currentVoteChoice)
+          }
+        }}
+        successMessage="Vote cast successfully!"
+        successAction={{
+          label: 'View Proposal',
+          onClick: () => window.location.reload()
+        }}
+        showProgressBar={false}
+      />
+
       <DetailPageLayout
         title={proposal.title || `Proposal ${proposal.id.slice(0, 8)}`}
         subtitle={proposal.description}
@@ -281,83 +329,70 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
                     <Badge variant={status.variant}>{status.label}</Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* For votes */}
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span>For</span>
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-medium">For</span>
                       </div>
-                      <span className="font-semibold">{proposal.votesFor}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <XCircle className="h-4 w-4 text-red-600" />
-                        <span>Against</span>
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-green-500 h-2 rounded-full"
+                            style={{ width: `${proposal.totalVotes > 0 ? (proposal.votesFor / proposal.totalVotes) * 100 : 0}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-12 text-right">{proposal.votesFor}</span>
                       </div>
-                      <span className="font-semibold">{proposal.votesAgainst}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <Pause className="h-4 w-4 text-gray-600" />
-                        <span>Abstain</span>
-                      </div>
-                      <span className="font-semibold">{proposal.totalVotes - proposal.votesFor - proposal.votesAgainst}</span>
-                    </div>
-                  </div>
 
-                  <div className="pt-4 border-t">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Total Votes</span>
-                      <span className="font-semibold">{proposal.totalVotes}</span>
+                    {/* Against votes */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-4 w-4 text-red-500" />
+                        <span className="text-sm font-medium">Against</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-red-500 h-2 rounded-full"
+                            style={{ width: `${proposal.totalVotes > 0 ? (proposal.votesAgainst / proposal.totalVotes) * 100 : 0}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-12 text-right">{proposal.votesAgainst}</span>
+                      </div>
+                    </div>
+
+                    {/* Abstain votes */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Pause className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-medium">Abstain</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-gray-500 h-2 rounded-full"
+                            style={{ width: `${proposal.totalVotes > 0 ? (proposal.votesAbstain / proposal.totalVotes) * 100 : 0}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-12 text-right">{proposal.votesAbstain}</span>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Proposal Description */}
+              {/* Proposal Details */}
               <Card>
                 <CardHeader>
                   <CardTitle>Proposal Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose prose-sm max-w-none">
-                    <p>{proposal.description || 'No description provided for this proposal.'}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Proposal Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Proposal ID</p>
-                      <p className="font-mono">{proposal.id}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Type</p>
-                      <p>{proposal.proposalType}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Voting Type</p>
-                      <p>{proposal.votingType}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">State</p>
-                      <p>{state}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Start Time</p>
-                      <p>{formatDistanceToNow(new Date(proposal.startTime * 1000), { addSuffix: true })}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">End Time</p>
-                      <p>{formatDistanceToNow(new Date(proposal.endTime * 1000), { addSuffix: true })}</p>
-                    </div>
+                  <div className="prose max-w-none">
+                    <p>{proposal.description}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -365,35 +400,13 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Organization Info */}
-              {organization && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Organization</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div>
-                        <h4 className="font-medium">{organization.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {organization.memberCount} members
-                        </p>
-                      </div>
-                      <Button variant="outline" size="sm" className="w-full" asChild>
-                        <a href={`/control/${organization.id}`}>View Organization</a>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Voting Action */}
+              {/* Voting Actions */}
               {isActive && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Cast Your Vote</CardTitle>
                   </CardHeader>
-                                    <CardContent className="space-y-4">
+                  <CardContent className={`space-y-4 ${isVoting ? 'opacity-50 pointer-events-none' : ''}`}>
                     {/* Voting Status */}
                     <div className="text-sm text-muted-foreground space-y-1">
                       {hasUserVoted(proposal.id) ? (
@@ -413,26 +426,26 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
                         disabled={isVoting || !canUserVote(proposal.id) || hasUserVoted(proposal.id) || votingPower === 0}
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        {isVoting ? 'Voting...' : 'Vote For'}
+                        {isVoting && currentVoteChoice === 1 ? 'Voting...' : 'Vote For'}
                       </Button>
-                        <Button
-                          className="w-full"
-                          variant="destructive"
-                          onClick={() => handleVote(0)}
-                          disabled={isVoting || !canUserVote(proposal.id) || hasUserVoted(proposal.id) || votingPower === 0}
-                        >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          {isVoting ? 'Voting...' : 'Vote Against'}
-                        </Button>
-                        <Button
-                          className="w-full"
-                          variant="outline"
-                          onClick={() => handleVote(2)}
-                          disabled={isVoting || !canUserVote(proposal.id) || hasUserVoted(proposal.id) || votingPower === 0}
-                        >
-                          <Pause className="h-4 w-4 mr-2" />
-                          {isVoting ? 'Voting...' : 'Abstain'}
-                        </Button>
+                      <Button
+                        className="w-full"
+                        variant="destructive"
+                        onClick={() => handleVote(0)}
+                        disabled={isVoting || !canUserVote(proposal.id) || hasUserVoted(proposal.id) || votingPower === 0}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        {isVoting && currentVoteChoice === 0 ? 'Voting...' : 'Vote Against'}
+                      </Button>
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        onClick={() => handleVote(2)}
+                        disabled={isVoting || !canUserVote(proposal.id) || hasUserVoted(proposal.id) || votingPower === 0}
+                      >
+                        <Pause className="h-4 w-4 mr-2" />
+                        {isVoting && currentVoteChoice === 2 ? 'Voting...' : 'Abstain'}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

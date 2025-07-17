@@ -1,6 +1,27 @@
 # GameDAO Protocol Schema
 # This schema defines all entities for the GameDAO ecosystem
 
+# ===== GLOBAL STATS =====
+
+type GlobalStats @entity {
+  id: ID! # Always "global"
+  totalModules: BigInt! # Total number of modules
+  activeModules: BigInt! # Number of active modules
+  totalOrganizations: BigInt! # Total organizations created
+  activeOrganizations: BigInt! # Number of active organizations
+  totalMembers: BigInt! # Total members across all organizations
+  totalCampaigns: BigInt! # Total campaigns created
+  activeCampaigns: BigInt! # Number of active campaigns
+  totalRaised: BigDecimal! # Total amount raised across all campaigns
+  totalProposals: BigInt! # Total proposals created
+  activeProposals: BigInt! # Number of active proposals
+  totalVotes: BigInt! # Total votes cast
+  totalProfiles: BigInt! # Total profiles created
+  verifiedProfiles: BigInt! # Number of verified profiles
+  totalAchievements: BigInt! # Total achievements earned
+  updatedAt: BigInt! # Last update timestamp
+}
+
 # ===== REGISTRY ENTITIES =====
 
 type Module @entity {
@@ -102,10 +123,6 @@ type StakingPool @entity {
   rewardRate: BigInt! # annual reward rate in basis points
   totalRewardsDistributed: BigInt! # total rewards distributed
   active: Boolean! # whether pool is active
-
-  # Derived relationships
-  stakes: [UserStake!]! @derivedFrom(field: "purpose")
-  unstakeRequests: [UnstakeRequest!]! @derivedFrom(field: "purpose")
 }
 
 # ===== CONTROL MODULE ENTITIES =====
@@ -207,4 +224,215 @@ type User @entity {
   stakes: [UserStake!]! @derivedFrom(field: "user")
   organizationStakes: [OrganizationStake!]! @derivedFrom(field: "staker")
   unstakeRequests: [UnstakeRequest!]! @derivedFrom(field: "user")
+}
+
+# ===== FLOW MODULE ENTITIES =====
+
+enum FlowType {
+  GRANT
+  RAISE
+  LEND
+  LOAN
+  SHARE
+  POOL
+}
+
+enum FlowState {
+  CREATED
+  ACTIVE
+  PAUSED
+  FINALIZED
+  CANCELLED
+}
+
+type Campaign @entity {
+  id: ID! # campaign ID
+  organization: Organization! # organization that created the campaign
+  creator: User! # campaign creator
+  title: String! # campaign title
+  description: String! # campaign description
+  metadataURI: String! # IPFS metadata URI
+  flowType: FlowType! # type of flow
+  state: FlowState! # current state
+  paymentToken: Bytes! # payment token address
+  target: BigInt! # target amount
+  min: BigInt! # minimum amount
+  max: BigInt! # maximum amount
+  raised: BigInt! # amount raised
+  contributorCount: BigInt! # number of contributors
+  startTime: BigInt! # campaign start time
+  endTime: BigInt! # campaign end time
+  createdAt: BigInt! # creation timestamp
+  updatedAt: BigInt! # last update timestamp
+
+  # Derived relationships
+  contributions: [Contribution!]! @derivedFrom(field: "campaign")
+
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type Contribution @entity {
+  id: ID! # contribution ID
+  campaign: Campaign! # campaign contributed to
+  contributor: User! # contributor
+  amount: BigInt! # contribution amount
+  timestamp: BigInt! # contribution timestamp
+
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== SIGNAL MODULE ENTITIES =====
+
+enum ProposalType {
+  SIMPLE
+  PARAMETRIC
+  TREASURY
+  MEMBER
+  CONSTITUTIONAL
+}
+
+enum VotingType {
+  RELATIVE
+  ABSOLUTE
+  SUPERMAJORITY
+  UNANIMOUS
+}
+
+enum VotingPower {
+  DEMOCRATIC
+  TOKEN
+  REPUTATION
+}
+
+enum ProposalState {
+  PENDING
+  ACTIVE
+  SUCCEEDED
+  EXECUTED
+  DEFEATED
+  CANCELED
+}
+
+enum VoteChoice {
+  NONE
+  AGAINST
+  FOR
+  ABSTAIN
+}
+
+type Proposal @entity {
+  id: ID! # proposal ID (hierarchical or legacy)
+  organization: Organization! # organization
+  creator: User! # proposal creator
+  title: String! # proposal title
+  description: String! # proposal description
+  metadataURI: String! # IPFS metadata URI
+  proposalType: ProposalType! # type of proposal
+  votingType: VotingType! # voting mechanism
+  votingPower: VotingPower! # voting power calculation
+  state: ProposalState! # current state
+  startTime: BigInt! # voting start time
+  endTime: BigInt! # voting end time
+  executionTime: BigInt! # execution time
+  forVotes: BigInt! # votes in favor
+  againstVotes: BigInt! # votes against
+  abstainVotes: BigInt! # abstain votes
+  totalVotes: BigInt! # total votes cast
+  quorumReached: Boolean! # whether quorum was reached
+  createdAt: BigInt! # creation timestamp
+  executedAt: BigInt! # execution timestamp
+  executor: Bytes # executor address
+
+  # Derived relationships
+  votes: [Vote!]! @derivedFrom(field: "proposal")
+
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type Vote @entity {
+  id: ID! # proposal ID + voter address
+  proposal: Proposal! # proposal voted on
+  voter: User! # voter
+  choice: VoteChoice! # vote choice
+  votingPower: BigInt! # voting power used
+  timestamp: BigInt! # vote timestamp
+  reason: String! # reason for vote
+  convictionTime: BigInt! # conviction time
+  convictionMultiplier: BigInt! # conviction multiplier
+
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type Delegation @entity {
+  id: ID! # delegator + delegatee
+  delegator: User! # user delegating
+  delegatee: User! # user receiving delegation
+  amount: BigInt! # amount delegated
+  timestamp: BigInt! # delegation timestamp
+
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== SENSE MODULE ENTITIES =====
+
+type Profile @entity {
+  id: ID! # profile ID
+  user: User! # user who owns the profile
+  organization: Organization! # organization
+  metadata: String! # profile metadata
+  createdAt: BigInt! # creation timestamp
+
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type Achievement @entity {
+  id: ID! # achievement ID
+  user: User! # user who earned the achievement
+  organization: Organization! # organization
+  achievementType: String! # type of achievement
+  metadata: String! # achievement metadata
+  earnedAt: BigInt! # timestamp when earned
+
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type Feedback @entity {
+  id: ID! # feedback ID
+  from: User! # user giving feedback
+  to: User! # user receiving feedback
+  organization: Organization! # organization context
+  rating: BigInt! # rating given
+  comment: String! # feedback comment
+  timestamp: BigInt! # feedback timestamp
+
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type ReputationEvent @entity {
+  id: ID! # event ID
+  user: User! # user affected
+  organization: Organization! # organization context
+  eventType: String! # type of reputation event
+  change: BigInt! # reputation change
+  timestamp: BigInt! # event timestamp
+
+  # Tracking
+  blockNumber: BigInt!
+  transactionHash: Bytes!
 }

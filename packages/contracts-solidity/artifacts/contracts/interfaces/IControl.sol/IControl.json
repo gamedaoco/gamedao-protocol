@@ -9,93 +9,6 @@
         {
           "indexed": true,
           "internalType": "bytes8",
-          "name": "organizationId",
-          "type": "bytes8"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "member",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "timestamp",
-          "type": "uint256"
-        }
-      ],
-      "name": "MemberAdded",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "bytes8",
-          "name": "organizationId",
-          "type": "bytes8"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "member",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "timestamp",
-          "type": "uint256"
-        }
-      ],
-      "name": "MemberRemoved",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "bytes8",
-          "name": "organizationId",
-          "type": "bytes8"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "member",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "enum IControl.MemberState",
-          "name": "oldState",
-          "type": "uint8"
-        },
-        {
-          "indexed": false,
-          "internalType": "enum IControl.MemberState",
-          "name": "newState",
-          "type": "uint8"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "timestamp",
-          "type": "uint256"
-        }
-      ],
-      "name": "MemberStateChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "bytes8",
           "name": "id",
           "type": "bytes8"
         },
@@ -157,24 +70,6 @@
       ],
       "name": "OrganizationStateChanged",
       "type": "event"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes8",
-          "name": "organizationId",
-          "type": "bytes8"
-        },
-        {
-          "internalType": "address",
-          "name": "member",
-          "type": "address"
-        }
-      ],
-      "name": "addMember",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
     },
     {
       "inputs": [
@@ -325,95 +220,6 @@
           "internalType": "struct IControl.Organization[]",
           "name": "",
           "type": "tuple[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes8",
-          "name": "organizationId",
-          "type": "bytes8"
-        },
-        {
-          "internalType": "address",
-          "name": "member",
-          "type": "address"
-        }
-      ],
-      "name": "getMember",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            },
-            {
-              "internalType": "enum IControl.MemberState",
-              "name": "state",
-              "type": "uint8"
-            },
-            {
-              "internalType": "uint256",
-              "name": "joinedAt",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "reputation",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "stake",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct IControl.Member",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes8",
-          "name": "organizationId",
-          "type": "bytes8"
-        }
-      ],
-      "name": "getMemberCount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes8",
-          "name": "organizationId",
-          "type": "bytes8"
-        }
-      ],
-      "name": "getMembers",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
         }
       ],
       "stateMutability": "view",
@@ -650,54 +456,6 @@
           "internalType": "bytes8",
           "name": "organizationId",
           "type": "bytes8"
-        },
-        {
-          "internalType": "address",
-          "name": "member",
-          "type": "address"
-        }
-      ],
-      "name": "isMember",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes8",
-          "name": "organizationId",
-          "type": "bytes8"
-        },
-        {
-          "internalType": "address",
-          "name": "member",
-          "type": "address"
-        }
-      ],
-      "name": "isMemberActive",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes8",
-          "name": "organizationId",
-          "type": "bytes8"
         }
       ],
       "name": "isOrganizationActive",
@@ -719,12 +477,99 @@
           "type": "bytes8"
         },
         {
-          "internalType": "address",
-          "name": "member",
-          "type": "address"
+          "components": [
+            {
+              "internalType": "bytes8",
+              "name": "id",
+              "type": "bytes8"
+            },
+            {
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "metadataURI",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "creator",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "treasury",
+              "type": "address"
+            },
+            {
+              "internalType": "enum IControl.OrgType",
+              "name": "orgType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "enum IControl.AccessModel",
+              "name": "accessModel",
+              "type": "uint8"
+            },
+            {
+              "internalType": "enum IControl.FeeModel",
+              "name": "feeModel",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint256",
+              "name": "memberLimit",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "memberCount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalCampaigns",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalProposals",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "membershipFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gameStakeRequired",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum IControl.OrgState",
+              "name": "state",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint256",
+              "name": "createdAt",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "updatedAt",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IControl.Organization",
+          "name": "org",
+          "type": "tuple"
         }
       ],
-      "name": "removeMember",
+      "name": "registerOrganization",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -737,17 +582,12 @@
           "type": "bytes8"
         },
         {
-          "internalType": "address",
-          "name": "member",
-          "type": "address"
-        },
-        {
-          "internalType": "enum IControl.MemberState",
-          "name": "state",
-          "type": "uint8"
+          "internalType": "uint256",
+          "name": "memberCount",
+          "type": "uint256"
         }
       ],
-      "name": "updateMemberState",
+      "name": "updateMemberCount",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

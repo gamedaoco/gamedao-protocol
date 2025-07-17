@@ -222,7 +222,7 @@ export function useCampaigns() {
       setTimeout(() => resetCreate(), 1000)
       toast.success('Campaign created successfully!')
     }
-  }, [createSuccess, refetch, refetchUserCampaigns, address, resetCreate, toast])
+  }, [createSuccess, refetch, refetchUserCampaigns, address, resetCreate])
 
   useEffect(() => {
     if (contributeSuccess) {
@@ -234,7 +234,7 @@ export function useCampaigns() {
       setTimeout(() => resetContribute(), 1000)
       toast.success('Contribution successful!')
     }
-  }, [contributeSuccess, refetch, refetchUserCampaigns, address, resetContribute, toast])
+  }, [contributeSuccess, refetch, refetchUserCampaigns, address, resetContribute])
 
   // Transform subgraph data
   const campaigns: Campaign[] = data?.campaigns?.map((campaign: any) => ({

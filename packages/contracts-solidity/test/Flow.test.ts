@@ -1,10 +1,10 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { GameDAORegistry, Control, Flow, Treasury } from "../typechain-types";
+import { Registry, Control, Flow, Treasury } from "../typechain-types";
 
 describe("Flow Module", function () {
-  let registry: GameDAORegistry;
+  let registry: Registry;
   let control: Control;
   let flow: Flow;
   let admin: SignerWithAddress;
@@ -22,13 +22,13 @@ describe("Flow Module", function () {
     [admin, creator, contributor1, contributor2, contributor3] = await ethers.getSigners();
 
     // Deploy Registry
-    const GameDAORegistryFactory = await ethers.getContractFactory("GameDAORegistry");
-    registry = await GameDAORegistryFactory.deploy(admin.address);
+    const RegistryFactory = await ethers.getContractFactory("Registry");
+    registry = await RegistryFactory.deploy(admin.address);
     await registry.waitForDeployment();
 
     // Deploy Control Module
     const ControlFactory = await ethers.getContractFactory("Control");
-    control = await ControlFactory.deploy();
+    control = await ControlFactory.deploy(admin.address, admin.address);
     await control.waitForDeployment();
 
     // Deploy Flow Module

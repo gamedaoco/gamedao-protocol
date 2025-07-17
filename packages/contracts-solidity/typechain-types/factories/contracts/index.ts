@@ -4,9 +4,7 @@
 export * as core from "./core";
 export * as interfaces from "./interfaces";
 export * as libraries from "./libraries";
-export * as membership from "./membership";
 export * as mocks from "./mocks";
 export * as modules from "./modules";
-export * as staking from "./staking";
 export * as test from "./test";
 export * as tokens from "./tokens";

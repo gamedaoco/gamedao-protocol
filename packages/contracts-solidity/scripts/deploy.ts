@@ -26,32 +26,32 @@ async function main() {
   console.log("✅ USDC Token deployed to:", usdcAddress);
   console.log("");
 
-  // 2. Deploy GameStaking Contract
-  console.log("🔒 Deploying GameStaking Contract...");
-  const GameStakingFactory = await ethers.getContractFactory("GameStaking");
-  const gameStaking = await GameStakingFactory.deploy(
+  // 2. Deploy Staking Contract
+  console.log("🔒 Deploying Staking Contract...");
+  const StakingFactory = await ethers.getContractFactory("Staking");
+  const staking = await StakingFactory.deploy(
     gameTokenAddress,
     deployer.address, // treasury
     500 // 5% protocol fee share
   );
-  await gameStaking.waitForDeployment();
-  const gameStakingAddress = await gameStaking.getAddress();
-  console.log("✅ GameStaking Contract deployed to:", gameStakingAddress);
+  await staking.waitForDeployment();
+  const stakingAddress = await staking.getAddress();
+  console.log("✅ Staking Contract deployed to:", stakingAddress);
   console.log("");
 
-  // 3. Deploy GameDAO Registry
-  console.log("📋 Deploying GameDAO Registry...");
-  const GameDAORegistryFactory = await ethers.getContractFactory("GameDAORegistry");
-  const registry = await GameDAORegistryFactory.deploy(deployer.address);
+  // 3. Deploy Registry
+  console.log("📋 Deploying Registry...");
+  const RegistryFactory = await ethers.getContractFactory("Registry");
+  const registry = await RegistryFactory.deploy(deployer.address);
   await registry.waitForDeployment();
   const registryAddress = await registry.getAddress();
-  console.log("✅ GameDAO Registry deployed to:", registryAddress);
+  console.log("✅ Registry deployed to:", registryAddress);
   console.log("");
 
   // 4. Deploy Control Module
   console.log("🏛️ Deploying Control Module...");
   const ControlFactory = await ethers.getContractFactory("Control");
-  const control = await ControlFactory.deploy(gameTokenAddress as string, gameStakingAddress as string);
+  const control = await ControlFactory.deploy(gameTokenAddress as string, stakingAddress as string);
   await control.waitForDeployment();
   const controlAddress = await control.getAddress();
   console.log("✅ Control Module deployed to:", controlAddress);
@@ -59,7 +59,7 @@ async function main() {
 
   // Note: Grant ORGANIZATION_MANAGER_ROLE to Control contract manually after deployment
   console.log("⚠️  Remember to grant ORGANIZATION_MANAGER_ROLE to Control contract");
-  console.log("   Run: gameStaking.grantRole(ORGANIZATION_MANAGER_ROLE, controlAddress)");
+  console.log("   Run: staking.grantRole(ORGANIZATION_MANAGER_ROLE, controlAddress)");
   console.log("");
 
   // 5. Deploy Flow Module
@@ -90,7 +90,7 @@ async function main() {
   console.log("");
 
   // 8. Register modules in registry
-  console.log("📝 Registering modules in GameDAO Registry...");
+  console.log("📝 Registering modules in Registry...");
   await registry.registerModule(controlAddress);
   console.log("✅ Control module registered");
 
@@ -104,17 +104,17 @@ async function main() {
   console.log("✅ Sense module registered");
   console.log("");
 
-  // 9. Deploy GameStaking for rewards
-  console.log("🎯 Deploying GameStaking for rewards...");
-  const GameStakingRewardsFactory = await ethers.getContractFactory("GameStaking");
-  const gameStakingRewards = await GameStakingRewardsFactory.deploy(
+  // 9. Deploy Staking for rewards
+  console.log("🎯 Deploying Staking for rewards...");
+  const StakingRewardsFactory = await ethers.getContractFactory("Staking");
+  const stakingRewards = await StakingRewardsFactory.deploy(
     gameTokenAddress,
     deployer.address,
     1000 // 10% protocol fee share for rewards
   );
-  await gameStakingRewards.waitForDeployment();
-  const gameStakingRewardsAddress = await gameStakingRewards.getAddress();
-  console.log("✅ GameStaking (Rewards) deployed to:", gameStakingRewardsAddress);
+  await stakingRewards.waitForDeployment();
+  const stakingRewardsAddress = await stakingRewards.getAddress();
+  console.log("✅ Staking (Rewards) deployed to:", stakingRewardsAddress);
   console.log("");
 
   // Save deployment addresses
@@ -126,13 +126,13 @@ async function main() {
       GameToken: gameTokenAddress,
       MockGameToken: gameTokenAddress, // Alias for backward compatibility
       MockUSDC: usdcAddress,
-      GameStaking: gameStakingAddress,
-      GameDAORegistry: registryAddress,
+      Staking: stakingAddress,
+      Registry: registryAddress,
       Control: controlAddress,
       Flow: flowAddress,
       Signal: signalAddress,
       Sense: senseAddress,
-      GameStakingRewards: gameStakingRewardsAddress
+      StakingRewards: stakingRewardsAddress
     }
   };
 
@@ -145,16 +145,16 @@ async function main() {
   console.log("🎉 Deployment completed successfully!");
   console.log("📊 Summary:");
   console.log("  - GameToken (Clean ERC20):", gameTokenAddress);
-  console.log("  - GameStaking (Organization Stakes):", gameStakingAddress);
-  console.log("  - GameStaking (Rewards):", gameStakingRewardsAddress);
-  console.log("  - GameDAO Registry:", registryAddress);
+  console.log("  - Staking (Organization Stakes):", stakingAddress);
+  console.log("  - Staking (Rewards):", stakingRewardsAddress);
+  console.log("  - Registry:", registryAddress);
   console.log("  - Control Module:", controlAddress);
   console.log("  - Flow Module:", flowAddress);
   console.log("  - Signal Module:", signalAddress);
   console.log("  - Sense Module:", senseAddress);
   console.log("");
-  console.log("🔗 All modules registered in GameDAO Registry");
-  console.log("🔐 Control contract has ORGANIZATION_MANAGER_ROLE in GameStaking");
+  console.log("🔗 All modules registered in Registry");
+  console.log("🔐 Control contract has ORGANIZATION_MANAGER_ROLE in Staking");
   console.log("✅ System ready for use!");
 }
 

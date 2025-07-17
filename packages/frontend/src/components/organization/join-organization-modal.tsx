@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { TransactionOverlay } from '@/components/ui/transaction-overlay'
 import { useOrganizations, Organization } from '@/hooks/useOrganizations'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatAddress } from '@/lib/utils'
@@ -48,53 +49,22 @@ export function JoinOrganizationModal({
   const [leaveSuccess, setLeaveSuccess] = useState(false)
   const [pendingJoin, setPendingJoin] = useState(false)
 
-  // Game token approval hook
+  // Token approval for membership fee
   const {
-    handleApproval,
+    requestApproval,
     isApproving,
     isApprovalConfirming,
     approvalSuccess,
-    approvalError
+    approvalError,
+    handleApproval
   } = useGameTokenApproval()
 
-  // Join contract calls
-  const {
-    writeContract: joinOrganization,
-    isPending: isJoinWritePending,
-    data: joinTxHash,
-    error: joinWriteError,
-    reset: resetJoin
-  } = useWriteContract()
+  // Organization joining/leaving contract calls
+  const { writeContract: joinOrganization, isPending: isJoinPending } = useWriteContract()
+  const { writeContract: leaveOrganization, isPending: isLeavePending } = useWriteContract()
 
-  // Leave contract calls
-  const {
-    writeContract: leaveOrganization,
-    isPending: isLeaveWritePending,
-    data: leaveTxHash,
-    error: leaveWriteError,
-    reset: resetLeave
-  } = useWriteContract()
-
-  // Wait for join transaction confirmation
-  const {
-    isLoading: isJoinConfirming,
-    isSuccess: joinTxSuccess,
-    error: joinConfirmError,
-  } = useWaitForTransactionReceipt({
-    hash: joinTxHash,
-  })
-
-  // Wait for leave transaction confirmation
-  const {
-    isLoading: isLeaveConfirming,
-    isSuccess: leaveTxSuccess,
-    error: leaveConfirmError,
-  } = useWaitForTransactionReceipt({
-    hash: leaveTxHash,
-  })
-
-  // Get membership fee from organization (this should come from organization data)
   const membershipFee = organization.membershipFee || 0
+  const isProcessing = isJoining || isLeaving || isApproving || isApprovalConfirming
 
   const handleJoin = async () => {
     if (!address || !organization) return
@@ -138,514 +108,245 @@ export function JoinOrganizationModal({
     }
   }
 
-  const handleLeave = async () => {
-    if (!address || !organization) return
-
-    // Show confirmation dialog
-    const confirmed = window.confirm(
-      `Are you sure you want to leave ${organization.name}? This action cannot be undone.`
-    )
-
-    if (!confirmed) return
-
-    setIsLeaving(true)
-    setLeaveError(null)
-
+  const proceedWithJoin = async () => {
     try {
-      console.log('🚪 Leaving organization:', {
-        organizationId: organization.id,
-        organizationName: organization.name,
-        userAddress: address,
-        contractAddress: contracts.CONTROL
-      })
-
-      toast.loading('Leaving organization...')
-
-      console.log('🔍 Converting organization ID for contract call:', {
-        originalId: organization.id,
-        contractId: toContractId(organization.id)
-      })
-
-      const result = await leaveOrganization({
-        address: contracts.CONTROL,
-        abi: ABIS.CONTROL,
-        functionName: 'removeMember',
-        args: [toContractId(organization.id), address],
-      })
-
-      console.log('✅ Leave transaction submitted, waiting for confirmation...', result)
-
-    } catch (error) {
-      console.error('❌ Failed to leave organization:', error)
-      setLeaveError(error instanceof Error ? error.message : 'Failed to leave organization')
-      setIsLeaving(false)
-      toast.error('Failed to leave organization')
-    }
-  }
-
-  const proceedWithJoin = useCallback(async () => {
-    try {
-      toast.loading('Joining organization...')
-
-      console.log('🔍 Converting organization ID for contract call:', {
-        originalId: organization.id,
-        contractId: toContractId(organization.id)
-      })
-
-      const result = await joinOrganization({
+      await joinOrganization({
         address: contracts.CONTROL,
         abi: ABIS.CONTROL,
         functionName: 'addMember',
         args: [toContractId(organization.id), address],
       })
 
-      console.log('✅ Join transaction submitted, waiting for confirmation...', result)
-      setPendingJoin(false)
+      setJoinSuccess(true)
+      console.log('✅ Join transaction submitted')
+
+      // Auto-close modal after success
+      setTimeout(() => {
+        handleClose()
+        if (onSuccess) onSuccess()
+      }, 2000)
 
     } catch (error) {
-      console.error('❌ Failed to join organization:', error)
+      console.error('❌ Join transaction failed:', error)
       setJoinError(error instanceof Error ? error.message : 'Failed to join organization')
+    } finally {
       setIsJoining(false)
       setPendingJoin(false)
-      toast.error('Failed to join organization')
     }
-  }, [organization.id, address, contracts.CONTROL, joinOrganization, toast])
+  }
 
-  // Handle approval success - automatically proceed with join
+  const handleLeave = async () => {
+    if (!address || !organization) return
+
+    setIsLeaving(true)
+    setLeaveError(null)
+
+    try {
+      await leaveOrganization({
+        address: contracts.CONTROL,
+        abi: ABIS.CONTROL,
+        functionName: 'removeMember',
+        args: [toContractId(organization.id), address],
+      })
+
+      setLeaveSuccess(true)
+      console.log('✅ Leave transaction submitted')
+
+      // Auto-close modal after success
+      setTimeout(() => {
+        handleClose()
+        if (onSuccess) onSuccess()
+      }, 2000)
+
+    } catch (error) {
+      console.error('❌ Failed to leave organization:', error)
+      setLeaveError(error instanceof Error ? error.message : 'Failed to leave organization')
+    } finally {
+      setIsLeaving(false)
+    }
+  }
+
+  const handleClose = () => {
+    onClose()
+    setJoinError(null)
+    setLeaveError(null)
+    setJoinSuccess(false)
+    setLeaveSuccess(false)
+    setPendingJoin(false)
+  }
+
+  const handleRetry = () => {
+    if (mode === 'join') {
+      setJoinError(null)
+      setJoinSuccess(false)
+      handleJoin()
+    } else {
+      setLeaveError(null)
+      setLeaveSuccess(false)
+      handleLeave()
+    }
+  }
+
+  // Handle approval success
   useEffect(() => {
     if (approvalSuccess && pendingJoin) {
-      console.log('✅ GAME token approval confirmed, proceeding with join...')
+      console.log('✅ Approval successful, proceeding with join')
       proceedWithJoin()
     }
-  }, [approvalSuccess, pendingJoin, proceedWithJoin])
-
-  // Handle join transaction success
-  useEffect(() => {
-    if (joinTxSuccess) {
-      console.log('🎉 Successfully joined organization!')
-      setJoinSuccess(true)
-      setIsJoining(false)
-      toast.dismiss()
-      toast.success('Successfully joined organization!')
-
-      // Wait a moment then refetch data and close
-      setTimeout(() => {
-        refetch()
-        if (onSuccess) onSuccess()
-
-        // Reset state
-        setJoinSuccess(false)
-        resetJoin()
-
-        // Close modal after a short delay to show success state
-        setTimeout(() => {
-          onClose()
-        }, 1000)
-      }, 1000)
-    }
-  }, [joinTxSuccess, refetch, onSuccess, onClose, resetJoin, toast])
-
-  // Handle leave transaction success
-  useEffect(() => {
-    if (leaveTxSuccess) {
-      console.log('🎉 Successfully left organization!')
-      setLeaveSuccess(true)
-      setIsLeaving(false)
-      toast.dismiss()
-      toast.success('Successfully left organization!')
-
-      // Wait a moment then refetch data and close
-      setTimeout(() => {
-        refetch()
-        if (onSuccess) onSuccess()
-
-        // Reset state
-        setLeaveSuccess(false)
-        resetLeave()
-
-        // Close modal after a short delay to show success state
-        setTimeout(() => {
-          onClose()
-        }, 1000)
-      }, 1000)
-    }
-  }, [leaveTxSuccess, refetch, onSuccess, onClose, resetLeave, toast])
-
-  // Handle transaction errors
-  useEffect(() => {
-    if (joinWriteError || joinConfirmError) {
-      const error = joinWriteError || joinConfirmError
-      console.error('❌ Join transaction failed:', error)
-      setJoinError(error?.message || 'Join transaction failed')
-      setIsJoining(false)
-      setPendingJoin(false)
-      toast.dismiss()
-      toast.error('Failed to join organization')
-    }
-  }, [joinWriteError, joinConfirmError, toast])
-
-  useEffect(() => {
-    if (leaveWriteError || leaveConfirmError) {
-      const error = leaveWriteError || leaveConfirmError
-      console.error('❌ Leave transaction failed:', error)
-      setLeaveError(error?.message || 'Leave transaction failed')
-      setIsLeaving(false)
-      toast.dismiss()
-      toast.error('Failed to leave organization')
-    }
-  }, [leaveWriteError, leaveConfirmError, toast])
+  }, [approvalSuccess, pendingJoin])
 
   // Handle approval error
   useEffect(() => {
     if (approvalError) {
       console.error('❌ Approval failed:', approvalError)
-      setJoinError(approvalError.message || 'Approval failed')
+      setJoinError(approvalError.message || 'Token approval failed')
       setIsJoining(false)
       setPendingJoin(false)
     }
   }, [approvalError])
 
-  const getAccessModelDescription = (accessModel: number) => {
-    switch (accessModel) {
-      case 0:
-        return {
-          title: 'Open Access',
-          description: 'You can join this organization instantly.',
-          icon: '🌐',
-          color: 'text-green-600'
-        }
-      case 1:
-        return {
-          title: 'Voting Required',
-          description: 'Your application will be reviewed by existing members.',
-          icon: '🗳️',
-          color: 'text-blue-600'
-        }
-      case 2:
-        return {
-          title: 'Invite Only',
-          description: 'You need an invitation from an administrator.',
-          icon: '✉️',
-          color: 'text-orange-600'
-        }
-      default:
-        return {
-          title: 'Unknown',
-          description: 'Access model not recognized.',
-          icon: '❓',
-          color: 'text-gray-600'
-        }
-    }
-  }
-
-  const accessInfo = getAccessModelDescription(organization.accessModel)
-  const canJoin = organization.accessModel === 0 && isConnected && !isMember // Only open organizations can be joined directly, wallet must be connected, and user must not be a member
-  const canLeave = isConnected && isMember // Must be connected and a member to leave
-  const isActive = organization.state === 1
-
-  // Success states
-  if (joinSuccess) {
+  if (!isConnected) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-md">
-          <div className="text-center py-6">
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Successfully Joined!</h3>
-            <p className="text-muted-foreground mb-4">
-              Welcome to {organization.name}. You are now a member of this organization.
-            </p>
-            <Button onClick={onClose} className="w-full">
-              Continue
-            </Button>
+          <DialogHeader>
+            <DialogTitle>Wallet Not Connected</DialogTitle>
+            <DialogDescription>
+              Please connect your wallet to {mode} this organization.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center py-6">
+            <Button onClick={onClose}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>
     )
   }
 
-  if (leaveSuccess) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-md">
-          <div className="text-center py-6">
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Successfully Left!</h3>
-            <p className="text-muted-foreground mb-4">
-              You have left {organization.name}. You are no longer a member of this organization.
-            </p>
-            <Button onClick={onClose} className="w-full">
-              Continue
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    )
-  }
+  const currentError = mode === 'join' ? joinError : leaveError
+  const currentSuccess = mode === 'join' ? joinSuccess : leaveSuccess
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {mode === 'leave' ? (
-              <>
-                <UserMinus className="h-5 w-5" />
-                Leave Organization
-              </>
-            ) : (
-              <>
-                <UserPlus className="h-5 w-5" />
-                Join Organization
-              </>
-            )}
-          </DialogTitle>
-          <DialogDescription>
-            {mode === 'leave'
-              ? 'Confirm that you want to leave this organization.'
-              : 'Review the organization details and membership requirements.'
-            }
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {/* Transaction Overlay */}
+      <TransactionOverlay
+        isVisible={isProcessing || currentSuccess}
+        title={mode === 'join' ? 'Joining Organization' : 'Leaving Organization'}
+        description={`Please wait while we ${mode === 'join' ? 'add you to' : 'remove you from'} ${organization.name}.`}
+        currentStep={currentSuccess ? 'success' : isProcessing ? 'creating' : 'idle'}
+        error={currentError}
+        onRetry={handleRetry}
+        onClose={handleClose}
+        successMessage={`Successfully ${mode === 'join' ? 'joined' : 'left'} ${organization.name}!`}
+        successAction={{
+          label: mode === 'join' ? 'View Organization' : 'View Organizations',
+          onClick: () => window.location.href = mode === 'join' ? `/control/${organization.id}` : '/control'
+        }}
+        showProgressBar={false}
+      />
 
-        <div className="space-y-6">
-          {/* Organization Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{organization.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Status:</span>
-                  <Badge variant={isActive ? "default" : "secondary"} className="ml-2">
-                    {isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-                <div>
-                  <span className="font-medium">Members:</span>
-                  <span className="ml-2">{organization.memberCount}</span>
-                </div>
-                <div>
-                  <span className="font-medium">Creator:</span>
-                  <span className="ml-2 font-mono text-xs">
-                    {formatAddress(organization.creator)}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-medium">Member Limit:</span>
-                  <span className="ml-2">
-                    {organization.memberLimit === 0 ? 'Unlimited' : organization.memberLimit}
-                  </span>
-                </div>
-                {mode === 'join' && (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {mode === 'join' ? <UserPlus className="h-5 w-5" /> : <UserMinus className="h-5 w-5" />}
+              {mode === 'join' ? 'Join Organization' : 'Leave Organization'}
+            </DialogTitle>
+            <DialogDescription>
+              {mode === 'join'
+                ? 'Review the organization details and requirements before joining.'
+                : 'Are you sure you want to leave this organization?'
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className={`space-y-6 ${isProcessing || currentSuccess ? 'opacity-50 pointer-events-none' : ''}`}>
+            {/* Organization Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{organization.name}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="font-medium">Membership Fee:</span>
-                    <span className="ml-2">
-                      {membershipFee > 0 ? `${membershipFee} GAME` : 'Free'}
-                    </span>
+                    <p className="text-muted-foreground">Creator</p>
+                    <p className="font-mono">{formatAddress(organization.creator)}</p>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  <div>
+                    <p className="text-muted-foreground">Members</p>
+                    <p>{organization.memberCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Access Model</p>
+                    <Badge variant="outline">
+                      {organization.accessModel === 0 ? 'Open' :
+                       organization.accessModel === 1 ? 'Invitation' : 'Application'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Status</p>
+                    <Badge variant={organization.state === 1 ? 'default' : 'secondary'}>
+                      {organization.state === 1 ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+                </div>
 
-          {mode === 'join' && (
-            <>
-              {/* Access Model */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Access Requirements
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-start space-x-3">
-                    <span className="text-2xl">{accessInfo.icon}</span>
-                    <div className="flex-1">
-                      <div className={`font-medium ${accessInfo.color}`}>
-                        {accessInfo.title}
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {accessInfo.description}
-                      </div>
+                {mode === 'join' && membershipFee > 0 && (
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CreditCard className="h-4 w-4" />
+                      <span className="font-medium">Membership Fee</span>
                     </div>
+                    <p className="text-2xl font-bold">{membershipFee} GAME</p>
+                    <p className="text-sm text-muted-foreground">
+                      One-time fee required to join this organization
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                )}
+              </CardContent>
+            </Card>
 
-              {/* Membership Requirements */}
+            {/* Membership Status */}
+            {isMember && mode === 'join' && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Membership Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Membership Fee:</span>
-                    <Badge variant="outline">
-                      {membershipFee > 0 ? `${membershipFee} GAME` : 'Free'}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">GAME Stake Required:</span>
-                    <Badge variant="outline">None</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Approval Process:</span>
-                    <Badge variant="outline">
-                      {organization.accessModel === 0 ? 'Instant' :
-                       organization.accessModel === 1 ? 'Member Vote' : 'Admin Approval'}
-                    </Badge>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="font-medium">You are already a member of this organization</span>
                   </div>
                 </CardContent>
               </Card>
-            </>
-          )}
-
-          {/* Connection Info */}
-          {isConnected && address ? (
-            <div className="bg-muted p-3 rounded-lg">
-              <div className="flex items-center justify-between text-sm">
-                <span>Your Account:</span>
-                <Badge variant="secondary">{formatAddress(address)}</Badge>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-orange-600" />
-                <span className="text-sm text-orange-800">
-                  Please connect your wallet to {mode === 'leave' ? 'leave' : 'join'} this organization.
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Membership status messages */}
-          {mode === 'join' && isMember && (
-            <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-800">
-                  You are already a member of this organization!
-                </span>
-              </div>
-            </div>
-          )}
-
-          {mode === 'leave' && !isMember && (
-            <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-orange-600" />
-                <span className="text-sm text-orange-800">
-                  You are not a member of this organization.
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Error Display */}
-          {(joinError || leaveError) && (
-            <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <AlertCircle className="h-4 w-4 text-destructive" />
-              <span className="text-sm text-destructive">{joinError || leaveError}</span>
-            </div>
-          )}
-
-          {/* Status Messages for Join */}
-          {mode === 'join' && (
-            <>
-              {!isActive && (
-                <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                  <AlertCircle className="h-4 w-4 text-orange-600" />
-                  <span className="text-sm text-orange-800">
-                    This organization is currently inactive and cannot accept new members.
-                  </span>
-                </div>
-              )}
-
-              {organization.accessModel === 1 && isActive && (
-                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <Clock className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm text-blue-800">
-                    Your membership application will be reviewed by existing members.
-                  </span>
-                </div>
-              )}
-
-              {organization.accessModel === 2 && (
-                <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                  <AlertCircle className="h-4 w-4 text-orange-600" />
-                  <span className="text-sm text-orange-800">
-                    This is an invite-only organization. Contact an administrator for an invitation.
-                  </span>
-                </div>
-              )}
-            </>
-          )}
-
-          <Separator />
-
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              Cancel
-            </Button>
-
-            {mode === 'leave' ? (
-              <Button
-                onClick={handleLeave}
-                disabled={!canLeave || isLeaving || isLeaveWritePending || isLeaveConfirming || !isConnected}
-                variant="destructive"
-                className="flex-1"
-              >
-                {isLeaving || isLeaveWritePending || isLeaveConfirming ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                    Leaving...
-                  </>
-                ) : !isConnected ? (
-                  'Connect Wallet'
-                ) : (
-                  'Leave Organization'
-                )}
-              </Button>
-            ) : (
-              <Button
-                onClick={handleJoin}
-                disabled={!canJoin || !isActive || isJoining || isJoinWritePending || isJoinConfirming || isApproving || isApprovalConfirming || !isConnected}
-                className="flex-1"
-              >
-                {isJoining || isJoinWritePending || isJoinConfirming || isApproving || isApprovalConfirming ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                    {isApproving || isApprovalConfirming ? 'Approving...' : 'Joining...'}
-                  </>
-                ) : !isConnected ? (
-                  'Connect Wallet'
-                ) : organization.accessModel === 0 ? (
-                  membershipFee > 0 ? 'Join (Approve + Join)' : 'Join Now'
-                ) : organization.accessModel === 1 ? (
-                  'Apply to Join'
-                ) : (
-                  'Request Invitation'
-                )}
-              </Button>
             )}
-          </div>
 
-          {/* Additional Info */}
-          {mode === 'join' && (
-            <div className="text-xs text-muted-foreground text-center">
-              By joining this organization, you agree to follow its governance rules and community guidelines.
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <Button variant="outline" onClick={handleClose} className="flex-1" disabled={isProcessing}>
+                Cancel
+              </Button>
+
+              {mode === 'join' ? (
+                <Button
+                  onClick={handleJoin}
+                  disabled={isProcessing || isMember}
+                  className="flex-1"
+                >
+                  {isProcessing ? 'Joining...' : isMember ? 'Already Member' : 'Join Organization'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleLeave}
+                  disabled={isProcessing || !isMember}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  {isProcessing ? 'Leaving...' : 'Leave Organization'}
+                </Button>
+              )}
             </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
