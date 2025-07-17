@@ -48,7 +48,25 @@ async function main() {
   console.log("✅ Registry deployed to:", registryAddress);
   console.log("");
 
-  // 4. Deploy Control Module
+  // 4. Deploy Identity Module
+  console.log("🆔 Deploying Identity Module...");
+  const IdentityFactory = await ethers.getContractFactory("Identity");
+  const identity = await IdentityFactory.deploy();
+  await identity.waitForDeployment();
+  const identityAddress = await identity.getAddress();
+  console.log("✅ Identity Module deployed to:", identityAddress);
+  console.log("");
+
+  // 5. Deploy Membership Module
+  console.log("👥 Deploying Membership Module...");
+  const MembershipFactory = await ethers.getContractFactory("Membership");
+  const membership = await MembershipFactory.deploy();
+  await membership.waitForDeployment();
+  const membershipAddress = await membership.getAddress();
+  console.log("✅ Membership Module deployed to:", membershipAddress);
+  console.log("");
+
+  // 6. Deploy Control Module
   console.log("🏛️ Deploying Control Module...");
   const ControlFactory = await ethers.getContractFactory("Control");
   const control = await ControlFactory.deploy(gameTokenAddress as string, stakingAddress as string);
@@ -62,7 +80,7 @@ async function main() {
   console.log("   Run: staking.grantRole(ORGANIZATION_MANAGER_ROLE, controlAddress)");
   console.log("");
 
-  // 5. Deploy Flow Module
+  // 7. Deploy Flow Module
   console.log("💰 Deploying Flow Module...");
   const FlowFactory = await ethers.getContractFactory("Flow");
   const flow = await FlowFactory.deploy();
@@ -71,7 +89,7 @@ async function main() {
   console.log("✅ Flow Module deployed to:", flowAddress);
   console.log("");
 
-  // 6. Deploy Signal Module
+  // 8. Deploy Signal Module
   console.log("🗳️ Deploying Signal Module...");
   const SignalFactory = await ethers.getContractFactory("Signal");
   const signal = await SignalFactory.deploy();
@@ -80,7 +98,7 @@ async function main() {
   console.log("✅ Signal Module deployed to:", signalAddress);
   console.log("");
 
-  // 7. Deploy Sense Module
+  // 9. Deploy Sense Module
   console.log("👤 Deploying Sense Module...");
   const SenseFactory = await ethers.getContractFactory("Sense");
   const sense = await SenseFactory.deploy();
@@ -89,8 +107,14 @@ async function main() {
   console.log("✅ Sense Module deployed to:", senseAddress);
   console.log("");
 
-  // 8. Register modules in registry
+  // 10. Register modules in registry
   console.log("📝 Registering modules in Registry...");
+  await registry.registerModule(identityAddress);
+  console.log("✅ Identity module registered");
+
+  await registry.registerModule(membershipAddress);
+  console.log("✅ Membership module registered");
+
   await registry.registerModule(controlAddress);
   console.log("✅ Control module registered");
 
@@ -104,7 +128,28 @@ async function main() {
   console.log("✅ Sense module registered");
   console.log("");
 
-  // 9. Deploy Staking for rewards
+  // 11. Initialize modules with registry
+  console.log("🔧 Initializing modules with registry...");
+  await identity.initialize(registryAddress);
+  console.log("✅ Identity module initialized");
+
+  await membership.initialize(registryAddress);
+  console.log("✅ Membership module initialized");
+
+  await control.initialize(registryAddress);
+  console.log("✅ Control module initialized");
+
+  await flow.initialize(registryAddress);
+  console.log("✅ Flow module initialized");
+
+  await signal.initialize(registryAddress);
+  console.log("✅ Signal module initialized");
+
+  await sense.initialize(registryAddress);
+  console.log("✅ Sense module initialized");
+  console.log("");
+
+  // 12. Deploy Staking for rewards
   console.log("🎯 Deploying Staking for rewards...");
   const StakingRewardsFactory = await ethers.getContractFactory("Staking");
   const stakingRewards = await StakingRewardsFactory.deploy(
@@ -128,6 +173,8 @@ async function main() {
       MockUSDC: usdcAddress,
       Staking: stakingAddress,
       Registry: registryAddress,
+      Identity: identityAddress,
+      Membership: membershipAddress,
       Control: controlAddress,
       Flow: flowAddress,
       Signal: signalAddress,
@@ -148,12 +195,15 @@ async function main() {
   console.log("  - Staking (Organization Stakes):", stakingAddress);
   console.log("  - Staking (Rewards):", stakingRewardsAddress);
   console.log("  - Registry:", registryAddress);
+  console.log("  - Identity Module:", identityAddress);
+  console.log("  - Membership Module:", membershipAddress);
   console.log("  - Control Module:", controlAddress);
   console.log("  - Flow Module:", flowAddress);
   console.log("  - Signal Module:", signalAddress);
   console.log("  - Sense Module:", senseAddress);
   console.log("");
   console.log("🔗 All modules registered in Registry");
+  console.log("🔧 All modules initialized with Registry");
   console.log("🔐 Control contract has ORGANIZATION_MANAGER_ROLE in Staking");
   console.log("✅ System ready for use!");
 }
