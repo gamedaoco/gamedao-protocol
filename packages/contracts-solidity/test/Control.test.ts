@@ -24,8 +24,8 @@ describe("Control Module", function () {
     [admin, creator, member1, member2, nonMember] = await ethers.getSigners();
 
     // Deploy Game Token (clean ERC20)
-    const GameTokenFactory = await ethers.getContractFactory("MockGameToken");
-    gameToken = await GameTokenFactory.deploy();
+    const MockGameTokenFactory = await ethers.getContractFactory("MockGameToken");
+    gameToken = await MockGameTokenFactory.deploy();
     await gameToken.waitForDeployment();
 
     // Deploy Staking Contract
@@ -72,7 +72,7 @@ describe("Control Module", function () {
 
     // Initialize Membership contract
     await membership.initialize(await registry.getAddress());
-    await membership.setGameToken(await gameToken.getAddress());
+    await membership.setMockGameToken(await gameToken.getAddress());
     await membership.setControlContract(await control.getAddress());
 
     // Grant ORGANIZATION_MANAGER_ROLE to admin for membership management

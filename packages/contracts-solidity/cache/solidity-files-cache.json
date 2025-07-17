@@ -417,52 +417,6 @@
         "ISense"
       ]
     },
-    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/mocks/MockGameToken.sol": {
-      "lastModificationDate": 1752525929120,
-      "contentHash": "6c18f6ca7f2bc082bb74f474a180df93",
-      "sourceName": "contracts/mocks/MockGameToken.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 800,
-            "details": {
-              "yulDetails": {
-                "optimizerSteps": "u"
-              }
-            }
-          },
-          "viaIR": true,
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
-        "@openzeppelin/contracts/access/AccessControl.sol",
-        "@openzeppelin/contracts/security/Pausable.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.20"
-      ],
-      "artifacts": [
-        "MockGameToken"
-      ]
-    },
     "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/mocks/MockUSDC.sol": {
       "lastModificationDate": 1752138952826,
       "contentHash": "10f865013b1a2ccb53c29a76e6f1aa9d",
@@ -2044,6 +1998,52 @@
       ],
       "artifacts": [
         "Factory"
+      ]
+    },
+    "/Users/2075/space/pro/gamedao/gamedao-protocol/packages/contracts-solidity/contracts/mocks/MockGameToken.sol": {
+      "lastModificationDate": 1752750265637,
+      "contentHash": "3775e0996468c0dfc0600f9fdcd7bba2",
+      "sourceName": "contracts/mocks/MockGameToken.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 800,
+            "details": {
+              "yulDetails": {
+                "optimizerSteps": "u"
+              }
+            }
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+        "@openzeppelin/contracts/access/AccessControl.sol",
+        "@openzeppelin/contracts/security/Pausable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "MockGameToken"
       ]
     }
   }

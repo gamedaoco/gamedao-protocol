@@ -122,10 +122,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Factory__factory>;
     getContractFactory(
-      name: "OrganizationFactory",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.OrganizationFactory__factory>;
-    getContractFactory(
       name: "Flow",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Flow__factory>;
@@ -294,11 +290,6 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.Factory>;
     getContractAt(
-      name: "OrganizationFactory",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.OrganizationFactory>;
-    getContractAt(
       name: "Flow",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -447,10 +438,6 @@ declare module "hardhat/types/runtime" {
       name: "Factory",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Factory>;
-    deployContract(
-      name: "OrganizationFactory",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.OrganizationFactory>;
     deployContract(
       name: "Flow",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -619,11 +606,6 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Factory>;
-    deployContract(
-      name: "OrganizationFactory",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.OrganizationFactory>;
     deployContract(
       name: "Flow",
       args: any[],

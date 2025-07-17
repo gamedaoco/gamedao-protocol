@@ -60,8 +60,6 @@ export type { Control } from "./contracts/modules/Control/Control";
 export { Control__factory } from "./factories/contracts/modules/Control/Control__factory";
 export type { Factory } from "./contracts/modules/Control/Factory";
 export { Factory__factory } from "./factories/contracts/modules/Control/Factory__factory";
-export type { OrganizationFactory } from "./contracts/modules/Control/OrganizationFactory";
-export { OrganizationFactory__factory } from "./factories/contracts/modules/Control/OrganizationFactory__factory";
 export type { Flow } from "./contracts/modules/Flow/Flow";
 export { Flow__factory } from "./factories/contracts/modules/Flow/Flow__factory";
 export type { Identity } from "./contracts/modules/Identity/Identity";

@@ -3,4 +3,3 @@
 /* eslint-disable */
 export { Control__factory } from "./Control__factory";
 export { Factory__factory } from "./Factory__factory";
-export { OrganizationFactory__factory } from "./OrganizationFactory__factory";

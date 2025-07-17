@@ -59,9 +59,9 @@ dataSources:
           handler: handleGameTokenTransfer
         - event: Approval(indexed address,indexed address,uint256)
           handler: handleGameTokenApproval
-        - event: TokensMinted(indexed address,uint256,uint256)
+        - event: TokensMinted(indexed address to,uint256 amount,uint256 timestamp)
           handler: handleTokensMinted
-        - event: TokensBurned(indexed address,uint256,uint256)
+        - event: TokensBurned(indexed address from,uint256 amount,uint256 timestamp)
           handler: handleTokensBurned
       file: ./src/gameToken.ts
 
@@ -90,9 +90,9 @@ dataSources:
           handler: handleMockGameTokenTransfer
         - event: Approval(indexed address,indexed address,uint256)
           handler: handleMockGameTokenApproval
-        - event: TokensMinted(indexed address,uint256,uint256)
+        - event: TokensMinted(indexed address to,uint256 amount,uint256 timestamp)
           handler: handleMockTokensMinted
-        - event: TokensBurned(indexed address,uint256,uint256)
+        - event: TokensBurned(indexed address from,uint256 amount,uint256 timestamp)
           handler: handleMockTokensBurned
       file: ./src/mockGameToken.ts
 
@@ -236,9 +236,9 @@ dataSources:
           handler: handleProfileUpdated
         - event: ProfileVerified(indexed bytes8,uint8,indexed address,uint256)
           handler: handleProfileVerified
-        - event: NameClaimed(indexed bytes8,indexed address,uint256,uint256,uint8,uint256)
+        - event: NameClaimed(indexed bytes8,indexed address,indexed bytes8,uint256,uint256,uint256,uint8)
           handler: handleNameClaimed
-        - event: NameReleased(indexed bytes8,indexed address,uint256,uint256)
+        - event: NameReleased(indexed bytes8,indexed address,uint256)
           handler: handleNameReleased
       file: ./src/identity.ts
 
@@ -264,7 +264,7 @@ dataSources:
         - name: Membership
           file: ./abis/Membership.json
       eventHandlers:
-        - event: MemberAdded(indexed bytes8,indexed address,uint8,uint256)
+        - event: MemberAdded(indexed bytes8,indexed address,uint8,uint256,uint256)
           handler: handleMemberAdded
         - event: MemberRemoved(indexed bytes8,indexed address,uint256)
           handler: handleMemberRemoved
@@ -272,7 +272,7 @@ dataSources:
           handler: handleMemberStateUpdated
         - event: MemberTierUpdated(indexed bytes8,indexed address,uint8,uint8,uint256)
           handler: handleMemberTierUpdated
-        - event: VotingPowerUpdated(indexed bytes8,indexed address,uint256,uint256,uint256)
+        - event: VotingPowerUpdated(indexed bytes8,indexed address,uint256,uint256)
           handler: handleVotingPowerUpdated
         - event: VotingDelegated(indexed bytes8,indexed address,indexed address,uint256,uint256)
           handler: handleVotingDelegated
@@ -302,9 +302,9 @@ dataSources:
         - name: Control
           file: ./abis/Control.json
       eventHandlers:
-        - event: OrganizationCreated(indexed bytes8,string,indexed address,indexed address,uint256)
+        - event: OrganizationCreated(indexed bytes8 id,string name,indexed address creator,indexed address treasury,uint256 timestamp)
           handler: handleOrganizationCreated
-        - event: OrganizationStateChanged(indexed bytes8,uint8,uint8,uint256)
+        - event: OrganizationStateChanged(indexed bytes8 id,uint8 oldState,uint8 newState,uint256 timestamp)
           handler: handleOrganizationStateChanged
         - event: StakeWithdrawn(indexed bytes8,indexed address,uint256,uint256)
           handler: handleStakeWithdrawn
@@ -332,19 +332,19 @@ dataSources:
         - name: Flow
           file: ./abis/Flow.json
       eventHandlers:
-        - event: CampaignCreated(indexed bytes32,indexed bytes8,indexed address,string,uint8,uint256,uint256,uint256,uint256)
+        - event: CampaignCreated(indexed bytes8,indexed bytes32,indexed address,address,string,uint8,uint8,address,uint256,uint256,uint256,uint256,uint256,uint256,bool)
           handler: handleCampaignCreated
-        - event: CampaignStateChanged(indexed bytes32,uint8,uint8,uint256)
+        - event: CampaignStateChanged(indexed bytes8,indexed bytes32,uint8,uint8,uint256)
           handler: handleCampaignStateChanged
-        - event: ContributionMade(indexed bytes32,indexed address,uint256,uint256,uint256)
+        - event: ContributionMade(indexed bytes8,indexed bytes32,indexed address,uint256,uint256,string)
           handler: handleContributionMade
-        - event: CampaignFinalized(indexed bytes32,uint8,uint256,uint256,uint256)
+        - event: CampaignFinalized(indexed bytes8,indexed bytes32,uint8,uint256,uint256,uint256)
           handler: handleCampaignFinalized
-        - event: RewardsDistributed(indexed bytes32,indexed address,uint256,uint256,uint256)
+        - event: RewardsDistributed(indexed bytes8,indexed bytes32,indexed address,uint256,uint256)
           handler: handleRewardsDistributed
-        - event: ContributionRefunded(indexed bytes32,indexed address,uint256,uint256)
+        - event: ContributionRefunded(indexed bytes8,indexed bytes32,indexed address,uint256,uint256)
           handler: handleContributionRefunded
-        - event: ProtocolFeeCollected(indexed bytes32,indexed address,uint256,uint256)
+        - event: ProtocolFeeCollected(indexed bytes8,indexed bytes32,uint256,uint256)
           handler: handleProtocolFeeCollected
       file: ./src/flow.ts
 
@@ -370,13 +370,13 @@ dataSources:
         - name: Signal
           file: ./abis/Signal.json
       eventHandlers:
-        - event: ProposalCreated(string,indexed bytes8,indexed address,string,uint8,uint8,uint256,uint256,uint256)
+        - event: ProposalCreated(string hierarchicalId,indexed bytes8 organizationId,indexed address creator,string title,uint8 proposalType,uint8 votingType,uint256 votingPeriod,uint256 startTime,uint256 endTime)
           handler: handleProposalCreated
-        - event: VoteCast(string,indexed address,uint8,uint256,string)
+        - event: VoteCast(string hierarchicalId,indexed address voter,uint8 choice,uint256 votingPower,string reason)
           handler: handleVoteCast
-        - event: ProposalExecuted(indexed string,indexed address,bool,bytes)
+        - event: ProposalExecuted(indexed string hierarchicalId,indexed address executor,bool success,bytes returnData)
           handler: handleProposalExecuted
-        - event: ProposalCanceled(indexed string,indexed address,string)
+        - event: ProposalCanceled(indexed string hierarchicalId,indexed address canceler,string reason)
           handler: handleProposalCanceled
         - event: VotingPowerDelegated(indexed address,indexed address,uint256,uint256)
           handler: handleVotingPowerDelegated
@@ -408,7 +408,7 @@ dataSources:
         - name: Sense
           file: ./abis/Sense.json
       eventHandlers:
-        - event: ReputationUpdated(indexed bytes8,indexed bytes8,indexed uint8,int256,bytes32,address,uint256)
+        - event: ReputationUpdated(indexed bytes8,indexed bytes8,uint8,int256,bytes32,indexed address,uint256)
           handler: handleReputationUpdated
         - event: ExperienceAwarded(indexed bytes8,indexed bytes8,uint256,bytes32,indexed address,uint256)
           handler: handleExperienceAwarded
@@ -437,9 +437,9 @@ templates:
         - name: Treasury
           file: ./abis/Treasury.json
       eventHandlers:
-        - event: FundsDeposited(indexed address,indexed address,uint256,string,uint256)
+        - event: FundsDeposited(indexed address token,indexed address from,uint256 amount,string purpose,uint256 timestamp)
           handler: handleFundsDeposited
-        - event: FundsSpent(indexed address,indexed address,indexed address,uint256,string,uint256)
+        - event: FundsSpent(indexed address token,indexed address to,indexed address spender,uint256 amount,string purpose,uint256 timestamp)
           handler: handleFundsSpent
         - event: TokenAdded(indexed address,uint256)
           handler: handleTokenAdded

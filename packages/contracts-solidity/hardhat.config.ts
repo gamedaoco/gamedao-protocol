@@ -29,8 +29,8 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 31337,
       mining: {
-        auto: false,
-        interval: 2000
+        auto: true,
+        // interval: 2000
       },
       // loggingEnabled: true,
     },

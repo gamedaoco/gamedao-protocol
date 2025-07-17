@@ -47,7 +47,7 @@ type ModuleRegistration @entity {
   admin: Bytes!
   timestamp: BigInt!
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type ModuleUpgrade @entity {
@@ -57,7 +57,7 @@ type ModuleUpgrade @entity {
   newAddress: Bytes!
   timestamp: BigInt!
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 # ===== TOKEN ENTITIES =====
@@ -70,7 +70,7 @@ type TokenTransfer @entity {
   amount: BigDecimal! # transfer amount
   timestamp: BigInt! # transfer timestamp
   blockNumber: BigInt! # block number
-  transactionHash: Bytes! # transaction hash
+  transaction: Transaction! # transaction hash
 }
 
 # ===== TREASURY ENTITIES =====
@@ -102,7 +102,7 @@ type TreasuryTransaction @entity {
   transactionType: String! # DEPOSIT or SPEND
   spender: String # spender address (for SPEND transactions)
   blockNumber: BigInt! # block number
-  transactionHash: Bytes! # transaction hash
+  transaction: Transaction! # transaction hash
 }
 
 # ===== STAKING ENTITIES =====
@@ -131,7 +131,7 @@ type OrganizationStake @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type UserStake @entity {
@@ -146,7 +146,7 @@ type UserStake @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type UnstakeRequest @entity {
@@ -160,7 +160,7 @@ type UnstakeRequest @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type StakingPool @entity {
@@ -228,7 +228,7 @@ type Organization @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type Member @entity {
@@ -242,7 +242,7 @@ type Member @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 enum MemberState {
@@ -318,7 +318,7 @@ type Campaign @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type Contribution @entity {
@@ -330,7 +330,7 @@ type Contribution @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 # ===== SIGNAL MODULE ENTITIES =====
@@ -400,7 +400,7 @@ type Proposal @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type Vote @entity {
@@ -416,7 +416,7 @@ type Vote @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type Delegation @entity {
@@ -428,7 +428,7 @@ type Delegation @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 # ===== SENSE MODULE ENTITIES =====
@@ -442,7 +442,7 @@ type Profile @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type Achievement @entity {
@@ -455,7 +455,7 @@ type Achievement @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type Feedback @entity {
@@ -469,7 +469,7 @@ type Feedback @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 type ReputationEvent @entity {
@@ -482,7 +482,7 @@ type ReputationEvent @entity {
 
   # Tracking
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 # ===== IDENTITY MODULE ENTITIES =====
@@ -513,7 +513,7 @@ type VotingDelegation @entity {
 
   # Transaction info
   blockNumber: BigInt!
-  transactionHash: Bytes!
+  transaction: Transaction!
 }
 
 # ===== TRANSACTION ENTITIES =====
@@ -529,12 +529,12 @@ type Transaction @entity {
   timestamp: BigInt! # transaction timestamp
 
   # Related entities
-  moduleRegistrations: [ModuleRegistration!]! @derivedFrom(field: "transactionHash")
-  moduleUpgrades: [ModuleUpgrade!]! @derivedFrom(field: "transactionHash")
-  proposals: [Proposal!]! @derivedFrom(field: "transactionHash")
-  votes: [Vote!]! @derivedFrom(field: "transactionHash")
-  campaigns: [Campaign!]! @derivedFrom(field: "transactionHash")
-  contributions: [Contribution!]! @derivedFrom(field: "transactionHash")
-  delegations: [VotingDelegation!]! @derivedFrom(field: "transactionHash")
-  reputationEvents: [ReputationEvent!]! @derivedFrom(field: "transactionHash")
+  moduleRegistrations: [ModuleRegistration!]! @derivedFrom(field: "transaction")
+  moduleUpgrades: [ModuleUpgrade!]! @derivedFrom(field: "transaction")
+  proposals: [Proposal!]! @derivedFrom(field: "transaction")
+  votes: [Vote!]! @derivedFrom(field: "transaction")
+  campaigns: [Campaign!]! @derivedFrom(field: "transaction")
+  contributions: [Contribution!]! @derivedFrom(field: "transaction")
+  delegations: [VotingDelegation!]! @derivedFrom(field: "transaction")
+  reputationEvents: [ReputationEvent!]! @derivedFrom(field: "transaction")
 }

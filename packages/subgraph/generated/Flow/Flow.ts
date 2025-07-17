@@ -707,6 +707,29 @@ export class Flow extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  CAMPAIGN_CREATION_REPUTATION(): BigInt {
+    let result = super.call(
+      "CAMPAIGN_CREATION_REPUTATION",
+      "CAMPAIGN_CREATION_REPUTATION():(uint256)",
+      []
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_CAMPAIGN_CREATION_REPUTATION(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "CAMPAIGN_CREATION_REPUTATION",
+      "CAMPAIGN_CREATION_REPUTATION():(uint256)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   CAMPAIGN_CREATOR_ROLE(): Bytes {
     let result = super.call(
       "CAMPAIGN_CREATOR_ROLE",
@@ -728,6 +751,52 @@ export class Flow extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBytes());
+  }
+
+  CAMPAIGN_SUCCESS_REPUTATION(): BigInt {
+    let result = super.call(
+      "CAMPAIGN_SUCCESS_REPUTATION",
+      "CAMPAIGN_SUCCESS_REPUTATION():(uint256)",
+      []
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_CAMPAIGN_SUCCESS_REPUTATION(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "CAMPAIGN_SUCCESS_REPUTATION",
+      "CAMPAIGN_SUCCESS_REPUTATION():(uint256)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  CONTRIBUTION_REPUTATION(): BigInt {
+    let result = super.call(
+      "CONTRIBUTION_REPUTATION",
+      "CONTRIBUTION_REPUTATION():(uint256)",
+      []
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_CONTRIBUTION_REPUTATION(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "CONTRIBUTION_REPUTATION",
+      "CONTRIBUTION_REPUTATION():(uint256)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   DEFAULT_ADMIN_ROLE(): Bytes {
@@ -776,6 +845,52 @@ export class Flow extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
+  LARGE_CONTRIBUTION_BONUS(): BigInt {
+    let result = super.call(
+      "LARGE_CONTRIBUTION_BONUS",
+      "LARGE_CONTRIBUTION_BONUS():(uint256)",
+      []
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_LARGE_CONTRIBUTION_BONUS(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "LARGE_CONTRIBUTION_BONUS",
+      "LARGE_CONTRIBUTION_BONUS():(uint256)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  LARGE_CONTRIBUTION_THRESHOLD(): BigInt {
+    let result = super.call(
+      "LARGE_CONTRIBUTION_THRESHOLD",
+      "LARGE_CONTRIBUTION_THRESHOLD():(uint256)",
+      []
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_LARGE_CONTRIBUTION_THRESHOLD(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "LARGE_CONTRIBUTION_THRESHOLD",
+      "LARGE_CONTRIBUTION_THRESHOLD():(uint256)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   MAX_PROTOCOL_FEE(): BigInt {
     let result = super.call(
       "MAX_PROTOCOL_FEE",
@@ -797,6 +912,29 @@ export class Flow extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  MODULE_ADMIN_ROLE(): Bytes {
+    let result = super.call(
+      "MODULE_ADMIN_ROLE",
+      "MODULE_ADMIN_ROLE():(bytes32)",
+      []
+    );
+
+    return result[0].toBytes();
+  }
+
+  try_MODULE_ADMIN_ROLE(): ethereum.CallResult<Bytes> {
+    let result = super.tryCall(
+      "MODULE_ADMIN_ROLE",
+      "MODULE_ADMIN_ROLE():(bytes32)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
   OPERATOR_ROLE(): Bytes {

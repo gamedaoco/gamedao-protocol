@@ -23,8 +23,8 @@ describe("Flow -> Sense Reputation Integration", function () {
     [admin, creator, contributor] = await ethers.getSigners();
 
     // Deploy Game Token
-    const GameTokenFactory = await ethers.getContractFactory("MockGameToken");
-    gameToken = await GameTokenFactory.deploy();
+    const MockGameTokenFactory = await ethers.getContractFactory("MockGameToken");
+    gameToken = await MockGameTokenFactory.deploy();
     await gameToken.waitForDeployment();
 
     // Deploy Registry
