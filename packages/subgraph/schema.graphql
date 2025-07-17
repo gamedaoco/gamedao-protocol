@@ -19,6 +19,8 @@ type GlobalStats @entity {
   totalProfiles: BigInt! # Total profiles created
   verifiedProfiles: BigInt! # Number of verified profiles
   totalAchievements: BigInt! # Total achievements earned
+  totalTokenTransfers: BigInt! # Total token transfers
+  totalTreasuryTransactions: BigInt! # Total treasury transactions
   updatedAt: BigInt! # Last update timestamp
 }
 
@@ -56,6 +58,51 @@ type ModuleUpgrade @entity {
   timestamp: BigInt!
   blockNumber: BigInt!
   transactionHash: Bytes!
+}
+
+# ===== TOKEN ENTITIES =====
+
+type TokenTransfer @entity {
+  id: ID! # tx hash + log index
+  from: String! # sender address
+  to: String! # recipient address
+  token: Bytes! # token contract address
+  amount: BigDecimal! # transfer amount
+  timestamp: BigInt! # transfer timestamp
+  blockNumber: BigInt! # block number
+  transactionHash: Bytes! # transaction hash
+}
+
+# ===== TREASURY ENTITIES =====
+
+type Treasury @entity {
+  id: ID! # treasury contract address
+  organization: Organization! # organization that owns this treasury
+  address: Bytes! # treasury contract address
+  createdAt: BigInt! # creation timestamp
+  lastActivityAt: BigInt! # last activity timestamp
+
+  # Relationships
+  transactions: [TreasuryTransaction!]! @derivedFrom(field: "treasury")
+
+  # Balances (could be expanded to track individual token balances)
+  totalDeposits: BigDecimal! # total deposits
+  totalSpent: BigDecimal! # total spent
+}
+
+type TreasuryTransaction @entity {
+  id: ID! # tx hash + log index
+  treasury: Treasury!
+  token: Bytes! # token address
+  from: String! # sender address
+  to: String! # recipient address
+  amount: BigDecimal! # transaction amount
+  purpose: String! # transaction purpose
+  timestamp: BigInt! # transaction timestamp
+  transactionType: String! # DEPOSIT or SPEND
+  spender: String # spender address (for SPEND transactions)
+  blockNumber: BigInt! # block number
+  transactionHash: Bytes! # transaction hash
 }
 
 # ===== STAKING ENTITIES =====
@@ -158,7 +205,8 @@ type Organization @entity {
   name: String! # organization name
   metadataURI: String! # IPFS metadata URI
   creator: User! # organization creator
-  treasury: Bytes! # treasury contract address
+  treasury: Treasury # treasury contract (may be null initially)
+  treasuryAddress: Bytes! # treasury contract address
   orgType: OrgType! # organization type
   accessModel: AccessModel! # access model
   feeModel: FeeModel! # fee model
@@ -435,4 +483,58 @@ type ReputationEvent @entity {
   # Tracking
   blockNumber: BigInt!
   transactionHash: Bytes!
+}
+
+# ===== IDENTITY MODULE ENTITIES =====
+
+type NameClaim @entity {
+  id: ID! # name as string
+  name: Bytes! # 8-byte name
+  profile: Profile! # profile that claimed the name
+  owner: Bytes! # owner address
+  stakeAmount: BigDecimal! # amount of GAME tokens staked
+  stakeDuration: BigInt! # duration of stake in seconds
+  claimedAt: BigInt! # claim timestamp
+  expiresAt: BigInt! # expiration timestamp
+  isActive: Boolean! # whether claim is active
+  nameType: Int! # name type (0=User, 1=Organization, 2=Project)
+}
+
+# ===== MEMBERSHIP ENTITIES =====
+
+type VotingDelegation @entity {
+  id: ID! # organizationId + delegator + delegatee + timestamp
+  organization: Organization!
+  delegator: Member!
+  delegatee: Member!
+  amount: BigInt! # amount of voting power delegated
+  timestamp: BigInt! # delegation timestamp
+  active: Boolean! # whether delegation is active
+
+  # Transaction info
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== TRANSACTION ENTITIES =====
+
+type Transaction @entity {
+  id: ID! # transaction hash
+  hash: Bytes! # transaction hash
+  from: Bytes! # sender address
+  to: Bytes # recipient address (nullable)
+  gasUsed: BigInt! # gas used
+  gasPrice: BigInt! # gas price
+  blockNumber: BigInt! # block number
+  timestamp: BigInt! # transaction timestamp
+
+  # Related entities
+  moduleRegistrations: [ModuleRegistration!]! @derivedFrom(field: "transactionHash")
+  moduleUpgrades: [ModuleUpgrade!]! @derivedFrom(field: "transactionHash")
+  proposals: [Proposal!]! @derivedFrom(field: "transactionHash")
+  votes: [Vote!]! @derivedFrom(field: "transactionHash")
+  campaigns: [Campaign!]! @derivedFrom(field: "transactionHash")
+  contributions: [Contribution!]! @derivedFrom(field: "transactionHash")
+  delegations: [VotingDelegation!]! @derivedFrom(field: "transactionHash")
+  reputationEvents: [ReputationEvent!]! @derivedFrom(field: "transactionHash")
 }
