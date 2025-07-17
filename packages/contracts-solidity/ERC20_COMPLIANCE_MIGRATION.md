@@ -21,7 +21,7 @@ The original `MockGameToken` contract had several compliance issues:
 2. **GameStaking.sol** - Dedicated staking contract with advanced features
 3. **Control.sol** - Updated to use GameStaking for organization creation
 4. **IGameStaking.sol** - Interface for staking functionality
-5. **IGameTokenClean.sol** - Clean ERC20 interface (renamed to IGameToken.sol)
+5. **IGameToken.sol** - Clean ERC20 interface (renamed from IGameTokenClean.sol)
 
 ### Key Benefits Achieved
 

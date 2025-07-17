@@ -1,10 +1,10 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { GameDAORegistry, Control, Sense } from "../typechain-types";
+import { Registry, Control, Sense } from "../typechain-types";
 
 describe("Sense Module", function () {
-  let registry: GameDAORegistry;
+  let registry: Registry;
   let control: Control;
   let sense: Sense;
   let owner: HardhatEthersSigner;
@@ -18,14 +18,14 @@ describe("Sense Module", function () {
   beforeEach(async function () {
     [owner, member1, member2, member3, nonMember] = await ethers.getSigners();
 
-    // Deploy GameDAO Registry
-    const GameDAORegistry = await ethers.getContractFactory("GameDAORegistry");
-    registry = await GameDAORegistry.deploy(owner.address);
+    // Deploy Registry
+    const RegistryFactory = await ethers.getContractFactory("Registry");
+    registry = await RegistryFactory.deploy(owner.address);
     await registry.waitForDeployment();
 
     // Deploy Control Module
-    const Control = await ethers.getContractFactory("Control");
-    control = await Control.deploy();
+    const ControlFactory = await ethers.getContractFactory("Control");
+    control = await ControlFactory.deploy(owner.address, owner.address);
     await control.waitForDeployment();
 
     // Deploy Sense Module

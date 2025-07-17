@@ -10,6 +10,66 @@ import {
   BigInt
 } from "@graphprotocol/graph-ts";
 
+export class OrganizationStakeWithdrawn extends ethereum.Event {
+  get params(): OrganizationStakeWithdrawn__Params {
+    return new OrganizationStakeWithdrawn__Params(this);
+  }
+}
+
+export class OrganizationStakeWithdrawn__Params {
+  _event: OrganizationStakeWithdrawn;
+
+  constructor(event: OrganizationStakeWithdrawn) {
+    this._event = event;
+  }
+
+  get organizationId(): Bytes {
+    return this._event.parameters[0].value.toBytes();
+  }
+
+  get staker(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
+  }
+
+  get timestamp(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+}
+
+export class OrganizationStaked extends ethereum.Event {
+  get params(): OrganizationStaked__Params {
+    return new OrganizationStaked__Params(this);
+  }
+}
+
+export class OrganizationStaked__Params {
+  _event: OrganizationStaked;
+
+  constructor(event: OrganizationStaked) {
+    this._event = event;
+  }
+
+  get organizationId(): Bytes {
+    return this._event.parameters[0].value.toBytes();
+  }
+
+  get staker(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
+  }
+
+  get timestamp(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+}
+
 export class Paused extends ethereum.Event {
   get params(): Paused__Params {
     return new Paused__Params(this);
@@ -350,6 +410,28 @@ export class Unstaked__Params {
   }
 }
 
+export class GameStaking__getOrganizationStakeResultValue0Struct extends ethereum.Tuple {
+  get organizationId(): Bytes {
+    return this[0].toBytes();
+  }
+
+  get staker(): Address {
+    return this[1].toAddress();
+  }
+
+  get amount(): BigInt {
+    return this[2].toBigInt();
+  }
+
+  get stakedAt(): BigInt {
+    return this[3].toBigInt();
+  }
+
+  get active(): boolean {
+    return this[4].toBoolean();
+  }
+}
+
 export class GameStaking__getPoolInfoResult {
   value0: BigInt;
   value1: BigInt;
@@ -428,6 +510,58 @@ export class GameStaking__getStakeInfoResult {
 
   getStrategy(): i32 {
     return this.value3;
+  }
+}
+
+export class GameStaking__organizationStakesResult {
+  value0: Bytes;
+  value1: Address;
+  value2: BigInt;
+  value3: BigInt;
+  value4: boolean;
+
+  constructor(
+    value0: Bytes,
+    value1: Address,
+    value2: BigInt,
+    value3: BigInt,
+    value4: boolean
+  ) {
+    this.value0 = value0;
+    this.value1 = value1;
+    this.value2 = value2;
+    this.value3 = value3;
+    this.value4 = value4;
+  }
+
+  toMap(): TypedMap<string, ethereum.Value> {
+    let map = new TypedMap<string, ethereum.Value>();
+    map.set("value0", ethereum.Value.fromFixedBytes(this.value0));
+    map.set("value1", ethereum.Value.fromAddress(this.value1));
+    map.set("value2", ethereum.Value.fromUnsignedBigInt(this.value2));
+    map.set("value3", ethereum.Value.fromUnsignedBigInt(this.value3));
+    map.set("value4", ethereum.Value.fromBoolean(this.value4));
+    return map;
+  }
+
+  getOrganizationId(): Bytes {
+    return this.value0;
+  }
+
+  getStaker(): Address {
+    return this.value1;
+  }
+
+  getAmount(): BigInt {
+    return this.value2;
+  }
+
+  getStakedAt(): BigInt {
+    return this.value3;
+  }
+
+  getActive(): boolean {
+    return this.value4;
   }
 }
 
@@ -700,6 +834,52 @@ export class GameStaking extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  ORGANIZATION_MANAGER_ROLE(): Bytes {
+    let result = super.call(
+      "ORGANIZATION_MANAGER_ROLE",
+      "ORGANIZATION_MANAGER_ROLE():(bytes32)",
+      []
+    );
+
+    return result[0].toBytes();
+  }
+
+  try_ORGANIZATION_MANAGER_ROLE(): ethereum.CallResult<Bytes> {
+    let result = super.tryCall(
+      "ORGANIZATION_MANAGER_ROLE",
+      "ORGANIZATION_MANAGER_ROLE():(bytes32)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
+  }
+
+  ORGANIZATION_STAKE_LOCK_PERIOD(): BigInt {
+    let result = super.call(
+      "ORGANIZATION_STAKE_LOCK_PERIOD",
+      "ORGANIZATION_STAKE_LOCK_PERIOD():(uint256)",
+      []
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_ORGANIZATION_STAKE_LOCK_PERIOD(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "ORGANIZATION_STAKE_LOCK_PERIOD",
+      "ORGANIZATION_STAKE_LOCK_PERIOD():(uint256)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   PRECISION(): BigInt {
     let result = super.call("PRECISION", "PRECISION():(uint256)", []);
 
@@ -776,6 +956,31 @@ export class GameStaking extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
+  canWithdrawOrganizationStake(organizationId: Bytes): boolean {
+    let result = super.call(
+      "canWithdrawOrganizationStake",
+      "canWithdrawOrganizationStake(bytes8):(bool)",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+
+    return result[0].toBoolean();
+  }
+
+  try_canWithdrawOrganizationStake(
+    organizationId: Bytes
+  ): ethereum.CallResult<boolean> {
+    let result = super.tryCall(
+      "canWithdrawOrganizationStake",
+      "canWithdrawOrganizationStake(bytes8):(bool)",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
   gameToken(): Address {
     let result = super.call("gameToken", "gameToken():(address)", []);
 
@@ -789,6 +994,39 @@ export class GameStaking extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  getOrganizationStake(
+    organizationId: Bytes
+  ): GameStaking__getOrganizationStakeResultValue0Struct {
+    let result = super.call(
+      "getOrganizationStake",
+      "getOrganizationStake(bytes8):((bytes8,address,uint256,uint256,bool))",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+
+    return changetype<GameStaking__getOrganizationStakeResultValue0Struct>(
+      result[0].toTuple()
+    );
+  }
+
+  try_getOrganizationStake(
+    organizationId: Bytes
+  ): ethereum.CallResult<GameStaking__getOrganizationStakeResultValue0Struct> {
+    let result = super.tryCall(
+      "getOrganizationStake",
+      "getOrganizationStake(bytes8):((bytes8,address,uint256,uint256,bool))",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      changetype<GameStaking__getOrganizationStakeResultValue0Struct>(
+        value[0].toTuple()
+      )
+    );
   }
 
   getPendingRewards(user: Address, purpose: i32): BigInt {
@@ -925,6 +1163,31 @@ export class GameStaking extends ethereum.SmartContract {
     );
   }
 
+  getUserOrganizationStakes(user: Address): Array<Bytes> {
+    let result = super.call(
+      "getUserOrganizationStakes",
+      "getUserOrganizationStakes(address):(bytes8[])",
+      [ethereum.Value.fromAddress(user)]
+    );
+
+    return result[0].toBytesArray();
+  }
+
+  try_getUserOrganizationStakes(
+    user: Address
+  ): ethereum.CallResult<Array<Bytes>> {
+    let result = super.tryCall(
+      "getUserOrganizationStakes",
+      "getUserOrganizationStakes(address):(bytes8[])",
+      [ethereum.Value.fromAddress(user)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytesArray());
+  }
+
   hasRole(role: Bytes, account: Address): boolean {
     let result = super.call("hasRole", "hasRole(bytes32,address):(bool)", [
       ethereum.Value.fromFixedBytes(role),
@@ -944,6 +1207,45 @@ export class GameStaking extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
+  organizationStakes(param0: Bytes): GameStaking__organizationStakesResult {
+    let result = super.call(
+      "organizationStakes",
+      "organizationStakes(bytes8):(bytes8,address,uint256,uint256,bool)",
+      [ethereum.Value.fromFixedBytes(param0)]
+    );
+
+    return new GameStaking__organizationStakesResult(
+      result[0].toBytes(),
+      result[1].toAddress(),
+      result[2].toBigInt(),
+      result[3].toBigInt(),
+      result[4].toBoolean()
+    );
+  }
+
+  try_organizationStakes(
+    param0: Bytes
+  ): ethereum.CallResult<GameStaking__organizationStakesResult> {
+    let result = super.tryCall(
+      "organizationStakes",
+      "organizationStakes(bytes8):(bytes8,address,uint256,uint256,bool)",
+      [ethereum.Value.fromFixedBytes(param0)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      new GameStaking__organizationStakesResult(
+        value[0].toBytes(),
+        value[1].toAddress(),
+        value[2].toBigInt(),
+        value[3].toBigInt(),
+        value[4].toBoolean()
+      )
+    );
   }
 
   paused(): boolean {
@@ -1165,6 +1467,38 @@ export class GameStaking extends ethereum.SmartContract {
         value[3].toBoolean()
       )
     );
+  }
+
+  userOrganizationStakes(param0: Address, param1: BigInt): Bytes {
+    let result = super.call(
+      "userOrganizationStakes",
+      "userOrganizationStakes(address,uint256):(bytes8)",
+      [
+        ethereum.Value.fromAddress(param0),
+        ethereum.Value.fromUnsignedBigInt(param1)
+      ]
+    );
+
+    return result[0].toBytes();
+  }
+
+  try_userOrganizationStakes(
+    param0: Address,
+    param1: BigInt
+  ): ethereum.CallResult<Bytes> {
+    let result = super.tryCall(
+      "userOrganizationStakes",
+      "userOrganizationStakes(address,uint256):(bytes8)",
+      [
+        ethereum.Value.fromAddress(param0),
+        ethereum.Value.fromUnsignedBigInt(param1)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
   userStakes(param0: Address, param1: i32): GameStaking__userStakesResult {
@@ -1715,6 +2049,44 @@ export class StakeCall__Outputs {
   }
 }
 
+export class StakeForOrganizationCall extends ethereum.Call {
+  get inputs(): StakeForOrganizationCall__Inputs {
+    return new StakeForOrganizationCall__Inputs(this);
+  }
+
+  get outputs(): StakeForOrganizationCall__Outputs {
+    return new StakeForOrganizationCall__Outputs(this);
+  }
+}
+
+export class StakeForOrganizationCall__Inputs {
+  _call: StakeForOrganizationCall;
+
+  constructor(call: StakeForOrganizationCall) {
+    this._call = call;
+  }
+
+  get organizationId(): Bytes {
+    return this._call.inputValues[0].value.toBytes();
+  }
+
+  get staker(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._call.inputValues[2].value.toBigInt();
+  }
+}
+
+export class StakeForOrganizationCall__Outputs {
+  _call: StakeForOrganizationCall;
+
+  constructor(call: StakeForOrganizationCall) {
+    this._call = call;
+  }
+}
+
 export class UnpauseCall extends ethereum.Call {
   get inputs(): UnpauseCall__Inputs {
     return new UnpauseCall__Inputs(this);
@@ -1775,6 +2147,40 @@ export class UpdatePoolCall__Outputs {
   _call: UpdatePoolCall;
 
   constructor(call: UpdatePoolCall) {
+    this._call = call;
+  }
+}
+
+export class WithdrawOrganizationStakeCall extends ethereum.Call {
+  get inputs(): WithdrawOrganizationStakeCall__Inputs {
+    return new WithdrawOrganizationStakeCall__Inputs(this);
+  }
+
+  get outputs(): WithdrawOrganizationStakeCall__Outputs {
+    return new WithdrawOrganizationStakeCall__Outputs(this);
+  }
+}
+
+export class WithdrawOrganizationStakeCall__Inputs {
+  _call: WithdrawOrganizationStakeCall;
+
+  constructor(call: WithdrawOrganizationStakeCall) {
+    this._call = call;
+  }
+
+  get organizationId(): Bytes {
+    return this._call.inputValues[0].value.toBytes();
+  }
+
+  get staker(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+}
+
+export class WithdrawOrganizationStakeCall__Outputs {
+  _call: WithdrawOrganizationStakeCall;
+
+  constructor(call: WithdrawOrganizationStakeCall) {
     this._call = call;
   }
 }

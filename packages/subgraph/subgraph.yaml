@@ -2,25 +2,27 @@ specVersion: 0.0.5
 schema:
   file: ./schema.graphql
 dataSources:
-  # GameDAO Registry - Central module management
+  # Registry - Module Management
   - kind: ethereum
-    name: GameDAORegistry
+    name: Registry
     network: localhost
     source:
-      address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
-      abi: GameDAORegistry
+      address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+      abi: Registry
       startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - Module
-        - ModuleRegistration
-        - ModuleUpgrade
+        - ModuleRegistry
+        - ModuleInfo
+        - ModuleEvent
+        - GlobalStats
+        - Transaction
       abis:
-        - name: GameDAORegistry
-          file: ./abis/GameDAORegistry.json
+        - name: Registry
+          file: ./abis/Registry.json
       eventHandlers:
         - event: ModuleRegistered(indexed bytes32,indexed address,string)
           handler: handleModuleRegistered
@@ -32,51 +34,57 @@ dataSources:
           handler: handleModuleUpgraded
       file: ./src/registry.ts
 
-  # GameStaking - Staking Management
+  # Staking - Staking Management
   - kind: ethereum
-    name: GameStaking
+    name: Staking
     network: localhost
     source:
       address: "0xc5a5C42992dECbae36851359345FE25997F5C42d"
-      abi: GameStaking
+      abi: Staking
       startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - OrganizationStake
-        - UserStake
-        - UnstakeRequest
         - StakingPool
-        - User
+        - StakeInfo
+        - UnstakeRequest
+        - RewardDistribution
+        - StakingStats
+        - GlobalStats
+        - Transaction
       abis:
-        - name: GameStaking
-          file: ./abis/GameStaking.json
+        - name: Staking
+          file: ./abis/Staking.json
       eventHandlers:
-        - event: OrganizationStaked(indexed bytes8,indexed address,uint256,uint256)
-          handler: handleOrganizationStaked
+        - event: Staked(indexed address,indexed uint256,uint256,uint256,uint256)
+          handler: handleStaked
+        - event: UnstakeRequested(indexed address,indexed uint256,uint256,uint256,uint256)
+          handler: handleUnstakeRequested
+        - event: Unstaked(indexed address,indexed uint256,uint256,uint256)
+          handler: handleUnstaked
+        - event: RewardsClaimed(indexed address,indexed uint256,uint256,uint256)
+          handler: handleRewardsClaimed
+        - event: RewardsDistributed(indexed uint256,uint256,uint256)
+          handler: handleRewardsDistributed
+        - event: PoolCreated(indexed uint256,uint256,uint256,uint256)
+          handler: handlePoolCreated
+        - event: PoolUpdated(indexed uint256,uint256,uint256,uint256)
+          handler: handlePoolUpdated
+        - event: OrganizationStakeAdded(indexed bytes8,indexed address,uint256,uint256)
+          handler: handleOrganizationStakeAdded
         - event: OrganizationStakeWithdrawn(indexed bytes8,indexed address,uint256,uint256)
           handler: handleOrganizationStakeWithdrawn
-        - event: Staked(indexed address,indexed uint8,uint256,uint8,uint256)
-          handler: handleStaked
-        - event: UnstakeRequested(indexed address,indexed uint8,uint256,uint8,uint256,uint256)
-          handler: handleUnstakeRequested
-        - event: Unstaked(indexed address,indexed uint8,uint256,uint256,uint256)
-          handler: handleUnstaked
-        - event: RewardsClaimed(indexed address,indexed uint8,uint256,uint256)
-          handler: handleRewardsClaimed
-        - event: Slashed(indexed address,indexed uint8,uint256,indexed address,string,uint256)
-          handler: handleSlashed
       file: ./src/staking.ts
 
-  # Control Module - DAO Management
+  # Control Module - Organization Management (Updated for Membership)
   - kind: ethereum
-    name: Control
+    name: ControlWithMembership
     network: localhost
     source:
-      address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
-      abi: Control
+      address: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
+      abi: ControlWithMembership
       startBlock: 0
     mapping:
       kind: ethereum/events
@@ -84,34 +92,33 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - Organization
-        - Member
+        - OrganizationStake
         - Treasury
-        - Stake
+        - GlobalStats
+        - Transaction
       abis:
-        - name: Control
-          file: ./abis/Control.json
+        - name: ControlWithMembership
+          file: ./abis/ControlWithMembership.json
         - name: Treasury
           file: ./abis/Treasury.json
+        - name: GameDAOMembership
+          file: ./abis/GameDAOMembership.json
       eventHandlers:
         - event: OrganizationCreated(indexed bytes8,string,indexed address,indexed address,uint256)
           handler: handleOrganizationCreated
         - event: OrganizationStateChanged(indexed bytes8,uint8,uint8,uint256)
           handler: handleOrganizationStateChanged
-        - event: MemberAdded(indexed bytes8,indexed address,uint256)
-          handler: handleMemberAdded
-        - event: MemberRemoved(indexed bytes8,indexed address,uint256)
-          handler: handleMemberRemoved
-        - event: MemberStateChanged(indexed bytes8,indexed address,uint8,uint8,uint256)
-          handler: handleMemberStateChanged
+        - event: OrganizationUpdated(indexed bytes8,string,uint256)
+          handler: handleOrganizationUpdated
       file: ./src/control.ts
 
-  # Flow Module - Crowdfunding & Campaigns
+  # Flow Module - Crowdfunding & Campaigns (Updated for Membership)
   - kind: ethereum
-    name: Flow
+    name: FlowWithMembership
     network: localhost
     source:
       address: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
-      abi: Flow
+      abi: FlowWithMembership
       startBlock: 0
     mapping:
       kind: ethereum/events
@@ -120,37 +127,34 @@ dataSources:
       entities:
         - Campaign
         - Contribution
-        - Reward
-        - ProtocolFee
+        - CampaignReward
+        - GlobalStats
+        - Transaction
       abis:
-        - name: Flow
-          file: ./abis/Flow.json
+        - name: FlowWithMembership
+          file: ./abis/FlowWithMembership.json
+        - name: GameDAOMembership
+          file: ./abis/GameDAOMembership.json
       eventHandlers:
-        - event: CampaignCreated(indexed bytes32,indexed bytes8,indexed address,string,uint8,uint256,uint256,uint256,uint256)
+        - event: CampaignCreated(indexed bytes8,indexed address,indexed address,string,uint8,uint256,uint256,uint256,uint256,uint256)
           handler: handleCampaignCreated
-        - event: CampaignUpdated(indexed bytes32,string,string,uint256,uint256,uint256,uint256,uint256)
-          handler: handleCampaignUpdated
-        - event: CampaignStateChanged(indexed bytes32,uint8,uint8,uint256)
+        - event: CampaignStateChanged(indexed bytes8,uint8,uint8,uint256)
           handler: handleCampaignStateChanged
-        - event: ContributionMade(indexed bytes32,indexed address,uint256,uint256,uint256)
+        - event: ContributionMade(indexed bytes8,indexed address,uint256,uint256)
           handler: handleContributionMade
-        - event: CampaignFinalized(indexed bytes32,uint8,uint256,uint256,uint256)
+        - event: CampaignFinalized(indexed bytes8,uint8,uint256,uint256)
           handler: handleCampaignFinalized
-        - event: RewardsDistributed(indexed bytes32,indexed address,uint256,uint256,uint256)
+        - event: RewardsDistributed(indexed bytes8,indexed address,uint256,uint256)
           handler: handleRewardsDistributed
-        - event: ContributionRefunded(indexed bytes32,indexed address,uint256,uint256)
-          handler: handleContributionRefunded
-        - event: ProtocolFeeCollected(indexed bytes32,indexed address,uint256,uint256)
-          handler: handleProtocolFeeCollected
       file: ./src/flow.ts
 
-  # Signal Module - Governance & Proposals
+  # Signal Module - Governance & Voting (Updated for Membership)
   - kind: ethereum
-    name: Signal
+    name: SignalWithMembership
     network: localhost
     source:
-      address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
-      abi: Signal
+      address: "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+      abi: SignalWithMembership
       startBlock: 0
     mapping:
       kind: ethereum/events
@@ -159,63 +163,31 @@ dataSources:
       entities:
         - Proposal
         - Vote
-        - Delegation
+        - GlobalStats
+        - Transaction
       abis:
-        - name: Signal
-          file: ./abis/Signal.json
+        - name: SignalWithMembership
+          file: ./abis/SignalWithMembership.json
+        - name: GameDAOMembership
+          file: ./abis/GameDAOMembership.json
       eventHandlers:
-        - event: ProposalCreated(indexed bytes32,indexed bytes8,indexed address,string,uint8,uint8,uint8,uint256,uint256,uint256)
+        - event: ProposalCreated(indexed bytes8,indexed address,indexed string,string,uint8,uint8,uint8,uint256,uint256,uint256)
           handler: handleProposalCreated
-        - event: ProposalStateChanged(indexed bytes32,uint8,uint8,uint256)
+        - event: ProposalStateChanged(indexed bytes8,indexed string,uint8,uint8,uint256)
           handler: handleProposalStateChanged
-        - event: VoteCast(indexed bytes32,indexed address,uint8,uint256,string,uint256)
+        - event: VoteCast(indexed bytes8,indexed string,indexed address,uint8,uint256,uint256,uint256)
           handler: handleVoteCast
-        - event: ProposalExecuted(indexed bytes32,bool,bytes,uint256)
+        - event: ProposalExecuted(indexed bytes8,indexed string,indexed address,uint256)
           handler: handleProposalExecuted
-        - event: ProposalCancelled(indexed bytes32,indexed address,uint256)
-          handler: handleProposalCancelled
-        - event: VotingPowerDelegated(indexed address,indexed address,uint256,uint256)
-          handler: handleVotingPowerDelegated
-        - event: VotingPowerUndelegated(indexed address,indexed address,uint256,uint256)
-          handler: handleVotingPowerUndelegated
       file: ./src/signal.ts
 
-  # Sense Module - Identity & Reputation
+  # Sense Module - Reputation & Profiles (Updated for Membership)
   - kind: ethereum
-    name: Sense
-    network: localhost
-    source:
-      address: "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6"
-      abi: Sense
-      startBlock: 0
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      entities:
-        - Profile
-        - Achievement
-        - Feedback
-        - ReputationEvent
-      abis:
-        - name: Sense
-          file: ./abis/Sense.json
-      eventHandlers:
-        - event: ExperienceAwarded(indexed bytes8,uint256,bytes32,indexed address,uint256)
-          handler: handleExperienceAwarded
-        - event: ReputationUpdated(indexed bytes8,indexed uint8,int256,bytes32,indexed address,uint256)
-          handler: handleReputationUpdated
-        - event: InteractionRecorded(indexed bytes8,bool,bytes32,indexed address,uint256)
-          handler: handleInteractionRecorded
-      file: ./src/sense.ts
-
-  # Identity Module - Profile Management
-  - kind: ethereum
-    name: Identity
+    name: SenseWithMembership
     network: localhost
     source:
       address: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
-      abi: Identity
+      abi: SenseWithMembership
       startBlock: 0
     mapping:
       kind: ethereum/events
@@ -223,9 +195,15 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - Profile
+        - ReputationData
+        - ReputationEvent
+        - GlobalStats
+        - Transaction
       abis:
-        - name: Identity
-          file: ./abis/Identity.json
+        - name: SenseWithMembership
+          file: ./abis/SenseWithMembership.json
+        - name: GameDAOMembership
+          file: ./abis/GameDAOMembership.json
       eventHandlers:
         - event: ProfileCreated(indexed bytes8,indexed address,indexed bytes8,string,uint256)
           handler: handleProfileCreated
@@ -233,4 +211,6 @@ dataSources:
           handler: handleProfileUpdated
         - event: ProfileVerified(indexed bytes8,uint8,indexed address,uint256)
           handler: handleProfileVerified
-      file: ./src/identity.ts
+        - event: ReputationSynced(indexed bytes8,indexed bytes8,uint256,uint256,uint256)
+          handler: handleReputationSynced
+      file: ./src/sense.ts

@@ -1,0 +1,415 @@
+# GameDAO Protocol Schema with Membership Architecture
+# Identity → Membership → Everything Else
+
+# ===== GLOBAL STATS =====
+
+type GlobalStats @entity {
+  id: ID! # Always "global"
+  totalModules: BigInt! # Total number of modules
+  activeModules: BigInt! # Number of active modules
+  totalOrganizations: BigInt! # Total organizations created
+  activeOrganizations: BigInt! # Number of active organizations
+  totalMembers: BigInt! # Total members across all organizations
+  totalActiveMemberships: BigInt! # Total active memberships
+  totalCampaigns: BigInt! # Total campaigns created
+  activeCampaigns: BigInt! # Number of active campaigns
+  totalRaised: BigDecimal! # Total amount raised across all campaigns
+  totalProposals: BigInt! # Total proposals created
+  activeProposals: BigInt! # Number of active proposals
+  totalVotes: BigInt! # Total votes cast
+  totalProfiles: BigInt! # Total profiles created
+  verifiedProfiles: BigInt! # Number of verified profiles
+  totalVotingPower: BigInt! # Total voting power across all organizations
+  totalDelegations: BigInt! # Total voting power delegations
+  updatedAt: BigInt! # Last update timestamp
+}
+
+# ===== REGISTRY ENTITIES =====
+
+type Module @entity {
+  id: ID! # module name
+  address: Bytes! # current implementation address
+  admin: Bytes! # admin address
+  enabled: Boolean! # whether module is enabled
+  version: BigInt! # current version number
+  registeredAt: BigInt! # timestamp when registered
+  updatedAt: BigInt! # timestamp of last update
+
+  # History tracking
+  registrations: [ModuleRegistration!]! @derivedFrom(field: "module")
+  upgrades: [ModuleUpgrade!]! @derivedFrom(field: "module")
+}
+
+type ModuleRegistration @entity {
+  id: ID! # tx hash + log index
+  module: Module!
+  address: Bytes!
+  admin: Bytes!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type ModuleUpgrade @entity {
+  id: ID! # tx hash + log index
+  module: Module!
+  oldAddress: Bytes!
+  newAddress: Bytes!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== IDENTITY ENTITIES =====
+
+type Profile @entity {
+  id: ID! # profile ID as string
+  profileId: Bytes! # 8-byte profile ID
+  owner: Bytes! # owner address
+  organizationId: Bytes! # organization ID (0x0 for individual profiles)
+  organization: Organization # linked organization (null for individual profiles)
+  metadata: String! # IPFS hash or JSON metadata
+  createdAt: BigInt! # creation timestamp
+  updatedAt: BigInt! # last update timestamp
+  active: Boolean! # whether profile is active
+  verified: Boolean! # whether profile is verified
+  verificationLevel: Int! # verification level (0=None, 1=Basic, 2=Enhanced, 3=Premium)
+
+  # Relationships
+  memberships: [Membership!]! @derivedFrom(field: "profile")
+  namesClaimed: [NameClaim!]! @derivedFrom(field: "profile")
+  reputationHistory: [ReputationEvent!]! @derivedFrom(field: "profile")
+
+  # Activity tracking
+  proposalsCreated: [Proposal!]! @derivedFrom(field: "creator")
+  votesCast: [Vote!]! @derivedFrom(field: "voter")
+  campaignsCreated: [Campaign!]! @derivedFrom(field: "creator")
+  contributionsMade: [Contribution!]! @derivedFrom(field: "contributor")
+}
+
+type NameClaim @entity {
+  id: ID! # name as string
+  name: Bytes! # 8-byte name
+  profile: Profile! # profile that claimed the name
+  owner: Bytes! # owner address
+  stakeAmount: BigDecimal! # amount of GAME tokens staked
+  stakeDuration: BigInt! # duration of stake in seconds
+  claimedAt: BigInt! # claim timestamp
+  expiresAt: BigInt! # expiration timestamp
+  isActive: Boolean! # whether claim is active
+  nameType: Int! # name type (0=User, 1=Organization, 2=Project)
+}
+
+# ===== MEMBERSHIP ENTITIES (NEW CORE LAYER) =====
+
+type Membership @entity {
+  id: ID! # organizationId + memberAddress
+  organization: Organization!
+  member: Bytes! # member address
+  profile: Profile # linked profile (can be null)
+  state: Int! # 0=Inactive, 1=Active, 2=Paused, 3=Kicked, 4=Banned
+  tier: Int! # 0=Basic, 1=Premium, 2=VIP, 3=Founder
+  joinedAt: BigInt! # join timestamp
+  lastActiveAt: BigInt! # last activity timestamp
+  reputation: BigInt! # reputation score (scaled by 1000)
+  votingPower: BigInt! # base voting power
+  delegatedPower: BigInt! # power delegated to others
+  receivedPower: BigInt! # power received from others
+  canVote: Boolean! # voting permission
+  canPropose: Boolean! # proposal permission
+  membershipFee: BigDecimal! # fee paid to join
+  metadata: Bytes! # additional metadata
+
+  # Relationships
+  delegationsOut: [VotingDelegation!]! @derivedFrom(field: "delegator")
+  delegationsIn: [VotingDelegation!]! @derivedFrom(field: "delegatee")
+  reputationEvents: [ReputationEvent!]! @derivedFrom(field: "member")
+  votesCast: [Vote!]! @derivedFrom(field: "voter")
+  proposalsCreated: [Proposal!]! @derivedFrom(field: "creator")
+}
+
+type MembershipStats @entity {
+  id: ID! # organizationId
+  organization: Organization!
+  totalMembers: BigInt! # total number of members
+  activeMembers: BigInt! # number of active members
+  totalVotingPower: BigInt! # total voting power
+  averageReputation: BigInt! # average reputation score
+  membershipTiers: [MembershipTierStats!]! @derivedFrom(field: "organization")
+  lastUpdated: BigInt! # last update timestamp
+}
+
+type MembershipTierStats @entity {
+  id: ID! # organizationId + tier
+  organization: Organization!
+  tier: Int! # membership tier
+  memberCount: BigInt! # number of members in this tier
+  totalVotingPower: BigInt! # total voting power for this tier
+  averageReputation: BigInt! # average reputation for this tier
+}
+
+type VotingDelegation @entity {
+  id: ID! # organizationId + delegator + delegatee + timestamp
+  organization: Organization!
+  delegator: Membership!
+  delegatee: Membership!
+  amount: BigInt! # amount of voting power delegated
+  timestamp: BigInt! # delegation timestamp
+  active: Boolean! # whether delegation is active
+
+  # Transaction info
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type ReputationEvent @entity {
+  id: ID! # tx hash + log index
+  organization: Organization!
+  member: Membership!
+  profile: Profile # linked profile
+  oldReputation: BigInt! # previous reputation
+  newReputation: BigInt! # new reputation
+  delta: BigInt! # reputation change
+  reason: Bytes! # reason for change
+  updatedBy: Bytes! # who updated the reputation
+  timestamp: BigInt! # event timestamp
+
+  # Transaction info
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== ORGANIZATION ENTITIES (UPDATED) =====
+
+type Organization @entity {
+  id: ID! # organization ID as string
+  organizationId: Bytes! # 8-byte organization ID
+  name: String! # organization name
+  metadataURI: String! # IPFS metadata URI
+  creator: Bytes! # creator address
+  treasury: Bytes! # treasury address
+  orgType: Int! # 0=Individual, 1=Company, 2=DAO, 3=Hybrid
+  accessModel: Int! # 0=Open, 1=Voting, 2=Invite
+  feeModel: Int! # 0=NoFees, 1=Reserve, 2=Transfer
+  memberLimit: BigInt! # maximum number of members
+  memberCount: BigInt! # current number of members (derived from memberships)
+  totalCampaigns: BigInt! # total campaigns created
+  totalProposals: BigInt! # total proposals created
+  membershipFee: BigDecimal! # fee to join organization
+  gameStakeRequired: BigDecimal! # GAME tokens required to create
+  state: Int! # 0=Inactive, 1=Active, 2=Locked, 3=Dissolved
+  createdAt: BigInt! # creation timestamp
+  updatedAt: BigInt! # last update timestamp
+
+  # Relationships
+  memberships: [Membership!]! @derivedFrom(field: "organization")
+  membershipStats: MembershipStats @derivedFrom(field: "organization")
+  campaigns: [Campaign!]! @derivedFrom(field: "organization")
+  proposals: [Proposal!]! @derivedFrom(field: "organization")
+  profiles: [Profile!]! @derivedFrom(field: "organization")
+  stake: OrganizationStake @derivedFrom(field: "organization")
+
+  # Activity tracking
+  totalVotingPower: BigInt! # total voting power (derived)
+  averageReputation: BigInt! # average member reputation (derived)
+  activeMembers: BigInt! # number of active members (derived)
+}
+
+# ===== STAKING ENTITIES (UPDATED) =====
+
+type OrganizationStake @entity {
+  id: ID! # organization ID
+  organization: Organization!
+  staker: Bytes! # staker address
+  amount: BigDecimal! # staked amount
+  stakedAt: BigInt! # stake timestamp
+  canWithdraw: Boolean! # whether stake can be withdrawn
+  withdrawnAt: BigInt # withdrawal timestamp (null if not withdrawn)
+  active: Boolean! # whether stake is active
+
+  # Transaction info
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type UserStake @entity {
+  id: ID! # staker + purpose + timestamp
+  staker: Bytes! # staker address
+  purpose: Int! # 0=Governance, 1=DAOCreation, 2=TreasuryBond, 3=LiquidityMining
+  amount: BigDecimal! # staked amount
+  stakedAt: BigInt! # stake timestamp
+  strategy: Int! # 0=RageQuit, 1=Standard, 2=Patient
+  rewards: BigDecimal! # accumulated rewards
+  lastClaimTime: BigInt! # last reward claim timestamp
+  active: Boolean! # whether stake is active
+
+  # Transaction info
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== PROPOSAL ENTITIES (UPDATED) =====
+
+type Proposal @entity {
+  id: ID! # hierarchical ID as string
+  hierarchicalId: String! # hierarchical ID (e.g., "ORG0012-P-PROP001")
+  organization: Organization!
+  creator: Membership! # creator membership
+  profile: Profile # creator profile
+  title: String! # proposal title
+  description: String! # proposal description
+  metadataURI: String! # IPFS metadata URI
+  proposalType: Int! # proposal type enum
+  votingType: Int! # voting type enum
+  votingPower: Int! # voting power type enum
+  state: Int! # 0=Pending, 1=Active, 2=Succeeded, 3=Defeated, 4=Executed, 5=Canceled
+  startTime: BigInt! # voting start time
+  endTime: BigInt! # voting end time
+  executionTime: BigInt! # execution time
+  executedAt: BigInt # execution timestamp
+  executor: Bytes # executor address
+
+  # Voting results
+  forVotes: BigInt! # votes in favor
+  againstVotes: BigInt! # votes against
+  abstainVotes: BigInt! # abstain votes
+  totalVotes: BigInt! # total votes cast
+  quorumReached: Boolean! # whether quorum was reached
+
+  # Execution data
+  executionData: Bytes! # execution data
+  targetContract: Bytes! # target contract address
+
+  # Timestamps
+  createdAt: BigInt! # creation timestamp
+  updatedAt: BigInt! # last update timestamp
+
+  # Relationships
+  votes: [Vote!]! @derivedFrom(field: "proposal")
+
+  # Transaction info
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type Vote @entity {
+  id: ID! # proposalId + voterAddress
+  proposal: Proposal!
+  voter: Membership! # voter membership
+  profile: Profile # voter profile
+  choice: Int! # 0=None, 1=For, 2=Against, 3=Abstain
+  votingPower: BigInt! # voting power used
+  reason: String! # vote reason
+  timestamp: BigInt! # vote timestamp
+  convictionTime: BigInt! # conviction time (0 if not conviction vote)
+  convictionMultiplier: BigInt! # conviction multiplier
+
+  # Transaction info
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== CAMPAIGN ENTITIES (UPDATED) =====
+
+type Campaign @entity {
+  id: ID! # campaign ID as string
+  campaignId: Bytes! # campaign ID
+  organization: Organization!
+  creator: Membership! # creator membership
+  profile: Profile # creator profile
+  admin: Bytes! # admin address
+  title: String! # campaign title
+  description: String! # campaign description
+  metadataURI: String! # IPFS metadata URI
+  flowType: Int! # flow type enum
+  state: Int! # 0=Created, 1=Active, 2=Succeeded, 3=Failed, 4=Finalized
+  paymentToken: Bytes! # payment token address
+  target: BigDecimal! # target amount
+  min: BigDecimal! # minimum amount
+  max: BigDecimal! # maximum amount
+  raised: BigDecimal! # amount raised
+  contributorCount: BigInt! # number of contributors
+  startTime: BigInt! # campaign start time
+  endTime: BigInt! # campaign end time
+  createdAt: BigInt! # creation timestamp
+  updatedAt: BigInt! # last update timestamp
+  autoFinalize: Boolean! # whether to auto-finalize
+  protocolFee: BigInt! # protocol fee in basis points
+
+  # Relationships
+  contributions: [Contribution!]! @derivedFrom(field: "campaign")
+  rewards: [CampaignReward!]! @derivedFrom(field: "campaign")
+
+  # Transaction info
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type Contribution @entity {
+  id: ID! # campaignId + contributorAddress
+  campaign: Campaign!
+  contributor: Membership! # contributor membership
+  profile: Profile # contributor profile
+  amount: BigDecimal! # contribution amount
+  timestamp: BigInt! # contribution timestamp
+  metadata: String! # contribution metadata
+  state: Int! # 0=Active, 1=Refunded, 2=Rewarded
+
+  # Transaction info
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type CampaignReward @entity {
+  id: ID! # campaignId + rewardToken
+  campaign: Campaign!
+  token: Bytes! # reward token address
+  totalAmount: BigDecimal! # total reward amount
+  distributedAmount: BigDecimal! # amount distributed
+  contributors: [Bytes!]! # contributor addresses
+
+  # Transaction info
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+# ===== SENSE ENTITIES (UPDATED) =====
+
+type ReputationData @entity {
+  id: ID! # profileId + organizationId
+  profile: Profile!
+  organization: Organization!
+  membership: Membership # linked membership
+  reputation: BigInt! # reputation score
+  experience: BigInt! # experience points
+  trust: BigInt! # trust score
+  totalInteractions: BigInt! # total interactions
+  positiveInteractions: BigInt! # positive interactions
+  lastUpdated: BigInt! # last update timestamp
+
+  # Relationships
+  history: [ReputationEvent!]! @derivedFrom(field: "profile")
+}
+
+# ===== TRANSACTION ENTITIES =====
+
+type Transaction @entity {
+  id: ID! # transaction hash
+  hash: Bytes! # transaction hash
+  from: Bytes! # sender address
+  to: Bytes! # recipient address
+  gasUsed: BigInt! # gas used
+  gasPrice: BigInt! # gas price
+  blockNumber: BigInt! # block number
+  timestamp: BigInt! # transaction timestamp
+
+  # Related entities
+  moduleRegistrations: [ModuleRegistration!]! @derivedFrom(field: "transactionHash")
+  moduleUpgrades: [ModuleUpgrade!]! @derivedFrom(field: "transactionHash")
+  proposals: [Proposal!]! @derivedFrom(field: "transactionHash")
+  votes: [Vote!]! @derivedFrom(field: "transactionHash")
+  campaigns: [Campaign!]! @derivedFrom(field: "transactionHash")
+  contributions: [Contribution!]! @derivedFrom(field: "transactionHash")
+  delegations: [VotingDelegation!]! @derivedFrom(field: "transactionHash")
+  reputationEvents: [ReputationEvent!]! @derivedFrom(field: "transactionHash")
+}

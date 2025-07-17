@@ -1,14 +1,14 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import {
-  GameDAORegistry,
+  Registry,
   Control,
   Signal
 } from "../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("Signal Module", function () {
-  let registry: GameDAORegistry;
+  let registry: Registry;
   let control: Control;
   let signal: Signal;
   let owner: SignerWithAddress;
@@ -26,40 +26,31 @@ describe("Signal Module", function () {
   beforeEach(async function () {
     [owner, admin, member1, member2, member3, nonMember] = await ethers.getSigners();
 
-    // Deploy GameId library first
-    const GameIdFactory = await ethers.getContractFactory("GameId");
-    const gameId = await GameIdFactory.deploy();
-    await gameId.waitForDeployment();
-
     // Deploy mock tokens
     const MockGameTokenFactory = await ethers.getContractFactory("MockGameToken");
     const gameToken = await MockGameTokenFactory.deploy();
     await gameToken.waitForDeployment();
 
-    const GameStakingFactory = await ethers.getContractFactory("GameStaking");
-    const gameStaking = await GameStakingFactory.deploy(
+    const StakingFactory = await ethers.getContractFactory("Staking");
+    const staking = await StakingFactory.deploy(
       await gameToken.getAddress(),
       owner.address, // treasury
       500 // 5% protocol fee share
     );
-    await gameStaking.waitForDeployment();
+    await staking.waitForDeployment();
 
     // Deploy Registry
-    const GameDAORegistryFactory = await ethers.getContractFactory("GameDAORegistry");
-    registry = await GameDAORegistryFactory.deploy(owner.address);
+    const RegistryFactory = await ethers.getContractFactory("Registry");
+    registry = await RegistryFactory.deploy(owner.address);
     await registry.waitForDeployment();
 
     // Deploy Control module with proper addresses
     const ControlFactory = await ethers.getContractFactory("Control");
-    control = await ControlFactory.deploy(await gameToken.getAddress(), await gameStaking.getAddress());
+    control = await ControlFactory.deploy(await gameToken.getAddress(), await staking.getAddress());
     await control.waitForDeployment();
 
-    // Deploy Signal module with GameId library linked
-    const SignalFactory = await ethers.getContractFactory("Signal", {
-      libraries: {
-        GameId: await gameId.getAddress()
-      }
-    });
+    // Deploy Signal module without library linking (GameId functions are internal)
+    const SignalFactory = await ethers.getContractFactory("Signal");
     signal = await SignalFactory.deploy();
     await signal.waitForDeployment();
 
@@ -102,10 +93,7 @@ describe("Signal Module", function () {
       testOrgId = parsedEvent?.args[0];
     }
 
-    // Add members to organization
-    await control.addMember(testOrgId, member1.address);
-    await control.addMember(testOrgId, member2.address);
-    await control.addMember(testOrgId, member3.address);
+    // Note: Membership is handled by a separate module in the new architecture
   });
 
   describe("Deployment and Initialization", function () {

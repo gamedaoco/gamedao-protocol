@@ -17,6 +17,17 @@
     {
       "inputs": [
         {
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        }
+      ],
+      "name": "OrganizationNotFound",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "string",
           "name": "profileId",
           "type": "string"
@@ -39,6 +50,12 @@
     {
       "anonymous": false,
       "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
         {
           "indexed": true,
           "internalType": "bytes8",
@@ -79,6 +96,12 @@
         {
           "indexed": true,
           "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes8",
           "name": "profileId",
           "type": "bytes8"
         },
@@ -116,6 +139,12 @@
         {
           "indexed": true,
           "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes8",
           "name": "profileId",
           "type": "bytes8"
         },
@@ -138,7 +167,7 @@
           "type": "bytes32"
         },
         {
-          "indexed": true,
+          "indexed": false,
           "internalType": "address",
           "name": "updatedBy",
           "type": "address"
@@ -155,6 +184,11 @@
     },
     {
       "inputs": [
+        {
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
         {
           "internalType": "bytes8",
           "name": "profileId",
@@ -180,6 +214,11 @@
       "inputs": [
         {
           "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
+        {
+          "internalType": "bytes8",
           "name": "profileId",
           "type": "bytes8"
         }
@@ -197,6 +236,11 @@
     },
     {
       "inputs": [
+        {
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
         {
           "internalType": "bytes8",
           "name": "profileId",
@@ -223,6 +267,11 @@
       "inputs": [
         {
           "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
+        {
+          "internalType": "bytes8",
           "name": "profileId",
           "type": "bytes8"
         }
@@ -240,6 +289,74 @@
     },
     {
       "inputs": [
+        {
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
+        {
+          "internalType": "address",
+          "name": "memberAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "baseWeight",
+          "type": "uint256"
+        }
+      ],
+      "name": "getMemberVotingPower",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "votingPower",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        }
+      ],
+      "name": "getOrganizationReputationStats",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "totalMembers",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "averageReputation",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalExperience",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "averageTrust",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
         {
           "internalType": "bytes8",
           "name": "profileId",
@@ -279,6 +396,11 @@
               "internalType": "uint256",
               "name": "positiveInteractions",
               "type": "uint256"
+            },
+            {
+              "internalType": "bytes8",
+              "name": "organizationId",
+              "type": "bytes8"
             }
           ],
           "internalType": "struct ISense.ReputationData",
@@ -291,6 +413,11 @@
     },
     {
       "inputs": [
+        {
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
         {
           "internalType": "bytes8[]",
           "name": "profileIds",
@@ -330,6 +457,11 @@
               "internalType": "uint256",
               "name": "positiveInteractions",
               "type": "uint256"
+            },
+            {
+              "internalType": "bytes8",
+              "name": "organizationId",
+              "type": "bytes8"
             }
           ],
           "internalType": "struct ISense.ReputationData[]",
@@ -344,6 +476,11 @@
       "inputs": [
         {
           "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
+        {
+          "internalType": "bytes8",
           "name": "profileId",
           "type": "bytes8"
         }
@@ -352,6 +489,11 @@
       "outputs": [
         {
           "components": [
+            {
+              "internalType": "bytes8",
+              "name": "organizationId",
+              "type": "bytes8"
+            },
             {
               "internalType": "bytes8",
               "name": "profileId",
@@ -395,6 +537,11 @@
       "inputs": [
         {
           "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
+        {
+          "internalType": "bytes8",
           "name": "profileId",
           "type": "bytes8"
         }
@@ -403,7 +550,7 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "trustScore",
+          "name": "trust",
           "type": "uint256"
         }
       ],
@@ -412,6 +559,11 @@
     },
     {
       "inputs": [
+        {
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
         {
           "internalType": "bytes8",
           "name": "profileId",
@@ -435,6 +587,11 @@
     },
     {
       "inputs": [
+        {
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
         {
           "internalType": "bytes8",
           "name": "profileId",

@@ -81,36 +81,15 @@ export declare namespace IControl {
     createdAt: bigint;
     updatedAt: bigint;
   };
-
-  export type MemberStruct = {
-    account: AddressLike;
-    state: BigNumberish;
-    joinedAt: BigNumberish;
-    reputation: BigNumberish;
-    stake: BigNumberish;
-  };
-
-  export type MemberStructOutput = [
-    account: string,
-    state: bigint,
-    joinedAt: bigint,
-    reputation: bigint,
-    stake: bigint
-  ] & {
-    account: string;
-    state: bigint;
-    joinedAt: bigint;
-    reputation: bigint;
-    stake: bigint;
-  };
 }
 
-export declare namespace IGameStaking {
+export declare namespace IStaking {
   export type OrganizationStakeStruct = {
     organizationId: BytesLike;
     staker: AddressLike;
     amount: BigNumberish;
     stakedAt: BigNumberish;
+    lockPeriod: BigNumberish;
     active: boolean;
   };
 
@@ -119,12 +98,14 @@ export declare namespace IGameStaking {
     staker: string,
     amount: bigint,
     stakedAt: bigint,
+    lockPeriod: bigint,
     active: boolean
   ] & {
     organizationId: string;
     staker: string;
     amount: bigint;
     stakedAt: bigint;
+    lockPeriod: bigint;
     active: boolean;
   };
 }
@@ -134,22 +115,16 @@ export interface ControlInterface extends Interface {
     nameOrSignature:
       | "ADMIN_ROLE"
       | "DEFAULT_ADMIN_ROLE"
-      | "MAX_MEMBER_LIMIT"
-      | "MIN_MEMBER_LIMIT"
-      | "MIN_STAKE_AMOUNT"
+      | "MODULE_ADMIN_ROLE"
       | "MODULE_ID"
       | "OPERATOR_ROLE"
-      | "addMember"
       | "canWithdrawStake"
       | "createOrganization"
       | "emergencyPause"
       | "emergencyUnpause"
-      | "gameStaking"
+      | "factory"
       | "gameToken"
       | "getAllOrganizations"
-      | "getMember"
-      | "getMemberCount"
-      | "getMembers"
       | "getOrganization"
       | "getOrganizationCount"
       | "getOrganizationStake"
@@ -159,21 +134,21 @@ export interface ControlInterface extends Interface {
       | "hasRole"
       | "initialize"
       | "isInitialized"
-      | "isMember"
-      | "isMemberActive"
       | "isOrganizationActive"
       | "moduleId"
       | "onModuleDisabled"
       | "onModuleEnabled"
       | "pause"
       | "paused"
+      | "registerOrganization"
       | "registry"
-      | "removeMember"
       | "renounceRole"
       | "revokeRole"
+      | "setFactory"
+      | "stakingContract"
       | "supportsInterface"
       | "unpause"
-      | "updateMemberState"
+      | "updateMemberCount"
       | "updateOrganizationState"
       | "version"
       | "withdrawStake"
@@ -181,9 +156,6 @@ export interface ControlInterface extends Interface {
 
   getEvent(
     nameOrSignatureOrTopic:
-      | "MemberAdded"
-      | "MemberRemoved"
-      | "MemberStateChanged"
       | "ModuleDisabled"
       | "ModuleEnabled"
       | "ModuleInitialized"
@@ -206,25 +178,13 @@ export interface ControlInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "MAX_MEMBER_LIMIT",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "MIN_MEMBER_LIMIT",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "MIN_STAKE_AMOUNT",
+    functionFragment: "MODULE_ADMIN_ROLE",
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "MODULE_ID", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "OPERATOR_ROLE",
     values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "addMember",
-    values: [BytesLike, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "canWithdrawStake",
@@ -251,26 +211,11 @@ export interface ControlInterface extends Interface {
     functionFragment: "emergencyUnpause",
     values?: undefined
   ): string;
-  encodeFunctionData(
-    functionFragment: "gameStaking",
-    values?: undefined
-  ): string;
+  encodeFunctionData(functionFragment: "factory", values?: undefined): string;
   encodeFunctionData(functionFragment: "gameToken", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "getAllOrganizations",
     values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getMember",
-    values: [BytesLike, AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getMemberCount",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getMembers",
-    values: [BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getOrganization",
@@ -309,14 +254,6 @@ export interface ControlInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "isMember",
-    values: [BytesLike, AddressLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isMemberActive",
-    values: [BytesLike, AddressLike]
-  ): string;
-  encodeFunctionData(
     functionFragment: "isOrganizationActive",
     values: [BytesLike]
   ): string;
@@ -331,11 +268,11 @@ export interface ControlInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "pause", values?: undefined): string;
   encodeFunctionData(functionFragment: "paused", values?: undefined): string;
-  encodeFunctionData(functionFragment: "registry", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "removeMember",
-    values: [BytesLike, AddressLike]
+    functionFragment: "registerOrganization",
+    values: [BytesLike, IControl.OrganizationStruct]
   ): string;
+  encodeFunctionData(functionFragment: "registry", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "renounceRole",
     values: [BytesLike, AddressLike]
@@ -345,13 +282,21 @@ export interface ControlInterface extends Interface {
     values: [BytesLike, AddressLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "setFactory",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "stakingContract",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "supportsInterface",
     values: [BytesLike]
   ): string;
   encodeFunctionData(functionFragment: "unpause", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "updateMemberState",
-    values: [BytesLike, AddressLike, BigNumberish]
+    functionFragment: "updateMemberCount",
+    values: [BytesLike, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "updateOrganizationState",
@@ -369,15 +314,7 @@ export interface ControlInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "MAX_MEMBER_LIMIT",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "MIN_MEMBER_LIMIT",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "MIN_STAKE_AMOUNT",
+    functionFragment: "MODULE_ADMIN_ROLE",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "MODULE_ID", data: BytesLike): Result;
@@ -385,7 +322,6 @@ export interface ControlInterface extends Interface {
     functionFragment: "OPERATOR_ROLE",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "addMember", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "canWithdrawStake",
     data: BytesLike
@@ -402,21 +338,12 @@ export interface ControlInterface extends Interface {
     functionFragment: "emergencyUnpause",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "gameStaking",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: "factory", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "gameToken", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getAllOrganizations",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "getMember", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "getMemberCount",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "getMembers", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getOrganization",
     data: BytesLike
@@ -444,11 +371,6 @@ export interface ControlInterface extends Interface {
     functionFragment: "isInitialized",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "isMember", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "isMemberActive",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "isOrganizationActive",
     data: BytesLike
@@ -464,23 +386,28 @@ export interface ControlInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "pause", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "registry", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "removeMember",
+    functionFragment: "registerOrganization",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "registry", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "renounceRole",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "revokeRole", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "setFactory", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "stakingContract",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "unpause", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "updateMemberState",
+    functionFragment: "updateMemberCount",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -492,78 +419,6 @@ export interface ControlInterface extends Interface {
     functionFragment: "withdrawStake",
     data: BytesLike
   ): Result;
-}
-
-export namespace MemberAddedEvent {
-  export type InputTuple = [
-    organizationId: BytesLike,
-    member: AddressLike,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    organizationId: string,
-    member: string,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    organizationId: string;
-    member: string;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace MemberRemovedEvent {
-  export type InputTuple = [
-    organizationId: BytesLike,
-    member: AddressLike,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    organizationId: string,
-    member: string,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    organizationId: string;
-    member: string;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace MemberStateChangedEvent {
-  export type InputTuple = [
-    organizationId: BytesLike,
-    member: AddressLike,
-    oldState: BigNumberish,
-    newState: BigNumberish,
-    timestamp: BigNumberish
-  ];
-  export type OutputTuple = [
-    organizationId: string,
-    member: string,
-    oldState: bigint,
-    newState: bigint,
-    timestamp: bigint
-  ];
-  export interface OutputObject {
-    organizationId: string;
-    member: string;
-    oldState: bigint;
-    newState: bigint;
-    timestamp: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace ModuleDisabledEvent {
@@ -807,21 +662,11 @@ export interface Control extends BaseContract {
 
   DEFAULT_ADMIN_ROLE: TypedContractMethod<[], [string], "view">;
 
-  MAX_MEMBER_LIMIT: TypedContractMethod<[], [bigint], "view">;
-
-  MIN_MEMBER_LIMIT: TypedContractMethod<[], [bigint], "view">;
-
-  MIN_STAKE_AMOUNT: TypedContractMethod<[], [bigint], "view">;
+  MODULE_ADMIN_ROLE: TypedContractMethod<[], [string], "view">;
 
   MODULE_ID: TypedContractMethod<[], [string], "view">;
 
   OPERATOR_ROLE: TypedContractMethod<[], [string], "view">;
-
-  addMember: TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike],
-    [void],
-    "nonpayable"
-  >;
 
   canWithdrawStake: TypedContractMethod<
     [organizationId: BytesLike],
@@ -848,31 +693,13 @@ export interface Control extends BaseContract {
 
   emergencyUnpause: TypedContractMethod<[], [void], "nonpayable">;
 
-  gameStaking: TypedContractMethod<[], [string], "view">;
+  factory: TypedContractMethod<[], [string], "view">;
 
   gameToken: TypedContractMethod<[], [string], "view">;
 
   getAllOrganizations: TypedContractMethod<
     [],
     [IControl.OrganizationStructOutput[]],
-    "view"
-  >;
-
-  getMember: TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike],
-    [IControl.MemberStructOutput],
-    "view"
-  >;
-
-  getMemberCount: TypedContractMethod<
-    [organizationId: BytesLike],
-    [bigint],
-    "view"
-  >;
-
-  getMembers: TypedContractMethod<
-    [organizationId: BytesLike],
-    [string[]],
     "view"
   >;
 
@@ -886,7 +713,7 @@ export interface Control extends BaseContract {
 
   getOrganizationStake: TypedContractMethod<
     [organizationId: BytesLike],
-    [IGameStaking.OrganizationStakeStructOutput],
+    [IStaking.OrganizationStakeStructOutput],
     "view"
   >;
 
@@ -918,18 +745,6 @@ export interface Control extends BaseContract {
 
   isInitialized: TypedContractMethod<[], [boolean], "view">;
 
-  isMember: TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike],
-    [boolean],
-    "view"
-  >;
-
-  isMemberActive: TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike],
-    [boolean],
-    "view"
-  >;
-
   isOrganizationActive: TypedContractMethod<
     [organizationId: BytesLike],
     [boolean],
@@ -946,13 +761,13 @@ export interface Control extends BaseContract {
 
   paused: TypedContractMethod<[], [boolean], "view">;
 
-  registry: TypedContractMethod<[], [string], "view">;
-
-  removeMember: TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike],
+  registerOrganization: TypedContractMethod<
+    [organizationId: BytesLike, org: IControl.OrganizationStruct],
     [void],
     "nonpayable"
   >;
+
+  registry: TypedContractMethod<[], [string], "view">;
 
   renounceRole: TypedContractMethod<
     [role: BytesLike, account: AddressLike],
@@ -966,6 +781,14 @@ export interface Control extends BaseContract {
     "nonpayable"
   >;
 
+  setFactory: TypedContractMethod<
+    [_factory: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  stakingContract: TypedContractMethod<[], [string], "view">;
+
   supportsInterface: TypedContractMethod<
     [interfaceId: BytesLike],
     [boolean],
@@ -974,8 +797,8 @@ export interface Control extends BaseContract {
 
   unpause: TypedContractMethod<[], [void], "nonpayable">;
 
-  updateMemberState: TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike, state: BigNumberish],
+  updateMemberCount: TypedContractMethod<
+    [organizationId: BytesLike, memberCount: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -1005,27 +828,14 @@ export interface Control extends BaseContract {
     nameOrSignature: "DEFAULT_ADMIN_ROLE"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
-    nameOrSignature: "MAX_MEMBER_LIMIT"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "MIN_MEMBER_LIMIT"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "MIN_STAKE_AMOUNT"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: "MODULE_ADMIN_ROLE"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "MODULE_ID"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "OPERATOR_ROLE"
   ): TypedContractMethod<[], [string], "view">;
-  getFunction(
-    nameOrSignature: "addMember"
-  ): TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike],
-    [void],
-    "nonpayable"
-  >;
   getFunction(
     nameOrSignature: "canWithdrawStake"
   ): TypedContractMethod<[organizationId: BytesLike], [boolean], "view">;
@@ -1052,7 +862,7 @@ export interface Control extends BaseContract {
     nameOrSignature: "emergencyUnpause"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
-    nameOrSignature: "gameStaking"
+    nameOrSignature: "factory"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "gameToken"
@@ -1060,19 +870,6 @@ export interface Control extends BaseContract {
   getFunction(
     nameOrSignature: "getAllOrganizations"
   ): TypedContractMethod<[], [IControl.OrganizationStructOutput[]], "view">;
-  getFunction(
-    nameOrSignature: "getMember"
-  ): TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike],
-    [IControl.MemberStructOutput],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getMemberCount"
-  ): TypedContractMethod<[organizationId: BytesLike], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "getMembers"
-  ): TypedContractMethod<[organizationId: BytesLike], [string[]], "view">;
   getFunction(
     nameOrSignature: "getOrganization"
   ): TypedContractMethod<
@@ -1087,7 +884,7 @@ export interface Control extends BaseContract {
     nameOrSignature: "getOrganizationStake"
   ): TypedContractMethod<
     [organizationId: BytesLike],
-    [IGameStaking.OrganizationStakeStructOutput],
+    [IStaking.OrganizationStakeStructOutput],
     "view"
   >;
   getFunction(
@@ -1121,20 +918,6 @@ export interface Control extends BaseContract {
     nameOrSignature: "isInitialized"
   ): TypedContractMethod<[], [boolean], "view">;
   getFunction(
-    nameOrSignature: "isMember"
-  ): TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike],
-    [boolean],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "isMemberActive"
-  ): TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike],
-    [boolean],
-    "view"
-  >;
-  getFunction(
     nameOrSignature: "isOrganizationActive"
   ): TypedContractMethod<[organizationId: BytesLike], [boolean], "view">;
   getFunction(
@@ -1153,15 +936,15 @@ export interface Control extends BaseContract {
     nameOrSignature: "paused"
   ): TypedContractMethod<[], [boolean], "view">;
   getFunction(
-    nameOrSignature: "registry"
-  ): TypedContractMethod<[], [string], "view">;
-  getFunction(
-    nameOrSignature: "removeMember"
+    nameOrSignature: "registerOrganization"
   ): TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike],
+    [organizationId: BytesLike, org: IControl.OrganizationStruct],
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "registry"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "renounceRole"
   ): TypedContractMethod<
@@ -1177,15 +960,21 @@ export interface Control extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "setFactory"
+  ): TypedContractMethod<[_factory: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "stakingContract"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "supportsInterface"
   ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
   getFunction(
     nameOrSignature: "unpause"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
-    nameOrSignature: "updateMemberState"
+    nameOrSignature: "updateMemberCount"
   ): TypedContractMethod<
-    [organizationId: BytesLike, member: AddressLike, state: BigNumberish],
+    [organizationId: BytesLike, memberCount: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -1203,27 +992,6 @@ export interface Control extends BaseContract {
     nameOrSignature: "withdrawStake"
   ): TypedContractMethod<[organizationId: BytesLike], [void], "nonpayable">;
 
-  getEvent(
-    key: "MemberAdded"
-  ): TypedContractEvent<
-    MemberAddedEvent.InputTuple,
-    MemberAddedEvent.OutputTuple,
-    MemberAddedEvent.OutputObject
-  >;
-  getEvent(
-    key: "MemberRemoved"
-  ): TypedContractEvent<
-    MemberRemovedEvent.InputTuple,
-    MemberRemovedEvent.OutputTuple,
-    MemberRemovedEvent.OutputObject
-  >;
-  getEvent(
-    key: "MemberStateChanged"
-  ): TypedContractEvent<
-    MemberStateChangedEvent.InputTuple,
-    MemberStateChangedEvent.OutputTuple,
-    MemberStateChangedEvent.OutputObject
-  >;
   getEvent(
     key: "ModuleDisabled"
   ): TypedContractEvent<
@@ -1303,39 +1071,6 @@ export interface Control extends BaseContract {
   >;
 
   filters: {
-    "MemberAdded(bytes8,address,uint256)": TypedContractEvent<
-      MemberAddedEvent.InputTuple,
-      MemberAddedEvent.OutputTuple,
-      MemberAddedEvent.OutputObject
-    >;
-    MemberAdded: TypedContractEvent<
-      MemberAddedEvent.InputTuple,
-      MemberAddedEvent.OutputTuple,
-      MemberAddedEvent.OutputObject
-    >;
-
-    "MemberRemoved(bytes8,address,uint256)": TypedContractEvent<
-      MemberRemovedEvent.InputTuple,
-      MemberRemovedEvent.OutputTuple,
-      MemberRemovedEvent.OutputObject
-    >;
-    MemberRemoved: TypedContractEvent<
-      MemberRemovedEvent.InputTuple,
-      MemberRemovedEvent.OutputTuple,
-      MemberRemovedEvent.OutputObject
-    >;
-
-    "MemberStateChanged(bytes8,address,uint8,uint8,uint256)": TypedContractEvent<
-      MemberStateChangedEvent.InputTuple,
-      MemberStateChangedEvent.OutputTuple,
-      MemberStateChangedEvent.OutputObject
-    >;
-    MemberStateChanged: TypedContractEvent<
-      MemberStateChangedEvent.InputTuple,
-      MemberStateChangedEvent.OutputTuple,
-      MemberStateChangedEvent.OutputObject
-    >;
-
     "ModuleDisabled()": TypedContractEvent<
       ModuleDisabledEvent.InputTuple,
       ModuleDisabledEvent.OutputTuple,

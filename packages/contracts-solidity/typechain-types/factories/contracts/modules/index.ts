@@ -4,5 +4,7 @@
 export * as control from "./Control";
 export * as flow from "./Flow";
 export * as identity from "./Identity";
+export * as membership from "./Membership";
 export * as sense from "./Sense";
 export * as signal from "./Signal";
+export * as staking from "./Staking";

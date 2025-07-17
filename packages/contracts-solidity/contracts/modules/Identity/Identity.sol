@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../../core/GameDAOModule.sol";
+import "../../core/Module.sol";
 import "../../interfaces/IIdentity.sol";
 import "../../interfaces/IControl.sol";
 import "../../libraries/AlphanumericID.sol";
@@ -13,7 +13,7 @@ import "../../libraries/AlphanumericID.sol";
  * @dev GameDAO Identity Module - User Identity & Profile Management
  * @notice Provides user identity management, profile creation, name claiming, and verification using 8-byte alphanumeric IDs
  */
-contract Identity is GameDAOModule, IIdentity {
+contract Identity is Module, IIdentity {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     // =============================================================
@@ -67,7 +67,7 @@ contract Identity is GameDAOModule, IIdentity {
     /**
      * @dev Constructor
      */
-    constructor() GameDAOModule("1.0.0") {
+    constructor() Module("1.0.0") {
         // Grant roles to deployer initially
         _grantRole(IDENTITY_ADMIN_ROLE, _msgSender());
         _grantRole(VERIFIER_ROLE, _msgSender());

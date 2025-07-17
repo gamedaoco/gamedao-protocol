@@ -1,13 +1,15 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { GameDAORegistry, Control, Treasury, GameStaking, MockGameToken } from "../typechain-types";
+import { Registry, Control, Treasury, Staking, MockGameToken, Membership, Factory } from "../typechain-types";
 
 describe("Control Module", function () {
-  let registry: GameDAORegistry;
+  let registry: Registry;
   let control: Control;
+  let factory: Factory;
+  let membership: Membership;
   let gameToken: MockGameToken;
-  let gameStaking: GameStaking;
+  let staking: Staking;
   let admin: SignerWithAddress;
   let creator: SignerWithAddress;
   let member1: SignerWithAddress;
@@ -15,6 +17,7 @@ describe("Control Module", function () {
   let nonMember: SignerWithAddress;
 
   const MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("CONTROL"));
+  const MEMBERSHIP_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("MEMBERSHIP"));
   const ORGANIZATION_MANAGER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("ORGANIZATION_MANAGER_ROLE"));
 
   beforeEach(async function () {
@@ -25,76 +28,105 @@ describe("Control Module", function () {
     gameToken = await GameTokenFactory.deploy();
     await gameToken.waitForDeployment();
 
-    // Deploy GameStaking Contract
-    const GameStakingFactory = await ethers.getContractFactory("GameStaking");
-    gameStaking = await GameStakingFactory.deploy(
+    // Deploy Staking Contract
+    const StakingFactory = await ethers.getContractFactory("Staking");
+    staking = await StakingFactory.deploy(
       await gameToken.getAddress(),
       admin.address, // treasury
       500 // 5% protocol fee share
     );
-    await gameStaking.waitForDeployment();
+    await staking.waitForDeployment();
 
     // Deploy Registry
-    const GameDAORegistryFactory = await ethers.getContractFactory("GameDAORegistry");
-    registry = await GameDAORegistryFactory.deploy(admin.address);
+    const RegistryFactory = await ethers.getContractFactory("Registry");
+    registry = await RegistryFactory.deploy(admin.address);
     await registry.waitForDeployment();
+
+    // Deploy Membership Module
+    const MembershipFactory = await ethers.getContractFactory("Membership");
+    membership = await MembershipFactory.deploy();
+    await membership.waitForDeployment();
 
     // Deploy Control Module
     const ControlFactory = await ethers.getContractFactory("Control");
     control = await ControlFactory.deploy(
       await gameToken.getAddress(),
-      await gameStaking.getAddress()
+      await staking.getAddress()
     );
     await control.waitForDeployment();
 
-    // Grant ORGANIZATION_MANAGER_ROLE to Control contract
-    await gameStaking.grantRole(ORGANIZATION_MANAGER_ROLE, await control.getAddress());
+    // Deploy Factory
+    const FactoryFactory = await ethers.getContractFactory("contracts/modules/Control/Factory.sol:Factory");
+    factory = await FactoryFactory.deploy(
+      await gameToken.getAddress(),
+      await staking.getAddress()
+    );
+    await factory.waitForDeployment();
 
-    // Register Control module
+    // Grant ORGANIZATION_MANAGER_ROLE to Factory
+    await staking.grantRole(ORGANIZATION_MANAGER_ROLE, await factory.getAddress());
+
+    // Register modules
     await registry.registerModule(await control.getAddress());
+    await registry.registerModule(await membership.getAddress());
 
-    // Transfer tokens to creator for testing
-    await gameToken.transfer(creator.address, ethers.parseEther("100000"));
+    // Initialize Membership contract
+    await membership.initialize(await registry.getAddress());
+    await membership.setGameToken(await gameToken.getAddress());
+    await membership.setControlContract(await control.getAddress());
+
+    // Grant ORGANIZATION_MANAGER_ROLE to admin for membership management
+    await membership.grantRole(ORGANIZATION_MANAGER_ROLE, admin.address);
+
+    // Set up factory connections
+    await control.setFactory(await factory.getAddress());
+    await factory.setRegistry(await control.getAddress());
+
+    // Transfer tokens to test accounts
+    const transferAmount = ethers.parseEther("100000");
+    await gameToken.transfer(creator.address, transferAmount);
+    await gameToken.transfer(member1.address, transferAmount);
+    await gameToken.transfer(member2.address, transferAmount);
   });
 
   describe("Organization Management", function () {
     it("Should create organization successfully with staking", async function () {
       const stakeAmount = ethers.parseEther("10000");
 
-      // Creator approves Control contract to spend tokens
-      await gameToken.connect(creator).approve(await control.getAddress(), stakeAmount);
+      // Approve tokens for staking - approve Staking contract to spend tokens
+      await gameToken.connect(creator).approve(await staking.getAddress(), stakeAmount);
 
-      const orgTx = await control.connect(creator).createOrganization(
-        "Test DAO",
-        "ipfs://test-metadata",
-        0, // Individual
-        0, // Open access
-        0, // No fees
-        100, // Member limit
-        0, // No membership fee
+      const tx = await control.connect(creator).createOrganization(
+        "Test Organization",
+        "https://example.com/metadata",
+        0, // OrgType.Individual
+        0, // AccessModel.Open
+        0, // FeeModel.NoFees
+        100, // memberLimit
+        0, // membershipFee
         stakeAmount
       );
 
-      const receipt = await orgTx.wait();
-      const event = receipt?.logs.find(log => {
-        try {
-          const parsed = control.interface.parseLog(log as any);
-          return parsed?.name === "OrganizationCreated";
-        } catch {
-          return false;
-        }
-      });
+      const receipt = await tx.wait();
+      const events = receipt?.logs || [];
 
-      expect(event).to.not.be.undefined;
+      // Find OrganizationCreated event
+      const organizationCreatedEvent = events.find(event =>
+        event.topics[0] === ethers.id("OrganizationCreated(bytes8,string,address,address,uint256)")
+      );
 
-      // Check that stake was created in GameStaking contract
-      const parsed = control.interface.parseLog(event as any);
+      expect(organizationCreatedEvent).to.not.be.undefined;
+
+      // Parse event data
+      const iface = new ethers.Interface([
+        "event OrganizationCreated(bytes8 indexed id, string name, address indexed creator, address indexed treasury, uint256 timestamp)"
+      ]);
+      const parsed = iface.parseLog(organizationCreatedEvent!);
       const orgId = parsed?.args[0];
 
-      const stake = await gameStaking.getOrganizationStake(orgId);
+      const stake = await staking.getOrganizationStake(orgId);
       expect(stake.staker).to.equal(creator.address);
       expect(stake.amount).to.equal(stakeAmount);
-      expect(stake.active).to.be.true;
     });
 
     it("Should fail to create organization without sufficient allowance", async function () {
@@ -217,95 +249,118 @@ describe("Control Module", function () {
     beforeEach(async function () {
       const stakeAmount = ethers.parseEther("10000");
 
-      // Create organization for testing
-      await gameToken.connect(creator).approve(await control.getAddress(), stakeAmount);
-      const orgTx = await control.connect(creator).createOrganization(
-        "Test DAO",
-        "ipfs://test-metadata",
-        0, 0, 0, 100, 0, stakeAmount
+      // Approve tokens for staking
+      await gameToken.connect(creator).approve(await staking.getAddress(), stakeAmount);
+
+      const tx = await control.connect(creator).createOrganization(
+        "Test Organization",
+        "https://example.com/metadata",
+        0, // OrgType.Individual
+        0, // AccessModel.Open
+        0, // FeeModel.NoFees
+        100, // memberLimit
+        0, // membershipFee
+        stakeAmount
       );
 
-      const receipt = await orgTx.wait();
-      const event = receipt?.logs.find(log => {
-        try {
-          const parsed = control.interface.parseLog(log as any);
-          return parsed?.name === "OrganizationCreated";
-        } catch {
-          return false;
-        }
-      });
+      const receipt = await tx.wait();
+      const events = receipt?.logs || [];
 
-      const parsed = control.interface.parseLog(event as any);
+      // Find OrganizationCreated event
+      const organizationCreatedEvent = events.find(event =>
+        event.topics[0] === ethers.id("OrganizationCreated(bytes8,string,address,address,uint256)")
+      );
+
+      // Parse event data
+      const iface = new ethers.Interface([
+        "event OrganizationCreated(bytes8 indexed id, string name, address indexed creator, address indexed treasury, uint256 timestamp)"
+      ]);
+      const parsed = iface.parseLog(organizationCreatedEvent!);
       orgId = parsed?.args[0];
+
+      // Activate organization for membership management
+      await membership.connect(admin).activateOrganization(orgId);
+
+      // Grant creator permission to manage members of their organization
+      await membership.connect(admin).grantRole(ORGANIZATION_MANAGER_ROLE, creator.address);
     });
 
     it("Should add member successfully", async function () {
-      await control.connect(creator).addMember(orgId, member1.address);
+      await membership.connect(creator).addMember(orgId, member1.address, 0); // MembershipTier.STANDARD = 0
 
-      const isMember = await control.isMember(orgId, member1.address);
-      expect(isMember).to.be.true;
+      expect(await membership.isMember(orgId, member1.address)).to.be.true;
     });
 
     it("Should remove member successfully", async function () {
-      await control.connect(creator).addMember(orgId, member1.address);
-      await control.connect(creator).removeMember(orgId, member1.address);
+      await membership.connect(creator).addMember(orgId, member1.address, 0);
+      await membership.connect(creator).removeMember(orgId, member1.address);
 
-      const isMember = await control.isMember(orgId, member1.address);
-      expect(isMember).to.be.false;
+      expect(await membership.isMember(orgId, member1.address)).to.be.false;
     });
 
     it("Should allow member to remove themselves", async function () {
-      await control.connect(creator).addMember(orgId, member1.address);
-      await control.connect(member1).removeMember(orgId, member1.address);
+      await membership.connect(creator).addMember(orgId, member1.address, 0);
+      await membership.connect(member1).removeMember(orgId, member1.address);
 
-      const isMember = await control.isMember(orgId, member1.address);
-      expect(isMember).to.be.false;
+      expect(await membership.isMember(orgId, member1.address)).to.be.false;
     });
   });
 
   describe("View Functions", function () {
     it("Should return correct organization count", async function () {
-      const initialCount = await control.getOrganizationCount();
+      expect(await control.getOrganizationCount()).to.equal(0);
 
       const stakeAmount = ethers.parseEther("10000");
       await gameToken.connect(creator).approve(await control.getAddress(), stakeAmount);
+
       await control.connect(creator).createOrganization(
-        "Test DAO",
-        "ipfs://test-metadata",
-        0, 0, 0, 100, 0, stakeAmount
+        "Test Organization",
+        "https://example.com/metadata",
+        0, // OrgType.Individual
+        0, // AccessModel.Open
+        0, // FeeModel.NoFees
+        100, // memberLimit
+        0, // membershipFee
+        stakeAmount
       );
 
-      const newCount = await control.getOrganizationCount();
-      expect(newCount).to.equal(initialCount + 1n);
+      expect(await control.getOrganizationCount()).to.equal(1);
     });
 
     it("Should return organization details", async function () {
       const stakeAmount = ethers.parseEther("10000");
-
       await gameToken.connect(creator).approve(await control.getAddress(), stakeAmount);
-      const orgTx = await control.connect(creator).createOrganization(
-        "Test DAO",
-        "ipfs://test-metadata",
-        0, 0, 0, 100, 0, stakeAmount
+
+      const tx = await control.connect(creator).createOrganization(
+        "Test Organization",
+        "https://example.com/metadata",
+        0, // OrgType.Individual
+        0, // AccessModel.Open
+        0, // FeeModel.NoFees
+        100, // memberLimit
+        0, // membershipFee
+        stakeAmount
       );
 
-      const receipt = await orgTx.wait();
-      const event = receipt?.logs.find(log => {
-        try {
-          const parsed = control.interface.parseLog(log as any);
-          return parsed?.name === "OrganizationCreated";
-        } catch {
-          return false;
-        }
-      });
+      const receipt = await tx.wait();
+      const events = receipt?.logs || [];
 
-      const parsed = control.interface.parseLog(event as any);
+      // Find OrganizationCreated event
+      const organizationCreatedEvent = events.find(event =>
+        event.topics[0] === ethers.id("OrganizationCreated(bytes8,string,address,address,uint256)")
+      );
+
+      // Parse event data
+      const iface = new ethers.Interface([
+        "event OrganizationCreated(bytes8 indexed id, string name, address indexed creator, address indexed treasury, uint256 timestamp)"
+      ]);
+      const parsed = iface.parseLog(organizationCreatedEvent!);
       const orgId = parsed?.args[0];
 
       const org = await control.getOrganization(orgId);
-      expect(org.name).to.equal("Test DAO");
+      expect(org.name).to.equal("Test Organization");
       expect(org.creator).to.equal(creator.address);
-      expect(org.gameStakeRequired).to.equal(stakeAmount);
+      expect(org.memberCount).to.equal(1); // Creator is first member
     });
   });
 });

@@ -131,14 +131,14 @@ export function useProposals(organizationId?: string) {
       refetchCount()
       resetVote()
     }
-  }, [voteSuccess, toast, refetch, refetchCount, resetVote])
+  }, [voteSuccess, refetch, refetchCount, resetVote])
 
   // Handle vote error
   useEffect(() => {
     if (voteError) {
       toast.error('Failed to cast vote. Please try again.')
     }
-  }, [voteError, toast])
+  }, [voteError])
 
   // Transform subgraph data to match our interface
   const proposals: Proposal[] = data?.proposals?.map((prop: any) => ({

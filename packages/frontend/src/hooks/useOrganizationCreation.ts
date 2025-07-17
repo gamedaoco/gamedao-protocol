@@ -118,7 +118,7 @@ export function useOrganizationCreation() {
 
       toast.success('Organization created successfully!')
     }
-  }, [createSuccess, createdOrgId, toast])
+  }, [createSuccess, createdOrgId])
 
   // Handle creation error
   useEffect(() => {

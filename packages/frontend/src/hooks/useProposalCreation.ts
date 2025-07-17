@@ -115,7 +115,7 @@ export function useProposalCreation() {
 
       toast.success('Proposal created successfully!')
     }
-  }, [createSuccess, state.currentStep, toast])
+  }, [createSuccess, state.currentStep])
 
   // Handle proposal creation error
   useEffect(() => {

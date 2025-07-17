@@ -102,6 +102,7 @@ interface IControl {
     function updateOrganizationState(bytes8 organizationId, OrgState state) external;
     function updateMemberCount(bytes8 organizationId, uint256 memberCount) external;
     function withdrawStake(bytes8 organizationId) external;
+    function registerOrganization(bytes8 organizationId, Organization memory org) external;
 
     // View functions
     function getOrganization(bytes8 id) external view returns (Organization memory);

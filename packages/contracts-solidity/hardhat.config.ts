@@ -16,6 +16,11 @@ const config: HardhatUserConfig = {
       optimizer: {
         enabled: true,
         runs: 800, // Reduced from 10000 to balance size and compilation
+        details: {
+          yulDetails: {
+            optimizerSteps: "u",
+          },
+        },
       },
       viaIR: true, // Re-enabled to handle stack too deep
     },
@@ -27,16 +32,11 @@ const config: HardhatUserConfig = {
         auto: false,
         interval: 2000
       },
-      loggingEnabled: true,
+      // loggingEnabled: true,
     },
     localhost: {
       url: "http://127.0.0.1:8545",
       chainId: 31337,
-      // mining: {
-      //   auto: false,
-      //   interval: 2000
-      // },
-
     },
     sepolia: {
       url: process.env.SEPOLIA_URL || "",

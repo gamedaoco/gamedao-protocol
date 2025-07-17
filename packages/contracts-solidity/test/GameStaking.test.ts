@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { GameStaking, MockGameToken } from "../typechain-types";
+import { Staking, MockGameToken } from "../typechain-types";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 
-describe("GameStaking", function () {
-  let gameStaking: GameStaking;
+describe("Staking", function () {
+  let staking: Staking;
   let gameToken: MockGameToken;
   let deployer: SignerWithAddress;
   let treasury: SignerWithAddress;
@@ -41,71 +41,71 @@ describe("GameStaking", function () {
     await gameToken.waitForDeployment();
 
     // Deploy GameStaking
-    const GameStakingFactory = await ethers.getContractFactory("GameStaking");
-    gameStaking = await GameStakingFactory.deploy(
+    const StakingFactory = await ethers.getContractFactory("Staking");
+    staking = await StakingFactory.deploy(
       await gameToken.getAddress(),
       treasury.address,
       1000 // 10% protocol fee share
     );
-    await gameStaking.waitForDeployment();
+    await staking.waitForDeployment();
 
     // Setup roles
-    const SLASHER_ROLE = await gameStaking.SLASHER_ROLE();
-    await gameStaking.grantRole(SLASHER_ROLE, slasher.address);
+    const SLASHER_ROLE = await staking.SLASHER_ROLE();
+    await staking.grantRole(SLASHER_ROLE, slasher.address);
 
     // Distribute tokens to users
     await gameToken.transfer(user1.address, ethers.parseEther("50000"));
     await gameToken.transfer(user2.address, ethers.parseEther("50000"));
-    await gameToken.transfer(await gameStaking.getAddress(), REWARD_AMOUNT);
+    await gameToken.transfer(await staking.getAddress(), REWARD_AMOUNT);
   });
 
   describe("Deployment", function () {
     it("Should set the correct game token", async function () {
-      expect(await gameStaking.gameToken()).to.equal(await gameToken.getAddress());
+      expect(await staking.gameToken()).to.equal(await gameToken.getAddress());
     });
 
     it("Should set the correct treasury", async function () {
-      expect(await gameStaking.treasury()).to.equal(treasury.address);
+      expect(await staking.treasury()).to.equal(treasury.address);
     });
 
     it("Should initialize staking pools with correct rates", async function () {
-      const governancePool = await gameStaking.getPoolInfo(StakingPurpose.GOVERNANCE);
+      const governancePool = await staking.getPoolInfo(StakingPurpose.GOVERNANCE);
       expect(governancePool.rewardRate).to.equal(300); // 3% APY
 
-      const daoCreationPool = await gameStaking.getPoolInfo(StakingPurpose.DAO_CREATION);
+      const daoCreationPool = await staking.getPoolInfo(StakingPurpose.DAO_CREATION);
       expect(daoCreationPool.rewardRate).to.equal(800); // 8% APY
 
-      const treasuryBondPool = await gameStaking.getPoolInfo(StakingPurpose.TREASURY_BOND);
+      const treasuryBondPool = await staking.getPoolInfo(StakingPurpose.TREASURY_BOND);
       expect(treasuryBondPool.rewardRate).to.equal(1200); // 12% APY
 
-      const liquidityMiningPool = await gameStaking.getPoolInfo(StakingPurpose.LIQUIDITY_MINING);
+      const liquidityMiningPool = await staking.getPoolInfo(StakingPurpose.LIQUIDITY_MINING);
       expect(liquidityMiningPool.rewardRate).to.equal(600); // 6% APY
     });
   });
 
   describe("Staking", function () {
     it("Should allow users to stake tokens", async function () {
-      await gameToken.connect(user1).approve(await gameStaking.getAddress(), STAKE_AMOUNT);
+      await gameToken.connect(user1).approve(await staking.getAddress(), STAKE_AMOUNT);
 
       await expect(
-        gameStaking.connect(user1).stake(
+        staking.connect(user1).stake(
           StakingPurpose.DAO_CREATION,
           STAKE_AMOUNT,
           UnstakingStrategy.STANDARD
         )
-      ).to.emit(gameStaking, "Staked");
+      ).to.emit(staking, "Staked");
 
-      const stakeInfo = await gameStaking.getStakeInfo(user1.address, StakingPurpose.DAO_CREATION);
+      const stakeInfo = await staking.getStakeInfo(user1.address, StakingPurpose.DAO_CREATION);
       expect(stakeInfo.amount).to.equal(STAKE_AMOUNT);
       expect(stakeInfo.strategy).to.equal(UnstakingStrategy.STANDARD);
     });
 
     it("Should reject staking below minimum amount", async function () {
       const smallAmount = ethers.parseEther("0.5"); // Below 1 GAME minimum
-      await gameToken.connect(user1).approve(await gameStaking.getAddress(), smallAmount);
+      await gameToken.connect(user1).approve(await staking.getAddress(), smallAmount);
 
       await expect(
-        gameStaking.connect(user1).stake(
+        staking.connect(user1).stake(
           StakingPurpose.GOVERNANCE,
           smallAmount,
           UnstakingStrategy.STANDARD
@@ -114,14 +114,14 @@ describe("GameStaking", function () {
     });
 
     it("Should update pool total staked amount", async function () {
-      await gameToken.connect(user1).approve(await gameStaking.getAddress(), STAKE_AMOUNT);
-      await gameStaking.connect(user1).stake(
+      await gameToken.connect(user1).approve(await staking.getAddress(), STAKE_AMOUNT);
+      await staking.connect(user1).stake(
         StakingPurpose.DAO_CREATION,
         STAKE_AMOUNT,
         UnstakingStrategy.STANDARD
       );
 
-      const poolInfo = await gameStaking.getPoolInfo(StakingPurpose.DAO_CREATION);
+      const poolInfo = await staking.getPoolInfo(StakingPurpose.DAO_CREATION);
       expect(poolInfo.totalStaked).to.equal(STAKE_AMOUNT);
     });
   });
@@ -129,8 +129,8 @@ describe("GameStaking", function () {
   describe("Unstaking", function () {
     beforeEach(async function () {
       // Stake some tokens first
-      await gameToken.connect(user1).approve(await gameStaking.getAddress(), STAKE_AMOUNT);
-      await gameStaking.connect(user1).stake(
+      await gameToken.connect(user1).approve(await staking.getAddress(), STAKE_AMOUNT);
+      await staking.connect(user1).stake(
         StakingPurpose.DAO_CREATION,
         STAKE_AMOUNT,
         UnstakingStrategy.STANDARD
@@ -141,14 +141,14 @@ describe("GameStaking", function () {
       const unstakeAmount = ethers.parseEther("500");
 
       await expect(
-        gameStaking.connect(user1).requestUnstake(
+        staking.connect(user1).requestUnstake(
           StakingPurpose.DAO_CREATION,
           unstakeAmount,
           UnstakingStrategy.STANDARD
         )
-      ).to.emit(gameStaking, "UnstakeRequested");
+      ).to.emit(staking, "UnstakeRequested");
 
-      const request = await gameStaking.unstakeRequests(user1.address, 0);
+      const request = await staking.unstakeRequests(user1.address, 0);
       expect(request.amount).to.equal(unstakeAmount);
       expect(request.strategy).to.equal(UnstakingStrategy.STANDARD);
       expect(request.processed).to.be.false;
@@ -158,7 +158,7 @@ describe("GameStaking", function () {
       const unstakeAmount = ethers.parseEther("500");
 
       // Request unstaking
-      await gameStaking.connect(user1).requestUnstake(
+      await staking.connect(user1).requestUnstake(
         StakingPurpose.DAO_CREATION,
         unstakeAmount,
         UnstakingStrategy.STANDARD
@@ -170,8 +170,8 @@ describe("GameStaking", function () {
       const balanceBefore = await gameToken.balanceOf(user1.address);
 
       await expect(
-        gameStaking.connect(user1).processUnstake(StakingPurpose.DAO_CREATION, 0)
-      ).to.emit(gameStaking, "Unstaked")
+        staking.connect(user1).processUnstake(StakingPurpose.DAO_CREATION, 0)
+      ).to.emit(staking, "Unstaked")
         .withArgs(user1.address, StakingPurpose.DAO_CREATION, unstakeAmount, 0, await time.latest() + 1);
 
       const balanceAfter = await gameToken.balanceOf(user1.address);
@@ -182,7 +182,7 @@ describe("GameStaking", function () {
       const unstakeAmount = ethers.parseEther("500");
 
       // Request rage quit
-      await gameStaking.connect(user1).requestUnstake(
+      await staking.connect(user1).requestUnstake(
         StakingPurpose.DAO_CREATION,
         unstakeAmount,
         UnstakingStrategy.RAGE_QUIT
@@ -192,7 +192,7 @@ describe("GameStaking", function () {
       const treasuryBalanceBefore = await gameToken.balanceOf(treasury.address);
 
       // Process immediately (no delay for rage quit)
-      await gameStaking.connect(user1).processUnstake(StakingPurpose.DAO_CREATION, 0);
+      await staking.connect(user1).processUnstake(StakingPurpose.DAO_CREATION, 0);
 
       const balanceAfter = await gameToken.balanceOf(user1.address);
       const treasuryBalanceAfter = await gameToken.balanceOf(treasury.address);
@@ -207,7 +207,7 @@ describe("GameStaking", function () {
     it("Should not allow processing before delay", async function () {
       const unstakeAmount = ethers.parseEther("500");
 
-      await gameStaking.connect(user1).requestUnstake(
+      await staking.connect(user1).requestUnstake(
         StakingPurpose.DAO_CREATION,
         unstakeAmount,
         UnstakingStrategy.STANDARD
@@ -215,7 +215,7 @@ describe("GameStaking", function () {
 
       // Try to process immediately (should fail for STANDARD strategy)
       await expect(
-        gameStaking.connect(user1).processUnstake(StakingPurpose.DAO_CREATION, 0)
+        staking.connect(user1).processUnstake(StakingPurpose.DAO_CREATION, 0)
       ).to.be.revertedWith("Cannot process yet");
     });
   });
@@ -223,8 +223,8 @@ describe("GameStaking", function () {
   describe("Rewards", function () {
     beforeEach(async function () {
       // Stake some tokens
-      await gameToken.connect(user1).approve(await gameStaking.getAddress(), STAKE_AMOUNT);
-      await gameStaking.connect(user1).stake(
+      await gameToken.connect(user1).approve(await staking.getAddress(), STAKE_AMOUNT);
+      await staking.connect(user1).stake(
         StakingPurpose.DAO_CREATION,
         STAKE_AMOUNT,
         UnstakingStrategy.PATIENT
@@ -235,7 +235,7 @@ describe("GameStaking", function () {
       // Fast forward 30 days
       await time.increase(30 * 24 * 60 * 60);
 
-      const pendingRewards = await gameStaking.getPendingRewards(user1.address, StakingPurpose.DAO_CREATION);
+      const pendingRewards = await staking.getPendingRewards(user1.address, StakingPurpose.DAO_CREATION);
       expect(pendingRewards).to.be.gt(0);
     });
 
@@ -244,11 +244,11 @@ describe("GameStaking", function () {
       await time.increase(30 * 24 * 60 * 60);
 
       const balanceBefore = await gameToken.balanceOf(user1.address);
-      const pendingRewards = await gameStaking.getPendingRewards(user1.address, StakingPurpose.DAO_CREATION);
+      const pendingRewards = await staking.getPendingRewards(user1.address, StakingPurpose.DAO_CREATION);
 
       await expect(
-        gameStaking.connect(user1).claimRewards(StakingPurpose.DAO_CREATION)
-      ).to.emit(gameStaking, "RewardsClaimed");
+        staking.connect(user1).claimRewards(StakingPurpose.DAO_CREATION)
+      ).to.emit(staking, "RewardsClaimed");
 
       const balanceAfter = await gameToken.balanceOf(user1.address);
       expect(balanceAfter - balanceBefore).to.be.gt(pendingRewards); // Should be more due to PATIENT bonus
@@ -258,10 +258,10 @@ describe("GameStaking", function () {
       // Fast forward to accumulate rewards
       await time.increase(30 * 24 * 60 * 60);
 
-      const pendingRewards = await gameStaking.getPendingRewards(user1.address, StakingPurpose.DAO_CREATION);
+      const pendingRewards = await staking.getPendingRewards(user1.address, StakingPurpose.DAO_CREATION);
       const balanceBefore = await gameToken.balanceOf(user1.address);
 
-      await gameStaking.connect(user1).claimRewards(StakingPurpose.DAO_CREATION);
+      await staking.connect(user1).claimRewards(StakingPurpose.DAO_CREATION);
 
       const balanceAfter = await gameToken.balanceOf(user1.address);
       const received = balanceAfter - balanceBefore;
@@ -271,17 +271,17 @@ describe("GameStaking", function () {
     });
 
     it("Should distribute external rewards", async function () {
-      const REWARD_DISTRIBUTOR_ROLE = await gameStaking.REWARD_DISTRIBUTOR_ROLE();
-      await gameStaking.grantRole(REWARD_DISTRIBUTOR_ROLE, deployer.address);
+      const REWARD_DISTRIBUTOR_ROLE = await staking.REWARD_DISTRIBUTOR_ROLE();
+      await staking.grantRole(REWARD_DISTRIBUTOR_ROLE, deployer.address);
 
       const distributionAmount = ethers.parseEther("1000");
-      await gameToken.approve(await gameStaking.getAddress(), distributionAmount);
+      await gameToken.approve(await staking.getAddress(), distributionAmount);
 
       await expect(
-        gameStaking.distributeRewards(StakingPurpose.DAO_CREATION, distributionAmount)
-      ).to.emit(gameStaking, "RewardsDistributed");
+        staking.distributeRewards(StakingPurpose.DAO_CREATION, distributionAmount)
+      ).to.emit(staking, "RewardsDistributed");
 
-      const poolInfo = await gameStaking.getPoolInfo(StakingPurpose.DAO_CREATION);
+      const poolInfo = await staking.getPoolInfo(StakingPurpose.DAO_CREATION);
       expect(poolInfo.totalRewardsDistributed).to.be.gt(0);
     });
   });
@@ -289,8 +289,8 @@ describe("GameStaking", function () {
   describe("Slashing", function () {
     beforeEach(async function () {
       // Stake some tokens
-      await gameToken.connect(user1).approve(await gameStaking.getAddress(), STAKE_AMOUNT);
-      await gameStaking.connect(user1).stake(
+      await gameToken.connect(user1).approve(await staking.getAddress(), STAKE_AMOUNT);
+      await staking.connect(user1).stake(
         StakingPurpose.DAO_CREATION,
         STAKE_AMOUNT,
         UnstakingStrategy.STANDARD
@@ -302,27 +302,27 @@ describe("GameStaking", function () {
       const treasuryBalanceBefore = await gameToken.balanceOf(treasury.address);
 
       await expect(
-        gameStaking.connect(slasher).slash(
+        staking.connect(slasher).slash(
           user1.address,
           StakingPurpose.DAO_CREATION,
           slashAmount,
           "Bad behavior"
         )
-      ).to.emit(gameStaking, "Slashed")
+      ).to.emit(staking, "Slashed")
         .withArgs(user1.address, StakingPurpose.DAO_CREATION, slashAmount, slasher.address, "Bad behavior", await time.latest() + 1);
 
-      const stakeInfo = await gameStaking.getStakeInfo(user1.address, StakingPurpose.DAO_CREATION);
+      const stakeInfo = await staking.getStakeInfo(user1.address, StakingPurpose.DAO_CREATION);
       expect(stakeInfo.amount).to.equal(STAKE_AMOUNT - slashAmount);
 
       const treasuryBalanceAfter = await gameToken.balanceOf(treasury.address);
       expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(slashAmount);
 
-      expect(await gameStaking.slashedUsers(user1.address)).to.be.true;
+      expect(await staking.slashedUsers(user1.address)).to.be.true;
     });
 
     it("Should prevent slashed users from staking", async function () {
       // Slash user first
-      await gameStaking.connect(slasher).slash(
+      await staking.connect(slasher).slash(
         user1.address,
         StakingPurpose.DAO_CREATION,
         ethers.parseEther("100"),
@@ -330,9 +330,9 @@ describe("GameStaking", function () {
       );
 
       // Try to stake more
-      await gameToken.connect(user1).approve(await gameStaking.getAddress(), STAKE_AMOUNT);
+      await gameToken.connect(user1).approve(await staking.getAddress(), STAKE_AMOUNT);
       await expect(
-        gameStaking.connect(user1).stake(
+        staking.connect(user1).stake(
           StakingPurpose.GOVERNANCE,
           STAKE_AMOUNT,
           UnstakingStrategy.STANDARD
@@ -342,7 +342,7 @@ describe("GameStaking", function () {
 
     it("Should not allow non-slashers to slash", async function () {
       await expect(
-        gameStaking.connect(user2).slash(
+        staking.connect(user2).slash(
           user1.address,
           StakingPurpose.DAO_CREATION,
           ethers.parseEther("100"),
@@ -357,11 +357,11 @@ describe("GameStaking", function () {
       const newRewardRate = 500; // 5% APY
 
       await expect(
-        gameStaking.updatePool(StakingPurpose.GOVERNANCE, newRewardRate, true)
-      ).to.emit(gameStaking, "PoolUpdated")
+        staking.updatePool(StakingPurpose.GOVERNANCE, newRewardRate, true)
+      ).to.emit(staking, "PoolUpdated")
         .withArgs(StakingPurpose.GOVERNANCE, newRewardRate, true);
 
-      const poolInfo = await gameStaking.getPoolInfo(StakingPurpose.GOVERNANCE);
+      const poolInfo = await staking.getPoolInfo(StakingPurpose.GOVERNANCE);
       expect(poolInfo.rewardRate).to.equal(newRewardRate);
       expect(poolInfo.active).to.be.true;
     });
@@ -370,17 +370,17 @@ describe("GameStaking", function () {
       const tooHighRate = 1500; // 15% APY (above 10% max)
 
       await expect(
-        gameStaking.updatePool(StakingPurpose.GOVERNANCE, tooHighRate, true)
+        staking.updatePool(StakingPurpose.GOVERNANCE, tooHighRate, true)
       ).to.be.revertedWith("Rate too high");
     });
 
     it("Should prevent staking in inactive pools", async function () {
       // Deactivate pool
-      await gameStaking.updatePool(StakingPurpose.GOVERNANCE, 300, false);
+      await staking.updatePool(StakingPurpose.GOVERNANCE, 300, false);
 
-      await gameToken.connect(user1).approve(await gameStaking.getAddress(), STAKE_AMOUNT);
+      await gameToken.connect(user1).approve(await staking.getAddress(), STAKE_AMOUNT);
       await expect(
-        gameStaking.connect(user1).stake(
+        staking.connect(user1).stake(
           StakingPurpose.GOVERNANCE,
           STAKE_AMOUNT,
           UnstakingStrategy.STANDARD
@@ -391,12 +391,12 @@ describe("GameStaking", function () {
 
   describe("Emergency Functions", function () {
     it("Should allow admin to pause contract", async function () {
-      await gameStaking.pause();
-      expect(await gameStaking.paused()).to.be.true;
+      await staking.pause();
+      expect(await staking.paused()).to.be.true;
 
-      await gameToken.connect(user1).approve(await gameStaking.getAddress(), STAKE_AMOUNT);
+      await gameToken.connect(user1).approve(await staking.getAddress(), STAKE_AMOUNT);
       await expect(
-        gameStaking.connect(user1).stake(
+        staking.connect(user1).stake(
           StakingPurpose.GOVERNANCE,
           STAKE_AMOUNT,
           UnstakingStrategy.STANDARD
@@ -406,15 +406,15 @@ describe("GameStaking", function () {
 
     it("Should allow admin to update treasury", async function () {
       const newTreasury = user2.address;
-      await gameStaking.setTreasury(newTreasury);
-      expect(await gameStaking.treasury()).to.equal(newTreasury);
+      await staking.setTreasury(newTreasury);
+      expect(await staking.treasury()).to.equal(newTreasury);
     });
 
     it("Should allow emergency token withdrawal", async function () {
       const emergencyAmount = ethers.parseEther("1000");
       const treasuryBalanceBefore = await gameToken.balanceOf(treasury.address);
 
-      await gameStaking.emergencyWithdraw(await gameToken.getAddress(), emergencyAmount);
+      await staking.emergencyWithdraw(await gameToken.getAddress(), emergencyAmount);
 
       const treasuryBalanceAfter = await gameToken.balanceOf(treasury.address);
       expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(emergencyAmount);

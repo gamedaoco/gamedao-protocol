@@ -148,14 +148,14 @@ export function handleUnstakeRequested(event: UnstakeRequested): void {
   let requestId = userId + "-" + event.params.requestId.toString()
 
   // Create or update user
-  createOrUpdateUser(event.params.user, event.params.timestamp)
+  createOrUpdateUser(event.params.user, event.block.timestamp)
 
   // Create UnstakeRequest entity
   let request = new UnstakeRequest(requestId)
   request.user = userId
   request.purpose = purpose
   request.amount = event.params.amount
-  request.requestTime = event.params.timestamp
+  request.requestTime = event.block.timestamp
   request.strategy = mapUnstakingStrategy(event.params.strategy)
   request.processed = false
   request.blockNumber = event.block.number
