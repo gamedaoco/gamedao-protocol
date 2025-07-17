@@ -32,8 +32,8 @@ describe("Cross-Module Reputation Integration", function () {
     [admin, creator, member1, member2, contributor] = await ethers.getSigners();
 
     // Deploy Game Token
-    const GameTokenFactory = await ethers.getContractFactory("MockGameToken");
-    gameToken = await GameTokenFactory.deploy();
+    const MockGameTokenFactory = await ethers.getContractFactory("MockGameToken");
+    gameToken = await MockGameTokenFactory.deploy();
     await gameToken.waitForDeployment();
 
     // Deploy Staking Contract
@@ -111,7 +111,7 @@ describe("Cross-Module Reputation Integration", function () {
     // Setup connections
     await control.setFactory(await factory.getAddress());
     await factory.setRegistry(await control.getAddress());
-    await membership.setGameToken(await gameToken.getAddress());
+    await membership.setMockGameToken(await gameToken.getAddress());
     await membership.setControlContract(await control.getAddress());
 
     // Grant necessary roles

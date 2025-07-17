@@ -10,92 +10,6 @@ import {
   BigInt
 } from "@graphprotocol/graph-ts";
 
-export class MemberAdded extends ethereum.Event {
-  get params(): MemberAdded__Params {
-    return new MemberAdded__Params(this);
-  }
-}
-
-export class MemberAdded__Params {
-  _event: MemberAdded;
-
-  constructor(event: MemberAdded) {
-    this._event = event;
-  }
-
-  get organizationId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get member(): Address {
-    return this._event.parameters[1].value.toAddress();
-  }
-
-  get timestamp(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
-  }
-}
-
-export class MemberRemoved extends ethereum.Event {
-  get params(): MemberRemoved__Params {
-    return new MemberRemoved__Params(this);
-  }
-}
-
-export class MemberRemoved__Params {
-  _event: MemberRemoved;
-
-  constructor(event: MemberRemoved) {
-    this._event = event;
-  }
-
-  get organizationId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get member(): Address {
-    return this._event.parameters[1].value.toAddress();
-  }
-
-  get timestamp(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
-  }
-}
-
-export class MemberStateChanged extends ethereum.Event {
-  get params(): MemberStateChanged__Params {
-    return new MemberStateChanged__Params(this);
-  }
-}
-
-export class MemberStateChanged__Params {
-  _event: MemberStateChanged;
-
-  constructor(event: MemberStateChanged) {
-    this._event = event;
-  }
-
-  get organizationId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get member(): Address {
-    return this._event.parameters[1].value.toAddress();
-  }
-
-  get oldState(): i32 {
-    return this._event.parameters[2].value.toI32();
-  }
-
-  get newState(): i32 {
-    return this._event.parameters[3].value.toI32();
-  }
-
-  get timestamp(): BigInt {
-    return this._event.parameters[4].value.toBigInt();
-  }
-}
-
 export class ModuleDisabled extends ethereum.Event {
   get params(): ModuleDisabled__Params {
     return new ModuleDisabled__Params(this);
@@ -302,6 +216,36 @@ export class RoleRevoked__Params {
   }
 }
 
+export class StakeWithdrawn extends ethereum.Event {
+  get params(): StakeWithdrawn__Params {
+    return new StakeWithdrawn__Params(this);
+  }
+}
+
+export class StakeWithdrawn__Params {
+  _event: StakeWithdrawn;
+
+  constructor(event: StakeWithdrawn) {
+    this._event = event;
+  }
+
+  get organizationId(): Bytes {
+    return this._event.parameters[0].value.toBytes();
+  }
+
+  get staker(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
+  }
+
+  get timestamp(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+}
+
 export class Unpaused extends ethereum.Event {
   get params(): Unpaused__Params {
     return new Unpaused__Params(this);
@@ -390,28 +334,6 @@ export class Control__getAllOrganizationsResultValue0Struct extends ethereum.Tup
   }
 }
 
-export class Control__getMemberResultValue0Struct extends ethereum.Tuple {
-  get account(): Address {
-    return this[0].toAddress();
-  }
-
-  get state(): i32 {
-    return this[1].toI32();
-  }
-
-  get joinedAt(): BigInt {
-    return this[2].toBigInt();
-  }
-
-  get reputation(): BigInt {
-    return this[3].toBigInt();
-  }
-
-  get stake(): BigInt {
-    return this[4].toBigInt();
-  }
-}
-
 export class Control__getOrganizationResultValue0Struct extends ethereum.Tuple {
   get id(): Bytes {
     return this[0].toBytes();
@@ -479,6 +401,32 @@ export class Control__getOrganizationResultValue0Struct extends ethereum.Tuple {
 
   get updatedAt(): BigInt {
     return this[16].toBigInt();
+  }
+}
+
+export class Control__getOrganizationStakeResultValue0Struct extends ethereum.Tuple {
+  get organizationId(): Bytes {
+    return this[0].toBytes();
+  }
+
+  get staker(): Address {
+    return this[1].toAddress();
+  }
+
+  get amount(): BigInt {
+    return this[2].toBigInt();
+  }
+
+  get stakedAt(): BigInt {
+    return this[3].toBigInt();
+  }
+
+  get lockPeriod(): BigInt {
+    return this[4].toBigInt();
+  }
+
+  get active(): boolean {
+    return this[5].toBoolean();
   }
 }
 
@@ -595,50 +543,27 @@ export class Control extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
-  MAX_MEMBER_LIMIT(): BigInt {
+  MODULE_ADMIN_ROLE(): Bytes {
     let result = super.call(
-      "MAX_MEMBER_LIMIT",
-      "MAX_MEMBER_LIMIT():(uint256)",
+      "MODULE_ADMIN_ROLE",
+      "MODULE_ADMIN_ROLE():(bytes32)",
       []
     );
 
-    return result[0].toBigInt();
+    return result[0].toBytes();
   }
 
-  try_MAX_MEMBER_LIMIT(): ethereum.CallResult<BigInt> {
+  try_MODULE_ADMIN_ROLE(): ethereum.CallResult<Bytes> {
     let result = super.tryCall(
-      "MAX_MEMBER_LIMIT",
-      "MAX_MEMBER_LIMIT():(uint256)",
+      "MODULE_ADMIN_ROLE",
+      "MODULE_ADMIN_ROLE():(bytes32)",
       []
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  MIN_MEMBER_LIMIT(): BigInt {
-    let result = super.call(
-      "MIN_MEMBER_LIMIT",
-      "MIN_MEMBER_LIMIT():(uint256)",
-      []
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_MIN_MEMBER_LIMIT(): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "MIN_MEMBER_LIMIT",
-      "MIN_MEMBER_LIMIT():(uint256)",
-      []
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
+    return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
   MODULE_ID(): Bytes {
@@ -673,6 +598,29 @@ export class Control extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBytes());
+  }
+
+  canWithdrawStake(organizationId: Bytes): boolean {
+    let result = super.call(
+      "canWithdrawStake",
+      "canWithdrawStake(bytes8):(bool)",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+
+    return result[0].toBoolean();
+  }
+
+  try_canWithdrawStake(organizationId: Bytes): ethereum.CallResult<boolean> {
+    let result = super.tryCall(
+      "canWithdrawStake",
+      "canWithdrawStake(bytes8):(bool)",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
   createOrganization(
@@ -734,6 +682,21 @@ export class Control extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
+  factory(): Address {
+    let result = super.call("factory", "factory():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_factory(): ethereum.CallResult<Address> {
+    let result = super.tryCall("factory", "factory():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
   gameToken(): Address {
     let result = super.call("gameToken", "gameToken():(address)", []);
 
@@ -776,87 +739,6 @@ export class Control extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(
       value[0].toTupleArray<Control__getAllOrganizationsResultValue0Struct>()
     );
-  }
-
-  getMember(
-    organizationId: Bytes,
-    member: Address
-  ): Control__getMemberResultValue0Struct {
-    let result = super.call(
-      "getMember",
-      "getMember(bytes8,address):((address,uint8,uint256,uint256,uint256))",
-      [
-        ethereum.Value.fromFixedBytes(organizationId),
-        ethereum.Value.fromAddress(member)
-      ]
-    );
-
-    return changetype<Control__getMemberResultValue0Struct>(
-      result[0].toTuple()
-    );
-  }
-
-  try_getMember(
-    organizationId: Bytes,
-    member: Address
-  ): ethereum.CallResult<Control__getMemberResultValue0Struct> {
-    let result = super.tryCall(
-      "getMember",
-      "getMember(bytes8,address):((address,uint8,uint256,uint256,uint256))",
-      [
-        ethereum.Value.fromFixedBytes(organizationId),
-        ethereum.Value.fromAddress(member)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(
-      changetype<Control__getMemberResultValue0Struct>(value[0].toTuple())
-    );
-  }
-
-  getMemberCount(organizationId: Bytes): BigInt {
-    let result = super.call(
-      "getMemberCount",
-      "getMemberCount(bytes8):(uint256)",
-      [ethereum.Value.fromFixedBytes(organizationId)]
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getMemberCount(organizationId: Bytes): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getMemberCount",
-      "getMemberCount(bytes8):(uint256)",
-      [ethereum.Value.fromFixedBytes(organizationId)]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
-  getMembers(organizationId: Bytes): Array<Address> {
-    let result = super.call("getMembers", "getMembers(bytes8):(address[])", [
-      ethereum.Value.fromFixedBytes(organizationId)
-    ]);
-
-    return result[0].toAddressArray();
-  }
-
-  try_getMembers(organizationId: Bytes): ethereum.CallResult<Array<Address>> {
-    let result = super.tryCall("getMembers", "getMembers(bytes8):(address[])", [
-      ethereum.Value.fromFixedBytes(organizationId)
-    ]);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddressArray());
   }
 
   getOrganization(id: Bytes): Control__getOrganizationResultValue0Struct {
@@ -909,6 +791,39 @@ export class Control extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  getOrganizationStake(
+    organizationId: Bytes
+  ): Control__getOrganizationStakeResultValue0Struct {
+    let result = super.call(
+      "getOrganizationStake",
+      "getOrganizationStake(bytes8):((bytes8,address,uint256,uint256,uint256,bool))",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+
+    return changetype<Control__getOrganizationStakeResultValue0Struct>(
+      result[0].toTuple()
+    );
+  }
+
+  try_getOrganizationStake(
+    organizationId: Bytes
+  ): ethereum.CallResult<Control__getOrganizationStakeResultValue0Struct> {
+    let result = super.tryCall(
+      "getOrganizationStake",
+      "getOrganizationStake(bytes8):((bytes8,address,uint256,uint256,uint256,bool))",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      changetype<Control__getOrganizationStakeResultValue0Struct>(
+        value[0].toTuple()
+      )
+    );
   }
 
   getOrganizationsByState(
@@ -1003,62 +918,6 @@ export class Control extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
-  isMember(organizationId: Bytes, member: Address): boolean {
-    let result = super.call("isMember", "isMember(bytes8,address):(bool)", [
-      ethereum.Value.fromFixedBytes(organizationId),
-      ethereum.Value.fromAddress(member)
-    ]);
-
-    return result[0].toBoolean();
-  }
-
-  try_isMember(
-    organizationId: Bytes,
-    member: Address
-  ): ethereum.CallResult<boolean> {
-    let result = super.tryCall("isMember", "isMember(bytes8,address):(bool)", [
-      ethereum.Value.fromFixedBytes(organizationId),
-      ethereum.Value.fromAddress(member)
-    ]);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBoolean());
-  }
-
-  isMemberActive(organizationId: Bytes, member: Address): boolean {
-    let result = super.call(
-      "isMemberActive",
-      "isMemberActive(bytes8,address):(bool)",
-      [
-        ethereum.Value.fromFixedBytes(organizationId),
-        ethereum.Value.fromAddress(member)
-      ]
-    );
-
-    return result[0].toBoolean();
-  }
-
-  try_isMemberActive(
-    organizationId: Bytes,
-    member: Address
-  ): ethereum.CallResult<boolean> {
-    let result = super.tryCall(
-      "isMemberActive",
-      "isMemberActive(bytes8,address):(bool)",
-      [
-        ethereum.Value.fromFixedBytes(organizationId),
-        ethereum.Value.fromAddress(member)
-      ]
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBoolean());
-  }
-
   isOrganizationActive(organizationId: Bytes): boolean {
     let result = super.call(
       "isOrganizationActive",
@@ -1129,6 +988,29 @@ export class Control extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
+  stakingContract(): Address {
+    let result = super.call(
+      "stakingContract",
+      "stakingContract():(address)",
+      []
+    );
+
+    return result[0].toAddress();
+  }
+
+  try_stakingContract(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "stakingContract",
+      "stakingContract():(address)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
   supportsInterface(interfaceId: Bytes): boolean {
     let result = super.call(
       "supportsInterface",
@@ -1188,46 +1070,16 @@ export class ConstructorCall__Inputs {
   get _gameToken(): Address {
     return this._call.inputValues[0].value.toAddress();
   }
+
+  get _stakingContract(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
 }
 
 export class ConstructorCall__Outputs {
   _call: ConstructorCall;
 
   constructor(call: ConstructorCall) {
-    this._call = call;
-  }
-}
-
-export class AddMemberCall extends ethereum.Call {
-  get inputs(): AddMemberCall__Inputs {
-    return new AddMemberCall__Inputs(this);
-  }
-
-  get outputs(): AddMemberCall__Outputs {
-    return new AddMemberCall__Outputs(this);
-  }
-}
-
-export class AddMemberCall__Inputs {
-  _call: AddMemberCall;
-
-  constructor(call: AddMemberCall) {
-    this._call = call;
-  }
-
-  get organizationId(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
-  }
-
-  get member(): Address {
-    return this._call.inputValues[1].value.toAddress();
-  }
-}
-
-export class AddMemberCall__Outputs {
-  _call: AddMemberCall;
-
-  constructor(call: AddMemberCall) {
     this._call = call;
   }
 }
@@ -1488,20 +1340,20 @@ export class PauseCall__Outputs {
   }
 }
 
-export class RemoveMemberCall extends ethereum.Call {
-  get inputs(): RemoveMemberCall__Inputs {
-    return new RemoveMemberCall__Inputs(this);
+export class RegisterOrganizationCall extends ethereum.Call {
+  get inputs(): RegisterOrganizationCall__Inputs {
+    return new RegisterOrganizationCall__Inputs(this);
   }
 
-  get outputs(): RemoveMemberCall__Outputs {
-    return new RemoveMemberCall__Outputs(this);
+  get outputs(): RegisterOrganizationCall__Outputs {
+    return new RegisterOrganizationCall__Outputs(this);
   }
 }
 
-export class RemoveMemberCall__Inputs {
-  _call: RemoveMemberCall;
+export class RegisterOrganizationCall__Inputs {
+  _call: RegisterOrganizationCall;
 
-  constructor(call: RemoveMemberCall) {
+  constructor(call: RegisterOrganizationCall) {
     this._call = call;
   }
 
@@ -1509,16 +1361,88 @@ export class RemoveMemberCall__Inputs {
     return this._call.inputValues[0].value.toBytes();
   }
 
-  get member(): Address {
-    return this._call.inputValues[1].value.toAddress();
+  get org(): RegisterOrganizationCallOrgStruct {
+    return changetype<RegisterOrganizationCallOrgStruct>(
+      this._call.inputValues[1].value.toTuple()
+    );
   }
 }
 
-export class RemoveMemberCall__Outputs {
-  _call: RemoveMemberCall;
+export class RegisterOrganizationCall__Outputs {
+  _call: RegisterOrganizationCall;
 
-  constructor(call: RemoveMemberCall) {
+  constructor(call: RegisterOrganizationCall) {
     this._call = call;
+  }
+}
+
+export class RegisterOrganizationCallOrgStruct extends ethereum.Tuple {
+  get id(): Bytes {
+    return this[0].toBytes();
+  }
+
+  get name(): string {
+    return this[1].toString();
+  }
+
+  get metadataURI(): string {
+    return this[2].toString();
+  }
+
+  get creator(): Address {
+    return this[3].toAddress();
+  }
+
+  get treasury(): Address {
+    return this[4].toAddress();
+  }
+
+  get orgType(): i32 {
+    return this[5].toI32();
+  }
+
+  get accessModel(): i32 {
+    return this[6].toI32();
+  }
+
+  get feeModel(): i32 {
+    return this[7].toI32();
+  }
+
+  get memberLimit(): BigInt {
+    return this[8].toBigInt();
+  }
+
+  get memberCount(): BigInt {
+    return this[9].toBigInt();
+  }
+
+  get totalCampaigns(): BigInt {
+    return this[10].toBigInt();
+  }
+
+  get totalProposals(): BigInt {
+    return this[11].toBigInt();
+  }
+
+  get membershipFee(): BigInt {
+    return this[12].toBigInt();
+  }
+
+  get gameStakeRequired(): BigInt {
+    return this[13].toBigInt();
+  }
+
+  get state(): i32 {
+    return this[14].toI32();
+  }
+
+  get createdAt(): BigInt {
+    return this[15].toBigInt();
+  }
+
+  get updatedAt(): BigInt {
+    return this[16].toBigInt();
   }
 }
 
@@ -1590,6 +1514,36 @@ export class RevokeRoleCall__Outputs {
   }
 }
 
+export class SetFactoryCall extends ethereum.Call {
+  get inputs(): SetFactoryCall__Inputs {
+    return new SetFactoryCall__Inputs(this);
+  }
+
+  get outputs(): SetFactoryCall__Outputs {
+    return new SetFactoryCall__Outputs(this);
+  }
+}
+
+export class SetFactoryCall__Inputs {
+  _call: SetFactoryCall;
+
+  constructor(call: SetFactoryCall) {
+    this._call = call;
+  }
+
+  get _factory(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class SetFactoryCall__Outputs {
+  _call: SetFactoryCall;
+
+  constructor(call: SetFactoryCall) {
+    this._call = call;
+  }
+}
+
 export class UnpauseCall extends ethereum.Call {
   get inputs(): UnpauseCall__Inputs {
     return new UnpauseCall__Inputs(this);
@@ -1616,20 +1570,20 @@ export class UnpauseCall__Outputs {
   }
 }
 
-export class UpdateMemberStateCall extends ethereum.Call {
-  get inputs(): UpdateMemberStateCall__Inputs {
-    return new UpdateMemberStateCall__Inputs(this);
+export class UpdateMemberCountCall extends ethereum.Call {
+  get inputs(): UpdateMemberCountCall__Inputs {
+    return new UpdateMemberCountCall__Inputs(this);
   }
 
-  get outputs(): UpdateMemberStateCall__Outputs {
-    return new UpdateMemberStateCall__Outputs(this);
+  get outputs(): UpdateMemberCountCall__Outputs {
+    return new UpdateMemberCountCall__Outputs(this);
   }
 }
 
-export class UpdateMemberStateCall__Inputs {
-  _call: UpdateMemberStateCall;
+export class UpdateMemberCountCall__Inputs {
+  _call: UpdateMemberCountCall;
 
-  constructor(call: UpdateMemberStateCall) {
+  constructor(call: UpdateMemberCountCall) {
     this._call = call;
   }
 
@@ -1637,19 +1591,15 @@ export class UpdateMemberStateCall__Inputs {
     return this._call.inputValues[0].value.toBytes();
   }
 
-  get member(): Address {
-    return this._call.inputValues[1].value.toAddress();
-  }
-
-  get state(): i32 {
-    return this._call.inputValues[2].value.toI32();
+  get memberCount(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
   }
 }
 
-export class UpdateMemberStateCall__Outputs {
-  _call: UpdateMemberStateCall;
+export class UpdateMemberCountCall__Outputs {
+  _call: UpdateMemberCountCall;
 
-  constructor(call: UpdateMemberStateCall) {
+  constructor(call: UpdateMemberCountCall) {
     this._call = call;
   }
 }
@@ -1684,6 +1634,36 @@ export class UpdateOrganizationStateCall__Outputs {
   _call: UpdateOrganizationStateCall;
 
   constructor(call: UpdateOrganizationStateCall) {
+    this._call = call;
+  }
+}
+
+export class WithdrawStakeCall extends ethereum.Call {
+  get inputs(): WithdrawStakeCall__Inputs {
+    return new WithdrawStakeCall__Inputs(this);
+  }
+
+  get outputs(): WithdrawStakeCall__Outputs {
+    return new WithdrawStakeCall__Outputs(this);
+  }
+}
+
+export class WithdrawStakeCall__Inputs {
+  _call: WithdrawStakeCall;
+
+  constructor(call: WithdrawStakeCall) {
+    this._call = call;
+  }
+
+  get organizationId(): Bytes {
+    return this._call.inputValues[0].value.toBytes();
+  }
+}
+
+export class WithdrawStakeCall__Outputs {
+  _call: WithdrawStakeCall;
+
+  constructor(call: WithdrawStakeCall) {
     this._call = call;
   }
 }

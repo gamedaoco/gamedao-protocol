@@ -31,8 +31,8 @@ describe("End-to-End Scenarios", function () {
     [admin, orgCreator, member1, member2, member3, contributor, verifier] = await ethers.getSigners();
 
     // Deploy Game Token
-    const GameTokenFactory = await ethers.getContractFactory("MockGameToken");
-    gameToken = await GameTokenFactory.deploy();
+    const MockGameTokenFactory = await ethers.getContractFactory("MockGameToken");
+    gameToken = await MockGameTokenFactory.deploy();
     await gameToken.waitForDeployment();
 
     // Deploy Staking Contract
@@ -104,11 +104,11 @@ describe("End-to-End Scenarios", function () {
     await flow.initialize(await registry.getAddress());
 
     // Setup module connections
-    await membership.setGameToken(await gameToken.getAddress());
+    await membership.setMockGameToken(await gameToken.getAddress());
     await membership.setControlContract(await control.getAddress());
-    await sense.setGameToken(await gameToken.getAddress());
-    await signal.setGameToken(await gameToken.getAddress());
-    await flow.setGameToken(await gameToken.getAddress());
+    await sense.setMockGameToken(await gameToken.getAddress());
+    await signal.setMockGameToken(await gameToken.getAddress());
+    await flow.setMockGameToken(await gameToken.getAddress());
 
     // Grant necessary roles
     await identity.grantRole(VERIFIER_ROLE, verifier.address);

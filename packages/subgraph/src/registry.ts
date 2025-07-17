@@ -9,7 +9,8 @@ import {
   Module,
   ModuleRegistration,
   ModuleUpgrade,
-  GlobalStats
+  GlobalStats,
+  Transaction
 } from "../generated/schema"
 
 export function handleModuleRegistered(event: ModuleRegistered): void {
@@ -29,6 +30,13 @@ export function handleModuleRegistered(event: ModuleRegistered): void {
 
   module.save()
 
+  // Create transaction entity
+  let transaction = new Transaction(event.transaction.hash.toHex())
+  transaction.hash = event.transaction.hash
+  transaction.blockNumber = event.block.number
+  transaction.timestamp = event.block.timestamp
+  transaction.save()
+
   // Create registration record
   let registrationId = event.transaction.hash.toHex() + "-" + event.logIndex.toString()
   let registration = new ModuleRegistration(registrationId)
@@ -37,7 +45,7 @@ export function handleModuleRegistered(event: ModuleRegistered): void {
   registration.admin = event.params.moduleAddress
   registration.timestamp = event.block.timestamp
   registration.blockNumber = event.block.number
-  registration.transactionHash = event.transaction.hash
+  registration.transaction = transaction.id
 
   registration.save()
 
@@ -72,6 +80,13 @@ export function handleModuleDisabled(event: ModuleDisabled): void {
 }
 
 export function handleModuleUpgraded(event: ModuleUpgraded): void {
+  // Create transaction entity
+  let transaction = new Transaction(event.transaction.hash.toHex())
+  transaction.hash = event.transaction.hash
+  transaction.blockNumber = event.block.number
+  transaction.timestamp = event.block.timestamp
+  transaction.save()
+
   let moduleId = event.params.moduleId.toHex()
   let module = Module.load(moduleId)
 
@@ -90,7 +105,7 @@ export function handleModuleUpgraded(event: ModuleUpgraded): void {
     upgrade.newAddress = event.params.newAddress
     upgrade.timestamp = event.block.timestamp
     upgrade.blockNumber = event.block.number
-    upgrade.transactionHash = event.transaction.hash
+    upgrade.transaction = transaction.id
 
     upgrade.save()
   }

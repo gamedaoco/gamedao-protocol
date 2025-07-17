@@ -11,12 +11,16 @@ async function main() {
   // 1. Deploy Test Tokens
   console.log("🪙 Deploying Test Tokens...");
 
-  // Deploy GAME token (clean ERC20)
-  const GameTokenFactory = await ethers.getContractFactory("MockGameToken");
+  // Deploy GAME token (use MockGameToken for local testing, GameToken for production)
+  const network = await ethers.provider.getNetwork();
+  const isLocalNetwork = network.name === "localhost" || network.name === "hardhat";
+  const contractName = isLocalNetwork ? "MockGameToken" : "GameToken";
+
+  const GameTokenFactory = await ethers.getContractFactory(contractName);
   const gameToken = await GameTokenFactory.deploy();
   await gameToken.waitForDeployment();
   const gameTokenAddress = await gameToken.getAddress();
-  console.log("✅ GAME Token deployed to:", gameTokenAddress);
+  console.log(`✅ ${contractName} deployed to:`, gameTokenAddress);
 
   // Deploy USDC token
   const USDCFactory = await ethers.getContractFactory("MockUSDC");
@@ -128,25 +132,8 @@ async function main() {
   console.log("✅ Sense module registered");
   console.log("");
 
-  // 11. Initialize modules with registry
-  console.log("🔧 Initializing modules with registry...");
-  await identity.initialize(registryAddress);
-  console.log("✅ Identity module initialized");
-
-  await membership.initialize(registryAddress);
-  console.log("✅ Membership module initialized");
-
-  await control.initialize(registryAddress);
-  console.log("✅ Control module initialized");
-
-  await flow.initialize(registryAddress);
-  console.log("✅ Flow module initialized");
-
-  await signal.initialize(registryAddress);
-  console.log("✅ Signal module initialized");
-
-  await sense.initialize(registryAddress);
-  console.log("✅ Sense module initialized");
+  // 11. Modules are automatically initialized during registration
+  console.log("✅ All modules initialized automatically during registration");
   console.log("");
 
   // 12. Deploy Staking for rewards
@@ -191,7 +178,7 @@ async function main() {
   // Display summary
   console.log("🎉 Deployment completed successfully!");
   console.log("📊 Summary:");
-  console.log("  - GameToken (Clean ERC20):", gameTokenAddress);
+  console.log(`  - ${contractName} (${isLocalNetwork ? 'Testing' : 'Production'} ERC20):`, gameTokenAddress);
   console.log("  - Staking (Organization Stakes):", stakingAddress);
   console.log("  - Staking (Rewards):", stakingRewardsAddress);
   console.log("  - Registry:", registryAddress);

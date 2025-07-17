@@ -22,8 +22,8 @@ describe("Factory Module", function () {
     [admin, creator, member1, nonMember] = await ethers.getSigners();
 
     // Deploy Game Token
-    const GameTokenFactory = await ethers.getContractFactory("MockGameToken");
-    gameToken = await GameTokenFactory.deploy();
+    const MockGameTokenFactory = await ethers.getContractFactory("MockGameToken");
+    gameToken = await MockGameTokenFactory.deploy();
     await gameToken.waitForDeployment();
 
     // Deploy Staking Contract

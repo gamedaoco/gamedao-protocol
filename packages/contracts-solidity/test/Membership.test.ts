@@ -23,8 +23,8 @@ describe("Membership Module", function () {
     [admin, creator, member1, member2, member3, nonMember] = await ethers.getSigners();
 
     // Deploy Game Token
-    const GameTokenFactory = await ethers.getContractFactory("MockGameToken");
-    gameToken = await GameTokenFactory.deploy();
+    const MockGameTokenFactory = await ethers.getContractFactory("MockGameToken");
+    gameToken = await MockGameTokenFactory.deploy();
     await gameToken.waitForDeployment();
 
     // Deploy Registry
@@ -51,7 +51,7 @@ describe("Membership Module", function () {
 
     // Initialize Membership
     await membership.initialize(await registry.getAddress());
-    await membership.setGameToken(await gameToken.getAddress());
+    await membership.setMockGameToken(await gameToken.getAddress());
     await membership.setControlContract(await control.getAddress());
 
     // Grant necessary roles
@@ -90,14 +90,14 @@ describe("Membership Module", function () {
       const newToken = await ethers.getContractFactory("MockGameToken");
       const deployedToken = await newToken.deploy();
 
-      await expect(membership.setGameToken(await deployedToken.getAddress()))
-        .to.emit(membership, "GameTokenSet")
+      await expect(membership.setMockGameToken(await deployedToken.getAddress()))
+        .to.emit(membership, "MockGameTokenSet")
         .withArgs(await deployedToken.getAddress());
     });
 
     it("Should prevent non-admin from setting game token", async function () {
       await expect(
-        membership.connect(member1).setGameToken(await gameToken.getAddress())
+        membership.connect(member1).setMockGameToken(await gameToken.getAddress())
       ).to.be.revertedWith("AccessControl:");
     });
   });

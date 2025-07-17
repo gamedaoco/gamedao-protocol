@@ -7,14 +7,14 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 
 /**
  * @title MockGameToken
- * @dev Clean, standard ERC20 token for testing (no staking functionality)
+ * @dev Mock implementation of GameDAO Token for testing purposes
  * @author GameDAO AG
  */
 contract MockGameToken is ERC20, AccessControl, Pausable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    // Token constants
+    // Token constants (same as production for testing compatibility)
     uint256 public constant INITIAL_SUPPLY = 1000000 * 10**18; // 1M tokens
     uint256 public constant MAX_SUPPLY = 100000000 * 10**18; // 100M tokens max
 
@@ -32,7 +32,7 @@ contract MockGameToken is ERC20, AccessControl, Pausable {
     }
 
     /**
-     * @dev Mint tokens to specified address
+     * @dev Mint tokens to specified address (for testing)
      * @param to Address to mint tokens to
      * @param amount Amount of tokens to mint
      */
@@ -46,7 +46,7 @@ contract MockGameToken is ERC20, AccessControl, Pausable {
     }
 
     /**
-     * @dev Burn tokens from caller's balance
+     * @dev Burn tokens from caller's balance (for testing)
      * @param amount Amount of tokens to burn
      */
     function burn(uint256 amount) external whenNotPaused {
@@ -58,7 +58,7 @@ contract MockGameToken is ERC20, AccessControl, Pausable {
     }
 
     /**
-     * @dev Burn tokens from specified address (requires approval)
+     * @dev Burn tokens from specified address (requires approval) (for testing)
      * @param from Address to burn tokens from
      * @param amount Amount of tokens to burn
      */

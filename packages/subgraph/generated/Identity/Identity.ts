@@ -496,6 +496,29 @@ export class Identity extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
+  MAX_NAME_LENGTH(): BigInt {
+    let result = super.call(
+      "MAX_NAME_LENGTH",
+      "MAX_NAME_LENGTH():(uint256)",
+      []
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_MAX_NAME_LENGTH(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "MAX_NAME_LENGTH",
+      "MAX_NAME_LENGTH():(uint256)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   MAX_NAME_STAKE(): BigInt {
     let result = super.call("MAX_NAME_STAKE", "MAX_NAME_STAKE():(uint256)", []);
 
@@ -506,6 +529,29 @@ export class Identity extends ethereum.SmartContract {
     let result = super.tryCall(
       "MAX_NAME_STAKE",
       "MAX_NAME_STAKE():(uint256)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  MAX_PROFILE_LIMIT(): BigInt {
+    let result = super.call(
+      "MAX_PROFILE_LIMIT",
+      "MAX_PROFILE_LIMIT():(uint256)",
+      []
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_MAX_PROFILE_LIMIT(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "MAX_PROFILE_LIMIT",
+      "MAX_PROFILE_LIMIT():(uint256)",
       []
     );
     if (result.reverted) {
@@ -578,6 +624,44 @@ export class Identity extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  MODULE_ADMIN_ROLE(): Bytes {
+    let result = super.call(
+      "MODULE_ADMIN_ROLE",
+      "MODULE_ADMIN_ROLE():(bytes32)",
+      []
+    );
+
+    return result[0].toBytes();
+  }
+
+  try_MODULE_ADMIN_ROLE(): ethereum.CallResult<Bytes> {
+    let result = super.tryCall(
+      "MODULE_ADMIN_ROLE",
+      "MODULE_ADMIN_ROLE():(bytes32)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
+  }
+
+  MODULE_ID(): Bytes {
+    let result = super.call("MODULE_ID", "MODULE_ID():(bytes32)", []);
+
+    return result[0].toBytes();
+  }
+
+  try_MODULE_ID(): ethereum.CallResult<Bytes> {
+    let result = super.tryCall("MODULE_ID", "MODULE_ID():(bytes32)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
   NAME_LENGTH(): BigInt {
@@ -1233,7 +1317,7 @@ export class CreateProfileCall__Outputs {
     this._call = call;
   }
 
-  get profileId(): Bytes {
+  get value0(): Bytes {
     return this._call.outputValues[0].value.toBytes();
   }
 }

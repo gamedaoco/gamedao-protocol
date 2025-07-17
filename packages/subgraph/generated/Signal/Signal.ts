@@ -176,32 +176,6 @@ export class ProposalCanceled__Params {
   }
 }
 
-export class ProposalCanceledHierarchical extends ethereum.Event {
-  get params(): ProposalCanceledHierarchical__Params {
-    return new ProposalCanceledHierarchical__Params(this);
-  }
-}
-
-export class ProposalCanceledHierarchical__Params {
-  _event: ProposalCanceledHierarchical;
-
-  constructor(event: ProposalCanceledHierarchical) {
-    this._event = event;
-  }
-
-  get hierarchicalId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get canceler(): Address {
-    return this._event.parameters[1].value.toAddress();
-  }
-
-  get reason(): string {
-    return this._event.parameters[2].value.toString();
-  }
-}
-
 export class ProposalCreated extends ethereum.Event {
   get params(): ProposalCreated__Params {
     return new ProposalCreated__Params(this);
@@ -252,56 +226,6 @@ export class ProposalCreated__Params {
   }
 }
 
-export class ProposalCreatedHierarchical extends ethereum.Event {
-  get params(): ProposalCreatedHierarchical__Params {
-    return new ProposalCreatedHierarchical__Params(this);
-  }
-}
-
-export class ProposalCreatedHierarchical__Params {
-  _event: ProposalCreatedHierarchical;
-
-  constructor(event: ProposalCreatedHierarchical) {
-    this._event = event;
-  }
-
-  get hierarchicalId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get organizationId(): Bytes {
-    return this._event.parameters[1].value.toBytes();
-  }
-
-  get creator(): Address {
-    return this._event.parameters[2].value.toAddress();
-  }
-
-  get title(): string {
-    return this._event.parameters[3].value.toString();
-  }
-
-  get proposalType(): i32 {
-    return this._event.parameters[4].value.toI32();
-  }
-
-  get votingType(): i32 {
-    return this._event.parameters[5].value.toI32();
-  }
-
-  get votingPeriod(): BigInt {
-    return this._event.parameters[6].value.toBigInt();
-  }
-
-  get startTime(): BigInt {
-    return this._event.parameters[7].value.toBigInt();
-  }
-
-  get endTime(): BigInt {
-    return this._event.parameters[8].value.toBigInt();
-  }
-}
-
 export class ProposalExecuted extends ethereum.Event {
   get params(): ProposalExecuted__Params {
     return new ProposalExecuted__Params(this);
@@ -312,36 +236,6 @@ export class ProposalExecuted__Params {
   _event: ProposalExecuted;
 
   constructor(event: ProposalExecuted) {
-    this._event = event;
-  }
-
-  get hierarchicalId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-
-  get executor(): Address {
-    return this._event.parameters[1].value.toAddress();
-  }
-
-  get success(): boolean {
-    return this._event.parameters[2].value.toBoolean();
-  }
-
-  get returnData(): Bytes {
-    return this._event.parameters[3].value.toBytes();
-  }
-}
-
-export class ProposalExecutedHierarchical extends ethereum.Event {
-  get params(): ProposalExecutedHierarchical__Params {
-    return new ProposalExecutedHierarchical__Params(this);
-  }
-}
-
-export class ProposalExecutedHierarchical__Params {
-  _event: ProposalExecutedHierarchical;
-
-  constructor(event: ProposalExecutedHierarchical) {
     this._event = event;
   }
 
@@ -473,40 +367,6 @@ export class VoteCast__Params {
 
   get hierarchicalId(): string {
     return this._event.parameters[0].value.toString();
-  }
-
-  get voter(): Address {
-    return this._event.parameters[1].value.toAddress();
-  }
-
-  get choice(): i32 {
-    return this._event.parameters[2].value.toI32();
-  }
-
-  get votingPower(): BigInt {
-    return this._event.parameters[3].value.toBigInt();
-  }
-
-  get reason(): string {
-    return this._event.parameters[4].value.toString();
-  }
-}
-
-export class VoteCastHierarchical extends ethereum.Event {
-  get params(): VoteCastHierarchical__Params {
-    return new VoteCastHierarchical__Params(this);
-  }
-}
-
-export class VoteCastHierarchical__Params {
-  _event: VoteCastHierarchical;
-
-  constructor(event: VoteCastHierarchical) {
-    this._event = event;
-  }
-
-  get hierarchicalId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
   }
 
   get voter(): Address {
@@ -992,6 +852,29 @@ export class Signal extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  MODULE_ADMIN_ROLE(): Bytes {
+    let result = super.call(
+      "MODULE_ADMIN_ROLE",
+      "MODULE_ADMIN_ROLE():(bytes32)",
+      []
+    );
+
+    return result[0].toBytes();
+  }
+
+  try_MODULE_ADMIN_ROLE(): ethereum.CallResult<Bytes> {
+    let result = super.tryCall(
+      "MODULE_ADMIN_ROLE",
+      "MODULE_ADMIN_ROLE():(bytes32)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
   OPERATOR_ROLE(): Bytes {

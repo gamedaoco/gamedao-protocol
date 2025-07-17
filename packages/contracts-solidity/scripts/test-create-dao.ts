@@ -15,12 +15,12 @@ async function main() {
 
   // Get contract instances
   const Control = await ethers.getContractAt('Control', addresses.control)
-  const GameToken = await ethers.getContractAt('MockGameToken', addresses.gameToken)
+  const MockGameToken = await ethers.getContractAt('MockGameToken', addresses.gameToken)
 
   console.log('🔗 Contract instances created')
 
   // Check GAME token balance
-  const balance = await GameToken.balanceOf(user1.address)
+  const balance = await MockGameToken.balanceOf(user1.address)
   console.log(`💰 User1 GAME balance: ${ethers.formatEther(balance)} GAME`)
 
   // Create a new DAO
