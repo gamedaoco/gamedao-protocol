@@ -19,7 +19,9 @@ const addressMapping = {
   'Sense': LOCAL_ADDRESSES.SENSE,
   'Identity': LOCAL_ADDRESSES.IDENTITY,
   'Staking': LOCAL_ADDRESSES.STAKING,
-  'Treasury': LOCAL_ADDRESSES.TREASURY
+  'GameToken': LOCAL_ADDRESSES.GAME_TOKEN,
+  'MockGameToken': LOCAL_ADDRESSES.GAME_TOKEN,
+  'MockUSDC': LOCAL_ADDRESSES.USDC_TOKEN
 };
 
 // Update addresses in subgraph.yaml
@@ -37,4 +39,4 @@ Object.entries(addressMapping).forEach(([contractName, address]) => {
 // Write updated subgraph.yaml
 fs.writeFileSync(subgraphYamlPath, subgraphYaml);
 
-console.log('🎉 All contract addresses updated from packages/shared!');
+console.log('🎉 All contract addresses updated from shared package!');
