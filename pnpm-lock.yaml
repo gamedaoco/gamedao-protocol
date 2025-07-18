@@ -35,6 +35,9 @@ importers:
 
   packages/contracts-solidity:
     dependencies:
+      '@gamedao/evm':
+        specifier: workspace:*
+        version: link:../shared
       '@openzeppelin/contracts':
         specifier: ^4.9.3
         version: 4.9.6
@@ -287,12 +290,15 @@ importers:
 
   packages/subgraph:
     dependencies:
+      '@gamedao/evm':
+        specifier: workspace:*
+        version: link:../shared
       '@graphprotocol/graph-cli':
-        specifier: ^0.56.0
+        specifier: 0.56.0
         version: 0.56.0(@types/node@20.19.1)(node-fetch@3.3.2)(typescript@5.8.3)
       '@graphprotocol/graph-ts':
-        specifier: ^0.31.0
-        version: 0.31.0
+        specifier: 0.32.0
+        version: 0.32.0
     devDependencies:
       matchstick-as:
         specifier: ^0.5.0
@@ -1700,8 +1706,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@graphprotocol/graph-ts@0.31.0:
-    resolution: {integrity: sha512-xreRVM6ho2BtolyOh2flDkNoGZximybnzUnF53zJVp0+Ed0KnAlO1/KOCUYw06euVI9tk0c9nA2Z/D5SIQV2Rg==}
+  /@graphprotocol/graph-ts@0.32.0:
+    resolution: {integrity: sha512-YfKLT2w+ItXD/VPYQiAKtINQONVsAOkcqVFMHlhUy0fcEBVWuFBT53hJNI0/l5ujQa4TSxtzrKW/7EABAdgI8g==}
     dependencies:
       assemblyscript: 0.19.10
     dev: false

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAccount, useContractRead, useContractWrite, useWaitForTransaction } from 'wagmi'
 import { MEMBERSHIP_ABI } from '@/lib/abis'
 import { useContracts } from '@/hooks/useContracts'
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/useToast'
 import { formatUnits, parseUnits } from 'viem'
 
 // Types matching the contract

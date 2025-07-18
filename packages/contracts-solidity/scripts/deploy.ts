@@ -79,6 +79,15 @@ async function main() {
   console.log("✅ Control Module deployed to:", controlAddress);
   console.log("");
 
+  // 6.1. Deploy Factory for Control Module
+  console.log("🏭 Deploying Factory for Control Module...");
+  const FactoryContractFactory = await ethers.getContractFactory("Factory");
+  const factory = await FactoryContractFactory.deploy(gameTokenAddress as string, stakingAddress as string);
+  await factory.waitForDeployment();
+  const factoryAddress = await factory.getAddress();
+  console.log("✅ Factory deployed to:", factoryAddress);
+  console.log("");
+
   // Note: Grant ORGANIZATION_MANAGER_ROLE to Control contract manually after deployment
   console.log("⚠️  Remember to grant ORGANIZATION_MANAGER_ROLE to Control contract");
   console.log("   Run: staking.grantRole(ORGANIZATION_MANAGER_ROLE, controlAddress)");
@@ -136,6 +145,20 @@ async function main() {
   console.log("✅ All modules initialized automatically during registration");
   console.log("");
 
+    // 11.1. Configure Factory contract
+  console.log("🔧 Configuring Factory contract...");
+  await factory.setRegistry(controlAddress);
+  console.log("✅ Factory registry set to:", controlAddress);
+
+  await control.setFactory(factoryAddress);
+  console.log("✅ Control factory set to:", factoryAddress);
+
+  // Grant ORGANIZATION_MANAGER_ROLE to Factory contract
+  const ORGANIZATION_MANAGER_ROLE = await staking.ORGANIZATION_MANAGER_ROLE();
+  await staking.grantRole(ORGANIZATION_MANAGER_ROLE, factoryAddress);
+  console.log("✅ Factory granted ORGANIZATION_MANAGER_ROLE in Staking contract");
+  console.log("");
+
   // 12. Deploy Staking for rewards
   console.log("🎯 Deploying Staking for rewards...");
   const StakingRewardsFactory = await ethers.getContractFactory("Staking");
@@ -163,6 +186,7 @@ async function main() {
       Identity: identityAddress,
       Membership: membershipAddress,
       Control: controlAddress,
+      Factory: factoryAddress,
       Flow: flowAddress,
       Signal: signalAddress,
       Sense: senseAddress,
@@ -185,6 +209,7 @@ async function main() {
   console.log("  - Identity Module:", identityAddress);
   console.log("  - Membership Module:", membershipAddress);
   console.log("  - Control Module:", controlAddress);
+  console.log("  - Factory:", factoryAddress);
   console.log("  - Flow Module:", flowAddress);
   console.log("  - Signal Module:", signalAddress);
   console.log("  - Sense Module:", senseAddress);

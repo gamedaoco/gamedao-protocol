@@ -1,24 +1,6 @@
 import { ethers } from "hardhat"
 import { parseEther, parseUnits } from "ethers"
-import fs from "fs"
-import path from "path"
-
-interface DeploymentAddresses {
-  gameToken: string
-  usdc: string
-  [key: string]: string
-}
-
-async function loadDeploymentAddresses(): Promise<DeploymentAddresses> {
-  const deploymentPath = path.join(__dirname, "..", "deployment-addresses.json")
-
-  if (!fs.existsSync(deploymentPath)) {
-    throw new Error("Deployment addresses not found. Please deploy contracts first.")
-  }
-
-  const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"))
-  return deployment as DeploymentAddresses
-}
+import { getAddressesForNetwork } from "@gamedao/evm"
 
 async function sendTokens() {
   console.log("🚀 Starting token transfer script...")
@@ -54,15 +36,32 @@ async function sendTokens() {
     const [deployer] = await ethers.getSigners()
     console.log(`💼 Using deployer account: ${deployer.address}`)
 
-    // Load deployment addresses
-    const addresses = await loadDeploymentAddresses()
-    console.log(`📍 GAME Token: ${addresses.gameToken}`)
-    console.log(`📍 USDC Token: ${addresses.usdc}`)
+    // Get network and load addresses from shared package
+    const network = await ethers.provider.getNetwork()
+    const addresses = getAddressesForNetwork(network.chainId)
+
+    // Validate token addresses
+    if (!addresses.GAME_TOKEN || addresses.GAME_TOKEN === "") {
+      console.error("❌ Error: GAME_TOKEN address not found in shared package")
+      console.log("Please run the address update script first:")
+      console.log("  node scripts/update-contract-addresses.js --network local")
+      process.exit(1)
+    }
+
+    if (!addresses.USDC_TOKEN || addresses.USDC_TOKEN === "") {
+      console.error("❌ Error: USDC_TOKEN address not found in shared package")
+      console.log("Please run the address update script first:")
+      console.log("  node scripts/update-contract-addresses.js --network local")
+      process.exit(1)
+    }
+
+    console.log(`📍 GAME Token: ${addresses.GAME_TOKEN}`)
+    console.log(`📍 USDC Token: ${addresses.USDC_TOKEN}`)
     console.log("")
 
     // Get token contracts
-    const gameToken = await ethers.getContractAt("MockGameToken", addresses.gameToken)
-    const usdcToken = await ethers.getContractAt("MockUSDC", addresses.usdc)
+    const gameToken = await ethers.getContractAt("MockGameToken", addresses.GAME_TOKEN)
+    const usdcToken = await ethers.getContractAt("MockUSDC", addresses.USDC_TOKEN)
 
     // Check deployer balances before transfer
     const deployerEthBalance = await ethers.provider.getBalance(deployer.address)

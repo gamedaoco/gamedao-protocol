@@ -24,6 +24,40 @@ type GlobalStats @entity {
   updatedAt: BigInt! # Last update timestamp
 }
 
+# ===== INDEXING STATUS =====
+
+type SubgraphIndexingStatus @entity {
+  id: ID! # Always "indexing-status"
+  currentBlock: BigInt! # Current block being indexed
+  latestBlock: BigInt! # Latest block known
+  isFullySynced: Boolean! # Whether indexing is complete
+  totalBlocks: BigInt! # Total blocks to sync
+  blocksRemaining: BigInt! # Remaining blocks to sync
+  syncPercentage: BigDecimal! # Sync progress percentage
+  blocksPerSecond: BigDecimal! # Sync speed
+  estimatedTimeToSync: BigInt! # Estimated time to complete sync
+  lastUpdatedAt: BigInt! # Last update timestamp
+  lastUpdatedBlock: BigInt! # Last updated block number
+  hasErrors: Boolean! # Whether there are errors
+  lastError: String # Last error message
+  errorCount: BigInt! # Total error count
+}
+
+type BlockInfo @entity {
+  id: ID! # Block number as string
+  number: BigInt! # Block number
+  timestamp: BigInt! # Block timestamp
+  hash: Bytes! # Block hash
+  processedAt: BigInt! # When block was processed
+  transactionCount: BigInt! # Number of transactions in block
+  eventCount: BigInt! # Total events processed in block
+  organizationEvents: BigInt! # Organization-related events
+  campaignEvents: BigInt! # Campaign-related events
+  proposalEvents: BigInt! # Proposal-related events
+  profileEvents: BigInt! # Profile-related events
+  stakingEvents: BigInt! # Staking-related events
+}
+
 # ===== REGISTRY ENTITIES =====
 
 type Module @entity {

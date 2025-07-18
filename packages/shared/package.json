@@ -8,8 +8,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "generate-abis": "node scripts/generateAbis.js",
+    "build": "npm run generate-abis && tsc",
+    "dev": "npm run generate-abis && tsc --watch",
     "clean": "rm -rf dist",
     "prepare": "npm run build"
   },

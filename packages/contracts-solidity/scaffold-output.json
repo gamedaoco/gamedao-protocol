@@ -1,0 +1,338 @@
+{
+  "users": [
+    {
+      "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "name": "Alice Chen",
+      "role": "Game Developer",
+      "avatar": "👩‍💻"
+    },
+    {
+      "address": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+      "name": "Bob Martinez",
+      "role": "Esports Organizer",
+      "avatar": "🎮"
+    },
+    {
+      "address": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+      "name": "Carol Johnson",
+      "role": "3D Artist",
+      "avatar": "🎨"
+    },
+    {
+      "address": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+      "name": "David Kim",
+      "role": "Audio Designer",
+      "avatar": "🎵"
+    },
+    {
+      "address": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+      "name": "Eva Rodriguez",
+      "role": "Narrative Designer",
+      "avatar": "✍️"
+    },
+    {
+      "address": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+      "name": "Frank Wilson",
+      "role": "Blockchain Dev",
+      "avatar": "⛓️"
+    },
+    {
+      "address": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      "name": "Grace Liu",
+      "role": "UI/UX Designer",
+      "avatar": "🎯"
+    },
+    {
+      "address": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+      "name": "Henry Brown",
+      "role": "QA Tester",
+      "avatar": "🔍"
+    },
+    {
+      "address": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+      "name": "Iris Taylor",
+      "role": "Marketing",
+      "avatar": "📈"
+    },
+    {
+      "address": "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+      "name": "Jack Davis",
+      "role": "Streamer",
+      "avatar": "📹"
+    },
+    {
+      "address": "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
+      "name": "Kate Miller",
+      "role": "Producer",
+      "avatar": "📋"
+    },
+    {
+      "address": "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
+      "name": "Leo Zhang",
+      "role": "Engine Dev",
+      "avatar": "⚙️"
+    }
+  ],
+  "daos": [
+    {
+      "id": "0x55574e4b58544c34",
+      "idAlphanumeric": "UWNKXTL4",
+      "name": "Indie Game Collective",
+      "description": "Independent game developers collaborating on projects",
+      "members": [
+        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+        "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+        "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+      ],
+      "treasury": "0xc25D407659D9AabC44863ce2cC2fd7B91911B764",
+      "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    },
+    {
+      "id": "0x4433343659324a33",
+      "idAlphanumeric": "D346Y2J3",
+      "name": "Esports Alliance",
+      "description": "Professional esports organization",
+      "members": [
+        "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+        "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+        "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+        "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
+        "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"
+      ],
+      "treasury": "0xbE7a553bB4E75981A367863136c3396D952849A5",
+      "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+    },
+    {
+      "id": "0x4537544745333131",
+      "idAlphanumeric": "E7TGE311",
+      "name": "NFT Gaming Hub",
+      "description": "Blockchain gaming with NFT integration",
+      "members": [
+        "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      ],
+      "treasury": "0x9fF134e8726eE2b2Ad12b6b35F73f74EfE963A5a",
+      "creator": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+    },
+    {
+      "id": "0x4c4a514d545a4e5a",
+      "idAlphanumeric": "LJQMTZNZ",
+      "name": "VR Game Studios",
+      "description": "Virtual reality game development",
+      "members": [
+        "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+        "0x71bE63f3384f5fb98995898A86B02Fb2426c5788"
+      ],
+      "treasury": "0xD4Ada85eb7599f4761a00A4196E13D2880682c1b",
+      "creator": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+    },
+    {
+      "id": "0x545a444c4c564446",
+      "idAlphanumeric": "TZDLLVDF",
+      "name": "Mobile Gaming Guild",
+      "description": "Mobile game developers and publishers",
+      "members": [
+        "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+        "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a"
+      ],
+      "treasury": "0x07b343B7E76ed73A19FFc5463007a2b971758678",
+      "creator": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "0xaa3ca24fece3836dcd6ddffe72085e8fe8c63e584021cf8e0f72977137f09216",
+      "title": "Fantasy RPG: Chronicles of Etheria",
+      "daoId": "0x55574e4b58544c34",
+      "daoIdAlphanumeric": "UWNKXTL4",
+      "daoName": "Indie Game Collective",
+      "target": "25000",
+      "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    },
+    {
+      "id": "0x26074693a5262f2806ba032b81fecfa3609e953393c01d17a7285f1dd1b2bd03",
+      "title": "Cyberpunk Racing League",
+      "daoId": "0x4433343659324a33",
+      "daoIdAlphanumeric": "D346Y2J3",
+      "daoName": "Esports Alliance",
+      "target": "40000",
+      "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+    },
+    {
+      "id": "0x782859015baac2c461943a6e6fde3d438cb4f97c029fde0be7538d3b40202c28",
+      "title": "VR Mystic Realms",
+      "daoId": "0x4433343659324a33",
+      "daoIdAlphanumeric": "D346Y2J3",
+      "daoName": "Esports Alliance",
+      "target": "60000",
+      "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+    },
+    {
+      "id": "0xfd3fe0a579d697c367d621971f9c366cc83a53a136728791826fdae693177899",
+      "title": "Retro Arcade Revival",
+      "daoId": "0x4433343659324a33",
+      "daoIdAlphanumeric": "D346Y2J3",
+      "daoName": "Esports Alliance",
+      "target": "15000",
+      "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+    },
+    {
+      "id": "0x04359a11e17e4914a2e1d926d4c1d3ef9b4dd1da148f42001d247275a7ce4f7b",
+      "title": "Mobile Strategy Empire",
+      "daoId": "0x4c4a514d545a4e5a",
+      "daoIdAlphanumeric": "LJQMTZNZ",
+      "daoName": "VR Game Studios",
+      "target": "30000",
+      "creator": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+    },
+    {
+      "id": "0x9b1bfa587071cb98f56c46b8b55330a5e68885fd979152bc6b6d6e57425bc0b0",
+      "title": "Indie Puzzle Adventure",
+      "daoId": "0x55574e4b58544c34",
+      "daoIdAlphanumeric": "UWNKXTL4",
+      "daoName": "Indie Game Collective",
+      "target": "20000",
+      "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    },
+    {
+      "id": "0x78f3c4af2e73a3369fc95ec243ba17685bfc19018e8eca3b28644656e9722ead",
+      "title": "Multiplayer Battle Arena",
+      "daoId": "0x545a444c4c564446",
+      "daoIdAlphanumeric": "TZDLLVDF",
+      "daoName": "Mobile Gaming Guild",
+      "target": "50000",
+      "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    },
+    {
+      "id": "0x0463fd063ece9a6261e3b0317cc21028101320fa16040b6b8dda40e81ae2eb37",
+      "title": "Space Exploration Sim",
+      "daoId": "0x55574e4b58544c34",
+      "daoIdAlphanumeric": "UWNKXTL4",
+      "daoName": "Indie Game Collective",
+      "target": "35000",
+      "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    }
+  ],
+  "proposals": [],
+  "profiles": [
+    {
+      "id": "0x4c42463157505545",
+      "organizationId": "0x55574e4b58544c34",
+      "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "name": "Alice Chen",
+      "metadata": "ipfs://QmProfile0",
+      "experiencePoints": 270,
+      "reputationPoints": 183
+    },
+    {
+      "id": "0x445a4c5133453738",
+      "organizationId": "0x4433343659324a33",
+      "address": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+      "name": "Bob Martinez",
+      "metadata": "ipfs://QmProfile1",
+      "experiencePoints": 481,
+      "reputationPoints": 72
+    },
+    {
+      "id": "0x433834595133544a",
+      "organizationId": "0x55574e4b58544c34",
+      "address": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+      "name": "Carol Johnson",
+      "metadata": "ipfs://QmProfile2",
+      "experiencePoints": 489,
+      "reputationPoints": 139
+    },
+    {
+      "id": "0x4430515238563139",
+      "organizationId": "0x4c4a514d545a4e5a",
+      "address": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+      "name": "David Kim",
+      "metadata": "ipfs://QmProfile3",
+      "experiencePoints": 233,
+      "reputationPoints": 146
+    },
+    {
+      "id": "0x374b4e434b473131",
+      "organizationId": "0x545a444c4c564446",
+      "address": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+      "name": "Eva Rodriguez",
+      "metadata": "ipfs://QmProfile4",
+      "experiencePoints": 556,
+      "reputationPoints": 210
+    },
+    {
+      "id": "0x5a5a4b325052504d",
+      "organizationId": "0x55574e4b58544c34",
+      "address": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+      "name": "Frank Wilson",
+      "metadata": "ipfs://QmProfile5",
+      "experiencePoints": 522,
+      "reputationPoints": 198
+    },
+    {
+      "id": "0x3644444b30424434",
+      "organizationId": "0x55574e4b58544c34",
+      "address": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      "name": "Grace Liu",
+      "metadata": "ipfs://QmProfile6",
+      "experiencePoints": 252,
+      "reputationPoints": 137
+    },
+    {
+      "id": "0x5630394742355835",
+      "organizationId": "0x4433343659324a33",
+      "address": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+      "name": "Henry Brown",
+      "metadata": "ipfs://QmProfile7",
+      "experiencePoints": 583,
+      "reputationPoints": 159
+    },
+    {
+      "id": "0x3244434448594159",
+      "organizationId": "0x4433343659324a33",
+      "address": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+      "name": "Iris Taylor",
+      "metadata": "ipfs://QmProfile8",
+      "experiencePoints": 500,
+      "reputationPoints": 232
+    },
+    {
+      "id": "0x55334c384d514742",
+      "organizationId": "0x55574e4b58544c34",
+      "address": "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+      "name": "Jack Davis",
+      "metadata": "ipfs://QmProfile9",
+      "experiencePoints": 105,
+      "reputationPoints": 140
+    },
+    {
+      "id": "0x4533364b54464548",
+      "organizationId": "0x4433343659324a33",
+      "address": "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
+      "name": "Kate Miller",
+      "metadata": "ipfs://QmProfile10",
+      "experiencePoints": 127,
+      "reputationPoints": 194
+    },
+    {
+      "id": "0x41344a3430473942",
+      "organizationId": "0x545a444c4c564446",
+      "address": "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
+      "name": "Leo Zhang",
+      "metadata": "ipfs://QmProfile11",
+      "experiencePoints": 275,
+      "reputationPoints": 68
+    }
+  ],
+  "contracts": {
+    "registry": "0x5322471a7E37Ac2B8902cFcba84d266b37D811A0",
+    "control": "0x103A3b128991781EE2c8db0454cA99d67b257923",
+    "flow": "0xB9d9e972100a1dD01cd441774b45b5821e136043",
+    "signal": "0x707531c9999AaeF9232C8FEfBA31FBa4cB78d84a"
+  },
+  "timestamp": "2025-07-18T21:33:03.289Z"
+}

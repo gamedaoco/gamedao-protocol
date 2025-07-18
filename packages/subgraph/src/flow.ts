@@ -12,216 +12,318 @@ import {
 import {
   Campaign,
   Contribution,
-  Reward,
-  ProtocolFee,
   Organization,
-  Member,
-  GlobalStats
+  User,
+  GlobalStats,
+  Transaction
 } from "../generated/schema"
 import { getOrganizationIdString } from "./utils/ids"
+import { updateIndexingStatus } from "./utils/indexing"
+
+// Helper function to map FlowType enum
+function getFlowTypeString(flowType: BigInt): string {
+  let typeNum = flowType.toI32()
+  if (typeNum == 0) return "GRANT"
+  if (typeNum == 1) return "RAISE"
+  if (typeNum == 2) return "LEND"
+  if (typeNum == 3) return "LOAN"
+  if (typeNum == 4) return "SHARE"
+  if (typeNum == 5) return "POOL"
+  return "RAISE" // Default
+}
+
+// Helper function to map FlowState enum
+function getFlowStateString(state: BigInt): string {
+  let stateNum = state.toI32()
+  if (stateNum == 0) return "CREATED"
+  if (stateNum == 1) return "ACTIVE"
+  if (stateNum == 2) return "PAUSED"
+  if (stateNum == 3) return "FINALIZED"
+  if (stateNum == 4) return "CANCELLED"
+  return "CREATED" // Default
+}
+
+// Helper function to create or get User entity
+function getOrCreateUser(address: Address): User {
+  let userId = address.toHex().toLowerCase()
+  let user = User.load(userId)
+
+  if (!user) {
+    user = new User(userId)
+    user.address = address
+    user.totalOrganizations = BigInt.fromI32(0)
+    user.totalMemberships = BigInt.fromI32(0)
+    user.totalContributions = BigInt.fromI32(0)
+    user.totalProposals = BigInt.fromI32(0)
+    user.totalVotes = BigInt.fromI32(0)
+    user.firstSeenAt = BigInt.fromI32(0)
+    user.lastActiveAt = BigInt.fromI32(0)
+    user.save()
+  }
+
+  return user
+}
 
 export function handleCampaignCreated(event: CampaignCreated): void {
+  updateIndexingStatus(event.block, 'CampaignCreated')
+
   let campaignId = event.params.campaignId.toHex()
   let campaign = new Campaign(campaignId)
 
   campaign.organization = getOrganizationIdString(event.params.organizationId)
-  campaign.creator = event.params.creator
+  campaign.creator = event.params.creator.toHex()
   campaign.title = event.params.title
+  campaign.description = "" // Set from metadata if available
+  campaign.metadataURI = "" // Set from event if available
   campaign.flowType = getFlowTypeString(BigInt.fromI32(event.params.flowType))
-  campaign.target = event.params.target.toBigDecimal()
-  campaign.deposit = BigDecimal.fromString("0")
-  campaign.expiry = event.params.endTime
-  campaign.raised = BigDecimal.fromString("0")
   campaign.state = "CREATED"
+  campaign.paymentToken = Address.zero() // Default value, not available in create event
+  campaign.target = event.params.target
+  campaign.min = BigInt.fromI32(0) // Default value, not available in create event
+  campaign.max = BigInt.fromI32(0) // Default value, not available in create event
+  campaign.raised = BigInt.fromI32(0)
   campaign.contributorCount = BigInt.fromI32(0)
-  campaign.protocolFee = BigDecimal.fromString("0")
-  campaign.totalRewards = BigDecimal.fromString("0")
-  campaign.rewardsDistributed = BigDecimal.fromString("0")
+  campaign.startTime = event.params.startTime
+  campaign.endTime = event.params.endTime
   campaign.createdAt = event.params.timestamp
   campaign.updatedAt = event.params.timestamp
-  campaign.description = ""
+  campaign.blockNumber = event.block.number
+  campaign.transaction = event.transaction.hash.toHex()
 
   campaign.save()
 
+  // Create or update user
+  let user = getOrCreateUser(event.params.creator)
+  user.lastActiveAt = event.params.timestamp
+  user.save()
+
+  // Create transaction record
+  let transaction = new Transaction(event.transaction.hash.toHex())
+  transaction.hash = event.transaction.hash
+  transaction.from = event.transaction.from
+  transaction.to = event.transaction.to
+  transaction.gasUsed = BigInt.fromI32(0) // Default value
+  transaction.gasPrice = BigInt.fromI32(0) // Default value
+  transaction.blockNumber = event.block.number
+  transaction.timestamp = event.block.timestamp
+  transaction.save()
+
+  // Update global stats
+  let stats = GlobalStats.load("global")
+  if (!stats) {
+    stats = new GlobalStats("global")
+    stats.totalModules = BigInt.fromI32(0)
+    stats.activeModules = BigInt.fromI32(0)
+    stats.totalOrganizations = BigInt.fromI32(0)
+    stats.activeOrganizations = BigInt.fromI32(0)
+    stats.totalMembers = BigInt.fromI32(0)
+    stats.totalCampaigns = BigInt.fromI32(0)
+    stats.activeCampaigns = BigInt.fromI32(0)
+    stats.totalRaised = BigDecimal.fromString("0")
+    stats.totalProposals = BigInt.fromI32(0)
+    stats.activeProposals = BigInt.fromI32(0)
+    stats.totalVotes = BigInt.fromI32(0)
+    stats.totalProfiles = BigInt.fromI32(0)
+    stats.verifiedProfiles = BigInt.fromI32(0)
+    stats.totalAchievements = BigInt.fromI32(0)
+    stats.totalTokenTransfers = BigInt.fromI32(0)
+    stats.totalTreasuryTransactions = BigInt.fromI32(0)
+    stats.updatedAt = event.block.timestamp
+  }
+  stats.totalCampaigns = stats.totalCampaigns.plus(BigInt.fromI32(1))
+  stats.activeCampaigns = stats.activeCampaigns.plus(BigInt.fromI32(1))
+  stats.updatedAt = event.block.timestamp
+  stats.save()
+
   // Update organization campaign count
   let organization = Organization.load(campaign.organization)
-  if (organization != null) {
+  if (organization) {
     organization.totalCampaigns = organization.totalCampaigns.plus(BigInt.fromI32(1))
+    organization.updatedAt = event.params.timestamp
     organization.save()
   }
-
-  updateGlobalStats()
 }
 
 export function handleCampaignUpdated(event: CampaignUpdated): void {
+  updateIndexingStatus(event.block, 'CampaignUpdated')
+
   let campaignId = event.params.campaignId.toHex()
   let campaign = Campaign.load(campaignId)
 
-  if (campaign != null) {
+  if (campaign) {
     campaign.title = event.params.title
     campaign.description = event.params.description
-    campaign.target = event.params.target.toBigDecimal()
-    campaign.expiry = event.params.endTime
+    campaign.target = event.params.target
+    campaign.min = event.params.min
+    campaign.max = event.params.max
+    campaign.endTime = event.params.endTime
     campaign.updatedAt = event.params.timestamp
+    campaign.blockNumber = event.block.number
+    campaign.transaction = event.transaction.hash.toHex()
     campaign.save()
   }
 }
 
 export function handleCampaignStateChanged(event: CampaignStateChanged): void {
+  updateIndexingStatus(event.block, 'CampaignStateChanged')
+
   let campaignId = event.params.campaignId.toHex()
   let campaign = Campaign.load(campaignId)
 
-  if (campaign != null) {
-    campaign.state = getCampaignStateString(BigInt.fromI32(event.params.newState))
+  if (campaign) {
+    let oldState = campaign.state
+    campaign.state = getFlowStateString(BigInt.fromI32(event.params.newState))
     campaign.updatedAt = event.params.timestamp
+    campaign.blockNumber = event.block.number
+    campaign.transaction = event.transaction.hash.toHex()
     campaign.save()
-  }
 
-  updateGlobalStats()
+    // Update global stats
+    let stats = GlobalStats.load("global")
+    if (stats) {
+      if (oldState != "ACTIVE" && campaign.state == "ACTIVE") {
+        stats.activeCampaigns = stats.activeCampaigns.plus(BigInt.fromI32(1))
+      } else if (oldState == "ACTIVE" && campaign.state != "ACTIVE") {
+        stats.activeCampaigns = stats.activeCampaigns.minus(BigInt.fromI32(1))
+      }
+      stats.updatedAt = event.block.timestamp
+      stats.save()
+    }
+  }
 }
 
 export function handleContributionMade(event: ContributionMade): void {
+  updateIndexingStatus(event.block, 'ContributionMade')
+
   let campaignId = event.params.campaignId.toHex()
-  let contributorAddress = event.params.contributor.toHex()
-  let contributionId = campaignId + "-" + contributorAddress + "-" + event.params.timestamp.toString()
+  let contributionId = campaignId + "-" + event.params.contributor.toHex() + "-" + event.transaction.hash.toHex()
 
   let contribution = new Contribution(contributionId)
   contribution.campaign = campaignId
-  contribution.amount = event.params.amount.toBigDecimal()
+  contribution.contributor = event.params.contributor.toHex()
+  contribution.amount = event.params.amount
   contribution.timestamp = event.params.timestamp
   contribution.blockNumber = event.block.number
-  contribution.transactionHash = event.transaction.hash
-  contribution.rewardEligible = true
-  contribution.rewardReceived = BigDecimal.fromString("0")
-  contribution.token = Address.zero() // Default to ETH
-
-  // Try to find the member
-  let campaign = Campaign.load(campaignId)
-  if (campaign != null) {
-    let memberId = campaign.organization + "-" + contributorAddress
-    let member = Member.load(memberId)
-    if (member != null) {
-      contribution.contributor = memberId
-    }
-  }
-
+  contribution.transaction = event.transaction.hash.toHex()
   contribution.save()
 
-  // Update campaign raised amount and contributor count
-  if (campaign != null) {
-    campaign.raised = campaign.raised.plus(event.params.amount.toBigDecimal())
-
-    // Simple contributor count increment (in real implementation would check for duplicates)
+  // Update campaign
+  let campaign = Campaign.load(campaignId)
+  if (campaign) {
+    campaign.raised = campaign.raised.plus(event.params.amount)
     campaign.contributorCount = campaign.contributorCount.plus(BigInt.fromI32(1))
     campaign.updatedAt = event.params.timestamp
     campaign.save()
+
+    // Update global stats
+    let stats = GlobalStats.load("global")
+    if (stats) {
+      stats.totalRaised = stats.totalRaised.plus(event.params.amount.toBigDecimal())
+      stats.updatedAt = event.block.timestamp
+      stats.save()
+    }
   }
 
-  updateGlobalStats()
+  // Create or update user
+  let user = getOrCreateUser(event.params.contributor)
+  user.totalContributions = user.totalContributions.plus(BigInt.fromI32(1))
+  user.lastActiveAt = event.params.timestamp
+  user.save()
 }
 
 export function handleCampaignFinalized(event: CampaignFinalized): void {
+  updateIndexingStatus(event.block, 'CampaignFinalized')
+
   let campaignId = event.params.campaignId.toHex()
   let campaign = Campaign.load(campaignId)
 
-  if (campaign != null) {
-    campaign.state = getCampaignStateString(BigInt.fromI32(event.params.finalState))
-    campaign.raised = event.params.totalRaised.toBigDecimal()
-    campaign.contributorCount = event.params.contributorCount
-    campaign.finalizedAt = event.params.timestamp
+  if (campaign) {
+    campaign.state = "FINALIZED"
+    campaign.raised = event.params.totalRaised
     campaign.updatedAt = event.params.timestamp
+    campaign.blockNumber = event.block.number
+    campaign.transaction = event.transaction.hash.toHex()
     campaign.save()
-  }
 
-  updateGlobalStats()
+    // Update global stats
+    let stats = GlobalStats.load("global")
+    if (stats) {
+      stats.activeCampaigns = stats.activeCampaigns.minus(BigInt.fromI32(1))
+      stats.updatedAt = event.block.timestamp
+      stats.save()
+    }
+  }
 }
 
 export function handleRewardsDistributed(event: RewardsDistributed): void {
+  updateIndexingStatus(event.block, 'RewardsDistributed')
+
   let campaignId = event.params.campaignId.toHex()
-  let rewardId = event.transaction.hash.toHex() + "-" + event.logIndex.toString()
-
-  let reward = new Reward(rewardId)
-  reward.campaign = campaignId
-  reward.recipient = event.params.token // Adjust based on actual event structure
-  reward.token = event.params.token
-  reward.amount = event.params.totalAmount.toBigDecimal()
-  reward.timestamp = event.params.timestamp
-  reward.blockNumber = event.block.number
-  reward.transactionHash = event.transaction.hash
-  reward.save()
-
-  // Update campaign rewards distributed
   let campaign = Campaign.load(campaignId)
-  if (campaign != null) {
-    campaign.rewardsDistributed = campaign.rewardsDistributed.plus(event.params.totalAmount.toBigDecimal())
+
+  if (campaign) {
+    campaign.updatedAt = event.params.timestamp
+    campaign.blockNumber = event.block.number
+    campaign.transaction = event.transaction.hash.toHex()
     campaign.save()
   }
 }
 
 export function handleContributionRefunded(event: ContributionRefunded): void {
-  let campaignId = event.params.campaignId.toHex()
-  let contributorAddress = event.params.contributor.toHex()
+  updateIndexingStatus(event.block, 'ContributionRefunded')
 
-  // Create a refund record as a negative contribution
-  let refundId = event.transaction.hash.toHex() + "-" + event.logIndex.toString()
-  let contribution = new Contribution(refundId)
+  let campaignId = event.params.campaignId.toHex()
+  let contributionId = campaignId + "-" + event.params.contributor.toHex() + "-refund-" + event.transaction.hash.toHex()
+
+  let contribution = new Contribution(contributionId)
   contribution.campaign = campaignId
-  contribution.amount = event.params.amount.toBigDecimal().neg()
+  contribution.contributor = event.params.contributor.toHex()
+  contribution.amount = event.params.amount.neg() // Negative amount for refund
   contribution.timestamp = event.params.timestamp
   contribution.blockNumber = event.block.number
-  contribution.transactionHash = event.transaction.hash
-  contribution.rewardEligible = false
-  contribution.rewardReceived = BigDecimal.fromString("0")
-  contribution.token = Address.zero()
+  contribution.transaction = event.transaction.hash.toHex()
   contribution.save()
+
+  // Update campaign
+  let campaign = Campaign.load(campaignId)
+  if (campaign) {
+    campaign.raised = campaign.raised.minus(event.params.amount)
+    campaign.updatedAt = event.params.timestamp
+    campaign.save()
+
+    // Update global stats
+    let stats = GlobalStats.load("global")
+    if (stats) {
+      stats.totalRaised = stats.totalRaised.minus(event.params.amount.toBigDecimal())
+      stats.updatedAt = event.block.timestamp
+      stats.save()
+    }
+  }
+
+  // Update user
+  let user = getOrCreateUser(event.params.contributor)
+  user.lastActiveAt = event.params.timestamp
+  user.save()
 }
 
 export function handleProtocolFeeCollected(event: ProtocolFeeCollected): void {
+  updateIndexingStatus(event.block, 'ProtocolFeeCollected')
+
   let campaignId = event.params.campaignId.toHex()
-  let feeId = event.transaction.hash.toHex() + "-" + event.logIndex.toString()
+  let campaign = Campaign.load(campaignId)
 
-  let protocolFee = new ProtocolFee(feeId)
-  protocolFee.campaign = campaignId
-  protocolFee.amount = event.params.amount.toBigDecimal()
-  protocolFee.timestamp = event.params.timestamp
-  protocolFee.blockNumber = event.block.number
-  protocolFee.transactionHash = event.transaction.hash
-  protocolFee.save()
-}
-
-function getFlowTypeString(flowType: BigInt): string {
-  let typeInt = flowType.toI32()
-  if (typeInt == 0) return "GRANT"
-  if (typeInt == 1) return "RAISE"
-  if (typeInt == 2) return "LEND"
-  if (typeInt == 3) return "LOAN"
-  if (typeInt == 4) return "SHARE"
-  if (typeInt == 5) return "POOL"
-  return "GRANT"
-}
-
-function getCampaignStateString(state: BigInt): string {
-  let stateInt = state.toI32()
-  if (stateInt == 0) return "CREATED"
-  if (stateInt == 1) return "ACTIVE"
-  if (stateInt == 2) return "PAUSED"
-  if (stateInt == 3) return "SUCCEEDED"
-  if (stateInt == 4) return "FAILED"
-  if (stateInt == 5) return "FINALIZED"
-  if (stateInt == 6) return "CANCELLED"
-  return "CREATED"
-}
-
-function updateGlobalStats(): void {
-  let stats = GlobalStats.load("global")
-  if (stats == null) {
-    stats = new GlobalStats("global")
-    stats.totalOrganizations = BigInt.fromI32(0)
-    stats.totalCampaigns = BigInt.fromI32(0)
-    stats.totalProposals = BigInt.fromI32(0)
-    stats.totalMembers = BigInt.fromI32(0)
-
+  if (campaign) {
+    campaign.updatedAt = event.params.timestamp
+    campaign.blockNumber = event.block.number
+    campaign.transaction = event.transaction.hash.toHex()
+    campaign.save()
   }
-  stats.updatedAt = BigInt.fromI32(0)
-  stats.save()
+
+  // Update global stats
+  let stats = GlobalStats.load("global")
+  if (stats) {
+    stats.totalTreasuryTransactions = stats.totalTreasuryTransactions.plus(BigInt.fromI32(1))
+    stats.updatedAt = event.block.timestamp
+    stats.save()
+  }
 }
