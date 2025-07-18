@@ -75,250 +75,306 @@
   ],
   "daos": [
     {
-      "id": "0x5549414131303445",
-      "idAlphanumeric": "UIAA104E",
+      "id": "0x52324f544a474e57",
+      "idAlphanumeric": "R2OTJGNW",
       "name": "Indie Game Collective",
       "description": "Independent game developers collaborating on projects",
       "members": [
         "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-        "0x976EA74026E726554dB657fA54763abd0C3a0aa9"
+        "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+        "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+        "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"
       ],
-      "treasury": "0x5749E82C05e05A565C8cF5D39378ba4F338A740c",
+      "treasury": "0x4aa8F97dAA15c941714848a0E75BCe1650dFCe66",
       "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
     },
     {
-      "id": "0x39333858375a3031",
-      "idAlphanumeric": "938X7Z01",
+      "id": "0x5744594254574958",
+      "idAlphanumeric": "WDYBTWIX",
       "name": "Esports Alliance",
       "description": "Professional esports organization",
       "members": [
         "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
-        "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"
+        "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+        "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+        "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
+        "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
       ],
-      "treasury": "0x8a77e071F5348E56380CC23a6F27a25E4E60F9e5",
+      "treasury": "0x529319d4D8E0DdFF9338Cea8E46C996d6E68bf21",
       "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
     },
     {
-      "id": "0x3148525046344933",
-      "idAlphanumeric": "1HRPF4I3",
+      "id": "0x564a4f5442414750",
+      "idAlphanumeric": "VJOTBAGP",
       "name": "NFT Gaming Hub",
       "description": "Blockchain gaming with NFT integration",
       "members": [
         "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
-        "0x976EA74026E726554dB657fA54763abd0C3a0aa9"
+        "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
+        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
       ],
-      "treasury": "0x454DE1eD42c63bfe27A6C8DF0776A5714B805c48",
+      "treasury": "0xC7f107A61B4e99B87A9FCf7D5cc925E910BEf2b3",
       "creator": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
     },
     {
-      "id": "0x425435513844574c",
-      "idAlphanumeric": "BT5Q8DWL",
+      "id": "0x5759414c5458364d",
+      "idAlphanumeric": "WYALTX6M",
       "name": "VR Game Studios",
       "description": "Virtual reality game development",
       "members": [
         "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
-        "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
+        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
       ],
-      "treasury": "0x9bF45e0F9E6180Fb5132505cf5b1850799088FbA",
+      "treasury": "0x0B5085f3FfCb9025AffccB01734f835FAAE7E2A3",
       "creator": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
     },
     {
-      "id": "0x4747303647574f4b",
-      "idAlphanumeric": "GG06GWOK",
+      "id": "0x3137485939415538",
+      "idAlphanumeric": "17HY9AU8",
       "name": "Mobile Gaming Guild",
       "description": "Mobile game developers and publishers",
       "members": [
         "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
-        "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
-        "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a"
+        "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+        "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
       ],
-      "treasury": "0x9B312d393b2086b0A70626F4574De3385911532C",
+      "treasury": "0x8f7912165fBE93eA81aB664fa845c3a27628243E",
       "creator": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
     }
   ],
   "campaigns": [
     {
-      "id": "0xca02fcfb6e7ca8ea71e476000d7ca98efcdff3f069acc89dc4da21650d3ee54e",
+      "id": "0xb97a21a26b45e1a094be2c5a7b99c38b5970208c3b05272ac53f56154f07aa4d",
       "title": "Fantasy RPG: Chronicles of Etheria",
-      "daoId": "0x425435513844574c",
-      "daoIdAlphanumeric": "BT5Q8DWL",
-      "daoName": "VR Game Studios",
+      "daoId": "0x5744594254574958",
+      "daoIdAlphanumeric": "WDYBTWIX",
+      "daoName": "Esports Alliance",
       "target": "25000",
-      "creator": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+      "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
     },
     {
-      "id": "0xd442caa2cd34ee1cd8eef32e9a99349c643375b87179480efb4f08392fa54747",
+      "id": "0xd46d3caea7c0d2ccd41aba9f0a394a1a743e3b18c0f2ea3e4d91cf76eb0ef00f",
       "title": "Cyberpunk Racing League",
-      "daoId": "0x4747303647574f4b",
-      "daoIdAlphanumeric": "GG06GWOK",
-      "daoName": "Mobile Gaming Guild",
+      "daoId": "0x52324f544a474e57",
+      "daoIdAlphanumeric": "R2OTJGNW",
+      "daoName": "Indie Game Collective",
       "target": "40000",
-      "creator": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+      "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
     },
     {
-      "id": "0x47392be34d75d16b0754e5fb8b3691c38af6fab79bd1b83a82ddb30edced535d",
+      "id": "0xf34902cd1e0444fff3d91b9f0539247b146c2f60ed9307bbcae668cdb8a37df1",
       "title": "VR Mystic Realms",
-      "daoId": "0x425435513844574c",
-      "daoIdAlphanumeric": "BT5Q8DWL",
+      "daoId": "0x5759414c5458364d",
+      "daoIdAlphanumeric": "WYALTX6M",
       "daoName": "VR Game Studios",
       "target": "60000",
-      "creator": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+      "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
     },
     {
-      "id": "0xe43d3ef763fc632f0b01d87a483c2e714c94eab27140a87afe5920e2c8205a71",
+      "id": "0x0376a042ec8494b43eb9807fa6110c106d076fba36e345f8583f0d26feb8ccc7",
       "title": "Retro Arcade Revival",
-      "daoId": "0x4747303647574f4b",
-      "daoIdAlphanumeric": "GG06GWOK",
-      "daoName": "Mobile Gaming Guild",
+      "daoId": "0x564a4f5442414750",
+      "daoIdAlphanumeric": "VJOTBAGP",
+      "daoName": "NFT Gaming Hub",
       "target": "15000",
-      "creator": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+      "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
     },
     {
-      "id": "0x1d330b6de9380603f156ca5b4c12516c940e957eb1cd9cd1ed178133248f50f9",
+      "id": "0x5c48462ad3ae3d0173703c7244a0bc8b1a58943b61c2e55061a306a6bba3a9c8",
       "title": "Mobile Strategy Empire",
-      "daoId": "0x39333858375a3031",
-      "daoIdAlphanumeric": "938X7Z01",
+      "daoId": "0x5744594254574958",
+      "daoIdAlphanumeric": "WDYBTWIX",
       "daoName": "Esports Alliance",
       "target": "30000",
       "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
     },
     {
-      "id": "0xc42035ae1f9068bb5b0a62c27aaabab969decef277a615fb3a910f2b5869d58c",
+      "id": "0x7908cf33cade29b80fc321125349ff7fc83e3f8f0354c9523cb0b6f960935cd8",
       "title": "Indie Puzzle Adventure",
-      "daoId": "0x3148525046344933",
-      "daoIdAlphanumeric": "1HRPF4I3",
-      "daoName": "NFT Gaming Hub",
+      "daoId": "0x5744594254574958",
+      "daoIdAlphanumeric": "WDYBTWIX",
+      "daoName": "Esports Alliance",
       "target": "20000",
-      "creator": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+      "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
     },
     {
-      "id": "0xf3d0a21dec6bfaa5490d159dc912fc03ea16cd51f8f896a6e711e8d645413a91",
+      "id": "0x4d7efeabe88fc2f2f5afc8d403123005bc7916558d51b20d18ea143b87abfd42",
       "title": "Multiplayer Battle Arena",
-      "daoId": "0x4747303647574f4b",
-      "daoIdAlphanumeric": "GG06GWOK",
-      "daoName": "Mobile Gaming Guild",
+      "daoId": "0x5744594254574958",
+      "daoIdAlphanumeric": "WDYBTWIX",
+      "daoName": "Esports Alliance",
       "target": "50000",
-      "creator": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+      "creator": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
     },
     {
-      "id": "0xac2003ac2f5d47efc9793c22f93ee82f2a60e127efe825b720867d6fee5ab3ab",
+      "id": "0x97b263d5d106836680ee44ea3c07ff29ac20e3f751f6c892c9f2ef83852cf0a4",
       "title": "Space Exploration Sim",
-      "daoId": "0x4747303647574f4b",
-      "daoIdAlphanumeric": "GG06GWOK",
+      "daoId": "0x3137485939415538",
+      "daoIdAlphanumeric": "17HY9AU8",
       "daoName": "Mobile Gaming Guild",
       "target": "35000",
-      "creator": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+      "creator": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
     }
   ],
-  "proposals": [],
+  "proposals": [
+    {
+      "id": "R2OTJGNW-P-000",
+      "title": "Increase Marketing Budget",
+      "daoId": "0x52324f544a474e57",
+      "daoIdAlphanumeric": "R2OTJGNW",
+      "daoName": "Indie Game Collective",
+      "proposer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    },
+    {
+      "id": "R2OTJGNW-P-001",
+      "title": "Add Developer Role",
+      "daoId": "0x52324f544a474e57",
+      "daoIdAlphanumeric": "R2OTJGNW",
+      "daoName": "Indie Game Collective",
+      "proposer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    },
+    {
+      "id": "WDYBTWIX-P-002",
+      "title": "Partnership Proposal",
+      "daoId": "0x5744594254574958",
+      "daoIdAlphanumeric": "WDYBTWIX",
+      "daoName": "Esports Alliance",
+      "proposer": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+    },
+    {
+      "id": "WDYBTWIX-P-003",
+      "title": "Community Event Funding",
+      "daoId": "0x5744594254574958",
+      "daoIdAlphanumeric": "WDYBTWIX",
+      "daoName": "Esports Alliance",
+      "proposer": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+    },
+    {
+      "id": "WYALTX6M-P-004",
+      "title": "Treasury Allocation",
+      "daoId": "0x5759414c5458364d",
+      "daoIdAlphanumeric": "WYALTX6M",
+      "daoName": "VR Game Studios",
+      "proposer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    },
+    {
+      "id": "R2OTJGNW-P-005",
+      "title": "Governance Update",
+      "daoId": "0x52324f544a474e57",
+      "daoIdAlphanumeric": "R2OTJGNW",
+      "daoName": "Indie Game Collective",
+      "proposer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    }
+  ],
   "profiles": [
     {
-      "id": "0x52343748564c444f",
-      "organizationId": "0x5549414131303445",
+      "id": "0x58344d4e4c4d4255",
+      "organizationId": "0x52324f544a474e57",
       "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
       "name": "Alice Chen",
       "metadata": "ipfs://QmProfile0",
-      "experiencePoints": 251,
-      "reputationPoints": 174
+      "experiencePoints": 435,
+      "reputationPoints": 154
     },
     {
-      "id": "0x4144364232525457",
-      "organizationId": "0x39333858375a3031",
+      "id": "0x36374b4856444b59",
+      "organizationId": "0x5744594254574958",
       "address": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
       "name": "Bob Martinez",
       "metadata": "ipfs://QmProfile1",
-      "experiencePoints": 503,
-      "reputationPoints": 235
+      "experiencePoints": 465,
+      "reputationPoints": 93
     },
     {
-      "id": "0x4854334749524a32",
-      "organizationId": "0x3148525046344933",
+      "id": "0x305439424c5a3842",
+      "organizationId": "0x564a4f5442414750",
       "address": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
       "name": "Carol Johnson",
       "metadata": "ipfs://QmProfile2",
-      "experiencePoints": 211,
-      "reputationPoints": 161
+      "experiencePoints": 384,
+      "reputationPoints": 81
     },
     {
-      "id": "0x4331503257543043",
-      "organizationId": "0x425435513844574c",
+      "id": "0x50385946434d5135",
+      "organizationId": "0x5744594254574958",
       "address": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
       "name": "David Kim",
       "metadata": "ipfs://QmProfile3",
-      "experiencePoints": 422,
-      "reputationPoints": 138
+      "experiencePoints": 230,
+      "reputationPoints": 223
     },
     {
-      "id": "0x593743455342494f",
-      "organizationId": "0x4747303647574f4b",
+      "id": "0x5159574839415a44",
+      "organizationId": "0x52324f544a474e57",
       "address": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
       "name": "Eva Rodriguez",
       "metadata": "ipfs://QmProfile4",
-      "experiencePoints": 391,
-      "reputationPoints": 200
+      "experiencePoints": 517,
+      "reputationPoints": 225
     },
     {
-      "id": "0x5949394255594d45",
-      "organizationId": "0x5549414131303445",
+      "id": "0x4e484b3933573751",
+      "organizationId": "0x52324f544a474e57",
       "address": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
       "name": "Frank Wilson",
       "metadata": "ipfs://QmProfile5",
-      "experiencePoints": 462,
-      "reputationPoints": 236
+      "experiencePoints": 170,
+      "reputationPoints": 210
     },
     {
-      "id": "0x5651515850503755",
-      "organizationId": "0x5549414131303445",
+      "id": "0x435757464e5a5643",
+      "organizationId": "0x52324f544a474e57",
       "address": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
       "name": "Grace Liu",
       "metadata": "ipfs://QmProfile6",
-      "experiencePoints": 573,
-      "reputationPoints": 127
+      "experiencePoints": 445,
+      "reputationPoints": 230
     },
     {
-      "id": "0x375345584734564c",
-      "organizationId": "0x425435513844574c",
+      "id": "0x525454314d4f5234",
+      "organizationId": "0x5744594254574958",
       "address": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
       "name": "Henry Brown",
       "metadata": "ipfs://QmProfile7",
-      "experiencePoints": 438,
-      "reputationPoints": 174
+      "experiencePoints": 243,
+      "reputationPoints": 69
     },
     {
-      "id": "0x393641314c473437",
-      "organizationId": "0x39333858375a3031",
+      "id": "0x4536554b4d563741",
+      "organizationId": "0x5744594254574958",
       "address": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
       "name": "Iris Taylor",
       "metadata": "ipfs://QmProfile8",
-      "experiencePoints": 570,
-      "reputationPoints": 113
+      "experiencePoints": 569,
+      "reputationPoints": 68
     },
     {
-      "id": "0x44464d584148315a",
-      "organizationId": "0x5549414131303445",
+      "id": "0x53395342454b4538",
+      "organizationId": "0x3137485939415538",
       "address": "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
       "name": "Jack Davis",
       "metadata": "ipfs://QmProfile9",
-      "experiencePoints": 192,
-      "reputationPoints": 147
+      "experiencePoints": 311,
+      "reputationPoints": 138
     },
     {
-      "id": "0x524936524a503044",
-      "organizationId": "0x5549414131303445",
+      "id": "0x3146594746434d4f",
+      "organizationId": "0x5744594254574958",
       "address": "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
       "name": "Kate Miller",
       "metadata": "ipfs://QmProfile10",
-      "experiencePoints": 195,
-      "reputationPoints": 186
+      "experiencePoints": 547,
+      "reputationPoints": 86
     },
     {
-      "id": "0x59475256514d5556",
-      "organizationId": "0x4747303647574f4b",
+      "id": "0x374d56414d453634",
+      "organizationId": "0x564a4f5442414750",
       "address": "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
       "name": "Leo Zhang",
       "metadata": "ipfs://QmProfile11",
-      "experiencePoints": 381,
-      "reputationPoints": 128
+      "experiencePoints": 426,
+      "reputationPoints": 84
     }
   ],
   "contracts": {
@@ -327,5 +383,5 @@
     "flow": "0xB9d9e972100a1dD01cd441774b45b5821e136043",
     "signal": "0x707531c9999AaeF9232C8FEfBA31FBa4cB78d84a"
   },
-  "timestamp": "2025-07-18T21:48:20.571Z"
+  "timestamp": "2025-07-18T23:00:39.400Z"
 }

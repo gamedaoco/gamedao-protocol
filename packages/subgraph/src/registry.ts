@@ -33,6 +33,10 @@ export function handleModuleRegistered(event: ModuleRegistered): void {
   // Create transaction entity
   let transaction = new Transaction(event.transaction.hash.toHex())
   transaction.hash = event.transaction.hash
+  transaction.from = event.transaction.from
+  transaction.to = event.transaction.to
+  transaction.gasUsed = BigInt.fromI32(0) // Default value
+  transaction.gasPrice = BigInt.fromI32(0) // Default value
   transaction.blockNumber = event.block.number
   transaction.timestamp = event.block.timestamp
   transaction.save()
@@ -50,7 +54,7 @@ export function handleModuleRegistered(event: ModuleRegistered): void {
   registration.save()
 
   // Update global stats
-  updateGlobalStats()
+  updateGlobalStats(event.block.timestamp)
 }
 
 export function handleModuleEnabled(event: ModuleEnabled): void {
@@ -63,7 +67,7 @@ export function handleModuleEnabled(event: ModuleEnabled): void {
     module.save()
   }
 
-  updateGlobalStats()
+  updateGlobalStats(event.block.timestamp)
 }
 
 export function handleModuleDisabled(event: ModuleDisabled): void {
@@ -76,13 +80,17 @@ export function handleModuleDisabled(event: ModuleDisabled): void {
     module.save()
   }
 
-  updateGlobalStats()
+  updateGlobalStats(event.block.timestamp)
 }
 
 export function handleModuleUpgraded(event: ModuleUpgraded): void {
   // Create transaction entity
   let transaction = new Transaction(event.transaction.hash.toHex())
   transaction.hash = event.transaction.hash
+  transaction.from = event.transaction.from
+  transaction.to = event.transaction.to
+  transaction.gasUsed = BigInt.fromI32(0) // Default value
+  transaction.gasPrice = BigInt.fromI32(0) // Default value
   transaction.blockNumber = event.block.number
   transaction.timestamp = event.block.timestamp
   transaction.save()
@@ -111,7 +119,7 @@ export function handleModuleUpgraded(event: ModuleUpgraded): void {
   }
 }
 
-function updateGlobalStats(): void {
+function updateGlobalStats(timestamp: BigInt): void {
   let stats = GlobalStats.load("global")
   if (stats == null) {
     stats = new GlobalStats("global")
@@ -129,6 +137,9 @@ function updateGlobalStats(): void {
     stats.totalProfiles = BigInt.fromI32(0)
     stats.verifiedProfiles = BigInt.fromI32(0)
     stats.totalAchievements = BigInt.fromI32(0)
+    stats.totalTokenTransfers = BigInt.fromI32(0)
+    stats.totalTreasuryTransactions = BigInt.fromI32(0)
+    stats.updatedAt = BigInt.fromI32(0)
   }
 
   // Count total and active modules
@@ -136,7 +147,7 @@ function updateGlobalStats(): void {
   // For now, we'll increment counters
   stats.totalModules = stats.totalModules.plus(BigInt.fromI32(1))
   stats.activeModules = stats.activeModules.plus(BigInt.fromI32(1))
-  stats.updatedAt = BigInt.fromI32(0) // Will be set by block timestamp
+  stats.updatedAt = timestamp
 
   stats.save()
 }
