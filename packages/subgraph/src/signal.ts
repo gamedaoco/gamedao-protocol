@@ -72,7 +72,8 @@ function getOrCreateUser(address: Bytes): User {
 export function handleProposalCreated(event: ProposalCreated): void {
   updateIndexingStatus(event.block, 'ProposalCreated')
 
-  let proposalId = event.params.hierarchicalId.toString()
+  // For ProposalCreated, hierarchicalId is string type, use directly
+  let proposalId = event.params.hierarchicalId
   let proposal = new Proposal(proposalId)
 
   proposal.organization = getOrganizationIdString(event.params.organizationId)
@@ -156,7 +157,7 @@ export function handleProposalCreated(event: ProposalCreated): void {
 export function handleVoteCast(event: VoteCast): void {
   updateIndexingStatus(event.block, 'VoteCast')
 
-  let proposalId = event.params.hierarchicalId.toString()
+  let proposalId = event.params.hierarchicalId
   let voteId = proposalId + "-" + event.params.voter.toHex()
 
   let vote = new Vote(voteId)
@@ -205,7 +206,7 @@ export function handleVoteCast(event: VoteCast): void {
 export function handleProposalExecuted(event: ProposalExecuted): void {
   updateIndexingStatus(event.block, 'ProposalExecuted')
 
-  let proposalId = event.params.hierarchicalId.toString()
+  let proposalId = event.params.hierarchicalId.toHex()
   let proposal = Proposal.load(proposalId)
 
   if (proposal) {
@@ -231,7 +232,7 @@ export function handleProposalExecuted(event: ProposalExecuted): void {
 export function handleProposalCanceled(event: ProposalCanceled): void {
   updateIndexingStatus(event.block, 'ProposalCanceled')
 
-  let proposalId = event.params.hierarchicalId.toString()
+  let proposalId = event.params.hierarchicalId.toHex()
   let proposal = Proposal.load(proposalId)
 
   if (proposal) {
@@ -303,7 +304,7 @@ export function handleVotingPowerUndelegated(event: VotingPowerUndelegated): voi
 export function handleConvictionVoteCast(event: ConvictionVoteCast): void {
   updateIndexingStatus(event.block, 'ConvictionVoteCast')
 
-  let proposalId = event.params.hierarchicalId.toString()
+  let proposalId = event.params.hierarchicalId.toHex()
   let voteId = proposalId + "-" + event.params.voter.toHex()
 
   let vote = new Vote(voteId)
