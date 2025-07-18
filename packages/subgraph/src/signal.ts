@@ -206,7 +206,7 @@ export function handleVoteCast(event: VoteCast): void {
 export function handleProposalExecuted(event: ProposalExecuted): void {
   updateIndexingStatus(event.block, 'ProposalExecuted')
 
-  let proposalId = event.params.hierarchicalId.toHex()
+  let proposalId = event.params.hierarchicalId.toHexString()
   let proposal = Proposal.load(proposalId)
 
   if (proposal) {
@@ -232,7 +232,7 @@ export function handleProposalExecuted(event: ProposalExecuted): void {
 export function handleProposalCanceled(event: ProposalCanceled): void {
   updateIndexingStatus(event.block, 'ProposalCanceled')
 
-  let proposalId = event.params.hierarchicalId.toHex()
+  let proposalId = event.params.hierarchicalId.toHexString()
   let proposal = Proposal.load(proposalId)
 
   if (proposal) {
@@ -304,7 +304,7 @@ export function handleVotingPowerUndelegated(event: VotingPowerUndelegated): voi
 export function handleConvictionVoteCast(event: ConvictionVoteCast): void {
   updateIndexingStatus(event.block, 'ConvictionVoteCast')
 
-  let proposalId = event.params.hierarchicalId.toHex()
+  let proposalId = event.params.hierarchicalId.toHexString()
   let voteId = proposalId + "-" + event.params.voter.toHex()
 
   let vote = new Vote(voteId)
