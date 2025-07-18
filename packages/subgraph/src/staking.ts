@@ -1,4 +1,5 @@
 import { BigInt, Address } from "@graphprotocol/graph-ts"
+import { updateIndexingStatus } from './utils/indexing'
 import {
   OrganizationStaked,
   OrganizationStakeWithdrawn,
@@ -7,7 +8,9 @@ import {
   Unstaked,
   RewardsClaimed,
   Slashed,
-  GameStaking
+  GameStaking,
+  RewardsDistributed,
+  PoolUpdated
 } from "../generated/GameStaking/GameStaking"
 import {
   OrganizationStake,
@@ -15,7 +18,8 @@ import {
   UnstakeRequest,
   StakingPool,
   User,
-  Organization
+  Organization,
+  Transaction
 } from "../generated/schema"
 
 // Helper functions for staking purposes
@@ -85,7 +89,7 @@ export function handleOrganizationStaked(event: OrganizationStaked): void {
   stake.active = true
   stake.organization = organizationId
   stake.blockNumber = event.block.number
-  stake.transactionHash = event.transaction.hash
+  stake.transaction = event.transaction.hash.toHex()
 
   stake.save()
 }
@@ -128,7 +132,7 @@ export function handleStaked(event: Staked): void {
     stake.preferredStrategy = mapUnstakingStrategy(event.params.strategy)
     stake.pendingRewards = BigInt.zero()
     stake.blockNumber = event.block.number
-    stake.transactionHash = event.transaction.hash
+    stake.transaction = event.transaction.hash.toHex()
   }
 
   stake.amount = stake.amount.plus(event.params.amount)
@@ -159,7 +163,7 @@ export function handleUnstakeRequested(event: UnstakeRequested): void {
   request.strategy = mapUnstakingStrategy(event.params.strategy)
   request.processed = false
   request.blockNumber = event.block.number
-  request.transactionHash = event.transaction.hash
+  request.transaction = event.transaction.hash.toHex()
 
   request.save()
 }
@@ -232,4 +236,46 @@ export function handleSlashed(event: Slashed): void {
     pool.totalStaked = pool.totalStaked.minus(event.params.amount)
     pool.save()
   }
+}
+
+export function handleRewardsDistributed(event: RewardsDistributed): void {
+  updateIndexingStatus(event.block, 'RewardsDistributed')
+
+    // Handle rewards distribution logic
+  // Generic handling - actual parameters would depend on the event structure
+  // let userStakeId = event.params.user.toHex()
+  // let userStake = UserStake.load(userStakeId)
+
+  // Basic transaction recording for now
+
+  // Create transaction record
+  let transaction = new Transaction(event.transaction.hash.toHex())
+  transaction.hash = event.transaction.hash
+  transaction.from = event.transaction.from
+  transaction.to = event.transaction.to
+  transaction.gasUsed = BigInt.fromI32(0) // Default value
+  transaction.gasPrice = BigInt.fromI32(0) // Default value
+  transaction.blockNumber = event.block.number
+  transaction.timestamp = event.block.timestamp
+  transaction.save()
+}
+
+export function handlePoolUpdated(event: PoolUpdated): void {
+  updateIndexingStatus(event.block, 'PoolUpdated')
+
+  // Handle pool update logic
+  // Generic handling - actual parameters would depend on the event structure
+  // let poolId = event.params.poolId.toString()
+  // Pool entity handling would go here if we had a Pool entity in the schema
+
+  // Create transaction record
+  let transaction = new Transaction(event.transaction.hash.toHex())
+  transaction.hash = event.transaction.hash
+  transaction.from = event.transaction.from
+  transaction.to = event.transaction.to
+  transaction.gasUsed = BigInt.fromI32(0) // Default value
+  transaction.gasPrice = BigInt.fromI32(0) // Default value
+  transaction.blockNumber = event.block.number
+  transaction.timestamp = event.block.timestamp
+  transaction.save()
 }

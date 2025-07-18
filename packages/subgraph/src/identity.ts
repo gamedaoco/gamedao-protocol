@@ -52,24 +52,13 @@ export function handleProfileCreated(event: ProfileCreated): void {
     username = metadata
   }
 
-  // Set profile data
+  // Set profile data according to schema
+  profile.user = memberId
   profile.organization = organizationId
-  profile.owner = memberId
-  profile.username = username
-  profile.bio = ''
-  profile.avatar = ''
-  profile.website = ''
-  profile.verificationLevel = 'NONE'
-  profile.experience = BigInt.fromI32(0)
-  profile.reputation = BigInt.fromI32(1000) // Default reputation
-  profile.trustScore = BigInt.fromI32(0)
-  profile.convictionScore = BigInt.fromI32(0)
-  profile.achievementCount = BigInt.fromI32(0)
-  profile.feedbackCount = BigInt.fromI32(0)
-  profile.positiveFeedbacks = BigInt.fromI32(0)
-  profile.negativeFeedbacks = BigInt.fromI32(0)
+  profile.metadata = metadata
   profile.createdAt = event.params.timestamp
-  profile.updatedAt = event.params.timestamp
+  profile.blockNumber = event.block.number
+  profile.transaction = event.transaction.hash.toHex()
 
   profile.save()
 
@@ -91,11 +80,9 @@ export function handleProfileUpdated(event: ProfileUpdated): void {
 
   // Update metadata
   let metadata = event.params.metadata
-  if (metadata.length > 0 && metadata.length < 50) {
-    profile.username = metadata
-  }
-
-  profile.updatedAt = event.params.timestamp
+  profile.metadata = metadata
+  profile.blockNumber = event.block.number
+  profile.transaction = event.transaction.hash.toHex()
   profile.save()
 
   log.info('Profile updated: {}', [profileId])
@@ -117,9 +104,47 @@ export function handleProfileVerified(event: ProfileVerified): void {
   else if (event.params.level == 2) verificationLevel = 'ENHANCED'
   else if (event.params.level == 3) verificationLevel = 'PREMIUM'
 
-  profile.verificationLevel = verificationLevel
-  profile.updatedAt = event.block.timestamp
+  // Store verification level in metadata for now
+  profile.metadata = verificationLevel
+  profile.blockNumber = event.block.number
+  profile.transaction = event.transaction.hash.toHex()
   profile.save()
 
   log.info('Profile verified: {} with level: {}', [profileId, verificationLevel])
 }
+
+// export function handleNameClaimed(event: NameClaimed): void {
+//   updateIndexingStatus(event.block, 'NameClaimed')
+
+//   // Handle name claiming logic
+//   // Generic handling - actual parameters would depend on the event structure
+
+//   // Create transaction record
+//   let transaction = new Transaction(event.transaction.hash.toHex())
+//   transaction.hash = event.transaction.hash
+//   transaction.from = event.transaction.from
+//   transaction.to = event.transaction.to
+//   transaction.gasUsed = BigInt.fromI32(0) // Default value
+//   transaction.gasPrice = BigInt.fromI32(0) // Default value
+//   transaction.blockNumber = event.block.number
+//   transaction.timestamp = event.block.timestamp
+//   transaction.save()
+// }
+
+// export function handleNameReleased(event: NameReleased): void {
+//   updateIndexingStatus(event.block, 'NameReleased')
+
+//   // Handle name release logic
+//   // Generic handling - actual parameters would depend on the event structure
+
+//   // Create transaction record
+//   let transaction = new Transaction(event.transaction.hash.toHex())
+//   transaction.hash = event.transaction.hash
+//   transaction.from = event.transaction.from
+//   transaction.to = event.transaction.to
+//   transaction.gasUsed = BigInt.fromI32(0) // Default value
+//   transaction.gasPrice = BigInt.fromI32(0) // Default value
+//   transaction.blockNumber = event.block.number
+//   transaction.timestamp = event.block.timestamp
+//   transaction.save()
+// }

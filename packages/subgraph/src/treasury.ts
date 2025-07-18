@@ -57,7 +57,7 @@ export function handleFundsDeposited(event: FundsDeposited): void {
   treasuryTransaction.timestamp = event.params.timestamp
   treasuryTransaction.transactionType = 'DEPOSIT'
   treasuryTransaction.blockNumber = event.block.number
-  treasuryTransaction.transactionHash = event.transaction.hash
+  treasuryTransaction.transaction = event.transaction.hash.toHex()
 
   treasuryTransaction.save()
 
@@ -71,8 +71,8 @@ export function handleFundsDeposited(event: FundsDeposited): void {
   transaction.hash = event.transaction.hash
   transaction.from = event.transaction.from
   transaction.to = event.transaction.to
-  transaction.gasUsed = event.transaction.gasUsed
-  transaction.gasPrice = event.transaction.gasPrice
+  transaction.gasUsed = BigInt.fromI32(0) // Default value
+  transaction.gasPrice = BigInt.fromI32(0) // Default value
   transaction.blockNumber = event.block.number
   transaction.timestamp = event.block.timestamp
   transaction.save()
@@ -137,7 +137,7 @@ export function handleFundsSpent(event: FundsSpent): void {
   treasuryTransaction.transactionType = 'SPEND'
   treasuryTransaction.spender = spenderId
   treasuryTransaction.blockNumber = event.block.number
-  treasuryTransaction.transactionHash = event.transaction.hash
+  treasuryTransaction.transaction = event.transaction.hash.toHex()
 
   treasuryTransaction.save()
 

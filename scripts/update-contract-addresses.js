@@ -45,12 +45,13 @@ const NETWORKS = {
   }
 };
 
-const CONTRACTS = ['REGISTRY', 'CONTROL', 'FLOW', 'SIGNAL', 'SENSE'];
+const CONTRACTS = ['REGISTRY', 'CONTROL', 'FLOW', 'SIGNAL', 'SENSE', 'GAME_TOKEN', 'USDC_TOKEN'];
 
 // File paths
 const ENV_FILE = path.join(process.cwd(), '.env.local');
 const ENV_TEMPLATE_FILE = path.join(process.cwd(), 'env.template');
 const DEPLOYMENT_DIR = path.join(process.cwd(), 'packages/contracts-solidity/deployments');
+const SHARED_ADDRESSES_FILE = path.join(process.cwd(), 'packages/shared/src/addresses.ts');
 
 /**
  * Create readline interface for user input
@@ -90,6 +91,8 @@ function readDeploymentArtifacts(network) {
         FLOW: deploymentData.flow,
         SIGNAL: deploymentData.signal,
         SENSE: deploymentData.sense,
+        GAME_TOKEN: deploymentData.gameToken || deploymentData.GameToken || deploymentData.MockGameToken,
+        USDC_TOKEN: deploymentData.usdc || deploymentData.MockUSDC,
       };
 
       // Filter out undefined addresses
@@ -216,6 +219,48 @@ function displayAddresses(addresses, network) {
   console.log(`\n🔧 Contract addresses for ${NETWORKS[network].name}:`);
   for (const [contract, address] of Object.entries(addresses)) {
     console.log(`   ${contract.padEnd(10)}: ${address}`);
+  }
+}
+
+/**
+ * Update addresses in shared package
+ */
+function updateSharedAddresses(addresses, network) {
+  if (!fs.existsSync(SHARED_ADDRESSES_FILE)) {
+    console.log('❌ Shared addresses file not found, skipping shared package update');
+    return;
+  }
+
+  try {
+    let content = fs.readFileSync(SHARED_ADDRESSES_FILE, 'utf8');
+    const addressesKey = network === 'local' ? 'LOCAL_ADDRESSES' :
+                        network === 'sepolia' ? 'TESTNET_ADDRESSES' :
+                        'MAINNET_ADDRESSES';
+
+    for (const [contract, address] of Object.entries(addresses)) {
+      const regex = new RegExp(`("${contract}":\\s*)"[^"]*"`, 'g');
+      const replacement = `$1"${address}"`;
+      content = content.replace(regex, replacement);
+    }
+
+    fs.writeFileSync(SHARED_ADDRESSES_FILE, content);
+    console.log(`✅ Updated shared package addresses for ${NETWORKS[network].name}`);
+  } catch (error) {
+    console.error(`❌ Error updating shared addresses: ${error.message}`);
+  }
+}
+
+/**
+ * Rebuild shared package after address update
+ */
+function rebuildSharedPackage() {
+  try {
+    const { execSync } = require('child_process');
+    console.log('🔄 Rebuilding shared package...');
+    execSync('cd packages/shared && npm run build', { stdio: 'inherit' });
+    console.log('✅ Shared package rebuilt successfully');
+  } catch (error) {
+    console.error(`❌ Error rebuilding shared package: ${error.message}`);
   }
 }
 

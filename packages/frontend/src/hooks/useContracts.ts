@@ -24,7 +24,7 @@ export function useContracts() {
     identity: contracts.IDENTITY,
     membership: contracts.MEMBERSHIP,
     staking: contracts.STAKING,
-    gameStaking: contracts.GAME_STAKING,
+    treasury: contracts.TREASURY,
     gameToken: contracts.GAME_TOKEN,
     usdcToken: contracts.USDC_TOKEN,
   }
@@ -45,7 +45,7 @@ export function useContractsValid() {
   const { contracts } = useContracts()
 
   const isValid = useMemo(() => {
-    const requiredContracts = ['REGISTRY', 'CONTROL', 'FLOW', 'SIGNAL', 'SENSE', 'IDENTITY', 'MEMBERSHIP', 'GAME_STAKING', 'GAME_TOKEN'] as const
+    const requiredContracts = ['REGISTRY', 'CONTROL', 'FLOW', 'SIGNAL', 'SENSE', 'IDENTITY', 'MEMBERSHIP', 'STAKING', 'GAME_TOKEN'] as const
 
     return requiredContracts.every(contract => {
       const address = contracts[contract]

@@ -69,12 +69,30 @@ function updateABIs() {
 function updateAddresses() {
   console.log('📍 Updating contract addresses...');
 
-  if (!fs.existsSync(ADDRESSES_FILE)) {
-    console.warn('⚠️  No deployment addresses found');
-    return;
+  // Default address template with all required keys
+  const defaultAddresses = {
+    REGISTRY: "",
+    CONTROL: "",
+    MEMBERSHIP: "",
+    FLOW: "",
+    SIGNAL: "",
+    SENSE: "",
+    IDENTITY: "",
+    STAKING: "",
+    TREASURY: "",
+  };
+
+  let deploymentAddresses = {};
+  if (fs.existsSync(ADDRESSES_FILE)) {
+    deploymentAddresses = JSON.parse(fs.readFileSync(ADDRESSES_FILE, 'utf8'));
+  } else {
+    console.warn('⚠️  No deployment addresses found, using defaults');
   }
 
-  const deploymentAddresses = JSON.parse(fs.readFileSync(ADDRESSES_FILE, 'utf8'));
+  // Helper function to merge addresses with defaults
+  function mergeWithDefaults(addresses) {
+    return { ...defaultAddresses, ...addresses };
+  }
 
   // Update addresses file
   const addressesContent = `// Auto-generated contract addresses from deployment
@@ -94,13 +112,13 @@ export interface NetworkAddresses {
 }
 
 // Local/development addresses (hardhat network)
-export const LOCAL_ADDRESSES: NetworkAddresses = ${JSON.stringify(deploymentAddresses.localhost || {}, null, 2)};
+export const LOCAL_ADDRESSES: NetworkAddresses = ${JSON.stringify(mergeWithDefaults(deploymentAddresses.localhost || {}), null, 2)};
 
 // Testnet addresses (Sepolia)
-export const TESTNET_ADDRESSES: NetworkAddresses = ${JSON.stringify(deploymentAddresses.sepolia || {}, null, 2)};
+export const TESTNET_ADDRESSES: NetworkAddresses = ${JSON.stringify(mergeWithDefaults(deploymentAddresses.sepolia || {}), null, 2)};
 
 // Mainnet addresses
-export const MAINNET_ADDRESSES: NetworkAddresses = ${JSON.stringify(deploymentAddresses.mainnet || {}, null, 2)};
+export const MAINNET_ADDRESSES: NetworkAddresses = ${JSON.stringify(mergeWithDefaults(deploymentAddresses.mainnet || {}), null, 2)};
 
 // Network configuration
 export const NETWORK_CONFIG = {

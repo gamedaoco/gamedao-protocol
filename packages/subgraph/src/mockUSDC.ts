@@ -63,7 +63,7 @@ export function handleUSDCTransfer(event: Transfer): void {
   transfer.amount = event.params.value.toBigDecimal()
   transfer.timestamp = event.block.timestamp
   transfer.blockNumber = event.block.number
-  transfer.transactionHash = event.transaction.hash
+  transfer.transaction = event.transaction.hash.toHex()
 
   transfer.save()
 
@@ -72,8 +72,8 @@ export function handleUSDCTransfer(event: Transfer): void {
   transaction.hash = event.transaction.hash
   transaction.from = event.transaction.from
   transaction.to = event.transaction.to
-  transaction.gasUsed = event.transaction.gasUsed
-  transaction.gasPrice = event.transaction.gasPrice
+  transaction.gasUsed = BigInt.fromI32(0) // Default value
+  transaction.gasPrice = BigInt.fromI32(0) // Default value
   transaction.blockNumber = event.block.number
   transaction.timestamp = event.block.timestamp
   transaction.save()

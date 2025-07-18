@@ -11,11 +11,15 @@
     "remove-local": "graph remove --node http://localhost:8020/ gamedao/protocol",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 gamedao/protocol --version-label v1.0.0",
     "test": "graph test",
-    "prepare": "npm run codegen && npm run build"
+    "prepare": "npm run codegen && npm run build",
+    "copy-abis": "node scripts/copy-abis.js",
+    "update-addresses": "node scripts/update-addresses.js",
+    "prebuild": "npm run copy-abis && npm run update-addresses && npm run codegen"
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "^0.56.0",
-    "@graphprotocol/graph-ts": "^0.31.0"
+    "@graphprotocol/graph-cli": "0.56.0",
+    "@graphprotocol/graph-ts": "0.32.0",
+    "@gamedao/evm": "workspace:*"
   },
   "devDependencies": {
     "matchstick-as": "^0.5.0"

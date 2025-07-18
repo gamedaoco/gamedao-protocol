@@ -102,7 +102,7 @@ async function main() {
 
       if (fs.existsSync(deploymentFile)) {
         deploymentData = JSON.parse(fs.readFileSync(deploymentFile, 'utf8'))
-        registryAddress = deploymentData.registry
+        registryAddress = deploymentData.contracts?.Registry
 
         if (registryAddress) {
           console.log(`✅ Found registry address from deployment file: ${registryAddress}`)
@@ -126,7 +126,7 @@ async function main() {
   console.log(`📋 Using Registry: ${registryAddress}`)
 
     // Get contracts
-  const registry = await ethers.getContractAt("GameDAORegistry", registryAddress)
+  const registry = await ethers.getContractAt("Registry", registryAddress)
 
   // Module IDs need to be hashed
   const CONTROL_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("CONTROL"))
@@ -134,31 +134,38 @@ async function main() {
   const SIGNAL_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("SIGNAL"))
   const SENSE_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("SENSE"))
   const IDENTITY_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("IDENTITY"))
+  const MEMBERSHIP_MODULE_ID = ethers.keccak256(ethers.toUtf8Bytes("MEMBERSHIP"))
 
   const controlAddress = await registry.getModule(CONTROL_MODULE_ID)
   const flowAddress = await registry.getModule(FLOW_MODULE_ID)
   const signalAddress = await registry.getModule(SIGNAL_MODULE_ID)
   const senseAddress = await registry.getModule(SENSE_MODULE_ID)
   const identityAddress = await registry.getModule(IDENTITY_MODULE_ID)
+  const membershipAddress = await registry.getModule(MEMBERSHIP_MODULE_ID)
 
   const control = await ethers.getContractAt("Control", controlAddress)
   const flow = await ethers.getContractAt("Flow", flowAddress)
-  const signal = await ethers.getContractAt("Signal", signalAddress)
+  // Try using Signal address directly from deployment file instead of registry
+  const signalAddressFromDeployment = deploymentData.contracts?.Signal
+  const signal = await ethers.getContractAt("Signal", signalAddressFromDeployment)
   const sense = await ethers.getContractAt("Sense", senseAddress)
   const identity = await ethers.getContractAt("Identity", identityAddress)
+  const membership = await ethers.getContractAt("Membership", membershipAddress)
 
   // Get token contracts from deployment
-  const gameTokenAddress = deploymentData.gameToken
-  const usdcAddress = deploymentData.usdc
-  const gameStakingAddress = deploymentData.gameStaking
+  const gameTokenAddress = deploymentData.contracts?.GameToken
+  const usdcAddress = deploymentData.contracts?.MockUSDC
+  const stakingAddress = deploymentData.contracts?.Staking
   const gameToken = await ethers.getContractAt("MockGameToken", gameTokenAddress)
   const usdc = await ethers.getContractAt("MockUSDC", usdcAddress)
-  const gameStaking = await ethers.getContractAt("GameStaking", gameStakingAddress)
+  const staking = await ethers.getContractAt("Staking", stakingAddress)
 
   console.log(`📋 Control: ${controlAddress}`)
   console.log(`📋 Flow: ${flowAddress}`)
   console.log(`📋 Signal: ${signalAddress}`)
   console.log(`📋 Sense: ${senseAddress}`)
+
+  // Signal contract configured from deployment file
 
   const result = {
     users: [] as any[],
@@ -175,6 +182,16 @@ async function main() {
   // Distribute tokens to users
   console.log("\n💰 Distributing tokens to users...")
   const tokenAmountPerUser = ethers.parseEther("100000") // 100,000 GAME tokens per user
+
+  // First, ensure deployer has enough tokens by minting if needed
+  const totalNeeded = tokenAmountPerUser * BigInt(userAccounts.length)
+  const deployerBalance = await gameToken.balanceOf(deployer.address)
+
+  if (deployerBalance < totalNeeded) {
+    const amountToMint = totalNeeded - deployerBalance
+    console.log(`🪙 Minting ${ethers.formatEther(amountToMint)} GAME tokens to deployer...`)
+    await (gameToken as any).connect(deployer).mint(deployer.address, amountToMint)
+  }
 
   for (let i = 0; i < userAccounts.length; i++) {
     const user = userAccounts[i]
@@ -193,24 +210,84 @@ async function main() {
     console.log(`  ${profile.avatar} ${profile.name} (${user.address.slice(0, 8)}...) - ${ethers.formatEther(tokenAmountPerUser)} GAME`)
   }
 
+  // Also distribute USDC tokens for campaign contributions
+  console.log("\n💰 Distributing USDC tokens to users...")
+  const usdcAmountPerUser = ethers.parseUnits("5000", 6) // 5,000 USDC per user
+
+  // First, ensure deployer has enough USDC tokens by minting if needed
+  const totalUsdcNeeded = usdcAmountPerUser * BigInt(userAccounts.length)
+  const deployerUsdcBalance = await usdc.balanceOf(deployer.address)
+
+  if (deployerUsdcBalance < totalUsdcNeeded) {
+    const usdcToMint = totalUsdcNeeded - deployerUsdcBalance
+    console.log(`🪙 Minting ${ethers.formatUnits(usdcToMint, 6)} USDC tokens to deployer...`)
+    await (usdc as any).connect(deployer).mint(deployer.address, usdcToMint)
+  }
+
+  for (let i = 0; i < userAccounts.length; i++) {
+    const user = userAccounts[i]
+    const profile = USERS[i % USERS.length]
+
+    // Transfer USDC tokens from deployer to user
+    await (usdc as any).connect(deployer).transfer(user.address, usdcAmountPerUser)
+
+    console.log(`  ${profile.avatar} ${profile.name} (${user.address.slice(0, 8)}...) - ${ethers.formatUnits(usdcAmountPerUser, 6)} USDC`)
+  }
+
 
   // Create DAOs
   console.log("\n🏛️  Creating DAOs...")
+
+  // First, check if Factory is properly configured
+  try {
+    // Try to get the factory address from the Control contract
+    const factoryAddress = await control.factory()
+    console.log(`📋 Factory address: ${factoryAddress}`)
+
+    if (factoryAddress === ethers.ZeroAddress) {
+      console.log("❌ Factory not configured in Control contract")
+      console.log("💡 Skipping DAO creation - Factory setup required")
+      return
+    }
+  } catch (error) {
+    console.log("❌ Error checking Factory configuration:", error)
+    console.log("💡 Skipping DAO creation - Factory setup required")
+    return
+  }
 
   for (let i = 0; i < CONFIG.daos; i++) {
     const template = DAO_TEMPLATES[i]
     const creator = userAccounts[i % userAccounts.length]
 
-    try {
+        try {
       console.log(`  Creating: ${template.name}`)
 
-      // Approve and stake GAME tokens for DAO creation
+            // Approve and stake GAME tokens for DAO creation
       const stakeAmount = ethers.parseEther("10000") // 10,000 GAME tokens
-      await (gameToken as any).connect(creator).approve(controlAddress, stakeAmount)
+
+      // Check balance before approval
+      const balance = await gameToken.balanceOf(creator.address)
+      console.log(`    Creator balance: ${ethers.formatEther(balance)} GAME`)
+
+      if (balance < stakeAmount) {
+        console.log(`    ❌ Insufficient balance for ${template.name}`)
+        continue
+      }
+
+      // Check current allowance and approve if needed
+      const currentAllowance = await gameToken.allowance(creator.address, stakingAddress)
+      if (currentAllowance < stakeAmount) {
+        console.log(`    Approving staking contract...`)
+        await (gameToken as any).connect(creator).approve(stakingAddress, stakeAmount)
+      } else {
+        console.log(`    Already approved (allowance: ${ethers.formatEther(currentAllowance)} GAME)`)
+      }
+
+                  console.log(`    Creating organization...`)
 
       const tx = await control.connect(creator).createOrganization(
         template.name,
-        template.desc,
+        `ipfs://QmOrg${i}${template.name}`, // metadataURI instead of description
         0, // orgType
         2, // accessModel: Voting
         0, // feeModel
@@ -242,6 +319,31 @@ async function main() {
       const memberCount = Math.floor(Math.random() * 4) + 2
       const members = [creator.address]
 
+      // First, grant ORGANIZATION_MANAGER_ROLE to the creator
+      const ORG_MANAGER_ROLE = await membership.ORGANIZATION_MANAGER_ROLE()
+      try {
+        await membership.grantRole(ORG_MANAGER_ROLE, creator.address)
+        console.log(`    ✅ Granted ORGANIZATION_MANAGER_ROLE to creator`)
+      } catch (error) {
+        console.log(`    ❌ Failed to grant role:`, error)
+      }
+
+      // Activate the organization
+      try {
+        await membership.connect(creator).activateOrganization(orgId)
+        console.log(`    ✅ Activated organization`)
+      } catch (error) {
+        console.log(`    ❌ Failed to activate organization:`, error)
+      }
+
+      // Then add creator as a member
+      try {
+        await membership.connect(creator).addMember(orgId, creator.address, 3) // PLATINUM tier
+        console.log(`    ✅ Added creator as member`)
+      } catch (error) {
+        console.log(`    ❌ Failed to add creator as member:`, error)
+      }
+
       const availableUsers = userAccounts.filter(u => u.address !== creator.address)
       const selectedMembers = availableUsers
         .sort(() => 0.5 - Math.random())
@@ -249,10 +351,11 @@ async function main() {
 
       for (const member of selectedMembers) {
         try {
-          await control.connect(creator).addMember(orgId, member.address)
+          await membership.connect(creator).addMember(orgId, member.address, 0) // BRONZE tier
           members.push(member.address)
-        } catch {
-          // Ignore errors
+          console.log(`    ✅ Added member: ${member.address.slice(0, 8)}...`)
+        } catch (error) {
+          console.log(`    ❌ Failed to add member: ${member.address.slice(0, 8)}...`)
         }
       }
 
@@ -280,8 +383,12 @@ async function main() {
 
       console.log(`    ✅ Created with ${members.length} members`)
 
-    } catch (error) {
+    } catch (error: any) {
       console.log(`    ❌ Failed to create ${template.name}`)
+      console.log(`    Error: ${error.message}`)
+      if (error.reason) {
+        console.log(`    Reason: ${error.reason}`)
+      }
     }
   }
 
@@ -382,7 +489,7 @@ async function main() {
       const receipt = await tx.wait()
       if (!receipt) continue
 
-      const event = receipt.logs.find(log => {
+      const event = receipt.logs.find((log: any) => {
         try {
           const parsed = flow.interface.parseLog(log as any)
           return parsed?.name === 'CampaignCreated'
@@ -444,6 +551,20 @@ async function main() {
   // Create proposals
   console.log("\n🗳️  Creating proposals...")
 
+  // First, grant PROPOSAL_CREATOR_ROLE to users so they can create proposals
+  const PROPOSAL_CREATOR_ROLE = await signal.PROPOSAL_CREATOR_ROLE()
+  console.log(`  Granting PROPOSAL_CREATOR_ROLE to users...`)
+
+  for (let i = 0; i < userAccounts.length; i++) {
+    const user = userAccounts[i]
+    try {
+      await signal.grantRole(PROPOSAL_CREATOR_ROLE, user.address)
+      console.log(`    ✅ Granted role to ${user.address.slice(0, 8)}...`)
+    } catch (error) {
+      console.log(`    ❌ Failed to grant role to ${user.address.slice(0, 8)}...`)
+    }
+  }
+
   const proposalTitles = [
     "Increase Marketing Budget",
     "Add Developer Role",
@@ -463,23 +584,32 @@ async function main() {
     try {
       console.log(`  Creating: ${title}`)
 
+            // Skip proposal creation for now due to ABI decoding issue
+      // This is a separate issue to be addressed later
+      console.log(`    ⚠️  Skipping ${title} - proposal creation needs further debugging`)
+
+      // TODO: Fix proposal creation ABI decoding issue
+      continue
+
+      /*
       const tx = await signal.connect(proposer).createProposal(
         dao.id,
         title,
         `Description for ${title}`,
         `ipfs://QmProposal${i}`,
         0, // Simple proposal
-        1, // Relative voting
+        0, // Relative voting (0, not 1)
         0, // Democratic power
         60 * 60 * 24 * 7, // 7 days
         "0x",
         ethers.ZeroAddress
-      )
+      )*/
 
+      /*
       const receipt = await tx.wait()
       if (!receipt) continue
 
-      const event = receipt.logs.find(log => {
+      const event = receipt.logs.find((log: any) => {
         try {
           const parsed = signal.interface.parseLog(log as any)
           return parsed?.name === 'ProposalCreated'
@@ -519,9 +649,13 @@ async function main() {
 
         console.log(`    ✅ Created proposal`)
       }
+      */
 
-    } catch (error) {
-      console.log(`    ❌ Failed to create proposal`)
+    } catch (error: any) {
+      console.log(`    ❌ Failed to create proposal: ${error.message}`)
+      if (error.reason) {
+        console.log(`    Reason: ${error.reason}`)
+      }
     }
   }
 
@@ -560,8 +694,8 @@ async function main() {
       console.log(`  ${USERS[i].avatar} ${USERS[i].name} staking ${ethers.formatEther(stakeAmount)} GAME`)
 
       // Approve and stake
-      await (gameToken as any).connect(user).approve(gameStakingAddress, stakeAmount)
-      await gameStaking.connect(user).stake(purpose, stakeAmount, strategy)
+      await (gameToken as any).connect(user).approve(stakingAddress, stakeAmount)
+      await (staking as any).connect(user).stake(purpose, stakeAmount, strategy)
 
       stakingCount++
       console.log(`    ✅ Staked in pool ${purpose} with strategy ${strategy}`)
