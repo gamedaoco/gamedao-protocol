@@ -11,6 +11,10 @@ export function handleMockGameTokenTransfer(event: TransferEvent): void {
   // Create transaction entity
   let transaction = new Transaction(event.transaction.hash.toHex())
   transaction.hash = event.transaction.hash
+  transaction.from = event.transaction.from
+  transaction.to = event.transaction.to
+  transaction.gasUsed = BigInt.fromI32(0) // Default value
+  transaction.gasPrice = BigInt.fromI32(0) // Default value
   transaction.blockNumber = event.block.number
   transaction.timestamp = event.block.timestamp
   transaction.save()
@@ -26,6 +30,13 @@ export function handleMockGameTokenTransfer(event: TransferEvent): void {
   if (from == null) {
     from = new User(event.params.from.toHex())
     from.address = event.params.from
+    from.totalOrganizations = BigInt.fromI32(0)
+    from.totalMemberships = BigInt.fromI32(0)
+    from.totalContributions = BigInt.fromI32(0)
+    from.totalProposals = BigInt.fromI32(0)
+    from.totalVotes = BigInt.fromI32(0)
+    from.firstSeenAt = event.block.timestamp
+    from.lastActiveAt = event.block.timestamp
     from.save()
   }
 
@@ -33,6 +44,13 @@ export function handleMockGameTokenTransfer(event: TransferEvent): void {
   if (to == null) {
     to = new User(event.params.to.toHex())
     to.address = event.params.to
+    to.totalOrganizations = BigInt.fromI32(0)
+    to.totalMemberships = BigInt.fromI32(0)
+    to.totalContributions = BigInt.fromI32(0)
+    to.totalProposals = BigInt.fromI32(0)
+    to.totalVotes = BigInt.fromI32(0)
+    to.firstSeenAt = event.block.timestamp
+    to.lastActiveAt = event.block.timestamp
     to.save()
   }
 
