@@ -12,8 +12,6 @@ export interface NetworkAddresses {
   IDENTITY: string;
   STAKING: string;
   TREASURY: string;
-  GAME_TOKEN: string;
-  USDC_TOKEN: string;
 }
 
 // Local/development addresses (hardhat network)
@@ -41,9 +39,7 @@ export const TESTNET_ADDRESSES: NetworkAddresses = {
   "SENSE": "",
   "IDENTITY": "",
   "STAKING": "",
-  "TREASURY": "",
-  "GAME_TOKEN": "",
-  "USDC_TOKEN": ""
+  "TREASURY": ""
 };
 
 // Mainnet addresses
@@ -56,9 +52,7 @@ export const MAINNET_ADDRESSES: NetworkAddresses = {
   "SENSE": "",
   "IDENTITY": "",
   "STAKING": "",
-  "TREASURY": "",
-  "GAME_TOKEN": "",
-  "USDC_TOKEN": ""
+  "TREASURY": ""
 };
 
 // Network configuration

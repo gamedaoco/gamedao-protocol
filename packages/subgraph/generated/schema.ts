@@ -3172,6 +3172,19 @@ export class Proposal extends Entity {
     this.set("id", Value.fromString(value));
   }
 
+  get hierarchicalId(): string {
+    let value = this.get("hierarchicalId");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set hierarchicalId(value: string) {
+    this.set("hierarchicalId", Value.fromString(value));
+  }
+
   get organization(): string {
     let value = this.get("organization");
     if (!value || value.kind == ValueKind.NULL) {

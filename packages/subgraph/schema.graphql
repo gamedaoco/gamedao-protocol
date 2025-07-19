@@ -407,7 +407,8 @@ enum VoteChoice {
 }
 
 type Proposal @entity {
-  id: ID! # proposal ID (hierarchical or legacy)
+  id: ID! # clean transaction-based ID for display
+  hierarchicalId: String! # original hierarchicalId for event correlation
   organization: Organization! # organization
   creator: User! # proposal creator
   title: String! # proposal title
