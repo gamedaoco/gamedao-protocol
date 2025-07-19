@@ -1,6 +1,22 @@
 import { ethers } from "hardhat"
 import { parseEther, parseUnits } from "ethers"
-import { getAddressesForNetwork } from "@gamedao/evm"
+import * as fs from "fs"
+import * as path from "path"
+
+// Load addresses from deployment file
+function loadDeploymentAddresses() {
+  try {
+    const deploymentPath = path.join(__dirname, '..', 'deployment-addresses.json')
+    if (!fs.existsSync(deploymentPath)) {
+      throw new Error(`Deployment addresses file not found at: ${deploymentPath}`)
+    }
+    const deploymentData = JSON.parse(fs.readFileSync(deploymentPath, 'utf8'))
+    return deploymentData.contracts || {}
+  } catch (error) {
+    console.error("❌ Error loading deployment addresses:", error)
+    throw error
+  }
+}
 
 async function sendTokens() {
   console.log("🚀 Starting token transfer script...")
@@ -36,32 +52,31 @@ async function sendTokens() {
     const [deployer] = await ethers.getSigners()
     console.log(`💼 Using deployer account: ${deployer.address}`)
 
-    // Get network and load addresses from shared package
-    const network = await ethers.provider.getNetwork()
-    const addresses = getAddressesForNetwork(network.chainId)
+    // Load addresses from deployment file
+    const addresses = loadDeploymentAddresses()
 
     // Validate token addresses
-    if (!addresses.GAME_TOKEN || addresses.GAME_TOKEN === "") {
-      console.error("❌ Error: GAME_TOKEN address not found in shared package")
-      console.log("Please run the address update script first:")
-      console.log("  node scripts/update-contract-addresses.js --network local")
+    if (!addresses.GameToken || addresses.GameToken === "") {
+      console.error("❌ Error: GameToken address not found in deployment file")
+      console.log("Please run deployment first:")
+      console.log("  make deploy")
       process.exit(1)
     }
 
-    if (!addresses.USDC_TOKEN || addresses.USDC_TOKEN === "") {
-      console.error("❌ Error: USDC_TOKEN address not found in shared package")
-      console.log("Please run the address update script first:")
-      console.log("  node scripts/update-contract-addresses.js --network local")
+    if (!addresses.MockUSDC || addresses.MockUSDC === "") {
+      console.error("❌ Error: MockUSDC address not found in deployment file")
+      console.log("Please run deployment first:")
+      console.log("  make deploy")
       process.exit(1)
     }
 
-    console.log(`📍 GAME Token: ${addresses.GAME_TOKEN}`)
-    console.log(`📍 USDC Token: ${addresses.USDC_TOKEN}`)
+    console.log(`📍 GAME Token: ${addresses.GameToken}`)
+    console.log(`📍 USDC Token: ${addresses.MockUSDC}`)
     console.log("")
 
     // Get token contracts
-    const gameToken = await ethers.getContractAt("MockGameToken", addresses.GAME_TOKEN)
-    const usdcToken = await ethers.getContractAt("MockUSDC", addresses.USDC_TOKEN)
+    const gameToken = await ethers.getContractAt("MockGameToken", addresses.GameToken)
+    const usdcToken = await ethers.getContractAt("MockUSDC", addresses.MockUSDC)
 
     // Check deployer balances before transfer
     const deployerEthBalance = await ethers.provider.getBalance(deployer.address)

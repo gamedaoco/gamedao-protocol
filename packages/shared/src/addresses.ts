@@ -5,6 +5,7 @@
 export interface NetworkAddresses {
   REGISTRY: string;
   CONTROL: string;
+  FACTORY: string;
   MEMBERSHIP: string;
   FLOW: string;
   SIGNAL: string;
@@ -12,19 +13,22 @@ export interface NetworkAddresses {
   IDENTITY: string;
   STAKING: string;
   TREASURY: string;
+  GAME_TOKEN: string;
+  USDC_TOKEN: string;
 }
 
 // Local/development addresses (hardhat network)
 export const LOCAL_ADDRESSES: NetworkAddresses = {
   "REGISTRY": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
   "CONTROL": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+  "FACTORY": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
   "MEMBERSHIP": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
   "FLOW": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
   "SIGNAL": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
   "SENSE": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
   "IDENTITY": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
   "STAKING": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-  "TREASURY": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+  "TREASURY": "0x0000000000000000000000000000000000000000", // Treasury contracts are created dynamically by Factory
   "GAME_TOKEN": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   "USDC_TOKEN": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
 };
@@ -33,26 +37,32 @@ export const LOCAL_ADDRESSES: NetworkAddresses = {
 export const TESTNET_ADDRESSES: NetworkAddresses = {
   "REGISTRY": "",
   "CONTROL": "",
+  "FACTORY": "",
   "MEMBERSHIP": "",
   "FLOW": "",
   "SIGNAL": "",
   "SENSE": "",
   "IDENTITY": "",
   "STAKING": "",
-  "TREASURY": ""
+  "TREASURY": "",
+  "GAME_TOKEN": "",
+  "USDC_TOKEN": ""
 };
 
 // Mainnet addresses
 export const MAINNET_ADDRESSES: NetworkAddresses = {
   "REGISTRY": "",
   "CONTROL": "",
+  "FACTORY": "",
   "MEMBERSHIP": "",
   "FLOW": "",
   "SIGNAL": "",
   "SENSE": "",
   "IDENTITY": "",
   "STAKING": "",
-  "TREASURY": ""
+  "TREASURY": "",
+  "GAME_TOKEN": "",
+  "USDC_TOKEN": ""
 };
 
 // Network configuration
