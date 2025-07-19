@@ -1,8 +1,18 @@
 import { Address } from 'viem'
-import { getAddressesForNetwork, type NetworkAddresses } from '@gamedao/evm'
+// Temporarily comment out shared package import to fix build issues
+// import { getAddressesForNetwork, type NetworkAddresses } from '@gamedao/evm'
 
-// Contract addresses by network - using shared package types
-export interface ContractAddresses extends NetworkAddresses {
+// Contract addresses by network - simplified interface
+export interface ContractAddresses {
+  REGISTRY: Address
+  CONTROL: Address
+  FLOW: Address
+  SIGNAL: Address
+  SENSE: Address
+  IDENTITY: Address
+  MEMBERSHIP: Address
+  STAKING: Address
+  TREASURY: Address
   GAME_TOKEN: Address
   USDC_TOKEN: Address
 }
@@ -20,6 +30,21 @@ const DEFAULT_ADDRESSES: ContractAddresses = {
   TREASURY: '0x0000000000000000000000000000000000000000' as Address,
   GAME_TOKEN: '0x0000000000000000000000000000000000000000' as Address,
   USDC_TOKEN: '0x0000000000000000000000000000000000000000' as Address,
+}
+
+// Hardcoded localhost addresses from current deployment
+const LOCALHOST_ADDRESSES: ContractAddresses = {
+  REGISTRY: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9' as Address,
+  CONTROL: '0x0165878A594ca255338adfa4d48449f69242Eb8F' as Address,
+  FLOW: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6' as Address,
+  SIGNAL: '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318' as Address,
+  SENSE: '0x610178dA211FEF7D417bC0e6FeD39F05609AD788' as Address,
+  IDENTITY: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9' as Address,
+  MEMBERSHIP: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707' as Address,
+  STAKING: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0' as Address,
+  TREASURY: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853' as Address, // Factory address
+  GAME_TOKEN: '0x5FbDB2315678afecb367f032d93F642f64180aa3' as Address,
+  USDC_TOKEN: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512' as Address,
 }
 
 /**
@@ -79,28 +104,70 @@ function getContractAddressesFromDeployment(chainId: number): ContractAddresses 
 
 /**
  * Get contract addresses with fallback priority:
- * 1. Environment variables (highest priority)
- * 2. Deployment file
+ * 1. Hardcoded localhost addresses for local development (chainId 31337)
+ * 2. Environment variables
  * 3. Default zero addresses (lowest priority)
  */
 export function getContractAddresses(chainId: number): ContractAddresses {
-  const envAddresses = getContractAddressesFromEnv(chainId)
-  const deploymentAddresses = getContractAddressesFromDeployment(chainId)
-
-  // Merge addresses with priority: env > deployment > default
-  const addresses: ContractAddresses = {
-    REGISTRY: envAddresses.REGISTRY !== DEFAULT_ADDRESSES.REGISTRY ? envAddresses.REGISTRY : deploymentAddresses.REGISTRY,
-    CONTROL: envAddresses.CONTROL !== DEFAULT_ADDRESSES.CONTROL ? envAddresses.CONTROL : deploymentAddresses.CONTROL,
-    FLOW: envAddresses.FLOW !== DEFAULT_ADDRESSES.FLOW ? envAddresses.FLOW : deploymentAddresses.FLOW,
-    SIGNAL: envAddresses.SIGNAL !== DEFAULT_ADDRESSES.SIGNAL ? envAddresses.SIGNAL : deploymentAddresses.SIGNAL,
-    SENSE: envAddresses.SENSE !== DEFAULT_ADDRESSES.SENSE ? envAddresses.SENSE : deploymentAddresses.SENSE,
-    IDENTITY: envAddresses.IDENTITY !== DEFAULT_ADDRESSES.IDENTITY ? envAddresses.IDENTITY : deploymentAddresses.IDENTITY,
-    MEMBERSHIP: envAddresses.MEMBERSHIP !== DEFAULT_ADDRESSES.MEMBERSHIP ? envAddresses.MEMBERSHIP : deploymentAddresses.MEMBERSHIP,
-    STAKING: envAddresses.STAKING !== DEFAULT_ADDRESSES.STAKING ? envAddresses.STAKING : deploymentAddresses.STAKING,
-    TREASURY: envAddresses.TREASURY !== DEFAULT_ADDRESSES.TREASURY ? envAddresses.TREASURY : deploymentAddresses.TREASURY,
-    GAME_TOKEN: envAddresses.GAME_TOKEN !== DEFAULT_ADDRESSES.GAME_TOKEN ? envAddresses.GAME_TOKEN : deploymentAddresses.GAME_TOKEN,
-    USDC_TOKEN: envAddresses.USDC_TOKEN !== DEFAULT_ADDRESSES.USDC_TOKEN ? envAddresses.USDC_TOKEN : deploymentAddresses.USDC_TOKEN,
+  // For localhost, use hardcoded addresses from current deployment
+  if (chainId === 31337) {
+    console.log('🔗 Contract addresses loaded:', {
+      chainId,
+      source: 'localhost-hardcoded',
+      registry: LOCALHOST_ADDRESSES.REGISTRY,
+      control: LOCALHOST_ADDRESSES.CONTROL,
+    })
+    return LOCALHOST_ADDRESSES
   }
+
+  // For other networks, use environment variables
+  const envAddresses = getContractAddressesFromEnv(chainId)
+
+  // Merge addresses with priority: env > default
+  const addresses: ContractAddresses = {
+    REGISTRY: (envAddresses.REGISTRY !== DEFAULT_ADDRESSES.REGISTRY)
+      ? envAddresses.REGISTRY
+      : DEFAULT_ADDRESSES.REGISTRY,
+    CONTROL: (envAddresses.CONTROL !== DEFAULT_ADDRESSES.CONTROL)
+      ? envAddresses.CONTROL
+      : DEFAULT_ADDRESSES.CONTROL,
+    FLOW: (envAddresses.FLOW !== DEFAULT_ADDRESSES.FLOW)
+      ? envAddresses.FLOW
+      : DEFAULT_ADDRESSES.FLOW,
+    SIGNAL: (envAddresses.SIGNAL !== DEFAULT_ADDRESSES.SIGNAL)
+      ? envAddresses.SIGNAL
+      : DEFAULT_ADDRESSES.SIGNAL,
+    SENSE: (envAddresses.SENSE !== DEFAULT_ADDRESSES.SENSE)
+      ? envAddresses.SENSE
+      : DEFAULT_ADDRESSES.SENSE,
+    IDENTITY: (envAddresses.IDENTITY !== DEFAULT_ADDRESSES.IDENTITY)
+      ? envAddresses.IDENTITY
+      : DEFAULT_ADDRESSES.IDENTITY,
+    MEMBERSHIP: (envAddresses.MEMBERSHIP !== DEFAULT_ADDRESSES.MEMBERSHIP)
+      ? envAddresses.MEMBERSHIP
+      : DEFAULT_ADDRESSES.MEMBERSHIP,
+    STAKING: (envAddresses.STAKING !== DEFAULT_ADDRESSES.STAKING)
+      ? envAddresses.STAKING
+      : DEFAULT_ADDRESSES.STAKING,
+    TREASURY: (envAddresses.TREASURY !== DEFAULT_ADDRESSES.TREASURY)
+      ? envAddresses.TREASURY
+      : DEFAULT_ADDRESSES.TREASURY,
+    // Note: GAME_TOKEN and USDC_TOKEN use env fallback
+    GAME_TOKEN: envAddresses.GAME_TOKEN !== DEFAULT_ADDRESSES.GAME_TOKEN
+      ? envAddresses.GAME_TOKEN
+      : DEFAULT_ADDRESSES.GAME_TOKEN,
+    USDC_TOKEN: envAddresses.USDC_TOKEN !== DEFAULT_ADDRESSES.USDC_TOKEN
+      ? envAddresses.USDC_TOKEN
+      : DEFAULT_ADDRESSES.USDC_TOKEN,
+  }
+
+  // Log the addresses being used for debugging
+  console.log('🔗 Contract addresses loaded:', {
+    chainId,
+    source: 'environment',
+    registry: addresses.REGISTRY,
+    control: addresses.CONTROL,
+  })
 
   return addresses
 }
