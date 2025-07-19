@@ -5,24 +5,34 @@ export const GET_ORGANIZATIONS = gql`
     organizations(first: $first, skip: $skip, orderBy: createdAt, orderDirection: desc) {
       id
       name
-      creator
+      creator {
+        id
+        address
+      }
       metadataURI
+      treasuryAddress
       treasury {
         id
         address
-        balance
+        totalDeposits
+        totalSpent
       }
+      orgType
       accessModel
+      feeModel
       state
       memberLimit
       membershipFee
+      gameStakeRequired
       memberCount
       totalCampaigns
       totalProposals
       createdAt
       updatedAt
       blockNumber
-      transactionHash
+      transaction {
+        hash
+      }
     }
   }
 `
@@ -32,32 +42,44 @@ export const GET_ORGANIZATION_BY_ID = gql`
     organization(id: $id) {
       id
       name
-      creator
-      prime
+      creator {
+        id
+        address
+      }
       metadataURI
+      treasuryAddress
       treasury {
         id
         address
-        balance
+        totalDeposits
+        totalSpent
       }
       orgType
       accessModel
+      feeModel
       state
       memberLimit
       membershipFee
+      gameStakeRequired
       memberCount
       totalCampaigns
       totalProposals
       createdAt
       updatedAt
       blockNumber
-      transactionHash
+      transaction {
+        hash
+      }
       members {
         id
-        address
+        user {
+          id
+          address
+        }
         state
-        role
         joinedAt
+        reputation
+        stake
       }
       campaigns {
         id
@@ -69,6 +91,7 @@ export const GET_ORGANIZATION_BY_ID = gql`
       }
       proposals {
         id
+        hierarchicalId
         title
         state
         createdAt
@@ -85,16 +108,23 @@ export const GET_CAMPAIGNS = gql`
         id
         name
       }
-      creator
+      creator {
+        id
+        address
+      }
       flowType
       title
       description
+      metadataURI
+      paymentToken
       target
-      deposit
+      min
+      max
       raised
       contributorCount
       state
-      expiry
+      startTime
+      endTime
       createdAt
       updatedAt
     }
@@ -108,19 +138,28 @@ export const GET_CAMPAIGN_BY_ID = gql`
       organization {
         id
         name
-        creator
+        creator {
+          id
+          address
+        }
       }
-      creator
+      creator {
+        id
+        address
+      }
       flowType
       title
       description
+      metadataURI
+      paymentToken
       target
-      deposit
+      min
+      max
       raised
       contributorCount
-      protocolFee
       state
-      expiry
+      startTime
+      endTime
       createdAt
       updatedAt
       contributions {
@@ -140,11 +179,12 @@ export const GET_PROPOSALS = gql`
   query GetProposals($first: Int = 100, $skip: Int = 0) {
     proposals(first: $first, skip: $skip, orderBy: createdAt, orderDirection: desc) {
       id
+      hierarchicalId
       organization {
         id
         name
       }
-      proposer {
+      creator {
         id
         address
       }
@@ -152,14 +192,17 @@ export const GET_PROPOSALS = gql`
       description
       proposalType
       votingType
+      votingPower
       state
       startTime
       endTime
-      votesFor
-      votesAgainst
+      forVotes
+      againstVotes
+      abstainVotes
       totalVotes
+      quorumReached
       createdAt
-      updatedAt
+      executedAt
     }
   }
 `
@@ -168,32 +211,37 @@ export const GET_PROPOSAL_BY_ID = gql`
   query GetProposalById($id: ID!) {
     proposal(id: $id) {
       id
+      hierarchicalId
       organization {
         id
         name
-        creator
+        creator {
+          id
+          address
+        }
       }
-      proposer {
+      creator {
         id
         address
       }
       title
       description
+      metadataURI
       proposalType
       votingType
-      votingPowerModel
+      votingPower
       state
-      quorum
-      threshold
       startTime
       endTime
-      votesFor
-      votesAgainst
+      executionTime
+      forVotes
+      againstVotes
+      abstainVotes
       totalVotes
-      executedAt
-      executionSuccess
+      quorumReached
       createdAt
-      updatedAt
+      executedAt
+      executor
       votes {
         id
         voter {
@@ -202,7 +250,6 @@ export const GET_PROPOSAL_BY_ID = gql`
         }
         support
         votingPower
-        conviction
         timestamp
       }
     }
