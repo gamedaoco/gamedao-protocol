@@ -72,10 +72,14 @@ function getOrCreateUser(address: Bytes): User {
 export function handleProposalCreated(event: ProposalCreated): void {
   updateIndexingStatus(event.block, 'ProposalCreated')
 
-  // For ProposalCreated, hierarchicalId is string type, use directly
-  let proposalId = event.params.hierarchicalId
+      // Use transaction hash + log index for clean, unique proposal ID
+  // Store original corrupted hierarchicalId for event correlation
+  let proposalId = event.transaction.hash.toHexString() + "-" + event.logIndex.toString()
+  let originalHierarchicalId = event.params.hierarchicalId
   let proposal = new Proposal(proposalId)
 
+  // Store original hierarchicalId for event correlation
+  proposal.hierarchicalId = originalHierarchicalId
   proposal.organization = getOrganizationIdString(event.params.organizationId)
   proposal.creator = event.params.creator.toHex()
   proposal.title = event.params.title
