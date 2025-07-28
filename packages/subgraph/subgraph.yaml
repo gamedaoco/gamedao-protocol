@@ -316,7 +316,7 @@ dataSources:
     network: localhost
     source:
       address: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
-      abi: Control
+      abi: Factory
       startBlock: 0
     mapping:
       kind: ethereum/events
@@ -329,8 +329,8 @@ dataSources:
         - GlobalStats
         - Transaction
       abis:
-        - name: Control
-          file: ./abis/Control.json
+        - name: Factory
+          file: ./abis/Factory.json
       eventHandlers:
         - event: OrganizationCreated(indexed bytes8,string,indexed address,indexed address,uint256)
           handler: handleOrganizationCreated
@@ -412,7 +412,7 @@ dataSources:
           handler: handleConvictionVoteCast
       file: ./src/signal.ts
 
-  # Sense Module - Reputation & Profiles (temporarily disabled)
+  # Sense Module - Reputation & Profiles (temporarily disabled due to schema issues)
   # - kind: ethereum
   #   name: Sense
   #   network: localhost

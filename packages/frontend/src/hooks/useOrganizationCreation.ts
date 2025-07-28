@@ -5,6 +5,7 @@ import { useAccount } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { useOrganizations } from './useOrganizations'
 import { useGameTokenApproval } from './useGameTokenApproval'
+import { useMembership, MembershipTier } from './useMembership'
 import { useToast } from './useToast'
 // Token utilities are handled by the underlying hooks
 import { uploadFileToIPFS, uploadOrganizationMetadata } from '@/lib/ipfs'
@@ -31,7 +32,7 @@ export interface OrganizationCreationParams {
 export interface OrganizationCreationState {
   isCreating: boolean
   progress: string
-  currentStep: 'idle' | 'uploading' | 'approving' | 'creating' | 'confirming' | 'success' | 'error'
+  currentStep: 'idle' | 'uploading' | 'approving' | 'creating' | 'confirming' | 'adding-membership' | 'success' | 'error'
   error: string | null
   createdOrgId: string | null
 }
@@ -41,6 +42,7 @@ export function useOrganizationCreation() {
   const { contracts } = useGameDAO()
   const { createOrganization, isCreating, createSuccess, createError, createdOrgId } = useOrganizations()
   const { requestApproval, isApproving, isApprovalConfirming, approvalSuccess, approvalError } = useGameTokenApproval()
+  const { addMember, isAddingMember } = useMembership()
   const toast = useToast()
 
   const [state, setState] = useState<OrganizationCreationState>({
@@ -102,23 +104,53 @@ export function useOrganizationCreation() {
 
   // Handle creation success
   useEffect(() => {
-    if (createSuccess && createdOrgId) {
+    if (createSuccess && createdOrgId && address && contracts.MEMBERSHIP) {
       console.log('🎉 Organization created successfully! ID:', createdOrgId)
-      setState(prev => ({
-        ...prev,
-        currentStep: 'success',
-        progress: 'Organization created successfully!',
-        createdOrgId,
-        isCreating: false
-      }))
+
+      // Add creator as member automatically
+      const addCreatorAsMember = async () => {
+        try {
+          setState(prev => ({
+            ...prev,
+            currentStep: 'adding-membership',
+            progress: 'Adding you as organization member...'
+          }))
+
+                    addMember(createdOrgId, address, MembershipTier.Founder)
+          console.log('✅ Creator added as member successfully')
+
+          setState(prev => ({
+            ...prev,
+            currentStep: 'success',
+            progress: 'Organization created and membership added!',
+            createdOrgId,
+            isCreating: false
+          }))
+
+          toast.success('Organization created and membership added!')
+
+        } catch (membershipError) {
+          console.error('⚠️ Failed to add creator as member:', membershipError)
+          // Don't fail the entire flow, org creation was successful
+          setState(prev => ({
+            ...prev,
+            currentStep: 'success',
+            progress: 'Organization created! (Membership may need manual setup)',
+            createdOrgId,
+            isCreating: false
+          }))
+
+          toast.success('Organization created!')
+        }
+      }
+
+      addCreatorAsMember()
 
       // Reset pending states
       setApprovalCompleted(false)
       setPendingCreation(null)
-
-      toast.success('Organization created successfully!')
     }
-  }, [createSuccess, createdOrgId])
+  }, [createSuccess, createdOrgId, address, contracts.MEMBERSHIP])
 
   // Handle creation error
   useEffect(() => {
@@ -257,7 +289,7 @@ export function useOrganizationCreation() {
 
         try {
           await requestApproval({
-            spender: contracts.CONTROL,
+            spender: contracts.STAKING,
             amount: totalAmount.toString(),
             purpose: 'organization creation'
           })

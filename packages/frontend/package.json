@@ -5,10 +5,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run prebuild && next build",
+    "prebuild": "cd ../shared && npm run build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "build:analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {
     "@gamedao/evm": "workspace:*",

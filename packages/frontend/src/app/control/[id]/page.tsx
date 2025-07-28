@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -14,10 +14,11 @@ import { formatAddress } from '@/lib/utils'
 import { useAccount } from 'wagmi'
 import { useOrganizationDetails } from '@/hooks/useOrganizationDetails'
 import { useOrganizationMetadata } from '@/hooks/useOrganizationMetadata'
-import { useMembership } from '@/hooks/useMembership'
+import { useMembershipQueries } from '@/hooks/useMembership'
+import { useOrganizationMetadataUpdate } from '@/hooks/useOrganizationMetadataUpdate'
 import { useLogger } from '@/hooks/useLogger'
 import { formatUnits } from 'viem'
-import { Users, Crown, TrendingUp, Wallet, Shield, User, ChevronDown, ChevronUp, Vote, Clock, CheckCircle, XCircle, Pause, Copy } from 'lucide-react'
+import { Users, Crown, TrendingUp, Wallet, Shield, User, ChevronDown, ChevronUp, Vote, Clock, CheckCircle, XCircle, Pause, Copy, Camera, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface OrganizationDetailPageProps {
@@ -35,17 +36,36 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
   const [isProposalsExpanded, setIsProposalsExpanded] = useState(false)
-  const { isMember, refetch: refetchMembership } = useMembership(id)
+  const { isMember, refetchMembership } = useMembershipQueries(id)
   const isActive = useMemo(() => organization?.state === 1, [organization?.state])
   const { logUserAction } = useLogger('OrganizationDetailPage', { category: 'ui' })
 
+  // Image update functionality using the custom hook
+  const profileImageInputRef = useRef<HTMLInputElement>(null)
+  const bannerImageInputRef = useRef<HTMLInputElement>(null)
+
+  const {
+    updateProfileImage,
+    updateBannerImage,
+    updatedProfileImage,
+    updatedBannerImage,
+    isUpdating,
+    error: updateError
+  } = useOrganizationMetadataUpdate(id, metadata)
+
+  // Check if current user is the DAO owner/creator
+  const isOwner = useMemo(() => {
+    if (!address || !organization) return false
+    return address.toLowerCase() === organization.creator.toLowerCase()
+  }, [address, organization?.creator])
+
   // Handle copying treasury address
   const handleCopyTreasuryAddress = async () => {
-    if (!organization?.treasury) return
+    if (!organization?.treasury?.address) return
 
     try {
-      await navigator.clipboard.writeText(organization.treasury)
-      logUserAction('treasury_address_copied', { organizationId: id, treasuryAddress: organization.treasury })
+      await navigator.clipboard.writeText(organization.treasury.address)
+      logUserAction('treasury_address_copied', { organizationId: id, treasuryAddress: organization.treasury.address })
       // You could add a toast notification here if you have toast functionality
     } catch (error) {
       console.error('Failed to copy treasury address:', error)
@@ -57,6 +77,42 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
     if (!organization || !address) return
     logUserAction('leave_organization_clicked', { organizationId: id })
     setIsLeaveModalOpen(true)
+  }
+
+  // Handle profile image update
+  const handleProfileImageClick = () => {
+    if (!isOwner) return
+    profileImageInputRef.current?.click()
+  }
+
+  const handleProfileImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      await updateProfileImage(file)
+    } catch (error) {
+      // Error handling is done in the hook
+      console.error('Failed to update profile image:', error)
+    }
+  }
+
+  // Handle banner image update
+  const handleBannerImageClick = () => {
+    if (!isOwner) return
+    bannerImageInputRef.current?.click()
+  }
+
+  const handleBannerImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      await updateBannerImage(file)
+    } catch (error) {
+      // Error handling is done in the hook
+      console.error('Failed to update banner image:', error)
+    }
   }
 
   // Validate params after all hooks are called
@@ -105,13 +161,28 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
         {/* Full-width banner header */}
         <div className="relative w-full h-64 bg-gradient-to-r from-blue-600 to-purple-600 overflow-hidden rounded-lg">
           {/* Banner image */}
-          {metadata?.bannerImage && (
+          <div
+            className={`absolute inset-0 ${isOwner ? 'cursor-pointer group' : ''}`}
+            onClick={handleBannerImageClick}
+          >
             <IPFSBanner
-              hash={metadata.bannerImage}
+              hash={updatedBannerImage || metadata?.bannerImage}
               alt={`${organization.name} banner`}
               className="absolute inset-0 w-full h-full object-cover rounded-lg"
             />
-          )}
+
+            {/* Banner upload overlay for owners */}
+            {isOwner && (
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-lg">
+                <div className="text-white text-center">
+                  <Camera className="h-8 w-8 mx-auto mb-2" />
+                  <p className="text-sm font-medium">
+                    {isUpdating ? 'Uploading...' : 'Click to change banner'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Overlay for text readability */}
           <div className="absolute inset-0 bg-black/40 rounded-lg" />
@@ -120,13 +191,25 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
           <div className="relative max-w-7xl mx-auto px-4 h-full flex items-end pb-8">
             <div className="flex items-end gap-6">
               {/* Organization icon */}
-              <div className="flex-shrink-0">
-                <IPFSAvatar
-                  hash={metadata?.profileImage}
-                  alt={organization.name}
-                  size="xl"
-                  className="border-4 border-white shadow-lg"
-                />
+              <div className="flex-shrink-0 relative">
+                <div
+                  className={`${isOwner ? 'cursor-pointer group' : ''}`}
+                  onClick={handleProfileImageClick}
+                >
+                  <IPFSAvatar
+                    hash={updatedProfileImage || metadata?.profileImage}
+                    alt={organization.name}
+                    size="xl"
+                    className="border-4 border-white shadow-lg"
+                  />
+
+                  {/* Profile image upload overlay for owners */}
+                  {isOwner && (
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-full">
+                      <Camera className="h-6 w-6 text-white" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Organization title and actions */}
@@ -145,7 +228,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                       </Badge>
                       <div className="flex items-center gap-2 text-white/80 text-sm">
                         <Wallet className="h-4 w-4" />
-                        <span>Treasury: {formatAddress(organization.treasury)}</span>
+                        <span>Treasury: {formatAddress(organization.treasury.address)}</span>
                         <button
                           onClick={handleCopyTreasuryAddress}
                           className="p-1 hover:bg-white/10 rounded transition-colors"
@@ -172,27 +255,77 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                         >
                           Leave Organization
                         </Button>
-                                             ) : (
-                         <Button
-                           onClick={() => {
-                             logUserAction('join_organization_clicked', { organizationId: id })
-                             setIsJoinModalOpen(true)
-                           }}
-                           className="bg-white text-black hover:bg-white/90"
-                         >
-                           Join Organization
-                         </Button>
-                       )}
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            logUserAction('join_organization_clicked', { organizationId: id })
+                            setIsJoinModalOpen(true)
+                          }}
+                          className="bg-white text-black hover:bg-white/90"
+                        >
+                          Join Organization
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Hidden file inputs */}
+          <input
+            ref={profileImageInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleProfileImageChange}
+            className="hidden"
+          />
+          <input
+            ref={bannerImageInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleBannerImageChange}
+            className="hidden"
+          />
         </div>
 
         {/* Main content */}
         <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Upload feedback */}
+          {isUpdating && (
+            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Upload className="h-4 w-4 text-blue-600 animate-spin" />
+                <span className="text-blue-800 dark:text-blue-200">Uploading image to IPFS...</span>
+              </div>
+            </div>
+          )}
+
+          {updateError && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-center gap-2">
+                <XCircle className="h-4 w-4 text-red-600" />
+                <span className="text-red-800 dark:text-red-200">Failed to upload image: {updateError}</span>
+              </div>
+            </div>
+          )}
+
+          {(updatedProfileImage || updatedBannerImage) && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <span className="text-green-800 dark:text-green-200">
+                  Image updated successfully! Changes are visible locally.
+                  <br />
+                  <small className="text-green-600 dark:text-green-400">
+                    Note: To permanently save changes on-chain, a contract update function needs to be implemented.
+                  </small>
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* About Card */}
             <Card className="lg:col-span-1">
@@ -560,9 +693,20 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
             isOpen={isJoinModalOpen}
             onClose={() => setIsJoinModalOpen(false)}
             organization={{
-              ...organization,
+              id: organization.id,
+              name: organization.name,
+              creator: organization.creator,
+              metadataURI: organization.metadataURI,
               treasury: organization.treasury.address,
-              feeModel: 0 // Default feeModel for compatibility
+              accessModel: organization.accessModel,
+              feeModel: 0,
+              memberLimit: organization.memberLimit,
+              memberCount: organization.memberCount,
+              totalCampaigns: organization.totalCampaigns,
+              totalProposals: organization.totalProposals,
+              membershipFee: organization.membershipFee,
+              state: organization.state,
+              createdAt: organization.createdAt
             }}
             onSuccess={() => {
               setIsJoinModalOpen(false)
@@ -588,9 +732,20 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
             isOpen={isLeaveModalOpen}
             onClose={() => setIsLeaveModalOpen(false)}
             organization={{
-              ...organization,
+              id: organization.id,
+              name: organization.name,
+              creator: organization.creator,
+              metadataURI: organization.metadataURI,
               treasury: organization.treasury.address,
-              feeModel: 0 // Default feeModel for compatibility
+              accessModel: organization.accessModel,
+              feeModel: 0,
+              memberLimit: organization.memberLimit,
+              memberCount: organization.memberCount,
+              totalCampaigns: organization.totalCampaigns,
+              totalProposals: organization.totalProposals,
+              membershipFee: organization.membershipFee,
+              state: organization.state,
+              createdAt: organization.createdAt
             }}
             mode="leave"
             onSuccess={() => {

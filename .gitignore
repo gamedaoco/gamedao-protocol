@@ -48,10 +48,23 @@ yarn-error.log*
 artifacts/
 cache/
 typechain-types/
+*.dbg.json
+scaffold-output.json
+coverage.json
+.openzeppelin/
 
 # Graph Protocol
 subgraph/build/
 subgraph/generated/
+
+# Rust
+target/
+Cargo.lock
+*.pdb
+
+# Large binaries and executables
+zombienet-*
+*.exe
 
 # Docker Development Data
 data/

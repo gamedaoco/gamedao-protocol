@@ -109,16 +109,16 @@ export function toDisplayId(id: string): string {
 /**
  * Extract organization ID from transaction logs
  * @param logs - Transaction logs
- * @param contractAddress - Control contract address
+ * @param contractAddress - Factory contract address (the contract that emits OrganizationCreated events)
  * @returns Organization ID as alphanumeric string or null
  */
 export function extractOrganizationIdFromLogs(logs: any[], contractAddress: string): string | null {
   try {
     // Find the OrganizationCreated event in the logs
     const organizationCreatedEvent = logs.find((log: any) => {
-      const isFromControlContract = log.address.toLowerCase() === contractAddress.toLowerCase()
+      const isFromFactoryContract = log.address.toLowerCase() === contractAddress.toLowerCase()
       const hasCorrectTopics = log.topics && log.topics.length === 4
-      return isFromControlContract && hasCorrectTopics
+      return isFromFactoryContract && hasCorrectTopics
     })
 
     if (organizationCreatedEvent) {

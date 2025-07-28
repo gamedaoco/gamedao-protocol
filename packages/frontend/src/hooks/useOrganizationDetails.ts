@@ -89,13 +89,13 @@ export function useOrganizationDetails(organizationId: string) {
     return {
       id: org.id,
       name: org.name || `Organization ${org.id}`,
-      creator: org.creator,
-      prime: org.prime || org.creator,
+      creator: org.creator?.address || org.creator || '',
+      prime: org.prime || org.creator?.address || org.creator || '',
       metadataURI: org.metadataURI,
       treasury: {
         id: org.treasury?.id || '',
-        address: org.treasury?.address || '0x0000000000000000000000000000000000000000',
-        balance: org.treasury?.balance || '0'
+        address: org.treasury?.address || org.treasuryAddress || '0x0000000000000000000000000000000000000000',
+        balance: org.treasury?.balance || org.treasury?.totalDeposits || '0'
       },
       orgType: org.orgType || 'INDIVIDUAL',
       accessModel: getAccessModelFromString(org.accessModel),
@@ -108,12 +108,12 @@ export function useOrganizationDetails(organizationId: string) {
       createdAt: parseInt(org.createdAt) || Math.floor(Date.now() / 1000),
       updatedAt: parseInt(org.updatedAt) || Math.floor(Date.now() / 1000),
       blockNumber: parseInt(org.blockNumber) || 0,
-      transactionHash: org.transactionHash || '',
+      transactionHash: org.transaction?.hash || '',
       members: (org.members || []).map((member: any) => ({
         id: member.id,
-        address: member.address,
+        address: member.user?.address || member.address || '',
         state: member.state,
-        role: member.role,
+        role: member.role || 'MEMBER',
         joinedAt: parseInt(member.joinedAt) || Math.floor(Date.now() / 1000)
       })),
       campaigns: (org.campaigns || []).map((campaign: any) => ({

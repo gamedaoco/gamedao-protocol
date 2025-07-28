@@ -86,7 +86,7 @@ export function JoinOrganizationModal({
         console.log('🔍 Membership fee detected:', membershipFee)
 
         const approvalNeeded = await handleApproval({
-          spender: contracts.CONTROL,
+          spender: contracts.STAKING,
           amount: membershipFee,
           purpose: 'organization membership'
         })

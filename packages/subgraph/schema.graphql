@@ -270,6 +270,7 @@ type Member @entity {
   organization: Organization! # organization
   user: User! # user who is a member
   state: MemberState! # member state
+  tier: MembershipTier! # membership tier
   joinedAt: BigInt! # timestamp when joined
   reputation: BigInt! # member reputation
   stake: BigInt! # member stake amount
@@ -284,6 +285,13 @@ enum MemberState {
   ACTIVE
   PAUSED
   BANNED
+}
+
+enum MembershipTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
 }
 
 type User @entity {
