@@ -48,6 +48,7 @@ services:
       postgres_user: graph-node
       postgres_pass: let-me-in
       postgres_db: graph-node
+      postgres_port: 5433
       ipfs: 'ipfs:5001'
       ethereum: 'localhost:http://hardhat-node:8545'
       GRAPH_LOG: info
@@ -73,13 +74,14 @@ services:
       - IPFS_PATH=/data/ipfs
     networks:
       - gamedao
-    command: |
-      sh -c "
-        ipfs init --profile server || true &&
-        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '[\"*\"]' &&
-        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '[\"PUT\", \"GET\", \"POST\"]' &&
-        ipfs daemon --migrate=true
-      "
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        ipfs init --profile server || true
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
+        exec ipfs daemon --migrate=true
     restart: unless-stopped
 
   # PostgreSQL for Graph Node
@@ -130,4 +132,4 @@ volumes:
 networks:
   gamedao:
     driver: bridge
-    name: gamedao-dev-network
+    name: gamedao
