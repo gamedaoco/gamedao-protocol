@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "buildCommand": "cd packages/frontend && npm run build",
+  "devCommand": "cd packages/frontend && npm run dev",
+  "installCommand": "npm install && cd packages/shared && npm run build",
+  "outputDirectory": "packages/frontend/.next",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "functions": {
+    "packages/frontend/src/app/api/**/*.ts": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NEXT_TELEMETRY_DISABLED": "1"
+    }
+  }
+}

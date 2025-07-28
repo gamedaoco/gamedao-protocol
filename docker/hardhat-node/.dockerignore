@@ -1,0 +1,55 @@
+# Ignore large directories and files to reduce build context
+node_modules
+.git
+.gitignore
+README.md
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+
+# Build artifacts (will be generated in container)
+artifacts
+cache
+typechain-types
+coverage
+dist
+build
+.next
+.turbo
+
+# Development files
+test
+docs
+*.md
+*.tgz
+*.tar.gz
+
+# IDE and OS files
+.vscode
+.idea
+*.swp
+*.swo
+Thumbs.db
+
+# Large directories not needed for contracts
+packages/frontend/node_modules
+packages/frontend/.next
+packages/subgraph/node_modules
+packages/subgraph/build
+packages/subgraph/generated
+packages/pallets/*/target
+packages/polkadot-evm/target
+
+# Local development data
+local-dev
+data
+
+# Docker files themselves
+docker
+Dockerfile*
+docker-compose*.yml
