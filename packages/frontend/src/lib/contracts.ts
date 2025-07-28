@@ -1,11 +1,11 @@
 import { Address } from 'viem'
-// Temporarily comment out shared package import to fix build issues
-// import { getAddressesForNetwork, type NetworkAddresses } from '@gamedao/evm'
+import { getAddressesForNetwork, type NetworkAddresses } from '@gamedao/evm'
 
 // Contract addresses by network - simplified interface
 export interface ContractAddresses {
   REGISTRY: Address
   CONTROL: Address
+  FACTORY: Address
   FLOW: Address
   SIGNAL: Address
   SENSE: Address
@@ -21,6 +21,7 @@ export interface ContractAddresses {
 const DEFAULT_ADDRESSES: ContractAddresses = {
   REGISTRY: '0x0000000000000000000000000000000000000000' as Address,
   CONTROL: '0x0000000000000000000000000000000000000000' as Address,
+  FACTORY: '0x0000000000000000000000000000000000000000' as Address,
   FLOW: '0x0000000000000000000000000000000000000000' as Address,
   SIGNAL: '0x0000000000000000000000000000000000000000' as Address,
   SENSE: '0x0000000000000000000000000000000000000000' as Address,
@@ -36,6 +37,7 @@ const DEFAULT_ADDRESSES: ContractAddresses = {
 const LOCALHOST_ADDRESSES: ContractAddresses = {
   REGISTRY: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9' as Address,
   CONTROL: '0x0165878A594ca255338adfa4d48449f69242Eb8F' as Address,
+  FACTORY: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853' as Address,
   FLOW: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6' as Address,
   SIGNAL: '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318' as Address,
   SENSE: '0x610178dA211FEF7D417bC0e6FeD39F05609AD788' as Address,
@@ -104,20 +106,52 @@ function getContractAddressesFromDeployment(chainId: number): ContractAddresses 
 
 /**
  * Get contract addresses with fallback priority:
- * 1. Hardcoded localhost addresses for local development (chainId 31337)
+ * 1. Shared package addresses (primary source)
  * 2. Environment variables
- * 3. Default zero addresses (lowest priority)
+ * 3. Hardcoded localhost addresses as fallback
+ * 4. Default zero addresses (lowest priority)
  */
 export function getContractAddresses(chainId: number): ContractAddresses {
-  // For localhost, use hardcoded addresses from current deployment
-  if (chainId === 31337) {
+  try {
+    // Try to get addresses from shared package first
+    const sharedAddresses = getAddressesForNetwork(chainId)
+
     console.log('🔗 Contract addresses loaded:', {
       chainId,
-      source: 'localhost-hardcoded',
-      registry: LOCALHOST_ADDRESSES.REGISTRY,
-      control: LOCALHOST_ADDRESSES.CONTROL,
+      source: 'shared-package',
+      registry: sharedAddresses.REGISTRY,
+      control: sharedAddresses.CONTROL,
+      factory: sharedAddresses.FACTORY,
+      staking: sharedAddresses.STAKING,
     })
-    return LOCALHOST_ADDRESSES
+
+    // Map from shared package format to frontend format
+    return {
+      REGISTRY: sharedAddresses.REGISTRY as Address,
+      CONTROL: sharedAddresses.CONTROL as Address,
+      FLOW: sharedAddresses.FLOW as Address,
+      SIGNAL: sharedAddresses.SIGNAL as Address,
+      SENSE: sharedAddresses.SENSE as Address,
+      IDENTITY: sharedAddresses.IDENTITY as Address,
+      MEMBERSHIP: sharedAddresses.MEMBERSHIP as Address,
+      STAKING: sharedAddresses.STAKING as Address,
+      TREASURY: sharedAddresses.FACTORY as Address, // Factory handles treasuries
+      GAME_TOKEN: sharedAddresses.GAME_TOKEN as Address,
+      USDC_TOKEN: sharedAddresses.USDC_TOKEN as Address,
+    }
+  } catch (error) {
+    console.warn('Could not load addresses from shared package, using fallback:', error)
+
+    // Fallback to localhost hardcoded addresses for development
+    if (chainId === 31337) {
+      console.log('🔗 Contract addresses loaded:', {
+        chainId,
+        source: 'localhost-fallback',
+        registry: LOCALHOST_ADDRESSES.REGISTRY,
+        control: LOCALHOST_ADDRESSES.CONTROL,
+      })
+      return LOCALHOST_ADDRESSES
+    }
   }
 
   // For other networks, use environment variables

@@ -13,6 +13,7 @@ let subgraphYaml = fs.readFileSync(subgraphYamlPath, 'utf8');
 const addressMapping = {
   'Registry': LOCAL_ADDRESSES.REGISTRY,
   'Control': LOCAL_ADDRESSES.CONTROL,
+  'Factory': LOCAL_ADDRESSES.FACTORY,
   'Membership': LOCAL_ADDRESSES.MEMBERSHIP,
   'Flow': LOCAL_ADDRESSES.FLOW,
   'Signal': LOCAL_ADDRESSES.SIGNAL,

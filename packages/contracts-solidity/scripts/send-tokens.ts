@@ -78,6 +78,31 @@ async function sendTokens() {
     const gameToken = await ethers.getContractAt("MockGameToken", addresses.GameToken)
     const usdcToken = await ethers.getContractAt("MockUSDC", addresses.MockUSDC)
 
+    // Verify contracts are actually deployed
+    console.log("🔍 Verifying contract deployment...")
+    try {
+      const gameTokenCode = await ethers.provider.getCode(addresses.GameToken)
+      const usdcTokenCode = await ethers.provider.getCode(addresses.MockUSDC)
+
+      if (gameTokenCode === "0x") {
+        console.error("❌ Error: GameToken contract not found at address " + addresses.GameToken)
+        console.log("💡 Solution: Deploy contracts first with: make deploy NETWORK=localhost")
+        process.exit(1)
+      }
+
+      if (usdcTokenCode === "0x") {
+        console.error("❌ Error: MockUSDC contract not found at address " + addresses.MockUSDC)
+        console.log("💡 Solution: Deploy contracts first with: make deploy NETWORK=localhost")
+        process.exit(1)
+      }
+
+      console.log("✅ Contract deployment verified")
+    } catch (error) {
+      console.error("❌ Error verifying contracts:", error)
+      console.log("💡 Make sure Hardhat node is running: make dev")
+      process.exit(1)
+    }
+
     // Check deployer balances before transfer
     const deployerEthBalance = await ethers.provider.getBalance(deployer.address)
     const deployerGameBalance = await gameToken.balanceOf(deployer.address)

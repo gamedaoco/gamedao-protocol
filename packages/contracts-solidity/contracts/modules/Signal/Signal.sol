@@ -148,7 +148,11 @@ contract Signal is Module, ISignal {
         uint256 votingPeriod,
         bytes memory executionData,
         address targetContract
-    ) external override onlyRole(PROPOSAL_CREATOR_ROLE) onlyInitialized returns (string memory hierarchicalId) {
+    ) external override onlyInitialized returns (string memory hierarchicalId) {
+        // Check if the user is a member of the organization or has the PROPOSAL_CREATOR_ROLE
+        if (!hasRole(PROPOSAL_CREATOR_ROLE, _msgSender()) && !_getMembershipModule().isMember(organizationId, _msgSender())) {
+            revert UnauthorizedProposalCreation(_msgSender());
+        }
         // Validate voting period
         if (votingPeriod < MIN_VOTING_PERIOD || votingPeriod > MAX_VOTING_PERIOD) {
             revert InvalidVotingPeriod(0, votingPeriod);

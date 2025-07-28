@@ -5,6 +5,7 @@ const path = require('path');
 const {
   REGISTRY_ABI,
   CONTROL_ABI,
+  FACTORY_ABI,
   MEMBERSHIP_ABI,
   FLOW_ABI,
   SIGNAL_ABI,
@@ -28,6 +29,7 @@ if (!fs.existsSync(abisDir)) {
 const abiMap = {
   'Registry.json': REGISTRY_ABI,
   'Control.json': CONTROL_ABI,
+  'Factory.json': FACTORY_ABI,
   'Membership.json': MEMBERSHIP_ABI,
   'Flow.json': FLOW_ABI,
   'Signal.json': SIGNAL_ABI,

@@ -157,6 +157,10 @@ async function main() {
   const ORGANIZATION_MANAGER_ROLE = await staking.ORGANIZATION_MANAGER_ROLE();
   await staking.grantRole(ORGANIZATION_MANAGER_ROLE, factoryAddress);
   console.log("✅ Factory granted ORGANIZATION_MANAGER_ROLE in Staking contract");
+
+  // Also grant ORGANIZATION_MANAGER_ROLE to Factory on Membership contract for adding creators as members
+  await membership.grantRole(ORGANIZATION_MANAGER_ROLE, factoryAddress);
+  console.log("✅ Factory granted ORGANIZATION_MANAGER_ROLE in Membership contract");
   console.log("");
 
   // 12. Deploy Staking for rewards

@@ -11,6 +11,16 @@ import {
 import { User, Organization, Member, VotingDelegation, Transaction } from "../generated/schema";
 import { getOrCreateUser, getOrCreateOrganization } from "./utils/ids";
 
+// Helper function to convert tier enum to string
+function getTierName(tier: BigInt): string {
+  let tierValue = tier.toI32()
+  if (tierValue == 0) return "BRONZE";
+  if (tierValue == 1) return "SILVER";
+  if (tierValue == 2) return "GOLD";
+  if (tierValue == 3) return "PLATINUM";
+  return "BRONZE"; // Default fallback
+}
+
 export function handleMemberAdded(event: MemberAddedEvent): void {
   log.info("👥 Member Added: {} to org {}", [
     event.params.member.toHex(),
@@ -26,6 +36,12 @@ export function handleMemberAdded(event: MemberAddedEvent): void {
   member.organization = org.id;
   member.user = user.id;
   member.state = "ACTIVE";
+  // Set tier directly based on the enum value (tier is already i32)
+  if (event.params.tier == 0) member.tier = "BRONZE";
+  else if (event.params.tier == 1) member.tier = "SILVER";
+  else if (event.params.tier == 2) member.tier = "GOLD";
+  else if (event.params.tier == 3) member.tier = "PLATINUM";
+  else member.tier = "BRONZE"; // Default fallback
   member.joinedAt = event.params.timestamp;
   member.reputation = BigInt.fromI32(0);
   member.stake = BigInt.fromI32(0);

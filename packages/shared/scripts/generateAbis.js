@@ -12,6 +12,7 @@ const contractMapping = {
   // Core contracts
   'core/Registry.sol/Registry.json': 'REGISTRY_ABI',
   'modules/Control/Control.sol/Control.json': 'CONTROL_ABI',
+  'modules/Control/Factory.sol/Factory.json': 'FACTORY_ABI',
   'modules/Membership/Membership.sol/Membership.json': 'MEMBERSHIP_ABI',
   'modules/Flow/Flow.sol/Flow.json': 'FLOW_ABI',
   'modules/Signal/Signal.sol/Signal.json': 'SIGNAL_ABI',
@@ -71,6 +72,7 @@ function generateAbis() {
 export const CONTRACT_NAMES = {
   REGISTRY: 'Registry',
   CONTROL: 'Control',
+  FACTORY: 'Factory',
   MEMBERSHIP: 'Membership',
   FLOW: 'Flow',
   SIGNAL: 'Signal',
@@ -87,6 +89,7 @@ export const CONTRACT_NAMES = {
 export const ABIS = {
   REGISTRY: REGISTRY_ABI,
   CONTROL: CONTROL_ABI,
+  FACTORY: FACTORY_ABI,
   MEMBERSHIP: MEMBERSHIP_ABI,
   FLOW: FLOW_ABI,
   SIGNAL: SIGNAL_ABI,

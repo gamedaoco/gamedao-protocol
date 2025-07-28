@@ -26,13 +26,14 @@ const currentAddresses = fs.readFileSync(addressesPath, 'utf8');
 const newLocalAddresses = {
   "REGISTRY": deploymentData.contracts?.Registry || "",
   "CONTROL": deploymentData.contracts?.Control || "",
+  "FACTORY": deploymentData.contracts?.Factory || "",
   "MEMBERSHIP": deploymentData.contracts?.Membership || "",
   "FLOW": deploymentData.contracts?.Flow || "",
   "SIGNAL": deploymentData.contracts?.Signal || "",
   "SENSE": deploymentData.contracts?.Sense || "",
   "IDENTITY": deploymentData.contracts?.Identity || "",
   "STAKING": deploymentData.contracts?.Staking || "",
-  "TREASURY": deploymentData.contracts?.Factory || "", // Factory creates treasuries
+  "TREASURY": "", // Treasury contracts are created dynamically by Factory
   "GAME_TOKEN": deploymentData.contracts?.GameToken || "",
   "USDC_TOKEN": deploymentData.contracts?.MockUSDC || ""
 };

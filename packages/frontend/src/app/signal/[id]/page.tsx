@@ -8,7 +8,7 @@ import { DetailPageLayout } from '@/components/layout/detailPageLayout'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TransactionOverlay } from '@/components/ui/transaction-overlay'
-import { useProposals } from '@/hooks/useProposals'
+import { useProposals, useProposal } from '@/hooks/useProposals'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useState } from 'react'
 import { Vote, Users, Clock, CheckCircle, XCircle, Pause } from 'lucide-react'
@@ -17,14 +17,20 @@ import React from 'react'
 import { ConvictionVotingModal } from '@/components/ui/conviction-voting-modal'
 import { DelegationModal } from '@/components/ui/delegation-modal'
 
-// Individual proposal hook (to be implemented)
-function useProposal(id: string) {
-  // For now, get from the proposals list
-  // TODO: Implement individual proposal fetching
+interface ProposalDetailPageProps {
+  params: { id: string } | Promise<{ id: string }>
+}
+
+export default function ProposalDetailPage({ params }: ProposalDetailPageProps) {
+  // Handle both Promise and resolved params
+  const resolvedParams = params instanceof Promise ? use(params) : params
+  const { id } = resolvedParams
+
+  // Use the proper useProposal hook for individual proposal data
+  const { proposal, isLoading, error, refetch } = useProposal(id)
+
+  // Use useProposals for voting actions and utility functions
   const {
-    proposals,
-    isLoading,
-    error,
     getStateString,
     castVote,
     castVoteWithConviction,
@@ -37,56 +43,10 @@ function useProposal(id: string) {
     voteSuccess,
     voteError
   } = useProposals()
+
+  // Get organization data
   const { organizations } = useOrganizations()
-
-  const proposal = proposals?.find(prop => prop.id === id)
   const organization = proposal ? organizations?.find(org => org.id === proposal.organization.id) : null
-
-  return {
-    proposal,
-    organization,
-    isLoading,
-    error,
-    // Utility functions
-    getStateString,
-    castVote,
-    castVoteWithConviction, // New conviction voting function
-    delegateVotingPower, // New delegation functions
-    undelegateVotingPower,
-    isVoting,
-    canUserVote,
-    hasUserVoted,
-    getVotingPowerForProposal,
-    voteSuccess,
-    voteError
-  }
-}
-
-interface ProposalDetailPageProps {
-  params: { id: string } | Promise<{ id: string }>
-}
-
-export default function ProposalDetailPage({ params }: ProposalDetailPageProps) {
-  // Handle both Promise and resolved params
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const { id } = resolvedParams
-  const {
-    proposal,
-    organization,
-    isLoading,
-    error,
-    getStateString,
-    castVote,
-    castVoteWithConviction,
-    delegateVotingPower,
-    undelegateVotingPower,
-    isVoting,
-    canUserVote,
-    hasUserVoted,
-    getVotingPowerForProposal,
-    voteSuccess,
-    voteError
-  } = useProposal(id)
 
   const [votingPower, setVotingPower] = useState<number>(0)
   const [showConvictionModal, setShowConvictionModal] = useState(false)

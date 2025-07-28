@@ -2464,6 +2464,19 @@ export class Member extends Entity {
     this.set("state", Value.fromString(value));
   }
 
+  get tier(): string {
+    let value = this.get("tier");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set tier(value: string) {
+    this.set("tier", Value.fromString(value));
+  }
+
   get joinedAt(): BigInt {
     let value = this.get("joinedAt");
     if (!value || value.kind == ValueKind.NULL) {

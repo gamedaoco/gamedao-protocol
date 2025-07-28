@@ -201,12 +201,12 @@ export function useOrganizations() {
   const [createdOrgId, setCreatedOrgId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (createSuccess && transactionReceipt && contracts.CONTROL) {
+    if (createSuccess && transactionReceipt && contracts.FACTORY) {
       try {
         console.log('🔍 Parsing transaction receipt for organization ID...')
         console.log('🔍 Transaction logs:', transactionReceipt.logs.length)
 
-        const orgId = extractOrganizationIdFromLogs(transactionReceipt.logs, contracts.CONTROL)
+        const orgId = extractOrganizationIdFromLogs(transactionReceipt.logs, contracts.FACTORY)
         if (orgId) {
           console.log('🎉 Found organization ID:', orgId)
           setCreatedOrgId(orgId)
@@ -217,7 +217,7 @@ export function useOrganizations() {
         console.error('❌ Error parsing transaction receipt:', error)
       }
     }
-  }, [createSuccess, transactionReceipt, contracts.CONTROL])
+  }, [createSuccess, transactionReceipt, contracts.FACTORY])
 
   // Contract write for joining organization
   const {
