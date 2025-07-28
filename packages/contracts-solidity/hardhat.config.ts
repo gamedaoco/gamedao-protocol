@@ -6,8 +6,27 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import * as dotenv from "dotenv";
 import { task } from "hardhat/config";
+import * as path from "path";
 
 dotenv.config();
+
+// Docker-aware configuration
+const dockerMode = process.env.DOCKER_DEV_MODE === 'true';
+const isInContainer = process.env.NODE_ENV === 'development' && process.env.DOCKER_DEV_MODE === 'true';
+
+// Determine paths based on environment
+const getPath = (relativePath: string) => {
+  if (dockerMode && !isInContainer) {
+    // Running from host but targeting Docker
+    return path.join('./local-dev/contracts', relativePath);
+  } else if (isInContainer) {
+    // Running inside Docker container
+    return path.join('/app/contracts-output', relativePath);
+  } else {
+    // Traditional host-based development
+    return `./${relativePath}`;
+  }
+};
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -36,6 +55,10 @@ const config: HardhatUserConfig = {
     },
     localhost: {
       url: "http://127.0.0.1:8545",
+      chainId: 31337,
+    },
+    "docker-localhost": {
+      url: "http://hardhat-node:8545",
       chainId: 31337,
     },
     sepolia: {
@@ -88,8 +111,8 @@ const config: HardhatUserConfig = {
   paths: {
     sources: "./contracts",
     tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts",
+    cache: getPath("cache"),
+    artifacts: getPath("artifacts"),
   },
 };
 

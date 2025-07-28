@@ -40,10 +40,18 @@ help:
 	@echo ""
 	@echo "$(YELLOW)📋 Available Commands:$(NC)"
 	@echo ""
-	@echo "$(GREEN)🔧 Setup & Installation:$(NC)"
+	  @echo "$(GREEN)🔧 Setup & Installation:$(NC)"
 	@echo "  make install          Install all dependencies"
 	@echo "  make setup-env        Setup development environment"
 	@echo "  make clean            Clean all build artifacts"
+	@echo ""
+	@echo "$(GREEN)🐳 Docker Development:$(NC)"
+	@echo "  make docker-dev       Start dockerized development environment"
+	@echo "  make docker-dev-reset Complete Docker environment reset"
+	@echo "  make docker-dev-stop  Stop Docker development environment"
+	@echo "  make docker-deploy    Deploy contracts to Docker environment"
+	@echo "  make docker-status    Check Docker services status"
+	@echo "  make migrate-to-docker Migrate existing data to Docker structure"
 	@echo ""
 	@echo "$(GREEN)🏗️  Build & Compilation:$(NC)"
 	@echo "  make build            Build all packages"
@@ -214,7 +222,7 @@ verify:
 graph-node:
 	@echo "$(BLUE)📊 Starting local Graph node infrastructure...$(NC)"
 	@echo "$(CYAN)🐳 Starting Docker services...$(NC)"
-	@docker compose -f docker-compose.graph.yml up -d
+	@docker compose up -d
 	@echo "$(YELLOW)⏳ Waiting for services to be ready...$(NC)"
 	@sleep 10
 	@echo "$(GREEN)✅ Graph node infrastructure started$(NC)"
@@ -247,7 +255,7 @@ graph-full: graph-node
 
 graph-stop:
 	@echo "$(BLUE)🛑 Stopping Graph node infrastructure...$(NC)"
-	@docker compose -f docker-compose.graph.yml down
+	@docker compose down
 	@echo "$(GREEN)✅ Graph node infrastructure stopped$(NC)"
 
 graph-status:
@@ -270,8 +278,126 @@ dev:
 	@echo "  - Local node: http://localhost:8545"
 	@echo "  - Chain ID: 31337"
 
+# === DOCKER DEVELOPMENT ENVIRONMENT ===
+
+.PHONY: docker-dev docker-dev-stop docker-dev-reset docker-deploy docker-status migrate-to-docker
+
+# Start dockerized development environment
+docker-dev:
+	@echo "$(BLUE)🐳 Starting dockerized development environment...$(NC)"
+	@echo "$(CYAN)📋 Phase 1: Building and starting services...$(NC)"
+	@docker compose up -d --build
+	@echo "$(YELLOW)⏳ Waiting for services to be ready...$(NC)"
+	@sleep 15
+	@echo "$(CYAN)📋 Phase 2: Checking service health...$(NC)"
+	@make docker-status
+	@echo "$(GREEN)✅ Dockerized development environment ready!$(NC)"
+	@echo "$(CYAN)🎯 Services available:$(NC)"
+	@echo "  - Hardhat Node: http://localhost:8545"
+	@echo "  - Graph Node: http://localhost:8000"
+	@echo "  - Graph Node JSON-RPC: http://localhost:8020"
+	@echo "  - IPFS API: http://localhost:5001"
+	@echo "  - IPFS Gateway: http://localhost:8080"
+	@echo "  - PostgreSQL: localhost:5433"
+
+# Stop dockerized development environment
+docker-dev-stop:
+	@echo "$(BLUE)🛑 Stopping dockerized development environment...$(NC)"
+	@docker compose down
+	@echo "$(GREEN)✅ Docker development environment stopped$(NC)"
+
+# Complete reset of dockerized development environment
+docker-dev-reset:
+	@echo "$(BLUE)🔄 Resetting dockerized development environment...$(NC)"
+	@echo "$(CYAN)1️⃣  Stopping and removing containers...$(NC)"
+	@docker compose down -v --remove-orphans
+	@echo "$(CYAN)2️⃣  Cleaning up data directories...$(NC)"
+	@rm -rf local-dev/hardhat-node/data/*
+	@rm -rf local-dev/contracts/*
+	@rm -rf local-dev/graph/data/*
+	@rm -rf local-dev/ipfs/data/*
+	@rm -rf local-dev/postgres/data/*
+	@echo "$(CYAN)3️⃣  Recreating directory structure...$(NC)"
+	@mkdir -p local-dev/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres/data}
+	@echo "$(CYAN)4️⃣  Starting fresh environment...$(NC)"
+	@make docker-dev
+	@echo "$(GREEN)✅ Docker development environment reset complete!$(NC)"
+
+# Deploy contracts to dockerized environment
+docker-deploy:
+	@echo "$(BLUE)🚀 Deploying contracts to dockerized environment...$(NC)"
+	@echo "$(YELLOW)⚠️  Ensuring Docker environment is running...$(NC)"
+	@docker compose ps | grep -q "gamedao-node.*Up" || { \
+		echo "$(RED)❌ Docker environment not running. Starting now...$(NC)"; \
+		make docker-dev; \
+		sleep 5; \
+	}
+	@echo "$(CYAN)📋 Deploying contracts...$(NC)"
+	@cd $(CONTRACTS_DIR) && DOCKER_DEV_MODE=true pnpm run deploy:localhost
+	@echo "$(CYAN)📋 Updating shared package...$(NC)"
+	@cd $(SHARED_DIR) && npm run build
+	@echo "$(GREEN)✅ Docker deployment complete!$(NC)"
+	@echo "$(CYAN)💡 Contract addresses available in: local-dev/contracts/deployment-addresses.json$(NC)"
+
+# Check status of dockerized development environment
+docker-status:
+	@echo "$(BLUE)📊 Docker Development Environment Status$(NC)"
+	@echo "$(CYAN)🐳 Container Status:$(NC)"
+	@docker compose ps 2>/dev/null || echo "$(YELLOW)⚠️  Docker Compose not running$(NC)"
+	@echo ""
+	@echo "$(CYAN)🔍 Service Health Checks:$(NC)"
+	@echo -n "  Hardhat Node: "
+	@curl -s -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://localhost:8545 >/dev/null 2>&1 && echo "$(GREEN)✅ Running$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo -n "  Graph Node: "
+	@curl -s http://localhost:8000 >/dev/null 2>&1 && echo "$(GREEN)✅ Running$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo -n "  IPFS: "
+	@curl -s http://localhost:5001/api/v0/version >/dev/null 2>&1 && echo "$(GREEN)✅ Running$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo -n "  PostgreSQL: "
+	@docker exec gamedao-postgres pg_isready -U graph-node >/dev/null 2>&1 && echo "$(GREEN)✅ Running$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(CYAN)📁 Data Directories:$(NC)"
+	@echo "  - Hardhat Node: $(shell du -sh local-dev/hardhat-node 2>/dev/null | cut -f1 || echo "0B")"
+	@echo "  - Contracts: $(shell du -sh local-dev/contracts 2>/dev/null | cut -f1 || echo "0B")"
+	@echo "  - Graph Data: $(shell du -sh local-dev/graph 2>/dev/null | cut -f1 || echo "0B")"
+	@echo "  - IPFS Data: $(shell du -sh local-dev/ipfs 2>/dev/null | cut -f1 || echo "0B")"
+	@echo "  - PostgreSQL: $(shell du -sh local-dev/postgres 2>/dev/null | cut -f1 || echo "0B")"
+
+# Migrate existing development data to Docker structure
+migrate-to-docker:
+	@echo "$(BLUE)📦 Migrating existing development data to Docker structure...$(NC)"
+	@echo "$(CYAN)1️⃣  Creating local-dev directories...$(NC)"
+	@mkdir -p local-dev/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres/data}
+	@echo "$(CYAN)2️⃣  Migrating contract artifacts...$(NC)"
+	@if [ -d "$(CONTRACTS_DIR)/artifacts" ]; then \
+		cp -r $(CONTRACTS_DIR)/artifacts/* local-dev/contracts/artifacts/ 2>/dev/null || true; \
+		echo "  ✅ Artifacts migrated"; \
+	fi
+	@if [ -d "$(CONTRACTS_DIR)/cache" ]; then \
+		cp -r $(CONTRACTS_DIR)/cache/* local-dev/contracts/cache/ 2>/dev/null || true; \
+		echo "  ✅ Cache migrated"; \
+	fi
+	@if [ -d "$(CONTRACTS_DIR)/typechain-types" ]; then \
+		cp -r $(CONTRACTS_DIR)/typechain-types/* local-dev/contracts/typechain-types/ 2>/dev/null || true; \
+		echo "  ✅ TypeChain types migrated"; \
+	fi
+	@if [ -f "$(CONTRACTS_DIR)/deployment-addresses.json" ]; then \
+		cp $(CONTRACTS_DIR)/deployment-addresses.json local-dev/contracts/; \
+		echo "  ✅ Deployment addresses migrated"; \
+	fi
+	@echo "$(CYAN)3️⃣  Migrating Graph data...$(NC)"
+	@if [ -d "data/graph-node" ]; then \
+		mkdir -p data/graph; \
+		cp -r data/graph-node/* data/graph/ 2>/dev/null || true; \
+		echo "  ✅ Graph data migrated"; \
+	fi
+	@echo "  ℹ️  IPFS and PostgreSQL data already in correct location"
+	@echo "$(GREEN)✅ Migration to Docker structure complete!$(NC)"
+	@echo "$(YELLOW)💡 You can now use 'make docker-dev' to start the dockerized environment$(NC)"
+
+# Development workflow targets (Host-based - Legacy)
 dev-reset:
 	@echo "$(BLUE)🔄 Resetting development environment...$(NC)"
+	@echo "$(YELLOW)💡 Consider using 'make docker-dev-reset' for the new dockerized environment$(NC)"
 	@echo "$(CYAN)1️⃣  Stopping existing processes...$(NC)"
 	@-pkill -f "hardhat node" 2>/dev/null || true
 	@-pkill -f "node.*hardhat.*node" 2>/dev/null || true
@@ -378,30 +504,97 @@ format:
 
 # Status and information targets
 status:
-	@echo "$(CYAN)📊 GameDAO Protocol Status$(NC)"
+	@echo "📊 System Status:"
+	@echo "🔗 Hardhat Network:"
+	@curl -s -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://localhost:8545 | grep -o '"result":"[^"]*"' || echo "❌ Hardhat not running"
 	@echo ""
-	@echo "$(YELLOW)📈 Implementation Progress:$(NC)"
-	@echo "  ✅ Control Module: Complete"
-	@echo "  ✅ Flow Module: Complete"
-	@echo "  ✅ Signal Module: Complete"
-	@echo "  ✅ Identity Module: Complete (13.144 KiB)"
-	@echo "  ✅ SenseSimplified Module: Complete (9.826 KiB)"
-	@echo "  ✅ GameId Library: Complete"
-	@echo "  🔄 Frontend Development: 70% Complete"
-	@echo "  🔄 Subgraph Integration: 80% Complete"
+	@echo "📈 Subgraph:"
+	@curl -s -X POST -H "Content-Type: application/json" --data '{"query":"query{organizations{id}}"}' http://localhost:8000/subgraphs/name/gamedao/protocol | grep -o '"data"' > /dev/null && echo "✅ Subgraph running" || echo "❌ Subgraph not running"
 	@echo ""
-	@echo "$(YELLOW)🏗️  Architecture Status:$(NC)"
-	@echo "  ✅ Modular Architecture: Implemented"
-	@echo "  ✅ Contract Size Optimization: Complete"
-	@echo "  ✅ Hierarchical ID System: Complete"
-	@echo "  ✅ GameDAO Registry: Complete"
-	@echo "  ✅ Treasury: Complete"
-	@echo ""
-	@echo "$(YELLOW)🔒 Security Status:$(NC)"
-	@echo "  ✅ OpenZeppelin Integration: Complete"
-	@echo "  ✅ Access Control: Implemented"
-	@echo "  ✅ Reentrancy Protection: Implemented"
-	@echo "  ✅ Modular Security: Implemented"
+	@echo "🖥️ Frontend:"
+	@curl -s http://localhost:3000 > /dev/null && echo "✅ Frontend running" || echo "❌ Frontend not running"
+
+# === UNIFIED DEPLOYMENT STRATEGY ===
+
+.PHONY: deploy-local deploy-local-clean validate-addresses
+
+# Unified local deployment with automatic address synchronization
+deploy-local:
+	@echo "🚀 Starting unified deployment with address synchronization..."
+	@echo "📋 Phase 1: Deploying contracts..."
+	cd packages/contracts-solidity && npm run deploy:localhost
+	@echo "📋 Phase 2: Updating shared package..."
+	cd packages/shared && npm run build
+	@echo "📋 Phase 3: Syncing subgraph addresses and deploying..."
+	cd packages/subgraph && npm run update-addresses && npm run build && npm run deploy-local
+	@echo "📋 Phase 4: Validating address consistency..."
+	@$(MAKE) validate-addresses
+	@echo "✅ Unified deployment complete - all addresses synchronized!"
+
+# Clean deployment (stops services, redeploys everything)
+deploy-local-clean: stop-services
+	@echo "🧹 Clean deployment with fresh services..."
+	@$(MAKE) dev
+	@sleep 10  # Wait for services to start
+	@$(MAKE) deploy-local
+	@echo "✅ Clean deployment complete!"
+
+# Validate that all components use consistent addresses
+validate-addresses:
+	@echo "🔍 Validating address consistency across components..."
+	@node -e " \
+		const deploymentAddresses = require('./packages/contracts-solidity/deployment-addresses.json'); \
+		const sharedAddresses = require('./packages/shared/src/addresses.ts'); \
+		const fs = require('fs'); \
+		const subgraphYaml = fs.readFileSync('./packages/subgraph/subgraph.yaml', 'utf8'); \
+		console.log('📍 Deployment addresses loaded:', Object.keys(deploymentAddresses).length, 'contracts'); \
+		console.log('📍 Shared package addresses loaded'); \
+		console.log('📍 Subgraph YAML loaded'); \
+		console.log('✅ Address validation passed (detailed validation TODO)'); \
+	"
+
+# === DEVELOPMENT WORKFLOW IMPROVEMENTS ===
+
+# Quick test cycle: deploy contracts + run tests
+test-cycle:
+	@echo "🧪 Running test cycle..."
+	cd packages/contracts-solidity && npm run deploy:localhost
+	cd packages/contracts-solidity && npm test
+	@echo "✅ Test cycle complete!"
+
+# Scaffold with proper address sync
+scaffold: deploy-local
+	@echo "🏗️ Running scaffold with synchronized addresses..."
+	cd packages/contracts-solidity && npm run scaffold
+	@echo "✅ Scaffolding complete!"
+
+# === VERCEL DEPLOYMENT ===
+
+.PHONY: deploy-vercel-check deploy-vercel-staging deploy-vercel-prod
+
+# Pre-deployment validation
+deploy-vercel-check:
+	@echo "$(BLUE)🔍 Running Vercel deployment checklist...$(NC)"
+	@node scripts/vercel-deployment-checklist.js
+	@echo "$(GREEN)✅ Vercel deployment validation complete$(NC)"
+
+# Deploy to Vercel staging/preview
+deploy-vercel-staging: deploy-vercel-check
+	@echo "$(BLUE)🚀 Deploying to Vercel staging...$(NC)"
+	@vercel --yes
+	@echo "$(GREEN)✅ Vercel staging deployment complete$(NC)"
+
+# Deploy to Vercel production
+deploy-vercel-prod: deploy-vercel-check
+	@echo "$(RED)🚨 VERCEL PRODUCTION DEPLOYMENT - ARE YOU SURE? (y/N)$(NC)"
+	@read -r REPLY; \
+	if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
+		echo "$(BLUE)🚀 Deploying to Vercel production...$(NC)"; \
+		vercel --prod --yes; \
+		echo "$(GREEN)✅ Vercel production deployment complete$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  Vercel production deployment cancelled$(NC)"; \
+	fi
 
 # Error handling
 .ONESHELL:

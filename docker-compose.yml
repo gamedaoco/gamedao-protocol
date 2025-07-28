@@ -1,0 +1,133 @@
+services:
+  # Dockerized Hardhat Node
+  hardhat-node:
+    build:
+      context: .
+      dockerfile: ./docker/hardhat-node/Dockerfile
+    container_name: gamedao-node
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./data/hardhat-node:/app/data
+      - ./data/contracts:/app/contracts-output
+      - ./data/logs:/app/logs
+      # Mount source code for hot reload during development
+      - ./packages/contracts-solidity:/app/packages/contracts-solidity:delegated
+    networks:
+      - gamedao
+    environment:
+      - NODE_ENV=development
+      - DOCKER_DEV_MODE=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545", "-X", "POST", "-H", "Content-Type: application/json", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # Graph Node for indexing
+  graph-node:
+    image: graphprotocol/graph-node:v0.33.0
+    container_name: gamedao-graph
+    ports:
+      - '8000:8000'  # GraphQL HTTP server
+      - '8001:8001'  # GraphQL WebSocket server
+      - '8020:8020'  # JSON-RPC server
+      - '8030:8030'  # Subgraph indexing status
+      - '8040:8040'  # Prometheus metrics
+    depends_on:
+      hardhat-node:
+        condition: service_healthy
+      ipfs:
+        condition: service_started
+      postgres:
+        condition: service_started
+    environment:
+      postgres_host: postgres
+      postgres_user: graph-node
+      postgres_pass: let-me-in
+      postgres_db: graph-node
+      ipfs: 'ipfs:5001'
+      ethereum: 'localhost:http://hardhat-node:8545'
+      GRAPH_LOG: info
+      GRAPH_ALLOW_NON_DETERMINISTIC_FULLTEXT_SEARCH: 'true'
+      RUST_LOG: info
+    volumes:
+      - ./data/graph:/data
+    networks:
+      - gamedao
+    restart: unless-stopped
+
+  # IPFS for Graph Protocol
+  ipfs:
+    image: ipfs/kubo:v0.22.0
+    container_name: gamedao-ipfs
+    ports:
+      - '5001:5001'  # API port
+      - '8080:8080'  # Gateway port
+    volumes:
+      - ./data/ipfs:/data/ipfs
+    environment:
+      - IPFS_PROFILE=server
+      - IPFS_PATH=/data/ipfs
+    networks:
+      - gamedao
+    command: |
+      sh -c "
+        ipfs init --profile server || true &&
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '[\"*\"]' &&
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '[\"PUT\", \"GET\", \"POST\"]' &&
+        ipfs daemon --migrate=true
+      "
+    restart: unless-stopped
+
+  # PostgreSQL for Graph Node
+  postgres:
+    image: postgres:14-alpine
+    container_name: gamedao-db
+    ports:
+      - '5433:5432'  # Avoid conflict with local PostgreSQL
+    command:
+      - "postgres"
+      - "-cshared_preload_libraries=pg_stat_statements"
+      - "-cmax_connections=200"
+      - "-clog_destination=stderr"
+      - "-clogging_collector=on"
+      - "-clog_directory=/var/log/postgresql"
+      - "-clog_filename=postgresql-%Y-%m-%d_%H%M%S.log"
+      - "-clog_rotation_age=1d"
+      - "-clog_rotation_size=1GB"
+    environment:
+      POSTGRES_USER: graph-node
+      POSTGRES_PASSWORD: let-me-in
+      POSTGRES_DB: graph-node
+      PGDATA: "/var/lib/postgresql/data"
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - gamedao
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U graph-node -d graph-node"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  hardhat-node-data:
+    driver: local
+  contracts-output:
+    driver: local
+  graph-data:
+    driver: local
+  ipfs-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+networks:
+  gamedao:
+    driver: bridge
+    name: gamedao-dev-network
