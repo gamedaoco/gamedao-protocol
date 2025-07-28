@@ -62,6 +62,10 @@ target/
 Cargo.lock
 *.pdb
 
+# Large binaries and executables
+zombienet-*
+*.exe
+
 # Docker Development Data
 data/
 *.pid
