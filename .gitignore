@@ -53,6 +53,11 @@ typechain-types/
 subgraph/build/
 subgraph/generated/
 
+# Rust
+target/
+Cargo.lock
+*.pdb
+
 # Docker Development Data
 data/
 *.pid
