@@ -48,6 +48,10 @@ yarn-error.log*
 artifacts/
 cache/
 typechain-types/
+*.dbg.json
+scaffold-output.json
+coverage.json
+.openzeppelin/
 
 # Graph Protocol
 subgraph/build/
