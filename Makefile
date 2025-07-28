@@ -29,7 +29,7 @@ GRAPH_NODE_PORT?=8020
 IPFS_PORT?=5001
 POSTGRES_PORT?=5432
 
-.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy scaffold dev-reset
+.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy scaffold scaffold-copy scaffold-full scaffold-with-deploy scaffold-clean dev-reset
 
 # Default target
 all: clean install build test
@@ -83,7 +83,10 @@ help:
 	@echo "  make dev-reset        Reset development environment"
 	@echo "  make dev-full         Full dev environment (contracts + graph + frontend)"
 	@echo "  make dev-frontend     Start frontend development server"
-	@echo "  make scaffold         Generate test data"
+	@echo "  make scaffold         Generate test data (contracts must be deployed)"
+	@echo "  make scaffold-copy    Copy scaffold data to frontend"
+	@echo "  make scaffold-full    Generate test data + copy to frontend"
+	@echo "  make scaffold-with-deploy  Full deployment + scaffold (fresh setup)"
 	@echo "  make scaffold-clean   Clean scaffold data"
 	@echo "  make send-tokens      Send tokens to specific address"
 	@echo ""
@@ -312,13 +315,13 @@ docker-dev-reset:
 	@echo "$(CYAN)1️⃣  Stopping and removing containers...$(NC)"
 	@docker compose down -v --remove-orphans
 	@echo "$(CYAN)2️⃣  Cleaning up data directories...$(NC)"
-	@rm -rf local-dev/hardhat-node/data/*
-	@rm -rf local-dev/contracts/*
-	@rm -rf local-dev/graph/data/*
-	@rm -rf local-dev/ipfs/data/*
-	@rm -rf local-dev/postgres/data/*
+	@rm -rf data/hardhat-node/data/*
+	@rm -rf data/contracts/*
+	@rm -rf data/graph/data/*
+	@rm -rf data/ipfs/data/*
+	@rm -rf data/postgres/data/*
 	@echo "$(CYAN)3️⃣  Recreating directory structure...$(NC)"
-	@mkdir -p local-dev/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres/data}
+	@mkdir -p data/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres/data}
 	@echo "$(CYAN)4️⃣  Starting fresh environment...$(NC)"
 	@make docker-dev
 	@echo "$(GREEN)✅ Docker development environment reset complete!$(NC)"
@@ -337,7 +340,7 @@ docker-deploy:
 	@echo "$(CYAN)📋 Updating shared package...$(NC)"
 	@cd $(SHARED_DIR) && npm run build
 	@echo "$(GREEN)✅ Docker deployment complete!$(NC)"
-	@echo "$(CYAN)💡 Contract addresses available in: local-dev/contracts/deployment-addresses.json$(NC)"
+	@echo "$(CYAN)💡 Contract addresses available in: data/contracts/deployment-addresses.json$(NC)"
 
 # Check status of dockerized development environment
 docker-status:
@@ -356,32 +359,32 @@ docker-status:
 	@docker exec gamedao-postgres pg_isready -U graph-node >/dev/null 2>&1 && echo "$(GREEN)✅ Running$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo ""
 	@echo "$(CYAN)📁 Data Directories:$(NC)"
-	@echo "  - Hardhat Node: $(shell du -sh local-dev/hardhat-node 2>/dev/null | cut -f1 || echo "0B")"
-	@echo "  - Contracts: $(shell du -sh local-dev/contracts 2>/dev/null | cut -f1 || echo "0B")"
-	@echo "  - Graph Data: $(shell du -sh local-dev/graph 2>/dev/null | cut -f1 || echo "0B")"
-	@echo "  - IPFS Data: $(shell du -sh local-dev/ipfs 2>/dev/null | cut -f1 || echo "0B")"
-	@echo "  - PostgreSQL: $(shell du -sh local-dev/postgres 2>/dev/null | cut -f1 || echo "0B")"
+	@echo "  - Hardhat Node: $(shell du -sh data/hardhat-node 2>/dev/null | cut -f1 || echo "0B")"
+	@echo "  - Contracts: $(shell du -sh data/contracts 2>/dev/null | cut -f1 || echo "0B")"
+	@echo "  - Graph Data: $(shell du -sh data/graph 2>/dev/null | cut -f1 || echo "0B")"
+	@echo "  - IPFS Data: $(shell du -sh data/ipfs 2>/dev/null | cut -f1 || echo "0B")"
+	@echo "  - PostgreSQL: $(shell du -sh data/postgres 2>/dev/null | cut -f1 || echo "0B")"
 
 # Migrate existing development data to Docker structure
 migrate-to-docker:
 	@echo "$(BLUE)📦 Migrating existing development data to Docker structure...$(NC)"
-	@echo "$(CYAN)1️⃣  Creating local-dev directories...$(NC)"
-	@mkdir -p local-dev/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres/data}
+	@echo "$(CYAN)1️⃣  Creating data directories...$(NC)"
+	@mkdir -p data/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres/data}
 	@echo "$(CYAN)2️⃣  Migrating contract artifacts...$(NC)"
 	@if [ -d "$(CONTRACTS_DIR)/artifacts" ]; then \
-		cp -r $(CONTRACTS_DIR)/artifacts/* local-dev/contracts/artifacts/ 2>/dev/null || true; \
+		cp -r $(CONTRACTS_DIR)/artifacts/* data/contracts/artifacts/ 2>/dev/null || true; \
 		echo "  ✅ Artifacts migrated"; \
 	fi
 	@if [ -d "$(CONTRACTS_DIR)/cache" ]; then \
-		cp -r $(CONTRACTS_DIR)/cache/* local-dev/contracts/cache/ 2>/dev/null || true; \
+		cp -r $(CONTRACTS_DIR)/cache/* data/contracts/cache/ 2>/dev/null || true; \
 		echo "  ✅ Cache migrated"; \
 	fi
 	@if [ -d "$(CONTRACTS_DIR)/typechain-types" ]; then \
-		cp -r $(CONTRACTS_DIR)/typechain-types/* local-dev/contracts/typechain-types/ 2>/dev/null || true; \
+		cp -r $(CONTRACTS_DIR)/typechain-types/* data/contracts/typechain-types/ 2>/dev/null || true; \
 		echo "  ✅ TypeChain types migrated"; \
 	fi
 	@if [ -f "$(CONTRACTS_DIR)/deployment-addresses.json" ]; then \
-		cp $(CONTRACTS_DIR)/deployment-addresses.json local-dev/contracts/; \
+		cp $(CONTRACTS_DIR)/deployment-addresses.json data/contracts/; \
 		echo "  ✅ Deployment addresses migrated"; \
 	fi
 	@echo "$(CYAN)3️⃣  Migrating Graph data...$(NC)"
@@ -452,6 +455,14 @@ scaffold:
 	@echo "$(YELLOW)⚠️  Ensure local node is running and contracts are deployed$(NC)"
 	@cd $(CONTRACTS_DIR) && pnpm run scaffold
 	@echo "$(GREEN)✅ Test data generated successfully$(NC)"
+
+scaffold-copy:
+	@echo "$(BLUE)📋 Copying scaffold data to frontend...$(NC)"
+	@cd $(CONTRACTS_DIR) && node scripts/copy-scaffold-data.js
+	@echo "$(GREEN)✅ Scaffold data copied to frontend$(NC)"
+
+scaffold-full: scaffold scaffold-copy
+	@echo "$(GREEN)✅ Full scaffold workflow complete (generate + copy)$(NC)"
 
 scaffold-clean:
 	@echo "$(BLUE)🧹 Cleaning scaffold data...$(NC)"
@@ -562,11 +573,11 @@ test-cycle:
 	cd packages/contracts-solidity && npm test
 	@echo "✅ Test cycle complete!"
 
-# Scaffold with proper address sync
-scaffold: deploy-local
+# Full scaffold with deployment (for fresh setups)
+scaffold-with-deploy: deploy-local
 	@echo "🏗️ Running scaffold with synchronized addresses..."
-	cd packages/contracts-solidity && npm run scaffold
-	@echo "✅ Scaffolding complete!"
+	@cd $(CONTRACTS_DIR) && pnpm run scaffold
+	@echo "✅ Full scaffold with deployment complete!"
 
 # === VERCEL DEPLOYMENT ===
 
