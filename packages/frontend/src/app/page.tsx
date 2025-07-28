@@ -20,7 +20,7 @@ export default function HomePage() {
 
   return (
     <div className="space-y-20">
-      {/* Hero Section */}
+      {/* Hero Section - GIP-005 Aligned */}
       <div className="text-center space-y-12 pt-8">
         <div className="space-y-8">
           <div className="flex justify-center mb-6">
@@ -61,7 +61,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Value Proposition - Three Pillars */}
+      {/* Three-Pillar Value Proposition - GIP-005 */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-3xl p-8 md:p-12">
         <div className="text-center space-y-6 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold">Leading the Game Creation Revolution</h2>
@@ -119,7 +119,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* The Complete Game Creation Ecosystem */}
+      {/* Four-Module Integration - GIP-005 */}
       <div className="space-y-12">
         <div className="text-center space-y-6">
           <h2 className="text-3xl md:text-4xl font-bold">The Complete Game Creation Ecosystem</h2>
@@ -276,7 +276,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Creator Journey Framework */}
+      {/* Creator Journey Framework - GIP-005 */}
       <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-3xl p-8 md:p-12">
         <div className="text-center space-y-6 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold">How GameDAO Powers Better Games</h2>
@@ -370,7 +370,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Six Creator Benefits */}
+      {/* Six Creator Benefits - GIP-005 */}
       <div className="space-y-12">
         <div className="text-center space-y-4">
           <h2 className="text-3xl md:text-4xl font-bold">Why Game Creators Choose GameDAO</h2>
@@ -473,7 +473,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Call to Action */}
+      {/* Call to Action - GIP-005 */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-12 text-center text-white">
         <div className="space-y-8">
           <div className="space-y-4">
