@@ -273,13 +273,13 @@ graph-status:
 	@echo "  - 5433: PostgreSQL"
 
 # Development workflow targets
-dev:
-	@echo "$(BLUE)🔧 Starting development environment...$(NC)"
-	@cd $(CONTRACTS_DIR) && pnpm run node &
-	@echo "$(GREEN)✅ Hardhat node started$(NC)"
-	@echo "$(CYAN)💡 Ready for development!$(NC)"
-	@echo "  - Local node: http://localhost:8545"
-	@echo "  - Chain ID: 31337"
+# dev:
+# 	@echo "$(BLUE)🔧 Starting development environment...$(NC)"
+# 	@cd $(CONTRACTS_DIR) && pnpm run node &
+# 	@echo "$(GREEN)✅ Hardhat node started$(NC)"
+# 	@echo "$(CYAN)💡 Ready for development!$(NC)"
+# 	@echo "  - Local node: http://localhost:8545"
+# 	@echo "  - Chain ID: 31337"
 
 # === DOCKER DEVELOPMENT ENVIRONMENT ===
 
@@ -319,9 +319,9 @@ docker-dev-reset:
 	@rm -rf data/contracts/*
 	@rm -rf data/graph/data/*
 	@rm -rf data/ipfs/data/*
-	@rm -rf data/postgres/data/*
+	@rm -rf data/postgres/*
 	@echo "$(CYAN)3️⃣  Recreating directory structure...$(NC)"
-	@mkdir -p data/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres/data}
+	@mkdir -p data/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres}
 	@echo "$(CYAN)4️⃣  Starting fresh environment...$(NC)"
 	@make docker-dev
 	@echo "$(GREEN)✅ Docker development environment reset complete!$(NC)"
@@ -537,7 +537,8 @@ deploy-local:
 	@echo "📋 Phase 2: Updating shared package..."
 	cd packages/shared && npm run build
 	@echo "📋 Phase 3: Syncing subgraph addresses and deploying..."
-	cd packages/subgraph && npm run update-addresses && npm run build && npm run deploy-local
+	cd packages/subgraph && npm run update-addresses && npm run build && npm run create-local || echo "⚠️  Subgraph may already exist, continuing to deploy"
+	cd packages/subgraph && npm run deploy-local
 	@echo "📋 Phase 4: Validating address consistency..."
 	@$(MAKE) validate-addresses
 	@echo "✅ Unified deployment complete - all addresses synchronized!"
@@ -555,11 +556,11 @@ validate-addresses:
 	@echo "🔍 Validating address consistency across components..."
 	@node -e " \
 		const deploymentAddresses = require('./packages/contracts-solidity/deployment-addresses.json'); \
-		const sharedAddresses = require('./packages/shared/src/addresses.ts'); \
+		const shared = require('./packages/shared/dist/index.js'); \
 		const fs = require('fs'); \
 		const subgraphYaml = fs.readFileSync('./packages/subgraph/subgraph.yaml', 'utf8'); \
 		console.log('📍 Deployment addresses loaded:', Object.keys(deploymentAddresses).length, 'contracts'); \
-		console.log('📍 Shared package addresses loaded'); \
+		console.log('📍 Shared package addresses (LOCAL):', shared.LOCAL_ADDRESSES ? Object.keys(shared.LOCAL_ADDRESSES).length : 0); \
 		console.log('📍 Subgraph YAML loaded'); \
 		console.log('✅ Address validation passed (detailed validation TODO)'); \
 	"
