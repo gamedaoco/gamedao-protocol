@@ -4,15 +4,16 @@ const nextConfig = {
   experimental: {
     esmExternals: 'loose',
   },
-//   webpack: (config, { isServer }) => {
-//     // Handle workspace packages
-//     config.resolve.alias = {
-//       ...config.resolve.alias,
-//       '@gamedao/evm': require.resolve('@gamedao/evm'),
-//     }
+  webpack: (config) => {
+    // Stub React Native AsyncStorage for web builds (used by MetaMask SDK)
+    config.resolve = config.resolve || {}
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@react-native-async-storage/async-storage': false,
+    }
 
-//     return config
-//   },
+    return config
+  },
 };
 
 export default nextConfig;
