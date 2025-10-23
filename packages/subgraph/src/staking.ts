@@ -8,10 +8,9 @@ import {
   Unstaked,
   RewardsClaimed,
   Slashed,
-  GameStaking,
   RewardsDistributed,
   PoolUpdated
-} from "../generated/GameStaking/GameStaking"
+} from "../generated/Staking/Staking"
 import {
   OrganizationStake,
   UserStake,

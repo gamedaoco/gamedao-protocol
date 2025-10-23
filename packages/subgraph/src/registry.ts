@@ -4,7 +4,7 @@ import {
   ModuleEnabled,
   ModuleDisabled,
   ModuleUpgraded
-} from "../generated/GameDAORegistry/GameDAORegistry"
+} from "../generated/Registry/Registry"
 import {
   Module,
   ModuleRegistration,
