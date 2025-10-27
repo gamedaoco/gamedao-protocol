@@ -2141,6 +2141,19 @@ export class Organization extends Entity {
     this.set("creator", Value.fromString(value));
   }
 
+  get prime(): Bytes {
+    let value = this.get("prime");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set prime(value: Bytes) {
+    this.set("prime", Value.fromBytes(value));
+  }
+
   get treasury(): string | null {
     let value = this.get("treasury");
     if (!value || value.kind == ValueKind.NULL) {

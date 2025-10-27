@@ -1,27 +1,18 @@
 {
   "_format": "hh-sol-artifact-1",
-<<<<<<<< HEAD:packages/subgraph/abis/Registry.json
-  "contractName": "Registry",
-  "sourceName": "contracts/Registry.sol",
-========
   "contractName": "Factory",
   "sourceName": "contracts/Factory.sol",
->>>>>>>> fix/remove-large-binary:packages/subgraph/abis/Factory.json
   "abi": [
     {
       "inputs": [
         {
           "internalType": "address",
-<<<<<<<< HEAD:packages/subgraph/abis/Registry.json
-          "name": "admin",
-========
           "name": "_gameToken",
           "type": "address"
         },
         {
           "internalType": "address",
           "name": "_stakingContract",
->>>>>>>> fix/remove-large-binary:packages/subgraph/abis/Factory.json
           "type": "address"
         }
       ],
@@ -30,81 +21,33 @@
     },
     {
       "inputs": [],
-      "name": "InvalidModuleAddress",
-      "type": "error"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "ModuleAlreadyEnabled",
-      "type": "error"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "ModuleAlreadyRegistered",
+      "name": "InvalidRegistryAddress",
       "type": "error"
     },
     {
       "inputs": [],
-      "name": "ModuleInitializationFailed",
+      "name": "ModuleAlreadyInitialized",
       "type": "error"
     },
     {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "ModuleNotEnabled",
+      "inputs": [],
+      "name": "ModuleNotInitialized",
       "type": "error"
     },
     {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "ModuleNotRegistered",
+      "inputs": [],
+      "name": "OnlyRegistry",
       "type": "error"
     },
     {
       "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
+      "inputs": [],
       "name": "ModuleDisabled",
       "type": "event"
     },
     {
       "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
+      "inputs": [],
       "name": "ModuleEnabled",
       "type": "event"
     },
@@ -113,55 +56,12 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        },
-        {
-          "indexed": true,
           "internalType": "address",
-          "name": "moduleAddress",
+          "name": "registry",
           "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "version",
-          "type": "string"
         }
       ],
-      "name": "ModuleRegistered",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "oldAddress",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "newAddress",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "newVersion",
-          "type": "string"
-        }
-      ],
-      "name": "ModuleUpgraded",
+      "name": "ModuleInitialized",
       "type": "event"
     },
     {
@@ -212,19 +112,6 @@
         }
       ],
       "name": "Paused",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "admin",
-          "type": "address"
-        }
-      ],
-      "name": "RegistryInitialized",
       "type": "event"
     },
     {
@@ -343,9 +230,6 @@
     },
     {
       "inputs": [],
-<<<<<<<< HEAD:packages/subgraph/abis/Registry.json
-      "name": "MODULE_MANAGER_ROLE",
-========
       "name": "MAX_MEMBER_LIMIT",
       "outputs": [
         {
@@ -412,7 +296,6 @@
     {
       "inputs": [],
       "name": "OPERATOR_ROLE",
->>>>>>>> fix/remove-large-binary:packages/subgraph/abis/Factory.json
       "outputs": [
         {
           "internalType": "bytes32",
@@ -426,14 +309,6 @@
     {
       "inputs": [
         {
-<<<<<<<< HEAD:packages/subgraph/abis/Registry.json
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "disableModule",
-========
           "internalType": "address",
           "name": "user",
           "type": "address"
@@ -493,14 +368,13 @@
     {
       "inputs": [],
       "name": "emergencyPause",
->>>>>>>> fix/remove-large-binary:packages/subgraph/abis/Factory.json
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [],
-      "name": "emergencyDisableAllModules",
+      "name": "emergencyUnpause",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -513,155 +387,6 @@
           "internalType": "contract IERC20",
           "name": "",
           "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "enableModule",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getAllModules",
-      "outputs": [
-        {
-          "internalType": "bytes32[]",
-          "name": "",
-          "type": "bytes32[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getEnabledModuleCount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getEnabledModules",
-      "outputs": [
-        {
-          "internalType": "bytes32[]",
-          "name": "",
-          "type": "bytes32[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "getModule",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getModuleCount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "getModuleInfo",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "moduleAddress",
-              "type": "address"
-            },
-            {
-              "internalType": "string",
-              "name": "version",
-              "type": "string"
-            },
-            {
-              "internalType": "bool",
-              "name": "isEnabled",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256",
-              "name": "registeredAt",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "enabledAt",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct Registry.ModuleInfo",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "getModuleVersion",
-      "outputs": [
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
         }
       ],
       "stateMutability": "view",
@@ -731,12 +456,19 @@
     {
       "inputs": [
         {
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
+          "internalType": "address",
+          "name": "registryAddress",
+          "type": "address"
         }
       ],
-      "name": "isModuleEnabled",
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "isInitialized",
       "outputs": [
         {
           "internalType": "bool",
@@ -749,8 +481,19 @@
     },
     {
       "inputs": [],
-<<<<<<<< HEAD:packages/subgraph/abis/Registry.json
-========
+      "name": "membershipContract",
+      "outputs": [
+        {
+          "internalType": "contract IMembership",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "moduleId",
       "outputs": [
         {
@@ -791,7 +534,6 @@
     },
     {
       "inputs": [],
->>>>>>>> fix/remove-large-binary:packages/subgraph/abis/Factory.json
       "name": "pause",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -811,16 +553,16 @@
       "type": "function"
     },
     {
-      "inputs": [
+      "inputs": [],
+      "name": "registry",
+      "outputs": [
         {
           "internalType": "address",
-          "name": "moduleAddress",
+          "name": "",
           "type": "address"
         }
       ],
-      "name": "registerModule",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -855,6 +597,19 @@
         }
       ],
       "name": "revokeRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_membership",
+          "type": "address"
+        }
+      ],
+      "name": "setMembership",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -912,21 +667,16 @@
       "type": "function"
     },
     {
-      "inputs": [
+      "inputs": [],
+      "name": "version",
+      "outputs": [
         {
-          "internalType": "bytes32",
-          "name": "moduleId",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "address",
-          "name": "newModuleAddress",
-          "type": "address"
+          "internalType": "string",
+          "name": "",
+          "type": "string"
         }
       ],
-      "name": "upgradeModule",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     }
   ],

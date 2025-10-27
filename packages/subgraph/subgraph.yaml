@@ -333,8 +333,8 @@ dataSources:
           file: ./abis/Factory.json
       eventHandlers:
         - event: OrganizationCreated(indexed bytes8,string,indexed address,indexed address,uint256)
-          handler: handleOrganizationCreated
-      file: ./src/control.ts
+          handler: handleFactoryOrganizationCreated
+      file: ./src/factory.ts
 
   # Flow Module - Campaigns & Crowdfunding
   - kind: ethereum

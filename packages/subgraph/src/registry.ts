@@ -25,7 +25,8 @@ export function handleModuleRegistered(event: ModuleRegistered): void {
 
   module.address = event.params.moduleAddress
   module.admin = event.params.moduleAddress // Admin will be the module address for now
-  module.enabled = true
+  // Default to disabled until an explicit ModuleEnabled event is observed
+  module.enabled = false
   module.updatedAt = event.block.timestamp
 
   module.save()

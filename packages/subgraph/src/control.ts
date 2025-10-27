@@ -74,31 +74,54 @@ export function handleOrganizationCreated(event: OrganizationCreated): void {
   updateIndexingStatus(event.block, 'OrganizationCreated')
 
   let organizationId = getOrganizationIdString(event.params.id)
+
+  // Bind to Control contract to fetch full organization data
+  let control = Control.bind(event.address)
+  let orgDataResult = control.try_getOrganization(event.params.id)
+
   let organization = new Organization(organizationId)
 
-  // Set organization properties
-  organization.name = event.params.name
-  organization.metadataURI = ""
-  organization.creator = event.params.creator.toHex()
-  organization.treasuryAddress = event.params.treasury
-  organization.orgType = mapOrgType(0) // Default to INDIVIDUAL
-  organization.accessModel = mapAccessModel(0) // Default to OPEN
-  organization.feeModel = mapFeeModel(0) // Default to NONE
-  organization.memberLimit = BigInt.fromI32(0)
-  organization.memberCount = BigInt.fromI32(0)
-  organization.totalCampaigns = BigInt.fromI32(0)
-  organization.totalProposals = BigInt.fromI32(0)
-  organization.membershipFee = BigInt.fromI32(0)
-  organization.gameStakeRequired = BigInt.fromI32(0)
-  organization.state = "ACTIVE" // Default
-  organization.createdAt = event.params.timestamp
-  organization.updatedAt = event.params.timestamp
-  organization.blockNumber = event.block.number
-  organization.transaction = event.transaction.hash.toHex()
+  if (!orgDataResult.reverted) {
+    let org = orgDataResult.value
+    organization.name = org.name
+    organization.metadataURI = org.metadataURI
+    organization.creator = event.params.creator.toHex()
+    organization.prime = org.prime
+    // prime is not modeled in schema yet; frontend reads from details query; can be added if needed
+    organization.treasuryAddress = org.treasury
+    organization.orgType = mapOrgType(org.orgType)
+    organization.accessModel = mapAccessModel(org.accessModel)
+    organization.feeModel = mapFeeModel(org.feeModel)
+    organization.memberLimit = org.memberLimit
+    organization.memberCount = org.memberCount
+    organization.totalCampaigns = org.totalCampaigns
+    organization.totalProposals = org.totalProposals
+    organization.membershipFee = org.membershipFee
+    organization.gameStakeRequired = org.gameStakeRequired
+    organization.state = mapOrgState(org.state)
+    organization.createdAt = org.createdAt
+    organization.updatedAt = org.updatedAt
+  } else {
+    // Fallback to event-only data with safe defaults
+    organization.name = event.params.name
+    organization.metadataURI = ""
+    organization.creator = event.params.creator.toHex()
+    organization.treasuryAddress = event.params.treasury
+    organization.orgType = mapOrgType(0)
+    organization.accessModel = mapAccessModel(0)
+    organization.feeModel = mapFeeModel(0)
+    organization.memberLimit = BigInt.fromI32(0)
+    organization.memberCount = BigInt.fromI32(0)
+    organization.totalCampaigns = BigInt.fromI32(0)
+    organization.totalProposals = BigInt.fromI32(0)
+    organization.membershipFee = BigInt.fromI32(0)
+    organization.gameStakeRequired = BigInt.fromI32(0)
+    organization.state = "ACTIVE"
+    organization.createdAt = event.params.timestamp
+    organization.updatedAt = event.params.timestamp
+  }
 
-  organization.save()
-
-  // Create Treasury entity
+  // Link Treasury entity
   let treasuryId = event.params.treasury.toHex()
   let treasury = new Treasury(treasuryId)
   treasury.organization = organizationId
@@ -108,6 +131,11 @@ export function handleOrganizationCreated(event: OrganizationCreated): void {
   treasury.totalDeposits = BigDecimal.fromString("0")
   treasury.totalSpent = BigDecimal.fromString("0")
   treasury.save()
+
+  organization.treasury = treasuryId
+  organization.blockNumber = event.block.number
+  organization.transaction = event.transaction.hash.toHex()
+  organization.save()
 
   // Create Treasury template instance for dynamic contract indexing
   TreasuryTemplate.create(event.params.treasury)
@@ -128,8 +156,8 @@ export function handleOrganizationCreated(event: OrganizationCreated): void {
   transaction.hash = event.transaction.hash
   transaction.from = event.transaction.from
   transaction.to = event.transaction.to
-  transaction.gasUsed = BigInt.fromI32(0) // Default value
-  transaction.gasPrice = BigInt.fromI32(0) // Default value
+  transaction.gasUsed = BigInt.fromI32(0)
+  transaction.gasPrice = BigInt.fromI32(0)
   transaction.blockNumber = event.block.number
   transaction.timestamp = event.block.timestamp
   transaction.save()

@@ -239,6 +239,7 @@ type Organization @entity {
   name: String! # organization name
   metadataURI: String! # IPFS metadata URI
   creator: User! # organization creator
+  prime: Bytes! # elected prime address (EOA or contract)
   treasury: Treasury # treasury contract (may be null initially)
   treasuryAddress: Bytes! # treasury contract address
   orgType: OrgType! # organization type

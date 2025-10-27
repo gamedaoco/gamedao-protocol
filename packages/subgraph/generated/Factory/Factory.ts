@@ -508,6 +508,29 @@ export class Factory extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
+  membershipContract(): Address {
+    let result = super.call(
+      "membershipContract",
+      "membershipContract():(address)",
+      []
+    );
+
+    return result[0].toAddress();
+  }
+
+  try_membershipContract(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "membershipContract",
+      "membershipContract():(address)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
   moduleId(): Bytes {
     let result = super.call("moduleId", "moduleId():(bytes32)", []);
 
@@ -996,6 +1019,36 @@ export class RevokeRoleCall__Outputs {
   _call: RevokeRoleCall;
 
   constructor(call: RevokeRoleCall) {
+    this._call = call;
+  }
+}
+
+export class SetMembershipCall extends ethereum.Call {
+  get inputs(): SetMembershipCall__Inputs {
+    return new SetMembershipCall__Inputs(this);
+  }
+
+  get outputs(): SetMembershipCall__Outputs {
+    return new SetMembershipCall__Outputs(this);
+  }
+}
+
+export class SetMembershipCall__Inputs {
+  _call: SetMembershipCall;
+
+  constructor(call: SetMembershipCall) {
+    this._call = call;
+  }
+
+  get _membership(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class SetMembershipCall__Outputs {
+  _call: SetMembershipCall;
+
+  constructor(call: SetMembershipCall) {
     this._call = call;
   }
 }
