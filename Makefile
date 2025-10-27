@@ -320,6 +320,7 @@ docker-dev-reset:
 	@rm -rf data/graph/data/*
 	@rm -rf data/ipfs/data/*
 	@rm -rf data/postgres/*
+	@rm -rf data/logs/*
 	@echo "$(CYAN)3️⃣  Recreating directory structure...$(NC)"
 	@mkdir -p data/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres}
 	@echo "$(CYAN)4️⃣  Starting fresh environment...$(NC)"
@@ -533,12 +534,14 @@ status:
 deploy-local:
 	@echo "🚀 Starting unified deployment with address synchronization..."
 	@echo "📋 Phase 1: Deploying contracts..."
-	cd packages/contracts-solidity && npm run deploy:localhost
+	cd packages/contracts-solidity && pnpm run deploy:localhost
+	@echo "📋 Phase 1.1: Updating shared addresses from deployment..."
+	cd packages/contracts-solidity && pnpm run update:shared && pnpm run build:shared
 	@echo "📋 Phase 2: Updating shared package..."
-	cd packages/shared && npm run build
+	cd packages/shared && pnpm run build
 	@echo "📋 Phase 3: Syncing subgraph addresses and deploying..."
-	cd packages/subgraph && npm run update-addresses && npm run build && npm run create-local || echo "⚠️  Subgraph may already exist, continuing to deploy"
-	cd packages/subgraph && npm run deploy-local
+	cd packages/subgraph && pnpm run update-addresses && pnpm run build && pnpm run create-local || echo "⚠️  Subgraph may already exist, continuing to deploy"
+	cd packages/subgraph && pnpm run deploy-local
 	@echo "📋 Phase 4: Validating address consistency..."
 	@$(MAKE) validate-addresses
 	@echo "✅ Unified deployment complete - all addresses synchronized!"
@@ -570,7 +573,7 @@ validate-addresses:
 # Quick test cycle: deploy contracts + run tests
 test-cycle:
 	@echo "🧪 Running test cycle..."
-	cd packages/contracts-solidity && npm run deploy:localhost
+	cd packages/contracts-solidity && pnpm run deploy:localhost
 	cd packages/contracts-solidity && npm test
 	@echo "✅ Test cycle complete!"
 

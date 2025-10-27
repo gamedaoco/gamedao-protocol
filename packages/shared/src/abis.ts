@@ -777,6 +777,37 @@ export const CONTROL_ABI = [
         "type": "bytes8"
       },
       {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldPrime",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newPrime",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "OrganizationPrimeUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes8",
+        "name": "id",
+        "type": "bytes8"
+      },
+      {
         "indexed": false,
         "internalType": "enum IControl.OrgState",
         "name": "oldState",
@@ -1136,6 +1167,11 @@ export const CONTROL_ABI = [
           },
           {
             "internalType": "address",
+            "name": "prime",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
             "name": "treasury",
             "type": "address"
           },
@@ -1238,6 +1274,11 @@ export const CONTROL_ABI = [
           {
             "internalType": "address",
             "name": "creator",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "prime",
             "type": "address"
           },
           {
@@ -1408,6 +1449,11 @@ export const CONTROL_ABI = [
           {
             "internalType": "address",
             "name": "creator",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "prime",
             "type": "address"
           },
           {
@@ -1668,6 +1714,11 @@ export const CONTROL_ABI = [
           },
           {
             "internalType": "address",
+            "name": "prime",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
             "name": "treasury",
             "type": "address"
           },
@@ -1857,6 +1908,24 @@ export const CONTROL_ABI = [
       }
     ],
     "name": "updateMemberCount",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes8",
+        "name": "organizationId",
+        "type": "bytes8"
+      },
+      {
+        "internalType": "address",
+        "name": "newPrime",
+        "type": "address"
+      }
+    ],
+    "name": "updateOrganizationPrime",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -2386,6 +2455,19 @@ export const FACTORY_ABI = [
   },
   {
     "inputs": [],
+    "name": "membershipContract",
+    "outputs": [
+      {
+        "internalType": "contract IMembership",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "moduleId",
     "outputs": [
       {
@@ -2489,6 +2571,19 @@ export const FACTORY_ABI = [
       }
     ],
     "name": "revokeRole",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_membership",
+        "type": "address"
+      }
+    ],
+    "name": "setMembership",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
