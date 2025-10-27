@@ -43,11 +43,11 @@ export function Footer() {
           <div className="space-y-2">
             <h4 className="font-medium">Resources</h4>
             <div className="space-y-1 text-sm text-muted-foreground">
-              <a href="https://docs.gamedao.co" target="_blank" rel="noreferrer" className="block hover:underline">📚 Docs</a>
-              <a href="https://blog.gamedao.co" target="_blank" rel="noreferrer" className="block hover:underline">📰 Blog</a>
-              <a href="https://github.com/gamedaoco" target="_blank" rel="noreferrer" className="block hover:underline">🔗 GitHub</a>
-              <a href="https://discord.com/invite/h2VMgWY" target="_blank" rel="noreferrer" className="block hover:underline">💬 Discord</a>
-              <a href="https://x.com/gamedaoco" target="_blank" rel="noreferrer" className="block hover:underline">𝕏 X</a>
+              <a href="https://docs.gamedao.co" target="_blank" rel="noreferrer" className="block hover:underline">Docs</a>
+              <a href="https://blog.gamedao.co" target="_blank" rel="noreferrer" className="block hover:underline">Blog</a>
+              <a href="https://github.com/gamedaoco" target="_blank" rel="noreferrer" className="block hover:underline">GitHub</a>
+              <a href="https://discord.com/invite/h2VMgWY" target="_blank" rel="noreferrer" className="block hover:underline">Discord</a>
+              <a href="https://x.com/gamedaoco" target="_blank" rel="noreferrer" className="block hover:underline">X</a>
             </div>
           </div>
 
