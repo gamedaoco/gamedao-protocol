@@ -8,7 +8,7 @@ import { GET_MODULES } from '@/lib/queries'
 import { keccak256, stringToBytes } from 'viem'
 
 export function Footer() {
-  const { contracts, networkName, isConnected, blockExplorer } = useGameDAO()
+  const { contracts, networkName, blockExplorer } = useGameDAO()
   const currentYear = new Date().getFullYear()
   const { data: modulesData } = useQuery(GET_MODULES, { pollInterval: 5000, errorPolicy: 'ignore' })
   const enabled = new Set<string>((modulesData?.modules || [])
@@ -56,7 +56,6 @@ export function Footer() {
             <h4 className="font-medium">Legal</h4>
             <div className="space-y-1 text-sm text-muted-foreground">
               <a href="/imprint" className="block hover:underline">Imprint</a>
-              <a href="/privacy" className="block hover:underline">Privacy</a>
               <a href="/terms" className="block hover:underline">Terms of Use</a>
             </div>
           </div>
