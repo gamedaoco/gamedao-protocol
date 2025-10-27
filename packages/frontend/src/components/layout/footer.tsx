@@ -19,7 +19,7 @@ export function Footer() {
   return (
     <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container py-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Brand */}
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
@@ -43,16 +43,27 @@ export function Footer() {
           <div className="space-y-2">
             <h4 className="font-medium">Resources</h4>
             <div className="space-y-1 text-sm text-muted-foreground">
-              <div>📚 Documentation</div>
-              <div>🔗 GitHub</div>
-              <div>💬 Discord</div>
-              <div>🐦 Twitter</div>
+              <a href="https://docs.gamedao.co" target="_blank" rel="noreferrer" className="block hover:underline">📚 Docs</a>
+              <a href="https://blog.gamedao.co" target="_blank" rel="noreferrer" className="block hover:underline">📰 Blog</a>
+              <a href="https://github.com/gamedaoco" target="_blank" rel="noreferrer" className="block hover:underline">🔗 GitHub</a>
+              <a href="https://discord.com/invite/h2VMgWY" target="_blank" rel="noreferrer" className="block hover:underline">💬 Discord</a>
+              <a href="https://x.com/gamedaoco" target="_blank" rel="noreferrer" className="block hover:underline">𝕏 X</a>
             </div>
           </div>
 
-          {/* Network Info */}
+          {/* Legal */}
           <div className="space-y-2">
-            <h4 className="font-medium">Network</h4>
+            <h4 className="font-medium">Legal</h4>
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <a href="/imprint" className="block hover:underline">Imprint</a>
+              <a href="/privacy" className="block hover:underline">Privacy</a>
+              <a href="/terms" className="block hover:underline">Terms of Use</a>
+            </div>
+          </div>
+
+          {/* Protocol Info */}
+          <div className="space-y-2">
+            <h4 className="font-medium">Protocol</h4>
             <div className="space-y-1 text-sm text-muted-foreground">
               <div className="flex items-center space-x-2">
                 <span>Network:</span>
