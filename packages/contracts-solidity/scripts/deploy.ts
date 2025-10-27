@@ -46,10 +46,15 @@ async function main() {
   // 3. Deploy Registry
   console.log("📋 Deploying Registry...");
   const RegistryFactory = await ethers.getContractFactory("Registry");
-  const registry = await RegistryFactory.deploy(deployer.address);
+  // Use PROTOCOL_SUDO if provided, otherwise fallback to deployer
+  const sudo = process.env.PROTOCOL_SUDO && process.env.PROTOCOL_SUDO.length === 42
+    ? process.env.PROTOCOL_SUDO
+    : deployer.address;
+  const registry = await RegistryFactory.deploy(sudo);
   await registry.waitForDeployment();
   const registryAddress = await registry.getAddress();
   console.log("✅ Registry deployed to:", registryAddress);
+  console.log("👑 Protocol sudo:", sudo);
   console.log("");
 
   // 4. Deploy Identity Module
@@ -140,6 +145,16 @@ async function main() {
   await registry.registerModule(senseAddress);
   console.log("✅ Sense module registered");
   console.log("");
+
+  // 11.2 Ensure PROTOCOL_SUDO has ADMIN_ROLE and MODULE_MANAGER_ROLE
+  const ADMIN_ROLE = await registry.ADMIN_ROLE();
+  const MODULE_MANAGER_ROLE = await registry.MODULE_MANAGER_ROLE();
+  if (sudo.toLowerCase() !== deployer.address.toLowerCase()) {
+    console.log("🔐 Granting roles to PROTOCOL_SUDO...");
+    await registry.grantRole(ADMIN_ROLE, sudo);
+    await registry.grantRole(MODULE_MANAGER_ROLE, sudo);
+    console.log("✅ Granted ADMIN_ROLE and MODULE_MANAGER_ROLE to:", sudo);
+  }
 
   // 11. Modules are automatically initialized during registration
   console.log("✅ All modules initialized automatically during registration");

@@ -50,6 +50,37 @@
           "type": "bytes8"
         },
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "oldPrime",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newPrime",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "OrganizationPrimeUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes8",
+          "name": "id",
+          "type": "bytes8"
+        },
+        {
           "indexed": false,
           "internalType": "enum IControl.OrgState",
           "name": "oldState",
@@ -149,6 +180,11 @@
             {
               "internalType": "address",
               "name": "creator",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "prime",
               "type": "address"
             },
             {
@@ -255,6 +291,11 @@
             {
               "internalType": "address",
               "name": "creator",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "prime",
               "type": "address"
             },
             {
@@ -374,6 +415,11 @@
             {
               "internalType": "address",
               "name": "creator",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "prime",
               "type": "address"
             },
             {
@@ -500,6 +546,11 @@
             },
             {
               "internalType": "address",
+              "name": "prime",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
               "name": "treasury",
               "type": "address"
             },
@@ -588,6 +639,24 @@
         }
       ],
       "name": "updateMemberCount",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes8",
+          "name": "organizationId",
+          "type": "bytes8"
+        },
+        {
+          "internalType": "address",
+          "name": "newPrime",
+          "type": "address"
+        }
+      ],
+      "name": "updateOrganizationPrime",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

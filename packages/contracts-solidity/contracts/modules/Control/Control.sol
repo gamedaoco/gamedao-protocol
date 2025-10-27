@@ -128,6 +128,21 @@ contract Control is Module, IControl {
     }
 
     /**
+     * @dev Update organization prime (elected)
+     */
+    function updateOrganizationPrime(
+        bytes8 organizationId,
+        address newPrime
+    ) external override organizationExists(organizationId) onlyOrganizationCreator(organizationId) {
+        require(newPrime != address(0), "Invalid prime address");
+        Organization storage org = _organizations[organizationId];
+        address oldPrime = org.prime;
+        org.prime = newPrime;
+        org.updatedAt = block.timestamp;
+        emit OrganizationPrimeUpdated(organizationId, oldPrime, newPrime, block.timestamp);
+    }
+
+    /**
      * @dev Update member count (called by Membership contract)
      */
     function updateMemberCount(bytes8 organizationId, uint256 memberCount)

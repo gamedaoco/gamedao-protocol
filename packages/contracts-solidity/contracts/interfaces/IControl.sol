@@ -46,6 +46,7 @@ interface IControl {
         string name;
         string metadataURI;
         address creator;
+        address prime;                // elected prime responsible entity (EOA or contract)
         address treasury;
         OrgType orgType;
         AccessModel accessModel;
@@ -85,6 +86,13 @@ interface IControl {
         uint256 timestamp
     );
 
+    event OrganizationPrimeUpdated(
+        bytes8 indexed id,
+        address indexed oldPrime,
+        address indexed newPrime,
+        uint256 timestamp
+    );
+
 
 
     // Core functions
@@ -100,6 +108,7 @@ interface IControl {
     ) external returns (bytes8);
 
     function updateOrganizationState(bytes8 organizationId, OrgState state) external;
+    function updateOrganizationPrime(bytes8 organizationId, address newPrime) external;
     function updateMemberCount(bytes8 organizationId, uint256 memberCount) external;
     function withdrawStake(bytes8 organizationId) external;
     function registerOrganization(bytes8 organizationId, Organization memory org) external;

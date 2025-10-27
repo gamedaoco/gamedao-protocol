@@ -29,6 +29,7 @@ export declare namespace IControl {
     name: string;
     metadataURI: string;
     creator: AddressLike;
+    prime: AddressLike;
     treasury: AddressLike;
     orgType: BigNumberish;
     accessModel: BigNumberish;
@@ -49,6 +50,7 @@ export declare namespace IControl {
     name: string,
     metadataURI: string,
     creator: string,
+    prime: string,
     treasury: string,
     orgType: bigint,
     accessModel: bigint,
@@ -67,6 +69,7 @@ export declare namespace IControl {
     name: string;
     metadataURI: string;
     creator: string;
+    prime: string;
     treasury: string;
     orgType: bigint;
     accessModel: bigint;
@@ -149,6 +152,7 @@ export interface ControlInterface extends Interface {
       | "supportsInterface"
       | "unpause"
       | "updateMemberCount"
+      | "updateOrganizationPrime"
       | "updateOrganizationState"
       | "version"
       | "withdrawStake"
@@ -160,6 +164,7 @@ export interface ControlInterface extends Interface {
       | "ModuleEnabled"
       | "ModuleInitialized"
       | "OrganizationCreated"
+      | "OrganizationPrimeUpdated"
       | "OrganizationStateChanged"
       | "Paused"
       | "RoleAdminChanged"
@@ -299,6 +304,10 @@ export interface ControlInterface extends Interface {
     values: [BytesLike, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "updateOrganizationPrime",
+    values: [BytesLike, AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "updateOrganizationState",
     values: [BytesLike, BigNumberish]
   ): string;
@@ -411,6 +420,10 @@ export interface ControlInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "updateOrganizationPrime",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "updateOrganizationState",
     data: BytesLike
   ): Result;
@@ -473,6 +486,31 @@ export namespace OrganizationCreatedEvent {
     name: string;
     creator: string;
     treasury: string;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace OrganizationPrimeUpdatedEvent {
+  export type InputTuple = [
+    id: BytesLike,
+    oldPrime: AddressLike,
+    newPrime: AddressLike,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    id: string,
+    oldPrime: string,
+    newPrime: string,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    id: string;
+    oldPrime: string;
+    newPrime: string;
     timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -803,6 +841,12 @@ export interface Control extends BaseContract {
     "nonpayable"
   >;
 
+  updateOrganizationPrime: TypedContractMethod<
+    [organizationId: BytesLike, newPrime: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   updateOrganizationState: TypedContractMethod<
     [organizationId: BytesLike, state: BigNumberish],
     [void],
@@ -979,6 +1023,13 @@ export interface Control extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "updateOrganizationPrime"
+  ): TypedContractMethod<
+    [organizationId: BytesLike, newPrime: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "updateOrganizationState"
   ): TypedContractMethod<
     [organizationId: BytesLike, state: BigNumberish],
@@ -1019,6 +1070,13 @@ export interface Control extends BaseContract {
     OrganizationCreatedEvent.InputTuple,
     OrganizationCreatedEvent.OutputTuple,
     OrganizationCreatedEvent.OutputObject
+  >;
+  getEvent(
+    key: "OrganizationPrimeUpdated"
+  ): TypedContractEvent<
+    OrganizationPrimeUpdatedEvent.InputTuple,
+    OrganizationPrimeUpdatedEvent.OutputTuple,
+    OrganizationPrimeUpdatedEvent.OutputObject
   >;
   getEvent(
     key: "OrganizationStateChanged"
@@ -1113,6 +1171,17 @@ export interface Control extends BaseContract {
       OrganizationCreatedEvent.InputTuple,
       OrganizationCreatedEvent.OutputTuple,
       OrganizationCreatedEvent.OutputObject
+    >;
+
+    "OrganizationPrimeUpdated(bytes8,address,address,uint256)": TypedContractEvent<
+      OrganizationPrimeUpdatedEvent.InputTuple,
+      OrganizationPrimeUpdatedEvent.OutputTuple,
+      OrganizationPrimeUpdatedEvent.OutputObject
+    >;
+    OrganizationPrimeUpdated: TypedContractEvent<
+      OrganizationPrimeUpdatedEvent.InputTuple,
+      OrganizationPrimeUpdatedEvent.OutputTuple,
+      OrganizationPrimeUpdatedEvent.OutputObject
     >;
 
     "OrganizationStateChanged(bytes8,uint8,uint8,uint256)": TypedContractEvent<

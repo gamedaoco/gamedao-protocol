@@ -12,6 +12,7 @@ const ADDRESSES_FILE = path.join(__dirname, '../deployment-addresses.json');
 const CONTRACT_MAPPING = {
   'core/Registry.sol/Registry.json': 'REGISTRY_ABI',
   'modules/Control/Control.sol/Control.json': 'CONTROL_ABI',
+  'modules/Control/Factory.sol/Factory.json': 'FACTORY_ABI',
   'modules/Membership/Membership.sol/Membership.json': 'MEMBERSHIP_ABI',
   'modules/Flow/Flow.sol/Flow.json': 'FLOW_ABI',
   'modules/Signal/Signal.sol/Signal.json': 'SIGNAL_ABI',
@@ -73,6 +74,7 @@ function updateAddresses() {
   const defaultAddresses = {
     REGISTRY: "",
     CONTROL: "",
+    FACTORY: "",
     MEMBERSHIP: "",
     FLOW: "",
     SIGNAL: "",
@@ -80,18 +82,39 @@ function updateAddresses() {
     IDENTITY: "",
     STAKING: "",
     TREASURY: "",
+    GAME_TOKEN: "",
+    USDC_TOKEN: "",
   };
 
-  let deploymentAddresses = {};
+  // Read current deployment (single-network file with nested contracts map)
+  let localAddresses = { ...defaultAddresses };
   if (fs.existsSync(ADDRESSES_FILE)) {
-    deploymentAddresses = JSON.parse(fs.readFileSync(ADDRESSES_FILE, 'utf8'));
-  } else {
-    console.warn('⚠️  No deployment addresses found, using defaults');
-  }
+    try {
+      const deployment = JSON.parse(fs.readFileSync(ADDRESSES_FILE, 'utf8'));
+      const contracts = deployment.contracts || {};
 
-  // Helper function to merge addresses with defaults
-  function mergeWithDefaults(addresses) {
-    return { ...defaultAddresses, ...addresses };
+      // Map deployment keys to shared address keys
+      localAddresses = {
+        ...localAddresses,
+        REGISTRY: contracts.Registry || "",
+        CONTROL: contracts.Control || "",
+        FACTORY: contracts.Factory || "",
+        MEMBERSHIP: contracts.Membership || "",
+        FLOW: contracts.Flow || "",
+        SIGNAL: contracts.Signal || "",
+        SENSE: contracts.Sense || "",
+        IDENTITY: contracts.Identity || "",
+        STAKING: contracts.Staking || "",
+        // Treasury is deployed per-organization; keep empty in shared map
+        TREASURY: "",
+        GAME_TOKEN: contracts.GameToken || contracts.MockGameToken || "",
+        USDC_TOKEN: contracts.MockUSDC || contracts.USDC || "",
+      };
+    } catch (e) {
+      console.warn('⚠️  Could not parse deployment-addresses.json:', e.message);
+    }
+  } else {
+    console.warn('⚠️  No deployment addresses found at', ADDRESSES_FILE);
   }
 
   // Update addresses file
@@ -102,6 +125,7 @@ function updateAddresses() {
 export interface NetworkAddresses {
   REGISTRY: string;
   CONTROL: string;
+  FACTORY: string;
   MEMBERSHIP: string;
   FLOW: string;
   SIGNAL: string;
@@ -109,16 +133,18 @@ export interface NetworkAddresses {
   IDENTITY: string;
   STAKING: string;
   TREASURY: string;
+  GAME_TOKEN: string;
+  USDC_TOKEN: string;
 }
 
 // Local/development addresses (hardhat network)
-export const LOCAL_ADDRESSES: NetworkAddresses = ${JSON.stringify(mergeWithDefaults(deploymentAddresses.localhost || {}), null, 2)};
+export const LOCAL_ADDRESSES: NetworkAddresses = ${JSON.stringify(localAddresses, null, 2)};
 
 // Testnet addresses (Sepolia)
-export const TESTNET_ADDRESSES: NetworkAddresses = ${JSON.stringify(mergeWithDefaults(deploymentAddresses.sepolia || {}), null, 2)};
+export const TESTNET_ADDRESSES: NetworkAddresses = ${JSON.stringify(defaultAddresses, null, 2)};
 
 // Mainnet addresses
-export const MAINNET_ADDRESSES: NetworkAddresses = ${JSON.stringify(mergeWithDefaults(deploymentAddresses.mainnet || {}), null, 2)};
+export const MAINNET_ADDRESSES: NetworkAddresses = ${JSON.stringify(defaultAddresses, null, 2)};
 
 // Network configuration
 export const NETWORK_CONFIG = {

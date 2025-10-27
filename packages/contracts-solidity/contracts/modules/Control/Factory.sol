@@ -5,6 +5,7 @@ import "../../core/Module.sol";
 import "../../core/Treasury.sol";
 import "../../interfaces/IControl.sol";
 import "../../interfaces/IStaking.sol";
+import "../../interfaces/IMembership.sol";
 import "../../libraries/AlphanumericID.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -31,6 +32,7 @@ contract Factory is Module {
     IERC20 public gameToken;
     IStaking public stakingContract;
     address public organizationRegistry;
+    IMembership public membershipContract;
 
     // Events
     event OrganizationCreated(
@@ -71,6 +73,14 @@ contract Factory is Module {
     function setRegistry(address _registry) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_registry != address(0), "Invalid registry address");
         organizationRegistry = _registry;
+    }
+
+    /**
+     * @dev Set the membership contract address
+     */
+    function setMembership(address _membership) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_membership != address(0), "Invalid membership address");
+        membershipContract = IMembership(_membership);
     }
 
     /**
@@ -121,6 +131,7 @@ contract Factory is Module {
             name: name,
             metadataURI: metadataURI,
             creator: user,
+            prime: user,
             treasury: address(treasury),
             orgType: orgType,
             accessModel: accessModel,
@@ -138,6 +149,20 @@ contract Factory is Module {
 
         // Register organization with registry
         IControl(organizationRegistry).registerOrganization(orgId, newOrg);
+
+        // Optionally activate organization and add creator as first member in membership module
+        if (address(membershipContract) != address(0)) {
+            // Best-effort: ignore failures to avoid blocking org creation
+            try membershipContract.activateOrganization(orgId) {
+            } catch {}
+            // Add creator as initial member with a baseline tier (BRONZE)
+            try membershipContract.addMember(
+                orgId,
+                user,
+                IMembership.MembershipTier.BRONZE
+            ) {
+            } catch {}
+        }
 
         emit OrganizationCreated(orgId, name, user, address(treasury), block.timestamp);
 
