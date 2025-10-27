@@ -38,8 +38,8 @@ export function JoinOrganizationModal({
   const { refetch } = useOrganizations()
   const toast = useToast()
 
-  // Check if user is already a member
-  const { isMember } = useMembership(organization.id)
+  // TODO: Fix membership checking after contract integration is resolved
+  const isMember = false // Temporarily disabled
 
   const [isJoining, setIsJoining] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
@@ -110,12 +110,21 @@ export function JoinOrganizationModal({
 
   const proceedWithJoin = async () => {
     try {
+      // TODO: Implement proper joining through Membership contract
+      console.log('🔍 Attempting to join organization:', organization.id)
+
+      // For now, show an informative error
+      throw new Error('Collective joining functionality is currently being updated. Please try again later or contact support.')
+
+      /*
+      // This is the correct approach that needs to be implemented:
       await joinOrganization({
-        address: contracts.CONTROL,
-        abi: ABIS.CONTROL,
+        address: contracts.MEMBERSHIP,
+        abi: ABIS.MEMBERSHIP,
         functionName: 'addMember',
-        args: [toContractId(organization.id), address],
+        args: [toContractId(organization.id), address, MembershipTier.Basic],
       })
+      */
 
       setJoinSuccess(true)
       console.log('✅ Join transaction submitted')
@@ -128,7 +137,7 @@ export function JoinOrganizationModal({
 
     } catch (error) {
       console.error('❌ Join transaction failed:', error)
-      setJoinError(error instanceof Error ? error.message : 'Failed to join organization')
+      setJoinError(error instanceof Error ? error.message : 'Failed to join collective')
     } finally {
       setIsJoining(false)
       setPendingJoin(false)
@@ -142,25 +151,12 @@ export function JoinOrganizationModal({
     setLeaveError(null)
 
     try {
-      await leaveOrganization({
-        address: contracts.CONTROL,
-        abi: ABIS.CONTROL,
-        functionName: 'removeMember',
-        args: [toContractId(organization.id), address],
-      })
-
-      setLeaveSuccess(true)
-      console.log('✅ Leave transaction submitted')
-
-      // Auto-close modal after success
-      setTimeout(() => {
-        handleClose()
-        if (onSuccess) onSuccess()
-      }, 2000)
+      // TODO: Implement proper leaving through Membership contract
+      throw new Error('Collective leaving functionality is currently being updated. Please try again later or contact support.')
 
     } catch (error) {
       console.error('❌ Failed to leave organization:', error)
-      setLeaveError(error instanceof Error ? error.message : 'Failed to leave organization')
+      setLeaveError(error instanceof Error ? error.message : 'Failed to leave collective')
     } finally {
       setIsLeaving(false)
     }

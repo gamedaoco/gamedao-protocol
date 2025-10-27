@@ -40,11 +40,12 @@ export default function ClaimNamePage() {
 
   useEffect(() => {
     if (ownedNames) {
-      // Convert bytes8 array to string array
-      const names = (ownedNames as string[]).map((nameBytes8: string) => {
-        // Convert bytes8 to string (simplified)
-        return nameBytes8.replace(/\0/g, '').slice(2) // Remove 0x and null chars
-      })
+      const items = Array.isArray(ownedNames) ? ownedNames : []
+      const names = items
+        .map((item: unknown) => {
+          const str = typeof item === 'string' ? item : String(item ?? '')
+          return str.replace(/\0/g, '').replace(/^0x/, '')
+        })
       setUserNames(names)
     }
     setIsLoading(isLoadingNames)

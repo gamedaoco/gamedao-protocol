@@ -43,14 +43,14 @@ export default function ClaimOrganizationNamePage() {
 
   useEffect(() => {
     if (ownedNames) {
-      // Convert bytes8 array to string array and filter for organization names
-      const names = (ownedNames as string[])
-        .map((nameBytes8: string) => {
-          // Convert bytes8 to string (simplified)
-          return nameBytes8.replace(/\0/g, '').slice(2) // Remove 0x and null chars
+      // Normalize to array and safely map to strings
+      const items = Array.isArray(ownedNames) ? ownedNames : []
+      const names = items
+        .map((item: unknown) => {
+          const str = typeof item === 'string' ? item : String(item ?? '')
+          return str.replace(/\0/g, '').replace(/^0x/, '')
         })
-        // TODO: Add logic to determine if name is for organization
-        // For now, show all names
+      // TODO: Add logic to determine if name is for organization
       setOrganizationNames(names)
     }
     setIsLoading(isLoadingNames)
@@ -130,10 +130,10 @@ export default function ClaimOrganizationNamePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Your Organizations
+                Your Collectives
               </CardTitle>
               <CardDescription>
-                Organizations you have created or manage
+                Collectives you have created or manage
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -161,7 +161,7 @@ export default function ClaimOrganizationNamePage() {
                   ))}
                   {organizations.length > 3 && (
                     <p className="text-sm text-muted-foreground text-center">
-                      +{organizations.length - 3} more organizations
+                      +{organizations.length - 3} more collectives
                     </p>
                   )}
                 </div>

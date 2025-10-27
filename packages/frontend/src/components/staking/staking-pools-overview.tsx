@@ -151,7 +151,7 @@ export function StakingPoolsOverview() {
             const Icon = config.icon
 
             return (
-              <Card key={purpose} className="relative overflow-hidden">
+              <Card key={purpose} className="relative overflow-hidden glass">
                 <div className={`absolute top-0 left-0 right-0 h-1 ${config.color}`} />
 
                 <CardHeader className="pb-3">
@@ -228,7 +228,7 @@ export function StakingPoolsOverview() {
                   {/* Action Buttons */}
                   <div className="space-y-2">
                     <div className="flex space-x-2">
-                      <Button
+                        <Button
                         size="sm"
                         className="flex-1"
                         disabled={!pool?.active}
@@ -240,7 +240,7 @@ export function StakingPoolsOverview() {
                       {userStake && Number(userStake.amount) > 0 && (
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="glass"
                           className="flex-1"
                           onClick={() => openStakingModal(purpose as PoolPurpose, config.title, pool?.apy || 0, 'unstake')}
                         >

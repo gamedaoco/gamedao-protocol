@@ -98,7 +98,7 @@ export default function SettingsPage() {
                 <div className="flex items-center space-x-4">
                   <Avatar className="w-20 h-20">
                     <AvatarImage src={profile.avatar} />
-                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xl">
                       {profile.displayName.charAt(0)}
                     </AvatarFallback>
                   </Avatar>

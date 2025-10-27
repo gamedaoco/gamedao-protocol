@@ -37,6 +37,7 @@ export interface TreasuryData {
   dailyLimit: number
   todaySpent: number
   tokens: Array<{
+    address: string
     symbol: string
     balance: string
     valueUSD: number
@@ -84,15 +85,16 @@ export function useTreasury(organizationId?: string) {
 
     if (data?.organization) {
       const org = data.organization
-      return {
+      const base = {
         address: org.treasury || '0x0000000000000000000000000000000000000000',
         totalValueUSD: 0, // Would need token price data
         change24h: 0, // Would need historical data
         tokenCount: 0, // Would need token balance data
         dailyLimit: 0, // Would need treasury configuration
         todaySpent: 0, // Would need spending tracking
-        tokens: [] // Would need token balance data from contracts
+        tokens: [] as TreasuryData['tokens'] // Would need token balance data from contracts
       }
+      return base
     }
 
     if (!loading) {

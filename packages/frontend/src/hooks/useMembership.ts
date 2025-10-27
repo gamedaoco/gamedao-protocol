@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAccount, useContractRead, useContractWrite, useWaitForTransaction } from 'wagmi'
+import { useAccount, useContractRead, useWriteContract } from 'wagmi'
 import { MEMBERSHIP_ABI } from '@/lib/abis'
+import { toContractId } from '@/lib/id-utils'
 import { useContracts } from '@/hooks/useContracts'
 import { useToast } from '@/hooks/useToast'
 import { formatUnits, parseUnits } from 'viem'
@@ -59,212 +60,38 @@ export interface VotingDelegation {
 export function useMembership() {
   const { address } = useAccount()
   const contracts = useContracts()
-  const { toast } = useToast()
+  const toast = useToast()
 
-  // Add member
-  const { write: addMember, isLoading: isAddingMember } = useContractWrite({
-    address: contracts.membership,
-    abi: MEMBERSHIP_ABI,
-    functionName: 'addMember',
-    onSuccess: () => {
-      toast({
-        title: 'Member Added',
-        description: 'Member has been successfully added to the organization.',
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error Adding Member',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
-
-  // Remove member
-  const { write: removeMember, isLoading: isRemovingMember } = useContractWrite({
-    address: contracts.membership,
-    abi: MEMBERSHIP_ABI,
-    functionName: 'removeMember',
-    onSuccess: () => {
-      toast({
-        title: 'Member Removed',
-        description: 'Member has been successfully removed from the organization.',
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error Removing Member',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
-
-  // Update member state
-  const { write: updateMemberState, isLoading: isUpdatingState } = useContractWrite({
-    address: contracts.membership,
-    abi: MEMBERSHIP_ABI,
-    functionName: 'updateMemberState',
-    onSuccess: () => {
-      toast({
-        title: 'Member State Updated',
-        description: 'Member state has been successfully updated.',
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error Updating Member State',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
-
-  // Update member tier
-  const { write: updateMemberTier, isLoading: isUpdatingTier } = useContractWrite({
-    address: contracts.membership,
-    abi: MEMBERSHIP_ABI,
-    functionName: 'updateMemberTier',
-    onSuccess: () => {
-      toast({
-        title: 'Member Tier Updated',
-        description: 'Member tier has been successfully updated.',
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error Updating Member Tier',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
-
-  // Delegate voting power
-  const { write: delegateVotingPower, isLoading: isDelegating } = useContractWrite({
-    address: contracts.membership,
-    abi: MEMBERSHIP_ABI,
-    functionName: 'delegateVotingPower',
-    onSuccess: () => {
-      toast({
-        title: 'Voting Power Delegated',
-        description: 'Voting power has been successfully delegated.',
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error Delegating Voting Power',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
-
-  // Undelegate voting power
-  const { write: undelegateVotingPower, isLoading: isUndelegating } = useContractWrite({
-    address: contracts.membership,
-    abi: MEMBERSHIP_ABI,
-    functionName: 'undelegateVotingPower',
-    onSuccess: () => {
-      toast({
-        title: 'Voting Power Undelegated',
-        description: 'Voting power has been successfully undelegated.',
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error Undelegating Voting Power',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
-
-  // Reward reputation
-  const { write: rewardReputation, isLoading: isRewardingReputation } = useContractWrite({
-    address: contracts.membership,
-    abi: MEMBERSHIP_ABI,
-    functionName: 'rewardMemberReputation',
-    onSuccess: () => {
-      toast({
-        title: 'Reputation Rewarded',
-        description: 'Member reputation has been successfully rewarded.',
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error Rewarding Reputation',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
-
-  // Slash reputation
-  const { write: slashReputation, isLoading: isSlashingReputation } = useContractWrite({
-    address: contracts.membership,
-    abi: MEMBERSHIP_ABI,
-    functionName: 'slashMemberReputation',
-    onSuccess: () => {
-      toast({
-        title: 'Reputation Slashed',
-        description: 'Member reputation has been successfully slashed.',
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error Slashing Reputation',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
+  const { writeContract } = useWriteContract()
 
   return {
     // Write functions
     addMember: (organizationId: string, member: string, profileId: string, tier: MembershipTier, membershipFee: bigint) =>
-      addMember({
-        args: [organizationId, member, profileId, tier, membershipFee],
-      }),
+      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'addMember', args: [toContractId(organizationId), member as `0x${string}`, toContractId(profileId), tier as number, membershipFee] as any }),
     removeMember: (organizationId: string, member: string) =>
-      removeMember({
-        args: [organizationId, member],
-      }),
+      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'removeMember', args: [toContractId(organizationId), member as `0x${string}`] as any }),
     updateMemberState: (organizationId: string, member: string, state: MemberState) =>
-      updateMemberState({
-        args: [organizationId, member, state],
-      }),
+      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'updateMemberState', args: [toContractId(organizationId), member as `0x${string}`, state as number] as any }),
     updateMemberTier: (organizationId: string, member: string, tier: MembershipTier) =>
-      updateMemberTier({
-        args: [organizationId, member, tier],
-      }),
+      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'updateMemberTier', args: [toContractId(organizationId), member as `0x${string}`, tier as number] as any }),
     delegateVotingPower: (organizationId: string, delegatee: string, amount: bigint) =>
-      delegateVotingPower({
-        args: [organizationId, delegatee, amount],
-      }),
+      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'delegateVotingPower', args: [toContractId(organizationId), delegatee as `0x${string}`, amount] as any }),
     undelegateVotingPower: (organizationId: string, delegatee: string, amount: bigint) =>
-      undelegateVotingPower({
-        args: [organizationId, delegatee, amount],
-      }),
+      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'undelegateVotingPower', args: [toContractId(organizationId), delegatee as `0x${string}`, amount] as any }),
     rewardReputation: (organizationId: string, member: string, amount: bigint, reason: string) =>
-      rewardReputation({
-        args: [organizationId, member, amount, reason],
-      }),
+      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'rewardMemberReputation', args: [toContractId(organizationId), member as `0x${string}`, amount, reason] as any }),
     slashReputation: (organizationId: string, member: string, amount: bigint, reason: string) =>
-      slashReputation({
-        args: [organizationId, member, amount, reason],
-      }),
+      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'slashMemberReputation', args: [toContractId(organizationId), member as `0x${string}`, amount, reason] as any }),
 
-    // Loading states
-    isAddingMember,
-    isRemovingMember,
-    isUpdatingState,
-    isUpdatingTier,
-    isDelegating,
-    isUndelegating,
-    isRewardingReputation,
-    isSlashingReputation,
+    // Loading states (not tracked here with writeContract)
+    isAddingMember: false,
+    isRemovingMember: false,
+    isUpdatingState: false,
+    isUpdatingTier: false,
+    isDelegating: false,
+    isUndelegating: false,
+    isRewardingReputation: false,
+    isSlashingReputation: false,
   }
 }
 

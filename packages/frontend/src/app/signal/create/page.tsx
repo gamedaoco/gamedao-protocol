@@ -6,7 +6,7 @@ import { useAccount } from 'wagmi'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useProposalCreation } from '@/hooks/useProposalCreation'
-import { useMembership } from '@/hooks/useMembership'
+import { useMembershipQueries } from '@/hooks/useMembership'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -41,7 +41,7 @@ export default function CreateProposalPage() {
   const preselectedOrgId = searchParams.get('org')
 
   // Check membership for the preselected organization
-  const { isMember, memberData, isLoading: membershipLoading } = useMembership(preselectedOrgId || '')
+  const { isMember, memberData, isLoading: membershipLoading } = useMembershipQueries(preselectedOrgId || '')
 
   const [formData, setFormData] = useState({
     organizationId: preselectedOrgId || '',

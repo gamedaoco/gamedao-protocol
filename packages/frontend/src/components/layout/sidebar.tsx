@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useGameDAO } from '@/hooks/useGameDAO'
+import { useQuery } from '@apollo/client'
+import { GET_MODULES } from '@/lib/queries'
+import { keccak256, stringToBytes } from 'viem'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -75,9 +78,23 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname()
   const { isConnected } = useGameDAO()
+  const { data: modulesData } = useQuery(GET_MODULES, { pollInterval: 5000, errorPolicy: 'ignore' })
+
+  const enabled = new Set<string>((modulesData?.modules || [])
+    .filter((m: any) => m.enabled)
+    .map((m: any) => m.id))
+
+  // Map module sections to module IDs in Registry (keccak256 of names)
+  const sectionToModuleId: Record<string, string> = {
+    'Organizations': keccak256(stringToBytes('CONTROL')),
+    'Governance': keccak256(stringToBytes('SIGNAL')),
+    'Staking': keccak256(stringToBytes('STAKING')),
+    'Campaigns': keccak256(stringToBytes('FLOW')),
+    'Profiles': keccak256(stringToBytes('SENSE')),
+  }
 
   return (
-    <div className="w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="w-64 border-r glass-strong">
       <div className="flex h-full flex-col">
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-4">
@@ -93,12 +110,18 @@ export function Sidebar() {
                       <div className="text-xs text-muted-foreground">{item.description}</div>
                     </div>
                   </div>
-                  <Badge
-                    variant={item.badge === 'Active' ? 'default' : 'outline'}
-                    className="text-xs"
-                  >
-                    {item.badge}
-                  </Badge>
+                  {(() => {
+                    const modId = sectionToModuleId[item.name] || ''
+                    const isEnabled = modId ? enabled.has(modId) : true
+                    return (
+                      <Badge
+                        variant={isEnabled ? 'default' : 'outline'}
+                        className="text-xs"
+                      >
+                        {isEnabled ? 'Active' : 'Disabled'}
+                      </Badge>
+                    )
+                  })()}
                 </div>
 
                 {/* Child pages */}
@@ -110,9 +133,9 @@ export function Sidebar() {
                           variant={pathname === child.href ? "secondary" : "ghost"}
                           className={cn(
                             "w-full justify-start text-sm",
-                            !isConnected && item.badge === 'Active' && "opacity-50 cursor-not-allowed"
+                            ((!isConnected) || (() => { const modId = sectionToModuleId[item.name] || ''; return !!(modId && !enabled.has(modId)) })()) && "opacity-50 cursor-not-allowed"
                           )}
-                          disabled={!isConnected && item.badge === 'Active'}
+                          disabled={(!isConnected) || (() => { const modId = sectionToModuleId[item.name] || ''; return !!(modId && !enabled.has(modId)) })()}
                         >
                           <span className="mr-2">{child.icon}</span>
                           {child.name}
@@ -127,7 +150,7 @@ export function Sidebar() {
         </nav>
 
         {/* Connection Status */}
-        <div className="border-t p-4">
+        <div className="border-t/50 p-4">
           <div className="text-xs text-muted-foreground">
             {isConnected ? (
               <div className="space-y-1">

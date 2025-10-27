@@ -1,6 +1,7 @@
 'use client'
 
 import { use } from 'react'
+import { useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,14 +18,8 @@ import React from 'react'
 import { ConvictionVotingModal } from '@/components/ui/conviction-voting-modal'
 import { DelegationModal } from '@/components/ui/delegation-modal'
 
-interface ProposalDetailPageProps {
-  params: { id: string } | Promise<{ id: string }>
-}
-
-export default function ProposalDetailPage({ params }: ProposalDetailPageProps) {
-  // Handle both Promise and resolved params
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const { id } = resolvedParams
+export default function ProposalDetailPage() {
+  const { id } = useParams<{ id: string }>()
 
   // Use the proper useProposal hook for individual proposal data
   const { proposal, isLoading, error, refetch } = useProposal(id)

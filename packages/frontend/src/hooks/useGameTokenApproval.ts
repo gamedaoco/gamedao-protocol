@@ -8,7 +8,7 @@ import { parseTokenAmount } from '@/lib/tokenUtils'
 import { readContract } from 'viem/actions'
 
 export interface GameTokenApprovalParams {
-  spender: string
+  spender: `0x${string}`
   amount: string | number
   purpose?: string
 }
@@ -54,12 +54,12 @@ export function useGameTokenApproval() {
   }
 
   // Function to get current allowance for a specific spender
-  const useCurrentAllowance = (spender: string) => {
+  const useCurrentAllowance = (spender: `0x${string}`) => {
     return useReadContract({
-      address: contracts.GAME_TOKEN,
+      address: contracts.GAME_TOKEN as `0x${string}`,
       abi: ABIS.GAME_TOKEN,
       functionName: 'allowance',
-      args: [address, spender],
+      args: [address as `0x${string}`, spender],
       query: {
         enabled: !!address && !!contracts.GAME_TOKEN && !!spender,
       },
@@ -67,7 +67,7 @@ export function useGameTokenApproval() {
   }
 
   // Function to check if approval is needed
-  const checkApprovalNeeded = async (spender: string, amount: string | number): Promise<boolean> => {
+  const checkApprovalNeeded = async (spender: `0x${string}`, amount: string | number): Promise<boolean> => {
     if (!address || !contracts.GAME_TOKEN || !spender) return false
 
     const amountBigInt = safeBigInt(amount)
@@ -84,10 +84,10 @@ export function useGameTokenApproval() {
 
       // Read current allowance from the contract
       const currentAllowance = await readContract(publicClient, {
-        address: contracts.GAME_TOKEN,
+        address: contracts.GAME_TOKEN as `0x${string}`,
         abi: ABIS.GAME_TOKEN,
         functionName: 'allowance',
-        args: [address, spender],
+        args: [address as `0x${string}`, spender],
       }) as bigint
 
       console.log('🔍 Current GAME allowance:', {

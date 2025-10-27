@@ -110,7 +110,7 @@ export default function OnboardingPage() {
                 <div className="relative">
                   <Avatar className="w-24 h-24">
                     <AvatarImage src={profile.avatar} />
-                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-2xl">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                       {profile.displayName?.charAt(0) || address?.slice(2, 3).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -172,7 +172,7 @@ export default function OnboardingPage() {
                 <h4 className="font-medium mb-2">Preview</h4>
                 <div className="flex items-start space-x-3">
                   <Avatar>
-                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
                       {profile.displayName?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>

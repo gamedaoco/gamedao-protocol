@@ -32,7 +32,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const showSidebar = shouldShowSidebar(pathname)
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Top Bar */}
       <TopBar />
 
@@ -42,7 +42,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {showSidebar && <Sidebar />}
 
         {/* Main Content */}
-        <main className={`flex-1 p-6 ${showSidebar ? '' : 'max-w-full'}`}>
+        <main className={`flex-1 p-6 ${showSidebar ? '' : 'max-w-full'} glass`}>
           {children}
         </main>
       </div>

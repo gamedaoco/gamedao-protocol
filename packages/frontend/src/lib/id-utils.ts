@@ -33,7 +33,7 @@ export function bytes8ToAlphanumericString(bytes8Hex: string): string {
  * @param alphanumericId - 8-character string like "Z5139GEZ"
  * @returns Hex string like "0x5a5139473845415a"
  */
-export function alphanumericStringToBytes8(alphanumericId: string): string {
+export function alphanumericStringToBytes8(alphanumericId: string): `0x${string}` {
   if (alphanumericId.length !== 8) {
     console.warn('Invalid alphanumeric ID length:', alphanumericId.length, 'for', alphanumericId)
     return alphanumericId // Return as-is if invalid
@@ -46,7 +46,7 @@ export function alphanumericStringToBytes8(alphanumericId: string): string {
     hex += charCode.toString(16).padStart(2, '0')
   }
 
-  return '0x' + hex
+  return ('0x' + hex) as `0x${string}`
 }
 
 /**
@@ -75,9 +75,9 @@ export function isValidBytes8Id(id: string): boolean {
  * @param id - Organization ID in any format
  * @returns Bytes8 hex string for smart contract calls
  */
-export function toContractId(id: string): string {
+export function toContractId(id: string): `0x${string}` {
   if (isValidBytes8Id(id)) {
-    return id
+    return id as `0x${string}`
   }
 
   if (isValidAlphanumericId(id)) {
@@ -85,7 +85,7 @@ export function toContractId(id: string): string {
   }
 
   console.warn('Invalid organization ID format:', id)
-  return id
+  return alphanumericStringToBytes8(id)
 }
 
 /**
@@ -139,6 +139,31 @@ export function extractOrganizationIdFromLogs(logs: any[], contractAddress: stri
     return null
   } catch (error) {
     console.error('Error extracting organization ID from logs:', error)
+    return null
+  }
+}
+
+// Viem-based decoder for greater reliability
+export function extractOrganizationIdFromLogsViem(logs: any[], factoryAbi: any): string | null {
+  try {
+    // Lazy import to avoid SSR issues
+    const { decodeEventLog } = require('viem') as typeof import('viem')
+
+    for (const log of logs) {
+      try {
+        const decoded = decodeEventLog({ abi: factoryAbi, data: log.data, topics: log.topics })
+        if (decoded?.eventName === 'OrganizationCreated' && decoded?.args?.id) {
+          const idHex = (decoded.args.id as string)
+          const bytes8 = idHex.startsWith('0x') ? idHex.slice(0, 18) : '0x' + idHex.slice(0, 16)
+          return bytes8ToAlphanumericString(bytes8)
+        }
+      } catch (_) {
+        // Continue; log may not match this ABI/event
+      }
+    }
+    return null
+  } catch (err) {
+    console.error('Viem decode failed:', err)
     return null
   }
 }

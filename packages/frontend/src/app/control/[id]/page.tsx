@@ -10,6 +10,7 @@ import { JoinOrganizationModal } from '@/components/organization/join-organizati
 import { MemberList } from '@/components/organization/MemberList'
 import { Badge } from '@/components/ui/badge'
 import { IPFSBanner, IPFSAvatar } from '@/components/ui/IPFSImage'
+import { extractIPFSHash } from '@/lib/ipfs'
 import { formatAddress } from '@/lib/utils'
 import { useAccount } from 'wagmi'
 import { useOrganizationDetails } from '@/hooks/useOrganizationDetails'
@@ -19,14 +20,11 @@ import { useOrganizationMetadataUpdate } from '@/hooks/useOrganizationMetadataUp
 import { useLogger } from '@/hooks/useLogger'
 import { formatUnits } from 'viem'
 import { Users, Crown, TrendingUp, Wallet, Shield, User, ChevronDown, ChevronUp, Vote, Clock, CheckCircle, XCircle, Pause, Copy, Camera, Upload } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 
-interface OrganizationDetailPageProps {
-  params: { id: string }
-}
-
-export default function OrganizationDetailPage({ params }: OrganizationDetailPageProps) {
-  const { id } = params
+export default function OrganizationDetailPage() {
+  const routeParams = useParams<{ id: string }>()
+  const id = routeParams?.id as string
 
   // All hooks must be called at the top level before any conditional logic
   const { address } = useAccount()
@@ -159,14 +157,14 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
         {/* Full-width banner header */}
-        <div className="relative w-full h-64 bg-gradient-to-r from-blue-600 to-purple-600 overflow-hidden rounded-lg">
+        <div className="relative w-full h-64 bg-secondary overflow-hidden rounded-lg">
           {/* Banner image */}
           <div
             className={`absolute inset-0 ${isOwner ? 'cursor-pointer group' : ''}`}
             onClick={handleBannerImageClick}
           >
             <IPFSBanner
-              hash={updatedBannerImage || metadata?.bannerImage}
+              hash={extractIPFSHash(updatedBannerImage || metadata?.bannerImage || '')}
               alt={`${organization.name} banner`}
               className="absolute inset-0 w-full h-full object-cover rounded-lg"
             />
@@ -197,7 +195,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                   onClick={handleProfileImageClick}
                 >
                   <IPFSAvatar
-                    hash={updatedProfileImage || metadata?.profileImage}
+                    hash={extractIPFSHash(updatedProfileImage || metadata?.profileImage || '')}
                     alt={organization.name}
                     size="xl"
                     className="border-4 border-white shadow-lg"
@@ -242,8 +240,17 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
 
                   {/* Action buttons */}
                   {isActive && address && (
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+                    <div className="flex items-center gap-2 ml-auto">
+                      <div className="flex-1" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                        onClick={() => {
+                          const url = typeof window !== 'undefined' ? window.location.href : ''
+                          navigator.clipboard.writeText(url)
+                        }}
+                      >
                         Share
                       </Button>
                       {isMember ? (
@@ -253,7 +260,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                           onClick={handleLeaveOrganization}
                           className="bg-white/10 border-white/30 text-white hover:bg-white/20"
                         >
-                          Leave Organization
+                          Leave Collective
                         </Button>
                       ) : (
                         <Button
@@ -262,8 +269,9 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                             setIsJoinModalOpen(true)
                           }}
                           className="bg-white text-black hover:bg-white/90"
+                          size="sm"
                         >
-                          Join Organization
+                          Join Collective
                         </Button>
                       )}
                     </div>
@@ -671,7 +679,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                   ) : (
                     <EmptyState
                       title="No proposals yet"
-                      description="This organization hasn't created any proposals yet."
+                      description="This collective hasn't created any proposals yet."
                       icon={<Vote className="h-12 w-12 text-muted-foreground" />}
                       primaryAction={
                         isMember ? {
@@ -687,7 +695,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
           </div>
         </div>
 
-        {/* Join Organization Modal */}
+        {/* Join Collective Modal */}
         {organization && (
           <JoinOrganizationModal
             isOpen={isJoinModalOpen}
@@ -726,7 +734,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
           />
         )}
 
-        {/* Leave Organization Modal */}
+        {/* Leave Collective Modal */}
         {organization && (
           <JoinOrganizationModal
             isOpen={isLeaveModalOpen}

@@ -1,6 +1,7 @@
 'use client'
 
 import { use } from 'react'
+import { useParams } from 'next/navigation'
 import { DetailPageLayout } from '@/components/layout/detailPageLayout'
 import { ErrorBoundary, ErrorState } from '@/components/ui/error-boundary'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -21,7 +22,7 @@ function useCampaign(id: string) {
   const { organizations } = useOrganizations()
 
   const campaign = campaigns?.find(camp => camp.id === id)
-  const organization = campaign ? organizations?.find(org => org.id === campaign.organizationId) : null
+  const organization = campaign ? organizations?.find(org => org.id === campaign.organization.id) : null
 
   return {
     campaign,
@@ -43,14 +44,8 @@ function useCampaign(id: string) {
   }
 }
 
-interface CampaignDetailPageProps {
-  params: { id: string } | Promise<{ id: string }>
-}
-
-export default function CampaignDetailPage({ params }: CampaignDetailPageProps) {
-  // Handle both Promise and resolved params
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const { id } = resolvedParams
+export default function CampaignDetailPage() {
+  const { id } = useParams<{ id: string }>()
   const {
     campaign,
     organization,

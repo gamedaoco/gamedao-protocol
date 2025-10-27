@@ -24,14 +24,14 @@ export default function HomePage() {
       <div className="text-center space-y-12 pt-8">
         <div className="space-y-8">
           <div className="flex justify-center mb-6">
-            <Badge variant="outline" className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+            <Badge variant="outline" className="px-4 py-2 text-sm font-medium bg-accent/30 border-accent/40">
               <Sparkles className="h-4 w-4 mr-2 text-blue-600" />
               The Future of Game Creation & Distribution
             </Badge>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold leading-tight">
-            <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 bg-clip-text text-transparent">
+            <span className="block text-primary">
               GameDAO
             </span>
             <span className="block text-4xl md:text-6xl text-foreground mt-2">
@@ -42,13 +42,13 @@ export default function HomePage() {
           <p className="text-xl md:text-2xl text-muted-foreground max-w-5xl mx-auto leading-relaxed">
             The first end-to-end operating system for game publishing, creation, and distribution.
             Empowering creators and communities to build better games together through decentralized governance,
-            transparent fundraising, and collaborative development—bridging web2 and web3 ecosystems.
+            transparent fundraising, and collaborative development — bridging web2 and web3 ecosystems.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
           <WalletConnection>
-            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg px-8 py-6">
+            <Button size="lg" className="bg-primary text-primary-foreground hover:opacity-90 text-lg px-8 py-6">
               <Rocket className="h-5 w-5 mr-2" />
               Start Building
               <ArrowRight className="h-5 w-5 ml-2" />
@@ -62,7 +62,7 @@ export default function HomePage() {
       </div>
 
       {/* Three-Pillar Value Proposition - GIP-005 */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-3xl p-8 md:p-12">
+      <div className="bg-accent/20 dark:bg-secondary/40 rounded-3xl p-8 md:p-12">
         <div className="text-center space-y-6 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold">Leading the Game Creation Revolution</h2>
           <p className="text-lg text-muted-foreground max-w-4xl mx-auto">
@@ -74,7 +74,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
             <CardHeader className="text-center pb-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center mx-auto mb-4">
                 <Building className="h-8 w-8 text-white" />
               </div>
               <CardTitle className="text-xl">Publishing Leadership</CardTitle>
@@ -89,7 +89,7 @@ export default function HomePage() {
 
           <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
             <CardHeader className="text-center pb-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4">
                 <Gamepad2 className="h-8 w-8 text-white" />
               </div>
               <CardTitle className="text-xl">Creation Excellence</CardTitle>
@@ -104,7 +104,7 @@ export default function HomePage() {
 
           <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
             <CardHeader className="text-center pb-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-chart-2 text-white flex items-center justify-center mx-auto mb-4">
                 <Globe className="h-8 w-8 text-white" />
               </div>
               <CardTitle className="text-xl">Distribution Power</CardTitle>
@@ -137,7 +137,7 @@ export default function HomePage() {
           >
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 rounded-xl bg-secondary text-secondary-foreground flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <Users className="h-8 w-8 text-white" />
                 </div>
                 <ChevronRight className="h-6 w-6 text-muted-foreground group-hover:text-blue-600 transition-colors" />
@@ -173,7 +173,7 @@ export default function HomePage() {
           >
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 rounded-xl bg-chart-2 text-white flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <Target className="h-8 w-8 text-white" />
                 </div>
                 <ChevronRight className="h-6 w-6 text-muted-foreground group-hover:text-green-600 transition-colors" />
@@ -209,7 +209,7 @@ export default function HomePage() {
           >
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 rounded-xl bg-primary text-primary-foreground flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <Vote className="h-8 w-8 text-white" />
                 </div>
                 <ChevronRight className="h-6 w-6 text-muted-foreground group-hover:text-purple-600 transition-colors" />
@@ -245,7 +245,7 @@ export default function HomePage() {
           >
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 rounded-xl bg-chart-4 text-black flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <Coins className="h-8 w-8 text-white" />
                 </div>
                 <ChevronRight className="h-6 w-6 text-muted-foreground group-hover:text-yellow-600 transition-colors" />
@@ -277,7 +277,7 @@ export default function HomePage() {
       </div>
 
       {/* Creator Journey Framework - GIP-005 */}
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-3xl p-8 md:p-12">
+      <div className="bg-card rounded-3xl p-8 md:p-12">
         <div className="text-center space-y-6 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold">How GameDAO Powers Better Games</h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
@@ -288,7 +288,7 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center mx-auto">
               <span className="text-2xl font-bold text-white">1</span>
             </div>
             <h3 className="text-xl font-semibold">Form & Organize</h3>
@@ -299,7 +299,7 @@ export default function HomePage() {
           </div>
 
           <div className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto">
               <span className="text-2xl font-bold text-white">2</span>
             </div>
             <h3 className="text-xl font-semibold">Fund & Develop</h3>
@@ -310,7 +310,7 @@ export default function HomePage() {
           </div>
 
           <div className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-full bg-chart-2 text-white flex items-center justify-center mx-auto">
               <span className="text-2xl font-bold text-white">3</span>
             </div>
             <h3 className="text-xl font-semibold">Distribute & Engage</h3>
@@ -383,7 +383,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center mb-4">
                 <Shield className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-xl">Transparent & Secure</CardTitle>
@@ -398,7 +398,7 @@ export default function HomePage() {
 
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg bg-primary text-primary-foreground flex items-center justify-center mb-4">
                 <Rocket className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-xl">End-to-End Platform</CardTitle>
@@ -413,7 +413,7 @@ export default function HomePage() {
 
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg bg-chart-2 text-white flex items-center justify-center mb-4">
                 <Users className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-xl">Community-Driven</CardTitle>
@@ -428,7 +428,7 @@ export default function HomePage() {
 
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg bg-chart-4 text-black flex items-center justify-center mb-4">
                 <Globe className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-xl">Cross-Ecosystem</CardTitle>
@@ -443,7 +443,7 @@ export default function HomePage() {
 
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg bg-accent text-accent-foreground flex items-center justify-center mb-4">
                 <Star className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-xl">Creator-Focused</CardTitle>
@@ -458,7 +458,7 @@ export default function HomePage() {
 
           <Card className="p-6 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg bg-chart-2 text-white flex items-center justify-center mb-4">
                 <Trophy className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-xl">Proven Success</CardTitle>
@@ -474,7 +474,7 @@ export default function HomePage() {
       </div>
 
       {/* Call to Action - GIP-005 */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-12 text-center text-white">
+      <div className="bg-primary rounded-3xl p-12 text-center text-primary-foreground">
         <div className="space-y-8">
           <div className="space-y-4">
             <h2 className="text-4xl md:text-5xl font-bold">Ready to Build Better Games?</h2>

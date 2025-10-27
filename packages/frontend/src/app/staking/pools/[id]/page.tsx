@@ -1,6 +1,7 @@
 'use client'
 
 import { use } from 'react'
+import { useParams } from 'next/navigation'
 import { DetailPageLayout } from '@/components/layout/detailPageLayout'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -95,12 +96,8 @@ function useStakingPool(id: string) {
   }
 }
 
-interface StakingPoolDetailPageProps {
-  params: Promise<{ id: string }>
-}
-
-export default function StakingPoolDetailPage({ params }: StakingPoolDetailPageProps) {
-  const { id } = use(params)
+export default function StakingPoolDetailPage() {
+  const { id } = useParams<{ id: string }>()
   const {
     pool,
     userStake,
@@ -495,7 +492,7 @@ export default function StakingPoolDetailPage({ params }: StakingPoolDetailPageP
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm">
                             {index + 1}
                           </div>
                           <div>
@@ -537,7 +534,7 @@ export default function StakingPoolDetailPage({ params }: StakingPoolDetailPageP
                   <Card key={index}>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                        <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
                           #{index + 1}
                         </div>
                         <div className="flex-1">

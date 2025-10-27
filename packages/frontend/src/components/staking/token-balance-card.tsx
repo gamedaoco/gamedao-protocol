@@ -47,9 +47,9 @@ export function TokenBalanceCard() {
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* GAME Token */}
-          <div className="flex items-center justify-between p-6 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
+          <div className="flex items-center justify-between p-6 border rounded-lg glass">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
                 <Coins className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -75,7 +75,7 @@ export function TokenBalanceCard() {
                 ) : (
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="glass"
                     onClick={approveGame}
                     disabled={isApproving}
                     className="text-xs h-7"
@@ -95,9 +95,9 @@ export function TokenBalanceCard() {
           </div>
 
           {/* USDC Token */}
-          <div className="flex items-center justify-between p-6 border rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20">
+          <div className="flex items-center justify-between p-6 border rounded-lg glass">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-chart-2 text-white flex items-center justify-center">
                 <DollarSign className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -123,7 +123,7 @@ export function TokenBalanceCard() {
                 ) : (
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="glass"
                     onClick={approveUsdc}
                     disabled={isApproving}
                     className="text-xs h-7"
@@ -144,12 +144,12 @@ export function TokenBalanceCard() {
         </div>
 
         {/* Quick Actions - Full Width */}
-        <div className="pt-6 border-t mt-6">
+          <div className="pt-6 border-t mt-6">
           <div className="flex space-x-4 justify-center">
-            <Button size="sm" variant="outline" className="px-6">
+            <Button size="sm" variant="glass" className="px-6">
               Get GAME
             </Button>
-            <Button size="sm" variant="outline" className="px-6">
+            <Button size="sm" variant="glass" className="px-6">
               Get USDC
             </Button>
           </div>

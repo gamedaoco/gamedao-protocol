@@ -29,12 +29,12 @@ import {
 import { useLogger } from '@/hooks/useLogger'
 import { Download, Trash2, Filter, Eye, EyeOff, RefreshCw } from 'lucide-react'
 
-const LOG_LEVELS: LogLevel[] = ['debug', 'info', 'warn', 'error', 'silent']
+const LOG_LEVELS: LogLevel[] = ['debug', 'info', 'warn', 'error']
 const LOG_CATEGORIES: LogCategory[] = [
   'app', 'auth', 'ipfs', 'blockchain', 'ui', 'api', 'performance', 'user', 'system', 'dev'
 ]
 
-const LEVEL_COLORS = {
+const LEVEL_COLORS: Record<Exclude<LogLevel, 'silent'>, string> = {
   debug: 'bg-gray-100 text-gray-800',
   info: 'bg-blue-100 text-blue-800',
   warn: 'bg-yellow-100 text-yellow-800',
@@ -243,11 +243,17 @@ export function LoggerManager({ className }: LoggerManagerProps) {
                   <div className="text-2xl font-bold">{stats.total}</div>
                   <div className="text-sm text-muted-foreground">Total Logs</div>
                   <div className="flex flex-wrap gap-1">
-                    {Object.entries(stats.byLevel).map(([level, count]) => (
-                      <Badge key={level} className={LEVEL_COLORS[level as LogLevel]}>
-                        {level}: {count}
-                      </Badge>
-                    ))}
+                    {Object.entries(stats.byLevel).map(([level, count]) => {
+                      const allowedLevels = ['debug','info','warn','error'] as const
+                      const safeLevel = allowedLevels.includes(level as any)
+                        ? (level as typeof allowedLevels[number])
+                        : 'debug'
+                      return (
+                        <Badge key={level} className={LEVEL_COLORS[safeLevel]}>
+                          {level}: {count}
+                        </Badge>
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -435,7 +441,7 @@ export function LoggerManager({ className }: LoggerManagerProps) {
                       <span className="text-xs text-muted-foreground">
                         {log.timestamp.toLocaleTimeString()}
                       </span>
-                      <Badge className={LEVEL_COLORS[log.level]}>
+                      <Badge className={LEVEL_COLORS[(['debug','info','warn','error'] as const).includes(log.level as any) ? (log.level as 'debug'|'info'|'warn'|'error') : 'debug']}>
                         {log.level}
                       </Badge>
                       <Badge className={CATEGORY_COLORS[log.category]}>

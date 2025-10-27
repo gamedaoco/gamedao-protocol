@@ -144,7 +144,7 @@ export default function SensePage() {
                       </div>
                       <Avatar className="w-12 h-12">
                         <AvatarImage src={profile.avatar || undefined} />
-                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                        <AvatarFallback className="bg-primary text-primary-foreground">
                           {profile.username.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>

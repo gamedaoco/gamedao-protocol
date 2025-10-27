@@ -118,7 +118,7 @@ export function PortfolioCard({ className }: PortfolioCardProps) {
               {portfolio.tokens.map((token) => (
                 <div key={token.address} className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
+                    <div className="w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-bold">
                       {token.symbol.charAt(0)}
                     </div>
                     <div>
@@ -186,11 +186,11 @@ export function PortfolioCard({ className }: PortfolioCardProps) {
 
         {/* Actions */}
         <div className="flex space-x-2 pt-2">
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button variant="glass" size="sm" className="flex-1">
             <Plus className="h-4 w-4 mr-2" />
             Add Funds
           </Button>
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button variant="glass" size="sm" className="flex-1">
             <TrendingUp className="h-4 w-4 mr-2" />
             Trade
           </Button>

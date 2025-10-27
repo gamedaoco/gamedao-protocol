@@ -417,6 +417,20 @@ export const GET_GLOBAL_STATS = gql`
   }
 `
 
+// Registry / Modules
+export const GET_MODULES = gql`
+  query GetModules($first: Int = 50) {
+    modules(first: $first) {
+      id
+      address
+      admin
+      enabled
+      version
+      updatedAt
+    }
+  }
+`
+
 // User-specific queries
 export const GET_USER_ORGANIZATIONS = gql`
   query GetUserOrganizations($user: Bytes!) {

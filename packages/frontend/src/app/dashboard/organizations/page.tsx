@@ -24,7 +24,7 @@ export default function DashboardOrganizationsPage() {
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-4">Connect Wallet Required</h2>
               <p className="text-muted-foreground">
-                Please connect your wallet to view your organizations.
+                Please connect your wallet to view your collectives.
               </p>
             </div>
           </CardContent>
@@ -49,9 +49,9 @@ export default function DashboardOrganizationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">Error Loading Organizations</h2>
+              <h2 className="text-2xl font-bold mb-4">Error Loading Collectives</h2>
               <p className="text-muted-foreground">
-                Failed to load your organizations. Please try again.
+                Failed to load your collectives. Please try again.
               </p>
             </div>
           </CardContent>
@@ -64,10 +64,10 @@ export default function DashboardOrganizationsPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <EmptyState
-          title="No Organizations"
-          description="You haven't joined any organizations yet."
+          title="No Collectives"
+          description="You haven't joined any collectives yet."
           primaryAction={{
-            label: 'Browse Organizations',
+            label: 'Browse Collectives',
             onClick: () => window.location.href = '/control'
           }}
         />
@@ -78,9 +78,9 @@ export default function DashboardOrganizationsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Organizations</h1>
+        <h1 className="text-3xl font-bold mb-2">My Collectives</h1>
         <p className="text-muted-foreground">
-          Organizations you are a member of
+          Collectives you are a member of
         </p>
       </div>
 
@@ -124,7 +124,7 @@ export default function DashboardOrganizationsPage() {
               </div>
               <div className="mt-4">
                 <Button asChild variant="outline" className="w-full">
-                  <Link href={`/control/${org.id}`}>View Details</Link>
+                  <Link href={`/control/${org.id}`}>View Collective</Link>
                 </Button>
               </div>
             </CardContent>

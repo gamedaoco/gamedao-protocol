@@ -112,7 +112,7 @@ export function TreasuryCard({ organizationId, className }: TreasuryCardProps) {
               {treasury.tokens.map((token) => (
                 <div key={token.address} className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">
+                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
                       {token.symbol.charAt(0)}
                     </div>
                     <span className="text-sm font-medium">{token.symbol}</span>

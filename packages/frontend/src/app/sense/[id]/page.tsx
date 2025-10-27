@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, use } from 'react'
+import { useParams } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { DetailPageLayout } from '@/components/layout/detailPageLayout'
 import { Button } from '@/components/ui/button'
@@ -55,13 +56,8 @@ interface ProfileData {
   profileCreated: boolean
 }
 
-interface ProfilePageProps {
-  params: { id: string } | Promise<{ id: string }>
-}
-
-export default function ProfilePage({ params }: ProfilePageProps) {
-  const resolvedParams = params instanceof Promise ? use(params) : params
-  const { id } = resolvedParams
+export default function ProfilePage() {
+  const { id } = useParams<{ id: string }>()
 
   const { address: connectedAddress } = useAccount()
   const [isEditing, setIsEditing] = useState(false)

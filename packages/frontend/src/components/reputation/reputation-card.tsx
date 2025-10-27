@@ -37,11 +37,11 @@ export function ReputationCard() {
   }
 
   const getReputationLevel = (rep: number) => {
-    if (rep >= 5000) return { level: 'Legendary', color: 'bg-gradient-to-r from-yellow-400 to-orange-500' }
-    if (rep >= 3000) return { level: 'Expert', color: 'bg-gradient-to-r from-purple-500 to-pink-500' }
-    if (rep >= 1500) return { level: 'Advanced', color: 'bg-gradient-to-r from-blue-500 to-cyan-500' }
-    if (rep >= 500) return { level: 'Intermediate', color: 'bg-gradient-to-r from-green-500 to-emerald-500' }
-    return { level: 'Beginner', color: 'bg-gradient-to-r from-gray-500 to-slate-500' }
+    if (rep >= 5000) return { level: 'Legendary', color: 'bg-primary' }
+    if (rep >= 3000) return { level: 'Expert', color: 'bg-accent' }
+    if (rep >= 1500) return { level: 'Advanced', color: 'bg-secondary' }
+    if (rep >= 500) return { level: 'Intermediate', color: 'bg-chart-2' }
+    return { level: 'Beginner', color: 'bg-muted' }
   }
 
   const getTrustLevel = (trust: number) => {
@@ -56,7 +56,7 @@ export function ReputationCard() {
   const trustLevel = getTrustLevel(userProfile.trustScore)
 
   return (
-    <Card className="bg-gradient-to-br from-background/50 to-muted/30 border-border/50 backdrop-blur-sm">
+    <Card className="bg-card border-border/50 backdrop-blur-sm">
       <CardHeader>
         <CardTitle>Reputation</CardTitle>
       </CardHeader>

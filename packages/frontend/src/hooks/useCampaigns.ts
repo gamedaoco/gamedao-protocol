@@ -36,7 +36,7 @@ export interface CreateCampaignParams {
   description: string
   metadataURI?: string
   flowType: number
-  paymentToken: string
+  paymentToken: `0x${string}`
   target: string
   min: string
   max: string
@@ -155,7 +155,7 @@ export function useCampaigns() {
           safeBigInt(params.target),
           safeBigInt(params.min),
           safeBigInt(params.max),
-          params.duration,
+          BigInt(params.duration),
           params.autoFinalize,
         ],
       })
@@ -199,7 +199,7 @@ export function useCampaigns() {
         address: contracts.FLOW,
         abi: ABIS.FLOW,
         functionName: 'contribute',
-        args: [campaignId, safeBigInt(amount), ''],
+        args: [campaignId as `0x${string}`, safeBigInt(amount), '' as `0x${string}`],
       })
 
       toast.loading('Contributing to campaign...')

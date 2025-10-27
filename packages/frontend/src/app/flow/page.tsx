@@ -7,10 +7,12 @@ import { useCampaigns } from '@/hooks/useCampaigns'
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { useAccount } from 'wagmi'
+import { useRouter } from 'next/navigation'
 
 export default function FlowPage() {
   const { campaigns, isLoading, error } = useCampaigns()
   const { isConnected } = useAccount()
+  const router = useRouter()
 
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
 
@@ -111,18 +113,14 @@ export default function FlowPage() {
             {filteredCampaigns.map((campaign) => (
               <EntityCard
                 key={campaign.id}
-                entity={{
-                  id: campaign.id,
-                  title: campaign.title,
-                  description: campaign.description,
-                  target: campaign.target,
-                  raised: campaign.raised,
-                  contributors: campaign.contributorCount,
-                  endTime: campaign.expiry,
-                  organizationName: campaign.organizationName
-                }}
-                variant="campaign"
-                href={`/flow/${campaign.id}`}
+                id={campaign.id}
+                title={campaign.title}
+                description={campaign.description}
+                secondaryMetrics={[
+                  { label: 'Target', value: campaign.target },
+                  { label: 'Contributors', value: campaign.contributorCount }
+                ]}
+                onClick={() => router.push(`/flow/${campaign.id}`)}
               />
             ))}
           </div>

@@ -136,7 +136,7 @@ export async function uploadJSONToIPFS(
         })
       })
 
-      logger.debug('Pinata JSON response status:', response.status, response.statusText)
+      logger.debug('Pinata JSON response status:', { status: response.status, statusText: response.statusText })
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -234,7 +234,7 @@ export async function uploadFileToIPFS(
         body: formData
       })
 
-      logger.debug('Pinata response status:', response.status, response.statusText)
+      logger.debug('Pinata response status:', { status: response.status, statusText: response.statusText })
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -416,7 +416,7 @@ export async function uploadProposalMetadata(metadata: {
  */
 export async function getFromIPFS(hashOrUrl: string): Promise<any> {
   try {
-    const hash = hashOrUrl.replace('ipfs://', '')
+    const hash = extractIPFSHash(hashOrUrl)
 
     // For development, retrieve from localStorage
     if (typeof window !== 'undefined') {
@@ -437,13 +437,41 @@ export async function getFromIPFS(hashOrUrl: string): Promise<any> {
 }
 
 /**
+ * Extract IPFS hash from URL or return the hash if already clean
+ */
+export function extractIPFSHash(hashOrUrl: string): string {
+  if (!hashOrUrl) return ''
+
+  // Remove ipfs:// protocol if present
+  if (hashOrUrl.startsWith('ipfs://')) {
+    return hashOrUrl.replace('ipfs://', '')
+  }
+
+  // Remove any gateway URL prefix if present
+  for (const gateway of IPFS_GATEWAYS) {
+    if (hashOrUrl.startsWith(gateway)) {
+      return hashOrUrl.replace(gateway, '')
+    }
+  }
+
+  // Return as-is if it's already a hash
+  return hashOrUrl
+}
+
+/**
  * Get IPFS URL from hash
  */
 export function getIPFSUrl(hashOrUrl: string): string {
-  if (hashOrUrl.startsWith('ipfs://')) {
-    return hashOrUrl.replace('ipfs://', DEFAULT_GATEWAY)
-  }
-  return `${DEFAULT_GATEWAY}${hashOrUrl}`
+  const hash = extractIPFSHash(hashOrUrl)
+  return `${DEFAULT_GATEWAY}${hash}`
+}
+
+/**
+ * Get a list of candidate IPFS gateway URLs for a given hash/URL
+ */
+export function getIPFSGatewayCandidates(hashOrUrl: string): string[] {
+  const hash = extractIPFSHash(hashOrUrl)
+  return IPFS_GATEWAYS.map(gateway => `${gateway}${hash}`)
 }
 
 /**
@@ -465,9 +493,9 @@ function generateMockHash(input: string): string {
 /**
  * Validate IPFS hash format
  */
-export function isValidIPFSHash(hash: string): boolean {
+export function isValidIPFSHash(hashOrUrl: string): boolean {
   // Basic validation for IPFS hash format
-  const cleanHash = hash.replace('ipfs://', '')
+  const cleanHash = extractIPFSHash(hashOrUrl)
   return /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/.test(cleanHash)
 }
 

@@ -3,16 +3,23 @@
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { useGameDAO } from '@/hooks/useGameDAO'
-import { formatAddress } from '@/lib/utils'
+import { useQuery } from '@apollo/client'
+import { GET_MODULES } from '@/lib/queries'
+import { keccak256, stringToBytes } from 'viem'
 
 export function Footer() {
-  const { contracts, networkName, isConnected } = useGameDAO()
+  const { contracts, networkName, isConnected, blockExplorer } = useGameDAO()
   const currentYear = new Date().getFullYear()
+  const { data: modulesData } = useQuery(GET_MODULES, { pollInterval: 5000, errorPolicy: 'ignore' })
+  const enabled = new Set<string>((modulesData?.modules || [])
+    .filter((m: any) => m.enabled)
+    .map((m: any) => m.id))
+  const idHex = (name: string) => keccak256(stringToBytes(name))
 
   return (
     <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Brand */}
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
@@ -21,7 +28,7 @@ export function Footer() {
                 alt="GameDAO"
                 className="h-6 w-6"
               />
-              <div className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <div className="text-lg font-bold text-primary">
                 GameDAO Protocol
               </div>
             </div>
@@ -30,32 +37,7 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Modules */}
-          <div className="space-y-2">
-            <h4 className="font-medium">Modules</h4>
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <div className="flex items-center space-x-2">
-                <span>🏛️ Control</span>
-                <Badge variant="secondary" className="text-xs">Active</Badge>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span>🗳️ Signal</span>
-                <Badge variant="outline" className="text-xs">Soon</Badge>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span>🪙 Staking</span>
-                <Badge variant="secondary" className="text-xs">Active</Badge>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span>💸 Flow</span>
-                <Badge variant="secondary" className="text-xs">Active</Badge>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span>👤 Sense</span>
-                <Badge variant="outline" className="text-xs">Soon</Badge>
-              </div>
-            </div>
-          </div>
+
 
           {/* Resources */}
           <div className="space-y-2">
@@ -73,20 +55,104 @@ export function Footer() {
             <h4 className="font-medium">Network</h4>
             <div className="space-y-1 text-sm text-muted-foreground">
               <div className="flex items-center space-x-2">
-                <span>Chain:</span>
+                <span>Network:</span>
                 <Badge variant="outline" className="text-xs">
                   {networkName}
                 </Badge>
               </div>
-              {isConnected && (
-                <>
-                  <div className="space-y-1">
-                    <div>Registry: {formatAddress(contracts.REGISTRY)}</div>
-                    <div>Control: {formatAddress(contracts.CONTROL)}</div>
-                    <div>Flow: {formatAddress(contracts.FLOW)}</div>
-                  </div>
-                </>
-              )}
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center space-x-2">
+                  <div className={`h-2 w-2 rounded-full bg-green-500`}></div>
+                  <span>🧭 Registry</span>
+                  {blockExplorer && (
+                    <a
+                      href={`${blockExplorer}/address/${contracts.REGISTRY}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={contracts.REGISTRY}
+                      className="text-xs underline"
+                    >
+                      Explorer
+                    </a>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className={`h-2 w-2 rounded-full ${enabled.has(idHex('CONTROL')) ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span>🏛️ Control</span>
+                  {blockExplorer && (
+                    <a
+                      href={`${blockExplorer}/address/${contracts.CONTROL}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={contracts.CONTROL}
+                      className="text-xs underline"
+                    >
+                      Explorer
+                    </a>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className={`h-2 w-2 rounded-full ${enabled.has(idHex('SIGNAL')) ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span>🗳️ Signal</span>
+                  {blockExplorer && (
+                    <a
+                      href={`${blockExplorer}/address/${contracts.SIGNAL}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={contracts.SIGNAL}
+                      className="text-xs underline"
+                    >
+                      Explorer
+                    </a>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className={`h-2 w-2 rounded-full ${enabled.has(idHex('STAKING')) ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span>🪙 Staking</span>
+                  {blockExplorer && (
+                    <a
+                      href={`${blockExplorer}/address/${contracts.STAKING}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={contracts.STAKING}
+                      className="text-xs underline"
+                    >
+                      Explorer
+                    </a>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className={`h-2 w-2 rounded-full ${enabled.has(idHex('FLOW')) ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span>💸 Flow</span>
+                  {blockExplorer && (
+                    <a
+                      href={`${blockExplorer}/address/${contracts.FLOW}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={contracts.FLOW}
+                      className="text-xs underline"
+                    >
+                      Explorer
+                    </a>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className={`h-2 w-2 rounded-full ${enabled.has(idHex('SENSE')) ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span>👤 Sense</span>
+                  {blockExplorer && (
+                    <a
+                      href={`${blockExplorer}/address/${contracts.SENSE}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={contracts.SENSE}
+                      className="text-xs underline"
+                    >
+                      Explorer
+                    </a>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

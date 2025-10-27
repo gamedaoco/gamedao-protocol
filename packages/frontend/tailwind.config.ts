@@ -16,6 +16,10 @@ const config: Config = {
       },
     },
     extend: {
+      boxShadow: {
+        // subtle elevated glass: light inner highlight + soft drop
+        glass: "inset 0 1px 0 0 hsla(var(--foreground),0.06), 0 8px 24px -12px hsla(var(--foreground),0.35), 0 1px 2px 0 hsla(var(--foreground),0.15)",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

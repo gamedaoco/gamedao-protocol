@@ -141,12 +141,12 @@ export function EntityCard({
           />
         )}
 
-        {/* Gradient Overlay */}
+        {/* Overlay */}
         <div className={cn(
           "absolute inset-0",
           banner
-            ? "bg-gradient-to-t from-black/60 via-black/20 to-transparent"
-            : "bg-gradient-to-br from-blue-500 to-purple-600"
+            ? "bg-black/40"
+            : "bg-secondary"
         )} />
 
         {/* Header Content */}
@@ -322,7 +322,7 @@ export const EntityCardPresets = {
   organization: {
     icon: <Users className="h-5 w-5" />,
     iconColor: 'bg-blue-500',
-    type: 'Organization'
+    type: 'Collective'
   },
 
   campaign: {

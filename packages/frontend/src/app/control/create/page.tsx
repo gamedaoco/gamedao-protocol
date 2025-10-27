@@ -86,18 +86,18 @@ export default function CreateOrganizationPage() {
 
   // Handle success state - redirect after transaction is confirmed
   useEffect(() => {
-    if (currentStep === 'success' && createdOrgId) {
+    if (currentStep === 'success') {
       console.log('🎉 Organization created successfully! Redirecting to:', createdOrgId)
 
-      // Add a small delay to show success message before redirect
       const timeoutId = setTimeout(() => {
-        // Reset states
         resetState()
-        // Redirect to the specific organization page
-        router.push(`/control/${createdOrgId}`)
+        if (createdOrgId && createdOrgId.length >= 8) {
+          router.push(`/control/${createdOrgId}`)
+        } else {
+          router.push('/control')
+        }
       }, 2000)
 
-      // Cleanup timeout on unmount
       return () => clearTimeout(timeoutId)
     }
   }, [currentStep, createdOrgId, router])
@@ -274,7 +274,7 @@ export default function CreateOrganizationPage() {
                 <div className="text-center">
                   <h3 className="text-lg font-semibold mb-2 text-green-800">Organization Created!</h3>
                   <p className="text-muted-foreground text-sm">
-                    {createdOrgId ? 'Redirecting to your new organization...' : 'Redirecting to organizations page...'}
+                    {createdOrgId ? 'Redirecting to your new collective...' : 'Redirecting to collectives page...'}
                   </p>
                 </div>
                 <div className="w-full bg-green-200 rounded-full h-2">

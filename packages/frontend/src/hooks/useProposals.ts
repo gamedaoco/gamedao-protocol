@@ -91,6 +91,34 @@ export function useProposals(organizationId?: string) {
     hash: voteTxHash,
   })
 
+  // Auto-reset voting state after timeout to prevent UI locking
+  useEffect(() => {
+    if (isVotePending || isVoteConfirming) {
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ Vote transaction timeout - resetting state to unlock UI')
+        resetVote()
+      }, 60000) // 60 second timeout
+
+      return () => clearTimeout(timeout)
+    }
+  }, [isVotePending, isVoteConfirming, resetVote])
+
+  // Fetch proposals from subgraph (declare before effects that use `refetch`)
+  const { data, loading, error, refetch } = useQuery(GET_PROPOSALS, {
+    variables: { first: 100, skip: 0 },
+    pollInterval: 30000,
+    errorPolicy: 'ignore',
+  })
+
+  // Auto-refetch data after successful vote
+  useEffect(() => {
+    if (voteSuccess) {
+      console.log('✅ Vote confirmed - refreshing data')
+      refetch()
+      setTimeout(() => refetch(), 3000) // Refetch again after 3 seconds for subgraph indexing
+    }
+  }, [voteSuccess, refetch])
+
   // Add token approval hook for GAME token deposits
   const {
     handleApproval: handleTokenApproval,
@@ -99,13 +127,6 @@ export function useProposals(organizationId?: string) {
     approvalSuccess: tokenApprovalSuccess,
     approvalError: tokenApprovalError
   } = useTokenApproval()
-
-  // Fetch proposals from subgraph
-  const { data, loading, error, refetch } = useQuery(GET_PROPOSALS, {
-    variables: { first: 100, skip: 0 },
-    pollInterval: 30000,
-    errorPolicy: 'ignore',
-  })
 
   // Fetch user's votes from subgraph
   const { data: userVotesData, loading: userVotesLoading } = useQuery(GET_USER_VOTES, {
@@ -190,13 +211,18 @@ export function useProposals(organizationId?: string) {
     }
   }, [filteredProposals, userVotes])
 
-    // Cast vote function with hierarchical IDs
+  // Cast vote function with hierarchical IDs
   const castVote = async (proposalId: string, choice: 0 | 1 | 2, reason?: string) => {
     if (!isConnected || !address) {
       throw new Error('Wallet not connected')
     }
 
     try {
+      console.log('🗳️ Casting vote:', { proposalId, choice, reason })
+
+      // Reset any previous vote errors
+      resetVote()
+
       // Use hierarchical ID directly (no conversion needed)
       await writeVote({
         address: contracts.SIGNAL,
@@ -205,11 +231,12 @@ export function useProposals(organizationId?: string) {
         args: [proposalId, choice, reason || ''],
       })
 
-      // Refetch data after voting
-      refetch()
-      refetchCount()
+      console.log('✅ Vote transaction submitted')
+
     } catch (error) {
-      console.error('Error casting vote:', error)
+      console.error('❌ Error casting vote:', error)
+      // Reset vote state on error to unlock UI
+      resetVote()
       throw error
     }
   }

@@ -3,6 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useGameDAO } from '@/hooks/useGameDAO'
+import { useQuery } from '@apollo/client'
+import { GET_MODULES } from '@/lib/queries'
+import { keccak256, stringToBytes } from 'viem'
 import { ModeToggle } from '@/components/mode-toggle'
 import { WalletConnection } from '@/components/wallet/wallet-connection'
 import { WalletBalanceDropdown } from '@/components/wallet/wallet-balance-dropdown'
@@ -11,6 +14,12 @@ import { Button } from '@/components/ui/button'
 
 export function TopBar() {
   const { isConnected } = useGameDAO()
+  const { data: modulesData, refetch } = useQuery(GET_MODULES, { pollInterval: 5000, errorPolicy: 'ignore' })
+  const enabled = new Set<string>((modulesData?.modules || [])
+    .filter((m: any) => m.enabled)
+    .map((m: any) => m.id))
+
+  const idHex = (name: string) => keccak256(stringToBytes(name))
   const pathname = usePathname()
 
   // Helper function to determine if a nav item is active
@@ -21,14 +30,14 @@ export function TopBar() {
 
   // Helper function to get nav item classes
   const getNavClasses = (path: string) => {
-    const baseClasses = "transition-colors hover:text-foreground/80"
+    const baseClasses = "text-sm transition-colors hover:text-foreground/80"
     return isActive(path)
       ? `${baseClasses} text-foreground font-medium`
       : `${baseClasses} text-foreground/60`
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full glass-bar">
       <div className="container flex h-16 max-w-screen-2xl items-center">
         {/* Logo */}
         <div className="mr-6 flex items-center">
@@ -44,40 +53,35 @@ export function TopBar() {
 
         {/* Navigation - Left aligned after logo */}
         <nav className="flex items-center space-x-6 text-sm mr-auto">
-          <Link
-            href="/control"
-            className={getNavClasses('/control')}
-          >
-            Organizations
-          </Link>
-          <Link
-            href="/signal"
-            className={getNavClasses('/signal')}
-          >
-            Governance
-          </Link>
-          <Link
-            href="/staking"
-            className={getNavClasses('/staking')}
-          >
-            Staking
-          </Link>
-          <Link
-            href="/flow"
-            className={getNavClasses('/flow')}
-          >
-            Campaigns
-          </Link>
-          <Link
-            href="/sense"
-            className={getNavClasses('/sense')}
-          >
-            Profiles
-          </Link>
+          {enabled.has(idHex('CONTROL')) && (
+            <Link href="/control" className={getNavClasses('/control')}>
+              Collectives
+            </Link>
+          )}
+          {enabled.has(idHex('SIGNAL')) && (
+            <Link href="/signal" className={getNavClasses('/signal')}>
+              Governance
+            </Link>
+          )}
+          {enabled.has(idHex('STAKING')) && (
+            <Link href="/staking" className={getNavClasses('/staking')}>
+              Staking
+            </Link>
+          )}
+          {enabled.has(idHex('FLOW')) && (
+            <Link href="/flow" className={getNavClasses('/flow')}>
+              Campaigns
+            </Link>
+          )}
+          {enabled.has(idHex('SENSE')) && (
+            <Link href="/sense" className={getNavClasses('/sense')}>
+              Profiles
+            </Link>
+          )}
         </nav>
 
         {/* Right side */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 text-sm">
           {/* Dashboard - only show when connected */}
           {isConnected && (
             <div className="flex items-center space-x-2">
@@ -96,7 +100,7 @@ export function TopBar() {
             <WalletBalanceDropdown />
           ) : (
             <WalletConnection>
-              <Button variant="outline" size="sm">
+              <Button variant="glass" size="sm">
                 Connect Wallet
               </Button>
             </WalletConnection>

@@ -125,7 +125,7 @@ export function WalletConnection({ children, className }: WalletConnectionProps)
                   disabled={isConnecting || isPending}
                 >
                   <div className="flex items-center space-x-3 w-full">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
                       <Wallet className="h-4 w-4 text-white" />
                     </div>
                     <div className="flex-1 text-left">
@@ -221,7 +221,7 @@ export function WalletConnection({ children, className }: WalletConnectionProps)
           </div>
 
           {/* Benefits */}
-          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border-blue-200 dark:border-blue-800">
+          <Card className="bg-accent/20 dark:bg-secondary/40 border-accent/40 dark:border-secondary">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">Why Connect?</CardTitle>
             </CardHeader>

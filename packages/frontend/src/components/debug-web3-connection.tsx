@@ -51,7 +51,7 @@ export function DebugWeb3Connection() {
           2, // DAO
           0, // Open
           0, // No Fees
-          100, // memberLimit
+          BigInt(100), // memberLimit
           BigInt(0), // membershipFee
           BigInt(0), // gameStakeRequired
         ],

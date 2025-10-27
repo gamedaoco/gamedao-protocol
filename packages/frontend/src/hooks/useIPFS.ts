@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { getFromIPFS, uploadFileToIPFS, uploadJSONToIPFS, getIPFSUrl } from '@/lib/ipfs'
+import { getFromIPFS, uploadFileToIPFS, uploadJSONToIPFS, getIPFSUrl, getIPFSGatewayCandidates } from '@/lib/ipfs'
 import { useIPFSLogger } from './useLogger'
 
 // Define the upload result type locally since it's not exported
@@ -391,49 +391,56 @@ export function useIPFSImage(
     setImageError(false)
 
     try {
+      // Dev mock support: read from localStorage if available
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem(`ipfs_file_${hash}`)
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            if (parsed?.data) {
+              ipfsCache.set(cacheKey, { data: parsed.data, timestamp: Date.now(), ttl: cacheTTL })
+              setImageUrl(parsed.data)
+              setIsLoading(false)
+              return
+            }
+          }
+        } catch (_) {}
+      }
+
       const startTime = Date.now()
 
-      // Try to get the IPFS URL with multiple gateway fallback
-      const ipfsUrl = getIPFSUrl(hash)
+      // Try multiple gateways for robustness
+      const candidates = getIPFSGatewayCandidates(hash)
 
-      // Test if the image loads successfully
-      const testImage = new Image()
-      testImage.crossOrigin = 'anonymous'
+      let resolvedUrl: string | null = null
+      for (const candidate of candidates) {
+        // Test if the image loads successfully
+        const testImage = new Image()
+        testImage.crossOrigin = 'anonymous'
 
-      const imageLoadPromise = new Promise<string>((resolve, reject) => {
-        testImage.onload = () => {
+        const result = await new Promise<'ok' | 'fail' | 'timeout'>((resolve) => {
+          const timeout = setTimeout(() => resolve('timeout'), 8000)
+          testImage.onload = () => { clearTimeout(timeout); resolve('ok') }
+          testImage.onerror = () => { clearTimeout(timeout); resolve('fail') }
+          testImage.src = candidate
+        })
+
+        if (result === 'ok') {
           const duration = Date.now() - startTime
           logDownload(hash, true, duration)
-
-          // Cache the successful URL
-          ipfsCache.set(cacheKey, { data: ipfsUrl, timestamp: Date.now(), ttl: cacheTTL })
-          resolve(ipfsUrl)
+          ipfsCache.set(cacheKey, { data: candidate, timestamp: Date.now(), ttl: cacheTTL })
+          resolvedUrl = candidate
+          break
         }
+      }
 
-        testImage.onerror = (e) => {
-          const duration = Date.now() - startTime
-          logDownload(hash, false, duration, new Error('Image failed to load'))
+      // Fallbacks if none worked
+      if (!resolvedUrl) {
+        console.warn(`🖼️ IPFS image failed on all gateways: ${hash}, using fallback`)
+        resolvedUrl = fallbackUrl
+      }
 
-          // Check if this is a CORS or rate limit error
-          if (e instanceof Event) {
-            // Try fallback image
-            console.warn(`🖼️ IPFS image failed to load: ${hash}, using fallback`)
-            resolve(fallbackUrl)
-          } else {
-            reject(new Error('Image load failed'))
-          }
-        }
-
-        testImage.src = ipfsUrl
-      })
-
-      // Add timeout for image loading
-      const timeoutPromise = new Promise<string>((_, reject) => {
-        setTimeout(() => reject(new Error('Image load timeout')), 15000)
-      })
-
-      const finalUrl = await Promise.race([imageLoadPromise, timeoutPromise])
-      setImageUrl(finalUrl)
+      setImageUrl(resolvedUrl)
 
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to load IPFS image'
