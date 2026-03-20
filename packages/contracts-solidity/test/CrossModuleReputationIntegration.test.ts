@@ -94,19 +94,12 @@ describe("Cross-Module Reputation Integration", function () {
     await registry.registerModule(await identity.getAddress());
 
     // Enable all modules
-    await registry.enableModule(await control.getAddress());
-    await registry.enableModule(await sense.getAddress());
-    await registry.enableModule(await signal.getAddress());
-    await registry.enableModule(await flow.getAddress());
-    await registry.enableModule(await membership.getAddress());
-    await registry.enableModule(await identity.getAddress());
-
-    // Initialize modules
-    await sense.initialize(await registry.getAddress());
-    await signal.initialize(await registry.getAddress());
-    await flow.initialize(await registry.getAddress());
-    await membership.initialize(await registry.getAddress());
-    await identity.initialize(await registry.getAddress());
+    await registry.enableModule(await control.moduleId());
+    await registry.enableModule(await sense.moduleId());
+    await registry.enableModule(await signal.moduleId());
+    await registry.enableModule(await flow.moduleId());
+    await registry.enableModule(await membership.moduleId());
+    await registry.enableModule(await identity.moduleId());
 
     // Setup connections
     await control.setFactory(await factory.getAddress());

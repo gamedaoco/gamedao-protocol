@@ -150,7 +150,8 @@ export const MAINNET_ADDRESSES: NetworkAddresses = ${JSON.stringify(defaultAddre
 export const NETWORK_CONFIG = {
   1: { name: 'mainnet', addresses: MAINNET_ADDRESSES },
   11155111: { name: 'sepolia', addresses: TESTNET_ADDRESSES },
-  31337: { name: 'localhost', addresses: LOCAL_ADDRESSES },
+  31337: { name: 'localhost', addresses: LOCAL_ADDRESSES }, // Legacy Hardhat
+  42: { name: 'localhost', addresses: LOCAL_ADDRESSES }, // Frontier node
 } as const;
 
 // Helper function to get addresses for a specific network

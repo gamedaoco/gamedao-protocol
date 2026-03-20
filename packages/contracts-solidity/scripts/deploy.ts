@@ -176,6 +176,16 @@ async function main() {
   // Also grant ORGANIZATION_MANAGER_ROLE to Factory on Membership contract for adding creators as members
   await membership.grantRole(ORGANIZATION_MANAGER_ROLE, factoryAddress);
   console.log("✅ Factory granted ORGANIZATION_MANAGER_ROLE in Membership contract");
+
+  // Configure Membership with GAME token and Control contract
+  await membership.setGameToken(gameTokenAddress);
+  console.log("✅ Membership GAME token set to:", gameTokenAddress);
+  await membership.setControlContract(controlAddress);
+  console.log("✅ Membership Control contract set to:", controlAddress);
+
+  // Configure Identity with GAME token (required for name claiming)
+  await identity.setGameToken(gameTokenAddress);
+  console.log("✅ Identity GAME token set to:", gameTokenAddress);
   console.log("");
 
   // 12. Deploy Staking for rewards

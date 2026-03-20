@@ -32,13 +32,23 @@ async function main() {
   const net = await ethers.provider.getNetwork();
   console.log("🌐 ChainId:", Number(net.chainId));
 
+  // Get signer for sending transactions
+  const [signer] = await ethers.getSigners();
+  console.log("👤 Using signer:", signer.address);
+  const balance = await ethers.provider.getBalance(signer.address);
+  console.log("💰 Signer balance:", ethers.formatEther(balance), "ETH");
+
+  // Get contract and connect to signer
   const reg = await ethers.getContractAt("Registry", registry);
+  const regWithSigner = reg.connect(signer);
+
   const ADMIN_ROLE = await reg.ADMIN_ROLE();
   const MODULE_MANAGER_ROLE = await reg.MODULE_MANAGER_ROLE();
 
   const hasAdmin = await reg.hasRole(ADMIN_ROLE, address);
   if (!hasAdmin) {
-    const tx = await reg.grantRole(ADMIN_ROLE, address);
+    const tx = await regWithSigner.grantRole(ADMIN_ROLE, address);
+    console.log("⏳ Transaction sent, waiting for confirmation...");
     await tx.wait();
     console.log("✅ ADMIN_ROLE granted");
   } else {
@@ -47,7 +57,8 @@ async function main() {
 
   const hasMgr = await reg.hasRole(MODULE_MANAGER_ROLE, address);
   if (!hasMgr) {
-    const tx2 = await reg.grantRole(MODULE_MANAGER_ROLE, address);
+    const tx2 = await regWithSigner.grantRole(MODULE_MANAGER_ROLE, address);
+    console.log("⏳ Transaction sent, waiting for confirmation...");
     await tx2.wait();
     console.log("✅ MODULE_MANAGER_ROLE granted");
   } else {

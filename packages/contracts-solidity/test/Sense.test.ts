@@ -1,12 +1,15 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { Registry, Control, Sense } from "../typechain-types";
+import { Registry, Control, Sense, Factory, Staking, MockGameToken } from "../typechain-types";
 
 describe("Sense Module", function () {
   let registry: Registry;
   let control: Control;
+  let factory: Factory;
   let sense: Sense;
+  let gameToken: MockGameToken;
+  let staking: Staking;
   let owner: HardhatEthersSigner;
   let member1: HardhatEthersSigner;
   let member2: HardhatEthersSigner;
@@ -15,8 +18,25 @@ describe("Sense Module", function () {
   let testOrgId: string;
   let testProfileId: string;
 
+  const ORGANIZATION_MANAGER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("ORGANIZATION_MANAGER_ROLE"));
+  const MIN_STAKE_AMOUNT = ethers.parseEther("10000");
+
   beforeEach(async function () {
     [owner, member1, member2, member3, nonMember] = await ethers.getSigners();
+
+    // Deploy Game Token
+    const MockGameTokenFactory = await ethers.getContractFactory("MockGameToken");
+    gameToken = await MockGameTokenFactory.deploy();
+    await gameToken.waitForDeployment();
+
+    // Deploy Staking Contract
+    const StakingFactory = await ethers.getContractFactory("Staking");
+    staking = await StakingFactory.deploy(
+      await gameToken.getAddress(),
+      owner.address,
+      500
+    );
+    await staking.waitForDeployment();
 
     // Deploy Registry
     const RegistryFactory = await ethers.getContractFactory("Registry");
@@ -25,23 +45,44 @@ describe("Sense Module", function () {
 
     // Deploy Control Module
     const ControlFactory = await ethers.getContractFactory("Control");
-    control = await ControlFactory.deploy(owner.address, owner.address);
+    control = await ControlFactory.deploy(
+      await gameToken.getAddress(),
+      await staking.getAddress()
+    );
     await control.waitForDeployment();
 
+    // Deploy Factory
+    const FactoryFactory = await ethers.getContractFactory("contracts/modules/Control/Factory.sol:Factory");
+    factory = await FactoryFactory.deploy(
+      await gameToken.getAddress(),
+      await staking.getAddress()
+    );
+    await factory.waitForDeployment();
+
     // Deploy Sense Module
-    const Sense = await ethers.getContractFactory("Sense");
-    sense = await Sense.deploy();
+    const SenseFactory = await ethers.getContractFactory("Sense");
+    sense = await SenseFactory.deploy();
     await sense.waitForDeployment();
 
-        // Register and enable modules
+    // Setup factory connections
+    await control.setFactory(await factory.getAddress());
+    await factory.setRegistry(await control.getAddress());
+
+    // Register and enable modules
     await registry.registerModule(await control.getAddress());
     await registry.enableModule(await control.moduleId());
 
     await registry.registerModule(await sense.getAddress());
     await registry.enableModule(await sense.moduleId());
 
-    // Create test organization
-    const tx = await control.createOrganization(
+    // Grant necessary roles
+    await staking.grantRole(ORGANIZATION_MANAGER_ROLE, await factory.getAddress());
+
+    // Approve tokens for staking and create test organization
+    await gameToken.approve(await staking.getAddress(), MIN_STAKE_AMOUNT);
+
+    const tx = await factory.createOrganization(
+      owner.address,
       "Test DAO",
       "Test DAO for Sense module testing",
       0, // OrgType.Community
@@ -49,28 +90,22 @@ describe("Sense Module", function () {
       0, // FeeModel.NoFees
       10, // Member limit
       0, // Membership fee
-      0  // Game stake required
+      MIN_STAKE_AMOUNT
     );
 
     const receipt = await tx.wait();
-    const event = receipt?.logs.find(log => {
-      try {
-        const parsed = control.interface.parseLog(log);
-        return parsed?.name === "OrganizationCreated";
-      } catch {
-        return false;
-      }
-    });
+    const events = receipt?.logs || [];
+    const organizationCreatedEvent = events.find(event =>
+      event.topics[0] === ethers.id("OrganizationCreated(bytes8,string,address,address,uint256)")
+    );
 
-    if (event) {
-      const parsed = control.interface.parseLog(event);
-      testOrgId = parsed?.args[0];
+    if (organizationCreatedEvent) {
+      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(
+        ["bytes8", "string", "address", "address", "uint256"],
+        organizationCreatedEvent.data
+      );
+      testOrgId = decoded[0];
     }
-
-    // Add members to organization
-    await control.addMember(testOrgId, member1.address);
-    await control.addMember(testOrgId, member2.address);
-    await control.addMember(testOrgId, member3.address);
   });
 
   describe("Deployment and Initialization", function () {

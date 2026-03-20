@@ -33,10 +33,7 @@ describe("Identity Module", function () {
 
     // Register and enable Identity module
     await registry.registerModule(await identity.getAddress());
-    await registry.enableModule(await identity.getAddress());
-
-    // Initialize Identity
-    await identity.initialize(await registry.getAddress());
+    await registry.enableModule(await identity.moduleId());
 
     // Grant verifier role
     await identity.grantRole(VERIFIER_ROLE, verifier.address);

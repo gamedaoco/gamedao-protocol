@@ -48,14 +48,26 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 31337,
       mining: {
-        auto: true,
-        // interval: 2000
+        auto: !isInContainer, // Use auto mining when not in container
+        interval: isInContainer ? 3000 : undefined, // Use interval mining in Docker for predictable block production
       },
       // loggingEnabled: true,
     },
     localhost: {
       url: "http://127.0.0.1:8545",
-      chainId: 31337,
+      chainId: 42, // Frontier node chain ID (was 31337 for Hardhat)
+      // Use PRIVATE_KEY if set, otherwise use Frontier's default test account (Alith)
+      accounts: process.env.PRIVATE_KEY
+        ? [process.env.PRIVATE_KEY]
+        : ["0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133"],
+    },
+    frontier: {
+      url: "http://127.0.0.1:8545",
+      chainId: 42,
+      // Use PRIVATE_KEY if set, otherwise use Frontier's default test account (Alith)
+      accounts: process.env.PRIVATE_KEY
+        ? [process.env.PRIVATE_KEY]
+        : ["0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133"],
     },
     "docker-localhost": {
       url: "http://hardhat-node:8545",

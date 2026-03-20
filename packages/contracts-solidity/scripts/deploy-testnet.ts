@@ -126,7 +126,7 @@ async function performPreDeploymentChecks(deployer: any): Promise<void> {
 
     // Check network
     const network = await ethers.provider.getNetwork();
-    const supportedNetworks = [1337, 31337, 5, 11155111, 80001]; // localhost, goerli, sepolia, mumbai
+    const supportedNetworks = [1337, 31337, 42, 5, 11155111, 80001]; // localhost (Hardhat), localhost (Frontier), goerli, sepolia, mumbai
 
     if (!supportedNetworks.includes(network.chainId)) {
         console.warn(`⚠️  Deploying to unsupported network: ${network.name} (${network.chainId})`);

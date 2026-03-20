@@ -60,6 +60,9 @@ contract Identity is Module, IIdentity {
     // Counters
     uint256 private _profileCounter;
 
+    // GAME token for name claiming staking
+    IERC20 private _gameToken;
+
     // =============================================================
     // CONSTRUCTOR
     // =============================================================
@@ -68,7 +71,6 @@ contract Identity is Module, IIdentity {
      * @dev Constructor
      */
     constructor() Module("1.0.0") {
-        // Grant roles to deployer initially
         _grantRole(IDENTITY_ADMIN_ROLE, _msgSender());
         _grantRole(VERIFIER_ROLE, _msgSender());
     }
@@ -84,10 +86,17 @@ contract Identity is Module, IIdentity {
      * @dev Internal initialization hook
      */
     function _onInitialize() internal override {
-        // Grant admin roles to the registry
         address registryAddr = this.registry();
         _grantRole(IDENTITY_ADMIN_ROLE, registryAddr);
         _grantRole(VERIFIER_ROLE, registryAddr);
+    }
+
+    /**
+     * @dev Set GAME token address (required for name claiming)
+     */
+    function setGameToken(address gameTokenAddress) external onlyRole(IDENTITY_ADMIN_ROLE) {
+        require(gameTokenAddress != address(0), "Invalid game token address");
+        _gameToken = IERC20(gameTokenAddress);
     }
 
     // =============================================================
@@ -468,9 +477,8 @@ contract Identity is Module, IIdentity {
      * @dev Get GAME token address from registry
      */
     function _getGameTokenAddress() internal view returns (address) {
-        // This would typically get the GAME token address from the registry
-        // For now, we'll need to add this to the module initialization
-        // TODO: Implement proper GAME token address retrieval
-        return address(0); // Placeholder
+        address addr = address(_gameToken);
+        require(addr != address(0), "GAME token not configured");
+        return addr;
     }
 }

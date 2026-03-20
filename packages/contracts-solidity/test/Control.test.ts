@@ -70,9 +70,8 @@ describe("Control Module", function () {
     await registry.registerModule(await control.getAddress());
     await registry.registerModule(await membership.getAddress());
 
-    // Initialize Membership contract
-    await membership.initialize(await registry.getAddress());
-    await membership.setMockGameToken(await gameToken.getAddress());
+    // Configure Membership contract (already initialized by registerModule)
+    await membership.setGameToken(await gameToken.getAddress());
     await membership.setControlContract(await control.getAddress());
 
     // Grant ORGANIZATION_MANAGER_ROLE to admin for membership management

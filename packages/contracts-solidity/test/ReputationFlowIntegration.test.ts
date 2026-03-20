@@ -45,12 +45,8 @@ describe("Flow -> Sense Reputation Integration", function () {
     // Register and enable modules
     await registry.registerModule(await sense.getAddress());
     await registry.registerModule(await flow.getAddress());
-    await registry.enableModule(await sense.getAddress());
-    await registry.enableModule(await flow.getAddress());
-
-    // Initialize modules
-    await sense.initialize(await registry.getAddress());
-    await flow.initialize(await registry.getAddress());
+    await registry.enableModule(await sense.moduleId());
+    await registry.enableModule(await flow.moduleId());
 
     // Grant Flow module permission to manage reputation
     await sense.grantRole(REPUTATION_MANAGER_ROLE, await flow.getAddress());

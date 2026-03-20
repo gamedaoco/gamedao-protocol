@@ -62,10 +62,6 @@ describe("Signal Module", function () {
     await registry.enableModule(CONTROL_MODULE_ID);
     await registry.enableModule(SIGNAL_MODULE_ID);
 
-    // Initialize modules
-    await control.initialize(await registry.getAddress());
-    await signal.initialize(await registry.getAddress());
-
     // Create test organization
     const createOrgTx = await control.createOrganization(
       "Test DAO",

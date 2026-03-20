@@ -38,6 +38,7 @@ contract Factory is Module {
     event OrganizationCreated(
         bytes8 indexed id,
         string name,
+        string metadataURI,
         address indexed creator,
         address indexed treasury,
         uint256 timestamp
@@ -164,7 +165,7 @@ contract Factory is Module {
             } catch {}
         }
 
-        emit OrganizationCreated(orgId, name, user, address(treasury), block.timestamp);
+        emit OrganizationCreated(orgId, name, metadataURI, user, address(treasury), block.timestamp);
 
         return orgId;
     }

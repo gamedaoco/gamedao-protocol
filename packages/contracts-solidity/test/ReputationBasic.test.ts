@@ -29,10 +29,7 @@ describe("Reputation System Basic Tests", function () {
 
     // Register and enable Sense module
     await registry.registerModule(await sense.getAddress());
-    await registry.enableModule(await sense.getAddress());
-
-    // Initialize Sense
-    await sense.initialize(await registry.getAddress());
+    await registry.enableModule(await sense.moduleId());
 
     // Grant reputation manager role to admin for testing
     const REPUTATION_MANAGER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("REPUTATION_MANAGER_ROLE"));

@@ -83,13 +83,6 @@ describe("Identity Integration Tests", function () {
     await registry.registerModule(await signal.getAddress());
     await registry.registerModule(await flow.getAddress());
 
-    // Initialize modules
-    await identity.initialize(await registry.getAddress());
-    await membership.initialize(await registry.getAddress());
-    await sense.initialize(await registry.getAddress());
-    await signal.initialize(await registry.getAddress());
-    await flow.initialize(await registry.getAddress());
-
     // Setup module connections
     await membership.setMockGameToken(await gameToken.getAddress());
     await membership.setControlContract(await control.getAddress());

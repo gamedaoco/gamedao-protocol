@@ -12,6 +12,7 @@
     "test:gas": "REPORT_GAS=true hardhat test",
     "deploy": "hardhat run scripts/deploy.ts",
     "deploy:localhost": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:frontier": "hardhat run scripts/deploy.ts --network frontier",
     "deploy:testnet": "hardhat run scripts/deploy.ts --network sepolia",
     "deploy:mainnet": "hardhat run scripts/deploy.ts --network mainnet",
     "deploy:membership-localhost": "hardhat run scripts/deploy-with-membership-integration.ts --network localhost",

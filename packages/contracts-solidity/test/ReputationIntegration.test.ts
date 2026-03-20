@@ -90,17 +90,11 @@ describe("Reputation Integration Tests", function () {
     await registry.registerModule(await flow.getAddress());
     await registry.registerModule(await membership.getAddress());
 
-    await registry.enableModule(await control.getAddress());
-    await registry.enableModule(await sense.getAddress());
-    await registry.enableModule(await signal.getAddress());
-    await registry.enableModule(await flow.getAddress());
-    await registry.enableModule(await membership.getAddress());
-
-    // Initialize modules
-    await sense.initialize(await registry.getAddress());
-    await signal.initialize(await registry.getAddress());
-    await flow.initialize(await registry.getAddress());
-    await membership.initialize(await registry.getAddress());
+    await registry.enableModule(await control.moduleId());
+    await registry.enableModule(await sense.moduleId());
+    await registry.enableModule(await signal.moduleId());
+    await registry.enableModule(await flow.moduleId());
+    await registry.enableModule(await membership.moduleId());
 
     // Setup Factory connections
     await control.setFactory(await factory.getAddress());
