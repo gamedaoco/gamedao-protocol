@@ -8,7 +8,7 @@ const ARTIFACTS_DIR = path.join(__dirname, '../artifacts/contracts');
 const SHARED_DIR = path.join(__dirname, '../../shared/src');
 const ADDRESSES_FILE = path.join(__dirname, '../deployment-addresses.json');
 
-// Contract mapping
+// Contract mapping: artifact path → exported constant name
 const CONTRACT_MAPPING = {
   'core/Registry.sol/Registry.json': 'REGISTRY_ABI',
   'modules/Control/Control.sol/Control.json': 'CONTROL_ABI',
@@ -20,6 +20,9 @@ const CONTRACT_MAPPING = {
   'modules/Identity/Identity.sol/Identity.json': 'IDENTITY_ABI',
   'modules/Staking/Staking.sol/Staking.json': 'STAKING_ABI',
   'core/Treasury.sol/Treasury.json': 'TREASURY_ABI',
+  'tokens/GameToken.sol/GameToken.json': 'GAME_TOKEN_ABI',
+  'mocks/MockGameToken.sol/MockGameToken.json': 'MOCK_GAME_TOKEN_ABI',
+  'mocks/MockUSDC.sol/MockUSDC.json': 'MOCK_USDC_ABI',
 };
 
 function updateABIs() {
