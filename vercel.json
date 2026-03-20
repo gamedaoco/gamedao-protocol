@@ -3,7 +3,7 @@
   "framework": "nextjs",
   "installCommand": "pnpm install",
   "buildCommand": "pnpm --filter @gamedao/frontend run build",
-  "outputDirectory": "packages/frontend/.next",
+  "outputDirectory": ".next",
   "regions": ["iad1"],
   "functions": {
     "packages/frontend/src/app/api/**/*.ts": {
