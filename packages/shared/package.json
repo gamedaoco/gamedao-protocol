@@ -13,7 +13,7 @@
     "build": "node scripts/generateAbis.js && node scripts/updateAddresses.js && tsc",
     "dev": "node scripts/generateAbis.js && node scripts/updateAddresses.js && tsc --watch",
     "clean": "rm -rf dist",
-    "prepare": "npm run build"
+    "prepare": "node scripts/generateAbis.js && node scripts/updateAddresses.js && tsc"
   },
   "dependencies": {
     "viem": "^2.0.0"
