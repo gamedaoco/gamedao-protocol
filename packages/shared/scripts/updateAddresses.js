@@ -11,9 +11,9 @@ console.log('🔄 Updating addresses in shared package...');
 
 // Read deployment addresses
 if (!fs.existsSync(deploymentPath)) {
-  console.error(`❌ Deployment file not found at: ${deploymentPath}`);
-  console.error('💡 Run deployment first: make deploy');
-  process.exit(1);
+  console.warn(`⚠️  Deployment file not found at: ${deploymentPath}`);
+  console.warn('💡 Skipping address update — addresses.ts already has committed values.');
+  process.exit(0);
 }
 
 const deploymentData = JSON.parse(fs.readFileSync(deploymentPath, 'utf8'));

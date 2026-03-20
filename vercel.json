@@ -1,18 +1,14 @@
 {
   "version": 2,
-  "buildCommand": "cd packages/frontend && npm run build",
-  "devCommand": "cd packages/frontend && npm run dev",
-  "installCommand": "npm install && cd packages/shared && npm run build",
-  "outputDirectory": "packages/frontend/.next",
   "framework": "nextjs",
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm --filter @gamedao/evm run build && pnpm --filter @gamedao/frontend exec next build",
+  "outputDirectory": "packages/frontend/.next",
   "regions": ["iad1"],
   "functions": {
     "packages/frontend/src/app/api/**/*.ts": {
-      "runtime": "nodejs20.x"
+      "runtime": "nodejs22.x"
     }
-  },
-  "env": {
-    "NODE_ENV": "production"
   },
   "build": {
     "env": {

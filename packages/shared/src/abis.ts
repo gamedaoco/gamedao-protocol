@@ -2054,6 +2054,12 @@ export const FACTORY_ABI = [
         "type": "string"
       },
       {
+        "indexed": false,
+        "internalType": "string",
+        "name": "metadataURI",
+        "type": "string"
+      },
+      {
         "indexed": true,
         "internalType": "address",
         "name": "creator",
@@ -10218,6 +10224,19 @@ export const IDENTITY_ABI = [
       }
     ],
     "name": "revokeRole",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "gameTokenAddress",
+        "type": "address"
+      }
+    ],
+    "name": "setGameToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

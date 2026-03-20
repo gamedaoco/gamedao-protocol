@@ -10,8 +10,8 @@
   "scripts": {
     "generate-abis": "node scripts/generateAbis.js",
     "update-addresses": "node scripts/updateAddresses.js",
-    "build": "npm run generate-abis && npm run update-addresses && tsc",
-    "dev": "npm run generate-abis && npm run update-addresses && tsc --watch",
+    "build": "node scripts/generateAbis.js && node scripts/updateAddresses.js && tsc",
+    "dev": "node scripts/generateAbis.js && node scripts/updateAddresses.js && tsc --watch",
     "clean": "rm -rf dist",
     "prepare": "npm run build"
   },
