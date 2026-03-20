@@ -36,7 +36,7 @@ export function bytes8ToAlphanumericString(bytes8Hex: string): string {
 export function alphanumericStringToBytes8(alphanumericId: string): `0x${string}` {
   if (alphanumericId.length !== 8) {
     console.warn('Invalid alphanumeric ID length:', alphanumericId.length, 'for', alphanumericId)
-    return alphanumericId // Return as-is if invalid
+    return alphanumericId as `0x${string}` // Return as-is if invalid
   }
 
   // Convert each character to hex
@@ -151,7 +151,7 @@ export function extractOrganizationIdFromLogsViem(logs: any[], factoryAbi: any):
 
     for (const log of logs) {
       try {
-        const decoded = decodeEventLog({ abi: factoryAbi, data: log.data, topics: log.topics })
+        const decoded = decodeEventLog({ abi: factoryAbi, data: log.data, topics: log.topics }) as { eventName?: string; args?: Record<string, unknown> }
         if (decoded?.eventName === 'OrganizationCreated' && decoded?.args?.id) {
           const idHex = (decoded.args.id as string)
           const bytes8 = idHex.startsWith('0x') ? idHex.slice(0, 18) : '0x' + idHex.slice(0, 16)

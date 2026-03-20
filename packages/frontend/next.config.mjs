@@ -2,12 +2,10 @@
 const nextConfig = {
   transpilePackages: ['@gamedao/evm'],
   eslint: {
-    // Skip ESLint during production builds to avoid failing on stylistic issues
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Allow production build to succeed even if there are type errors
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   // Remove legacy experimental flags incompatible with Next 15 defaults
   webpack: (config) => {

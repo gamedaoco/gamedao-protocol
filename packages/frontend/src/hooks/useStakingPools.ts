@@ -245,7 +245,7 @@ export function useStakingPools() {
         address: contracts.STAKING,
         abi: ABIS.STAKING,
         functionName: 'stake',
-        args: [poolId, parseEther(amount)],
+        args: [Number(poolId), parseEther(amount), 0],
       })
     } catch (error) {
       console.error('❌ Failed to stake tokens:', error)
@@ -262,8 +262,8 @@ export function useStakingPools() {
     return unstakeTokens({
       address: contracts.STAKING,
       abi: ABIS.STAKING,
-      functionName: 'unstake',
-      args: [poolId, parseEther(amount)],
+      functionName: 'requestUnstake',
+      args: [Number(poolId), parseEther(amount), 0],
     })
   }
 
@@ -277,7 +277,7 @@ export function useStakingPools() {
       address: contracts.STAKING,
       abi: ABIS.STAKING,
       functionName: 'claimRewards',
-      args: [poolId],
+      args: [Number(poolId)],
     })
   }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { useNonce } from '@/hooks/useNonce'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useQuery } from '@apollo/client'
 import { GET_MODULES } from '@/lib/queries'
@@ -69,6 +70,7 @@ export default function AdminModulesPage() {
 
   const { writeContract, data: txHash, isPending, error, reset } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
+  const { getNextNonce } = useNonce()
 
   useEffect(() => {
     if (isSuccess) {
@@ -79,11 +81,13 @@ export default function AdminModulesPage() {
 
   const toggleModule = async (moduleIdHex: string, enabled: boolean) => {
     const fn = enabled ? 'disableModule' : 'enableModule'
+    const nonce = await getNextNonce().catch(() => undefined)
     await writeContract({
       address: contracts.REGISTRY,
       abi: ABIS.REGISTRY,
       functionName: fn,
       args: [moduleIdHex as `0x${string}`],
+      nonce: nonce as any,
     })
   }
 

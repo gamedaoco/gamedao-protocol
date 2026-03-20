@@ -103,9 +103,8 @@ export function useSense() {
       }
 
       // Convert organization ID to bytes8 format
-      const orgIdBytes8 = params.organizationId.padEnd(16, '0') // Convert to 8-byte hex
+      const orgIdBytes8 = params.organizationId.padEnd(16, '0') as `0x${string}`
 
-      // Proceed with profile creation using Identity module
       const result = await createProfile({
         address: contracts.IDENTITY,
         abi: ABIS.IDENTITY,
@@ -157,9 +156,8 @@ export function useSense() {
       }
 
       // Convert name to bytes8 format
-      const nameBytes8 = params.name.padEnd(16, '0') // Convert to 8-byte hex
+      const nameBytes8 = params.name.padEnd(16, '0') as `0x${string}`
 
-      // Proceed with name claiming using Identity module
       const result = await claimName({
         address: contracts.IDENTITY,
         abi: ABIS.IDENTITY,
@@ -183,13 +181,13 @@ export function useSense() {
 
   // Function to check if user has a profile in an organization
   const checkUserProfile = (organizationId: string) => {
-    const orgIdBytes8 = organizationId.padEnd(16, '0') // Convert to 8-byte hex
+    const orgIdBytes8 = organizationId.padEnd(16, '0') as `0x${string}`
 
     return useReadContract({
       address: contracts.IDENTITY,
       abi: ABIS.IDENTITY,
       functionName: 'getProfileByOwner',
-      args: [address, orgIdBytes8],
+      args: [address as `0x${string}`, orgIdBytes8],
       query: {
         enabled: !!address && !!contracts.IDENTITY && !!organizationId,
       },
@@ -198,7 +196,7 @@ export function useSense() {
 
   // Function to get profile information
   const getProfile = (profileId: string) => {
-    const profileIdBytes8 = profileId.padEnd(16, '0') // Convert to 8-byte hex
+    const profileIdBytes8 = profileId.padEnd(16, '0') as `0x${string}`
 
     return useReadContract({
       address: contracts.IDENTITY,
@@ -212,16 +210,17 @@ export function useSense() {
   }
 
   // Function to get reputation data (using Sense module)
-  const getReputation = (profileId: string) => {
-    const profileIdBytes8 = profileId.padEnd(16, '0') // Convert to 8-byte hex
+  const getReputation = (organizationId: string, profileId: string) => {
+    const orgIdBytes8 = organizationId.padEnd(16, '0') as `0x${string}`
+    const profileIdBytes8 = profileId.padEnd(16, '0') as `0x${string}`
 
     return useReadContract({
       address: contracts.SENSE,
       abi: ABIS.SENSE,
       functionName: 'getReputation',
-      args: [profileIdBytes8],
+      args: [orgIdBytes8, profileIdBytes8],
       query: {
-        enabled: !!contracts.SENSE && !!profileId,
+        enabled: !!contracts.SENSE && !!organizationId && !!profileId,
       },
     })
   }

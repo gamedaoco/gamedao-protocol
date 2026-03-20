@@ -10,6 +10,7 @@ import { useMemo, useEffect } from 'react'
 import { useTokenApproval } from './useTokenApproval'
 import { toContractId } from '@/lib/id-utils'
 import { useToast } from './useToast'
+import { useNonce } from './useNonce'
 
 
 export interface Proposal {
@@ -63,6 +64,7 @@ export function useProposals(organizationId?: string) {
     error: createError,
     reset: resetCreate
   } = useWriteContract()
+  const { getNextNonce } = useNonce()
 
   // Wait for create transaction confirmation
   const {
@@ -136,23 +138,14 @@ export function useProposals(organizationId?: string) {
     errorPolicy: 'ignore',
   })
 
-  // Get total proposal count
-  const { data: proposalCount, refetch: refetchCount } = useReadContract({
-    address: contracts.SIGNAL,
-    abi: ABIS.SIGNAL,
-    functionName: 'getProposalCount',
-    query: { enabled: isConnected },
-  })
-
   // Handle vote success
   useEffect(() => {
     if (voteSuccess) {
       toast.success('Vote cast successfully!')
       refetch()
-      refetchCount()
       resetVote()
     }
-  }, [voteSuccess, refetch, refetchCount, resetVote])
+  }, [voteSuccess, refetch, resetVote])
 
   // Handle vote error
   useEffect(() => {
@@ -189,6 +182,9 @@ export function useProposals(organizationId?: string) {
     delegationSupported: prop.delegationSupported || true, // New contracts support delegation
   })) || []
 
+  const proposalCount = proposals.length
+  const refetchCount = refetch
+
   // Filter by organization if specified
   const filteredProposals = organizationId
     ? proposals.filter(prop => prop.organization.id === organizationId)
@@ -224,11 +220,13 @@ export function useProposals(organizationId?: string) {
       resetVote()
 
       // Use hierarchical ID directly (no conversion needed)
+      const nonce = await getNextNonce().catch(() => undefined)
       await writeVote({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
         functionName: 'castVote',
         args: [proposalId, choice, reason || ''],
+        nonce: nonce as any,
       })
 
       console.log('✅ Vote transaction submitted')
@@ -280,25 +278,26 @@ export function useProposals(organizationId?: string) {
       }
 
       // Proceed with proposal creation
+      const nonce = await getNextNonce().catch(() => undefined)
       await writeCreateProposal({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
         functionName: 'createProposal',
         args: [
-          toContractId(proposalData.organizationId), // Convert to bytes8 format
+          toContractId(proposalData.organizationId),
           proposalData.title,
           proposalData.description,
-          '', // metadataURI
+          '',
           proposalData.proposalType,
           proposalData.votingType,
-          1, // votingPower (TokenWeighted)
-          proposalData.votingPeriod,
-          '0x', // executionData
-          '0x0000000000000000000000000000000000000000', // targetContract
+          1,
+          BigInt(proposalData.votingPeriod),
+          '0x' as `0x${string}`,
+          '0x0000000000000000000000000000000000000000' as `0x${string}`,
         ],
+        nonce: nonce as any,
       })
 
-      // Refetch data after creation
       refetch()
       refetchCount()
     } catch (error) {
@@ -307,7 +306,7 @@ export function useProposals(organizationId?: string) {
     }
   }
 
-  // New V2 function with hierarchical IDs
+  // V2 function with hierarchical IDs (delegates to createProposal)
   const createProposalV2 = async (proposalData: {
     organizationId: string
     title: string
@@ -315,7 +314,7 @@ export function useProposals(organizationId?: string) {
     proposalType: number
     votingType: number
     votingPeriod: number
-    gameDeposit?: string // GAME token deposit for proposal creation
+    gameDeposit?: string
   }) => {
     if (!isConnected || !address) {
       throw new Error('Wallet not connected')
@@ -328,43 +327,41 @@ export function useProposals(organizationId?: string) {
         gameDeposit: proposalData.gameDeposit
       })
 
-      // Handle GAME token approval for proposal deposits if needed
       if (proposalData.gameDeposit && parseFloat(proposalData.gameDeposit) > 0) {
         console.log('🔍 GAME token deposit required for proposal:', proposalData.gameDeposit)
 
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
-          spender: contracts.SIGNAL,
+          spender: contracts.SIGNAL as `0x${string}`,
           amount: proposalData.gameDeposit,
           purpose: 'proposal creation'
         })
 
         if (!approvalNeeded) {
-          // Approval is pending, proposal creation will be handled after approval
           return
         }
       }
 
-      // Proceed with proposal creation using V2 function
+      const nonce2 = await getNextNonce().catch(() => undefined)
       await writeCreateProposal({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
-        functionName: 'createProposalV2',
+        functionName: 'createProposal',
         args: [
-          toContractId(proposalData.organizationId), // Convert to bytes8 format
+          toContractId(proposalData.organizationId),
           proposalData.title,
           proposalData.description,
-          '', // metadataURI
+          '',
           proposalData.proposalType,
           proposalData.votingType,
-          1, // votingPower (TokenWeighted)
-          proposalData.votingPeriod,
-          '0x', // executionData
-          '0x0000000000000000000000000000000000000000', // targetContract
+          1,
+          BigInt(proposalData.votingPeriod),
+          '0x' as `0x${string}`,
+          '0x0000000000000000000000000000000000000000' as `0x${string}`,
         ],
+        nonce: nonce2 as any,
       })
 
-      // Refetch data after creation
       refetch()
       refetchCount()
     } catch (error) {
@@ -448,8 +445,8 @@ export function useProposals(organizationId?: string) {
   const { data: userVotingPower, refetch: refetchVotingPower } = useReadContract({
     address: contracts.SIGNAL,
     abi: ABIS.SIGNAL,
-    functionName: 'getVotingPower',
-    args: proposals.length > 0 ? [proposals[0].id.startsWith('0x') ? proposals[0].id as `0x${string}` : `0x${proposals[0].id}` as `0x${string}`, address] : undefined,
+    functionName: 'getVotingPowerWithDelegation',
+    args: proposals.length > 0 ? [proposals[0].id.startsWith('0x') ? proposals[0].id as `0x${string}` : `0x${proposals[0].id}` as `0x${string}`, address as `0x${string}`, 0] : undefined,
     query: { enabled: isConnected && address && proposals.length > 0 },
   })
 
@@ -481,6 +478,7 @@ export function useProposals(organizationId?: string) {
         reason
       })
 
+      const nonce = await getNextNonce().catch(() => undefined)
       await writeVote({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
@@ -488,9 +486,10 @@ export function useProposals(organizationId?: string) {
         args: [
           proposalId, // Use hierarchical ID directly
           choice,
-          convictionTime,
+          BigInt(convictionTime),
           reason || ''
         ],
+        nonce: nonce as any,
       })
 
       // Refetch data after voting
@@ -509,11 +508,13 @@ export function useProposals(organizationId?: string) {
     }
 
     try {
+      const nonce = await getNextNonce().catch(() => undefined)
       await writeVote({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
         functionName: 'delegateVotingPower',
-        args: [delegatee, BigInt(amount)],
+        args: [delegatee as `0x${string}`, BigInt(amount)],
+        nonce: nonce as any,
       })
     } catch (error) {
       console.error('Error delegating voting power:', error)
@@ -527,11 +528,13 @@ export function useProposals(organizationId?: string) {
     }
 
     try {
+      const nonce = await getNextNonce().catch(() => undefined)
       await writeVote({
         address: contracts.SIGNAL,
         abi: ABIS.SIGNAL,
         functionName: 'undelegateVotingPower',
-        args: [delegatee, BigInt(amount)],
+        args: [delegatee as `0x${string}`, BigInt(amount)],
+        nonce: nonce as any,
       })
     } catch (error) {
       console.error('Error undelegating voting power:', error)

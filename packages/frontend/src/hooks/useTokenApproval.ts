@@ -4,6 +4,7 @@ import { useAccount } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { useToast } from './useToast'
+import { useNonce } from './useNonce'
 import { readContract } from 'viem/actions'
 
 export interface TokenApprovalParams {
@@ -20,6 +21,7 @@ export function useTokenApproval() {
   const publicClient = usePublicClient()
 
   const [pendingApproval, setPendingApproval] = useState<TokenApprovalParams | null>(null)
+  const { getNextNonce } = useNonce()
 
   // Contract write for token approval
   const {
@@ -71,7 +73,7 @@ export function useTokenApproval() {
 
   // Function to get token ABI
   const getTokenABI = (token: 'GAME' | 'USDC') => {
-    return token === 'GAME' ? ABIS.GAME_TOKEN : ABIS.USDC
+    return token === 'GAME' ? ABIS.GAME_TOKEN : ABIS.MOCK_USDC
   }
 
   // Function to get current allowance for a specific token and spender
@@ -83,7 +85,7 @@ export function useTokenApproval() {
       address: tokenAddress,
       abi: tokenABI,
       functionName: 'allowance',
-      args: [address, spender],
+      args: [address as `0x${string}`, spender as `0x${string}`],
       query: {
         enabled: !!address && !!tokenAddress && !!spender,
       },
@@ -114,7 +116,7 @@ export function useTokenApproval() {
         address: tokenAddress,
         abi: getTokenABI(token),
         functionName: 'allowance',
-        args: [address, spender],
+        args: [address as `0x${string}`, spender as `0x${string}`],
       }) as bigint
 
       console.log('🔍 Current allowance:', {
@@ -171,11 +173,13 @@ export function useTokenApproval() {
     try {
       toast.loading(`Requesting ${token} token approval for ${purpose}...`)
 
+      const nonce = await getNextNonce().catch(() => undefined)
       const result = await approveToken({
         address: tokenAddress,
         abi: tokenABI,
         functionName: 'approve',
-        args: [spender, amountBigInt],
+        args: [spender as `0x${string}`, amountBigInt],
+        nonce: nonce as any,
       })
 
       console.log('🎉 Token approval transaction submitted:', result)

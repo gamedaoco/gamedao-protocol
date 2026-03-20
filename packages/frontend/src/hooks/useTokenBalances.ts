@@ -117,10 +117,10 @@ export function useSenseUsername(address?: string) {
   const { contracts } = useGameDAO()
 
   const { data: profile, isLoading } = useReadContract({
-    address: contracts.SENSE,
-    abi: ABIS.SENSE,
+    address: contracts.IDENTITY,
+    abi: ABIS.IDENTITY,
     functionName: 'getProfile',
-    args: address ? [address] : undefined,
+    args: address ? [address as `0x${string}`] : undefined,
     query: {
       enabled: !!address,
     },

@@ -7,7 +7,8 @@ import { useOrganizations } from './useOrganizations'
 import { useGameTokenApproval } from './useGameTokenApproval'
 import { useToast } from './useToast'
 // Token utilities are handled by the underlying hooks
-import { uploadFileToIPFS, uploadOrganizationMetadata } from '@/lib/ipfs'
+import { uploadFileToIPFS } from '@/lib/ipfs'
+import { uploadOrganizationMetadata } from '@/lib/ipfsMetadata'
 
 export interface OrganizationCreationParams {
   name: string

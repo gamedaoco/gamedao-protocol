@@ -78,6 +78,7 @@ function getContractAddressesFromEnv(chainId: number): ContractAddresses {
   return {
     REGISTRY: (process.env[`NEXT_PUBLIC_REGISTRY_ADDRESS${suffix}`] || DEFAULT_ADDRESSES.REGISTRY) as Address,
     CONTROL: (process.env[`NEXT_PUBLIC_CONTROL_ADDRESS${suffix}`] || DEFAULT_ADDRESSES.CONTROL) as Address,
+    FACTORY: (process.env[`NEXT_PUBLIC_FACTORY_ADDRESS${suffix}`] || DEFAULT_ADDRESSES.FACTORY) as Address,
     FLOW: (process.env[`NEXT_PUBLIC_FLOW_ADDRESS${suffix}`] || DEFAULT_ADDRESSES.FLOW) as Address,
     SIGNAL: (process.env[`NEXT_PUBLIC_SIGNAL_ADDRESS${suffix}`] || DEFAULT_ADDRESSES.SIGNAL) as Address,
     SENSE: (process.env[`NEXT_PUBLIC_SENSE_ADDRESS${suffix}`] || DEFAULT_ADDRESSES.SENSE) as Address,
@@ -129,6 +130,7 @@ export function getContractAddresses(chainId: number): ContractAddresses {
     return {
       REGISTRY: sharedAddresses.REGISTRY as Address,
       CONTROL: sharedAddresses.CONTROL as Address,
+      FACTORY: sharedAddresses.FACTORY as Address,
       FLOW: sharedAddresses.FLOW as Address,
       SIGNAL: sharedAddresses.SIGNAL as Address,
       SENSE: sharedAddresses.SENSE as Address,
@@ -165,6 +167,9 @@ export function getContractAddresses(chainId: number): ContractAddresses {
     CONTROL: (envAddresses.CONTROL !== DEFAULT_ADDRESSES.CONTROL)
       ? envAddresses.CONTROL
       : DEFAULT_ADDRESSES.CONTROL,
+    FACTORY: (envAddresses.FACTORY !== DEFAULT_ADDRESSES.FACTORY)
+      ? envAddresses.FACTORY
+      : DEFAULT_ADDRESSES.FACTORY,
     FLOW: (envAddresses.FLOW !== DEFAULT_ADDRESSES.FLOW)
       ? envAddresses.FLOW
       : DEFAULT_ADDRESSES.FLOW,
@@ -265,6 +270,7 @@ export const getUSDCTokenAddress = (chainId: number): Address => getContractAddr
 export const LOCAL_ADDRESSES: ContractAddresses = {
   REGISTRY: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0' as Address,
   CONTROL: '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318' as Address,
+  FACTORY: '0x0000000000000000000000000000000000000000' as Address,
   FLOW: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9' as Address,
   SIGNAL: '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82' as Address,
   SENSE: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853' as Address,
@@ -280,6 +286,7 @@ export const LOCAL_ADDRESSES: ContractAddresses = {
 export const TESTNET_ADDRESSES: ContractAddresses = {
   REGISTRY: '0x0000000000000000000000000000000000000000' as Address,
   CONTROL: '0x0000000000000000000000000000000000000000' as Address,
+  FACTORY: '0x0000000000000000000000000000000000000000' as Address,
   FLOW: '0x0000000000000000000000000000000000000000' as Address,
   SIGNAL: '0x0000000000000000000000000000000000000000' as Address,
   SENSE: '0x0000000000000000000000000000000000000000' as Address,
@@ -295,6 +302,7 @@ export const TESTNET_ADDRESSES: ContractAddresses = {
 export const MAINNET_ADDRESSES: ContractAddresses = {
   REGISTRY: '0x0000000000000000000000000000000000000000' as Address,
   CONTROL: '0x0000000000000000000000000000000000000000' as Address,
+  FACTORY: '0x0000000000000000000000000000000000000000' as Address,
   FLOW: '0x0000000000000000000000000000000000000000' as Address,
   SIGNAL: '0x0000000000000000000000000000000000000000' as Address,
   SENSE: '0x0000000000000000000000000000000000000000' as Address,

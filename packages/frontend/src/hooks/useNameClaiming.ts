@@ -85,12 +85,12 @@ export function useNameClaiming() {
   // Get names owned by user
   const useGetUserNames = () => {
     return useReadContract({
-      address: contracts.SENSE,
-      abi: ABIS.SENSE,
+      address: contracts.IDENTITY,
+      abi: ABIS.IDENTITY,
       functionName: 'getNamesOwnedBy',
-      args: [address],
+      args: [address as `0x${string}`],
       query: {
-        enabled: !!contracts.SENSE && !!address,
+        enabled: !!contracts.IDENTITY && !!address,
       },
     })
   }
@@ -98,12 +98,12 @@ export function useNameClaiming() {
   // Check if name is available
   const useCheckNameAvailability = (name: string) => {
     return useReadContract({
-      address: contracts.SENSE,
-      abi: ABIS.SENSE,
+      address: contracts.IDENTITY,
+      abi: ABIS.IDENTITY,
       functionName: 'isNameAvailable',
-      args: [name],
+      args: [name as `0x${string}`],
       query: {
-        enabled: !!contracts.SENSE && !!name && validateNameFormat(name),
+        enabled: !!contracts.IDENTITY && !!name && validateNameFormat(name),
       },
     })
   }
@@ -111,12 +111,12 @@ export function useNameClaiming() {
   // Get name claim details
   const useGetNameClaim = (name: string) => {
     return useReadContract({
-      address: contracts.SENSE,
-      abi: ABIS.SENSE,
+      address: contracts.IDENTITY,
+      abi: ABIS.IDENTITY,
       functionName: 'getNameClaim',
-      args: [name],
+      args: [name as `0x${string}`],
       query: {
-        enabled: !!contracts.SENSE && !!name,
+        enabled: !!contracts.IDENTITY && !!name,
       },
     })
   }
@@ -148,7 +148,7 @@ export function useNameClaiming() {
 
   // Claim a name
   const handleClaimName = async (params: NameClaimingParams) => {
-    if (!isConnected || !contracts.SENSE) {
+    if (!isConnected || !contracts.IDENTITY) {
       throw new Error('Wallet not connected or contracts not loaded')
     }
 
@@ -167,8 +167,8 @@ export function useNameClaiming() {
       const nameBytes8 = stringToBytes8(params.name)
 
       const result = await claimName({
-        address: contracts.SENSE,
-        abi: ABIS.SENSE,
+        address: contracts.IDENTITY,
+        abi: ABIS.IDENTITY,
         functionName: 'claimName',
         args: [
           nameBytes8,
@@ -187,7 +187,7 @@ export function useNameClaiming() {
 
   // Release a name
   const handleReleaseName = async (name: string) => {
-    if (!isConnected || !contracts.SENSE) {
+    if (!isConnected || !contracts.IDENTITY) {
       throw new Error('Wallet not connected or contracts not loaded')
     }
 
@@ -198,8 +198,8 @@ export function useNameClaiming() {
       const nameBytes8 = stringToBytes8(name)
 
       const result = await releaseName({
-        address: contracts.SENSE,
-        abi: ABIS.SENSE,
+        address: contracts.IDENTITY,
+        abi: ABIS.IDENTITY,
         functionName: 'releaseName',
         args: [nameBytes8],
       })

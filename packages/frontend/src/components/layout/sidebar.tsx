@@ -115,7 +115,7 @@ export function Sidebar() {
                     const isEnabled = modId ? enabled.has(modId) : true
                     return (
                       <Badge
-                        variant={isEnabled ? 'default' : 'outline'}
+                        variant={isEnabled ? 'glass' : 'glass'}
                         className="text-xs"
                       >
                         {isEnabled ? 'Active' : 'Disabled'}

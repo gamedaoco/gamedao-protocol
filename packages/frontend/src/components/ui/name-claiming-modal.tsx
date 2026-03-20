@@ -571,7 +571,7 @@ export function NameClaimingModal({
           <div className="bg-muted p-3 rounded-lg">
             <div className="flex items-center justify-between text-sm">
               <span>Connected Account:</span>
-              <Badge variant="secondary">{formatAddress(address)}</Badge>
+              <Badge variant="glass">{formatAddress(address)}</Badge>
             </div>
           </div>
         )}

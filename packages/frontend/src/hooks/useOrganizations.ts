@@ -8,6 +8,7 @@ import { GET_ORGANIZATIONS, GET_USER_ORGANIZATIONS } from '@/lib/queries'
 import { useEffect, useState, useMemo } from 'react'
 import { useAccount } from 'wagmi'
 import { useToast } from './useToast'
+import { useNonce } from './useNonce'
 import { extractOrganizationIdFromLogs, extractOrganizationIdFromLogsViem, toContractId } from '@/lib/id-utils'
 import { parseTokenAmount } from '@/lib/tokenUtils'
 import { formatUnits } from 'viem'
@@ -171,6 +172,7 @@ export function useOrganizations() {
     error: createError,
     reset: resetCreate
   } = useWriteContract()
+  const { getNextNonce } = useNonce()
 
   console.log('🔍 Transaction state:', {
     isCreating,
@@ -268,6 +270,7 @@ export function useOrganizations() {
     console.log('🔍 Creating organization with params:', params)
 
     try {
+      const nonce = await getNextNonce().catch(() => undefined)
       const result = await createOrg({
         address: contracts.CONTROL,
         abi: ABIS.CONTROL,
@@ -282,6 +285,7 @@ export function useOrganizations() {
           safeBigInt(params.membershipFee),
           safeBigInt(params.gameStakeRequired),
         ],
+        nonce: nonce as any,
       })
 
       console.log('🎉 Organization creation transaction submitted:', result)

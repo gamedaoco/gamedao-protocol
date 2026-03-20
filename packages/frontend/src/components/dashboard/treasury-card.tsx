@@ -79,7 +79,7 @@ export function TreasuryCard({ organizationId, className }: TreasuryCardProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Total Balance</span>
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="glass" className="text-xs">
               {treasury.tokenCount} tokens
             </Badge>
           </div>

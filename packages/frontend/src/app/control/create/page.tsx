@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useQuery } from '@apollo/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useOrganizationCreation } from '@/hooks/useOrganizationCreation'
 import { useAccount } from 'wagmi'
+import { GET_ORGANIZATION_BY_ID } from '@/lib/queries'
+import { isValidAlphanumericId } from '@/lib/id-utils'
+import { useIndexingStatus } from '@/hooks/useIndexingStatus'
 
 import { Plus, ArrowLeft, Upload, Image as ImageIcon, FileText, Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -38,6 +42,16 @@ export default function CreateOrganizationPage() {
     createdOrgId,
     resetState
   } = useOrganizationCreation()
+
+  const validOrgId = createdOrgId && isValidAlphanumericId(createdOrgId) ? createdOrgId : null
+  const { data: createdOrgQuery } = useQuery(GET_ORGANIZATION_BY_ID, {
+    variables: { id: validOrgId as string },
+    skip: !validOrgId || currentStep !== 'success',
+    pollInterval: 1500,
+    fetchPolicy: 'network-only',
+    nextFetchPolicy: 'network-only',
+  })
+  const { indexingStatus } = useIndexingStatus()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -84,23 +98,28 @@ export default function CreateOrganizationPage() {
     renderTime: new Date().toISOString()
   })
 
-  // Handle success state - redirect after transaction is confirmed
+  // Redirect when the newly created organization is indexed and query returns it
+  useEffect(() => {
+    if (currentStep === 'success' && validOrgId && createdOrgQuery?.organization) {
+      resetState()
+      router.push(`/control/${validOrgId}`)
+    }
+  }, [currentStep, validOrgId, createdOrgQuery?.organization, router, resetState])
+
+  // Fallback: if indexing takes too long, navigate after a grace period
   useEffect(() => {
     if (currentStep === 'success') {
-      console.log('🎉 Organization created successfully! Redirecting to:', createdOrgId)
-
-      const timeoutId = setTimeout(() => {
+      const fallbackTimer = setTimeout(() => {
         resetState()
-        if (createdOrgId && createdOrgId.length >= 8) {
-          router.push(`/control/${createdOrgId}`)
+        if (validOrgId) {
+          router.push(`/control/${validOrgId}`)
         } else {
           router.push('/control')
         }
-      }, 2000)
-
-      return () => clearTimeout(timeoutId)
+      }, 25000)
+      return () => clearTimeout(fallbackTimer)
     }
-  }, [currentStep, createdOrgId, router])
+  }, [currentStep, validOrgId, router, resetState])
 
   const handleImageUpload = (file: File, type: 'profile' | 'banner') => {
     console.log('🖼️ Image upload triggered:', { fileName: file.name, fileSize: file.size, type })
@@ -200,12 +219,12 @@ export default function CreateOrganizationPage() {
               </h3>
               <p className="text-muted-foreground mb-4">
                 {currentStep === 'success'
-                  ? 'Redirecting to your new organization...'
+                  ? `Finalizing: waiting for indexing${indexingStatus?.isFullySynced ? '' : indexingStatus?.syncPercentage ? ` (${indexingStatus.syncPercentage.toFixed(1)}%)` : ''}...`
                   : uploadProgress || 'Please wait while we process your request...'}
               </p>
               {currentStep === 'success' && (
                 <div className="text-green-600 dark:text-green-400 font-medium">
-                  ✅ Success! Redirecting in 2 seconds...
+                  We’ll redirect as soon as your collective appears in the index.
                 </div>
               )}
             </div>

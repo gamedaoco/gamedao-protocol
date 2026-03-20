@@ -5,19 +5,31 @@ import { createLogger } from './logger'
 // Create logger for IPFS operations
 const logger = createLogger('IPFS', 'ipfs')
 
-// Multiple IPFS gateways for redundancy and CORS compatibility
-const IPFS_GATEWAYS = [
-  'https://ipfs.io/ipfs/',           // Public gateway, CORS-friendly
-  'https://dweb.link/ipfs/',         // Protocol Labs gateway
-  'https://cloudflare-ipfs.com/ipfs/', // Cloudflare gateway
-  'https://gateway.pinata.cloud/ipfs/' // Pinata gateway (fallback)
-]
+// Local Kubo (kubo) and Pinata are the only supported backends
+const DEV = process.env.NODE_ENV !== 'production'
+const IPFS_MODE = process.env.NEXT_PUBLIC_IPFS_MODE || (DEV ? 'local' : 'pinata')
+const USE_LOCAL = IPFS_MODE === 'local'
+
+// Gateway and API configuration (single gateway; no public fallback list)
+const IPFS_PUBLIC_GATEWAY = process.env.NEXT_PUBLIC_IPFS_PUBLIC_GATEWAY
+  || process.env.NEXT_PUBLIC_IPFS_GATEWAY
+  || 'https://gateway.pinata.cloud/ipfs/'
+const IPFS_PRIVATE_GATEWAY = process.env.NEXT_PUBLIC_IPFS_PRIVATE_GATEWAY
+  || process.env.NEXT_PUBLIC_IPFS_LOCAL_GATEWAY
+  || 'http://localhost:8080/ipfs/'
+const GATEWAY = ( USE_LOCAL ? IPFS_PRIVATE_GATEWAY : IPFS_PUBLIC_GATEWAY ).replace(/\/?$/, '/')
+
+// Derive local endpoints for kubo based on docker-compose (ports 8080/5001)
+const LOCAL_IPFS_API = (process.env.NEXT_PUBLIC_IPFS_API || 'http://localhost:5001/api/v0').replace(/\/$/, '')
+
+// Single gateway strategy (no public fallback list)
+export const IPFS_GATEWAYS: string[] = [GATEWAY]
 
 const IPFS_API_ENDPOINT = 'https://api.pinata.cloud/pinning/pinJSONToIPFS'
 const IPFS_FILE_ENDPOINT = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
 
 // Default gateway for new uploads and primary access
-const DEFAULT_GATEWAY = IPFS_GATEWAYS[0]
+const DEFAULT_GATEWAY = GATEWAY
 
 // Get Pinata API credentials from environment
 const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY
@@ -26,7 +38,47 @@ const PINATA_SECRET_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_KEY
 // Check if Pinata is configured
 const isPinataConfigured = Boolean(PINATA_API_KEY && PINATA_SECRET_KEY)
 
-interface IPFSUploadResult {
+async function kuboAdd(name: string, content: Blob | File): Promise<{ hash: string, url: string }> {
+  const formData = new FormData()
+  formData.append('file', content, name)
+
+  const endpoint = `${LOCAL_IPFS_API}/add?pin=true&wrap-with-directory=false`
+  logger.debug('Uploading to local Kubo', { endpoint, name })
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '')
+    logger.error('Local Kubo add error', { status: response.status, statusText: response.statusText, errorText })
+    throw new Error(`Local IPFS add failed: ${response.status} ${response.statusText}`)
+  }
+
+  // Kubo can return NDJSON; parse last JSON line to get Hash
+  const text = await response.text()
+  let lastJson: any = null
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    try {
+      lastJson = JSON.parse(trimmed)
+    } catch (_) {
+      // ignore non-JSON lines
+    }
+  }
+
+  const hash: string | undefined = lastJson?.Hash || lastJson?.hash || lastJson?.Cid || lastJson?.cid
+  if (!hash) {
+    logger.error('Unable to parse Kubo add response', { text })
+    throw new Error('Local IPFS add returned unexpected response')
+  }
+
+  return { hash, url: `ipfs://${hash}` }
+}
+
+export interface IPFSUploadResult {
   hash: string
   url: string
 }
@@ -37,69 +89,21 @@ interface IPFSMetadata {
   [key: string]: any
 }
 
-/**
- * Try multiple IPFS gateways with fallback
- */
-async function fetchWithGatewayFallback(hash: string): Promise<Response> {
-  let lastError: Error | null = null
-
-  for (let i = 0; i < IPFS_GATEWAYS.length; i++) {
-    const gateway = IPFS_GATEWAYS[i]
-    const url = `${gateway}${hash}`
-
-    try {
-      logger.debug(`Trying IPFS gateway ${i + 1}/${IPFS_GATEWAYS.length}`, { gateway, hash })
-
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-
-      const response = await fetch(url, {
-        signal: controller.signal,
-        mode: 'cors',
-        headers: {
-          'Accept': 'application/json, image/*, */*'
-        }
-      })
-
-      clearTimeout(timeoutId)
-
-      if (response.ok) {
-        logger.debug(`Successfully fetched from gateway: ${gateway}`, { gateway, hash })
-        return response
-      }
-
-      if (response.status === 429) {
-        logger.warn(`Rate limited by gateway: ${gateway}`, { gateway, hash })
-        // Continue to next gateway
-        continue
-      }
-
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-
-    } catch (error) {
-      lastError = error as Error
-              logger.warn(`Gateway ${gateway} failed:`, { gateway, hash, error })
-
-      // If this is a CORS error or rate limit, try next gateway immediately
-      if (error instanceof TypeError && error.message.includes('CORS')) {
-        logger.warn(`CORS error with ${gateway}, trying next gateway`, { gateway, hash })
-        continue
-      }
-
-      // If rate limited, try next gateway
-      if (error instanceof Error && error.message.includes('429')) {
-        logger.warn(`Rate limited by ${gateway}, trying next gateway`, { gateway, hash })
-        continue
-      }
-
-      // For other errors, add a small delay before trying next gateway
-      if (i < IPFS_GATEWAYS.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
-      }
-    }
+async function fetchFromGateway(hash: string): Promise<Response> {
+  const url = `${DEFAULT_GATEWAY}${hash}`
+  logger.debug('Fetching from IPFS gateway', { url, hash })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10000)
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      mode: 'cors',
+      headers: { 'Accept': 'application/json, image/*, */*' }
+    })
+    return response
+  } finally {
+    clearTimeout(timeoutId)
   }
-
-  throw new Error(`All IPFS gateways failed. Last error: ${lastError?.message || 'Unknown error'}`)
 }
 
 /**
@@ -116,7 +120,7 @@ export async function uploadJSONToIPFS(
   })
 
   try {
-    if (isPinataConfigured) {
+    if (!USE_LOCAL && isPinataConfigured) {
       logger.debug('Using Pinata API for JSON upload...')
 
       // Use real Pinata API
@@ -152,23 +156,14 @@ export async function uploadJSONToIPFS(
         url: `ipfs://${result.IpfsHash}`
       }
     } else {
-      logger.debug('Using mock storage for JSON...')
-
-      // Fallback to mock storage for development
-      const hash = generateMockHash(JSON.stringify(data))
-      const url = `ipfs://${hash}`
-
-      logger.info('Mock JSON upload complete', { hash, url })
-
-      // Store in localStorage for development
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`ipfs_${hash}`, JSON.stringify({
-          data,
-          metadata,
-          timestamp: Date.now()
-        }))
+      logger.debug('Using local Kubo for JSON upload...')
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' })
+      const { hash, url } = await kuboAdd(metadata?.name || 'data.json', blob)
+      if (DEV) {
+        logger.info('Dev: JSON uploaded to local IPFS', { hash, url })
+        // eslint-disable-next-line no-console
+        console.info('[IPFS] JSON uploaded (local)', { hash, url })
       }
-
       return { hash, url }
     }
   } catch (error) {
@@ -200,7 +195,7 @@ export async function uploadFileToIPFS(
   })
 
   try {
-    if (isPinataConfigured) {
+    if (!USE_LOCAL && isPinataConfigured) {
       logger.debug('Using Pinata API for file upload...')
 
       // Use real Pinata API
@@ -251,30 +246,13 @@ export async function uploadFileToIPFS(
         url: `ipfs://${result.IpfsHash}`
       }
     } else {
-      logger.debug('Using mock storage for development...')
-
-      // Fallback to mock storage for development
-      const hash = generateMockHash(file.name + file.size + file.lastModified)
-      const url = `ipfs://${hash}`
-
-      logger.info('Mock upload complete', { hash, url })
-
-      // Store file info in localStorage for development
-      if (typeof window !== 'undefined') {
-        const reader = new FileReader()
-        reader.onload = () => {
-          localStorage.setItem(`ipfs_file_${hash}`, JSON.stringify({
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            data: reader.result,
-            metadata,
-            timestamp: Date.now()
-          }))
-        }
-        reader.readAsDataURL(file)
+      logger.debug('Using local Kubo for file upload...')
+      const { hash, url } = await kuboAdd(file.name, file)
+      if (DEV) {
+        logger.info('Dev: File uploaded to local IPFS', { hash, url, fileName: file.name, fileSize: file.size })
+        // eslint-disable-next-line no-console
+        console.info('[IPFS] File uploaded (local)', { hash, url, name: file.name, size: file.size })
       }
-
       return { hash, url }
     }
   } catch (error) {
@@ -291,125 +269,7 @@ export async function uploadFileToIPFS(
   }
 }
 
-/**
- * Upload markdown content to IPFS
- */
-export async function uploadMarkdownToIPFS(
-  markdown: string,
-  title?: string
-): Promise<IPFSUploadResult> {
-  const data = {
-    content: markdown,
-    title,
-    type: 'markdown',
-    version: '1.0',
-    created: new Date().toISOString()
-  }
-
-  return uploadJSONToIPFS(data, {
-    name: title || 'Markdown Document',
-    description: 'Markdown content stored on IPFS'
-  })
-}
-
-/**
- * Upload organization metadata to IPFS
- */
-export async function uploadOrganizationMetadata(metadata: {
-  name: string
-  description: string
-  longDescription?: string
-  profileImage?: string
-  bannerImage?: string
-  website?: string
-  social?: {
-    twitter?: string
-    discord?: string
-    github?: string
-  }
-  tags?: string[]
-}): Promise<IPFSUploadResult> {
-  logger.info('Starting organization metadata upload', metadata)
-
-  const data = {
-    ...metadata,
-    type: 'organization',
-    version: '1.0',
-    created: new Date().toISOString()
-  }
-
-  logger.debug('Final metadata to upload:', data)
-
-  const result = await uploadJSONToIPFS(data, {
-    name: metadata.name,
-    description: `Metadata for ${metadata.name} organization`
-  })
-
-  logger.info('Organization metadata upload result', result)
-  return result
-}
-
-/**
- * Upload campaign metadata to IPFS
- */
-export async function uploadCampaignMetadata(metadata: {
-  title: string
-  description: string
-  longDescription?: string
-  images?: string[]
-  video?: string
-  roadmap?: string
-  team?: Array<{
-    name: string
-    role: string
-    image?: string
-    bio?: string
-  }>
-  rewards?: Array<{
-    amount: string
-    title: string
-    description: string
-    image?: string
-  }>
-}): Promise<IPFSUploadResult> {
-  const data = {
-    ...metadata,
-    type: 'campaign',
-    version: '1.0',
-    created: new Date().toISOString()
-  }
-
-  return uploadJSONToIPFS(data, {
-    name: metadata.title,
-    description: `Metadata for ${metadata.title} campaign`
-  })
-}
-
-/**
- * Upload proposal metadata to IPFS
- */
-export async function uploadProposalMetadata(metadata: {
-  title: string
-  description: string
-  longDescription?: string
-  rationale?: string
-  implementation?: string
-  risks?: string
-  timeline?: string
-  budget?: string
-}): Promise<IPFSUploadResult> {
-  const data = {
-    ...metadata,
-    type: 'proposal',
-    version: '1.0',
-    created: new Date().toISOString()
-  }
-
-  return uploadJSONToIPFS(data, {
-    name: metadata.title,
-    description: `Metadata for ${metadata.title} proposal`
-  })
-}
+// Domain-specific metadata helpers moved to lib/ipfsMetadata.ts to keep concerns separated
 
 /**
  * Retrieve content from IPFS
@@ -427,8 +287,8 @@ export async function getFromIPFS(hashOrUrl: string): Promise<any> {
       }
     }
 
-    // In production, fetch from IPFS gateway
-    const response = await fetchWithGatewayFallback(hash)
+    // Fetch from configured IPFS gateway
+    const response = await fetchFromGateway(hash)
     return await response.json()
   } catch (error) {
     logger.error('Failed to retrieve from IPFS:', error)
@@ -447,11 +307,9 @@ export function extractIPFSHash(hashOrUrl: string): string {
     return hashOrUrl.replace('ipfs://', '')
   }
 
-  // Remove any gateway URL prefix if present
-  for (const gateway of IPFS_GATEWAYS) {
-    if (hashOrUrl.startsWith(gateway)) {
-      return hashOrUrl.replace(gateway, '')
-    }
+  // Remove configured gateway URL prefix if present
+  if (hashOrUrl.startsWith(DEFAULT_GATEWAY)) {
+    return hashOrUrl.replace(DEFAULT_GATEWAY, '')
   }
 
   // Return as-is if it's already a hash
@@ -471,7 +329,7 @@ export function getIPFSUrl(hashOrUrl: string): string {
  */
 export function getIPFSGatewayCandidates(hashOrUrl: string): string[] {
   const hash = extractIPFSHash(hashOrUrl)
-  return IPFS_GATEWAYS.map(gateway => `${gateway}${hash}`)
+  return [`${DEFAULT_GATEWAY}${hash}`]
 }
 
 /**

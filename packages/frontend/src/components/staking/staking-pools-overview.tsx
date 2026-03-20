@@ -160,7 +160,7 @@ export function StakingPoolsOverview() {
                       <Icon className="h-5 w-5" />
                       <CardTitle className="text-lg">{config.title}</CardTitle>
                     </div>
-                    <Badge variant="secondary" className="font-mono">
+                    <Badge variant="glass" className="font-mono">
                       {pool?.apy || 0}% APY
                     </Badge>
                   </div>

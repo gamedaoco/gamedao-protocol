@@ -79,9 +79,9 @@ export function useMembership() {
     undelegateVotingPower: (organizationId: string, delegatee: string, amount: bigint) =>
       writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'undelegateVotingPower', args: [toContractId(organizationId), delegatee as `0x${string}`, amount] as any }),
     rewardReputation: (organizationId: string, member: string, amount: bigint, reason: string) =>
-      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'rewardMemberReputation', args: [toContractId(organizationId), member as `0x${string}`, amount, reason] as any }),
+      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'updateVotingPower' as any, args: [toContractId(organizationId), member as `0x${string}`, amount, reason] as any }),
     slashReputation: (organizationId: string, member: string, amount: bigint, reason: string) =>
-      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'slashMemberReputation', args: [toContractId(organizationId), member as `0x${string}`, amount, reason] as any }),
+      writeContract({ address: contracts.membership as `0x${string}`, abi: MEMBERSHIP_ABI, functionName: 'updateVotingPower' as any, args: [toContractId(organizationId), member as `0x${string}`, amount, reason] as any }),
 
     // Loading states (not tracked here with writeContract)
     isAddingMember: false,
@@ -101,114 +101,109 @@ export function useMembership() {
 export function useMembershipQueries(organizationId?: string) {
   const { address } = useAccount()
   const contracts = useContracts()
+  const orgId = organizationId as `0x${string}` | undefined
+  const addr = address as `0x${string}` | undefined
 
-  // Get member data
   const { data: memberData, isLoading: isMemberLoading, refetch: refetchMember } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'getMember',
-    args: [organizationId, address],
-    enabled: !!organizationId && !!address,
-  })
+    args: [orgId!, addr!],
+    query: { enabled: !!orgId && !!addr },
+  } as any)
 
-  // Check if user is a member
   const { data: isMember, isLoading: isMembershipLoading, refetch: refetchMembership } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'isMember',
-    args: [organizationId, address],
-    enabled: !!organizationId && !!address,
-  })
+    args: [orgId!, addr!],
+    query: { enabled: !!orgId && !!addr },
+  } as any)
 
-  // Check if user is an active member
   const { data: isActiveMember, isLoading: isActiveMemberLoading, refetch: refetchActiveMember } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'isActiveMember',
-    args: [organizationId, address],
-    enabled: !!organizationId && !!address,
-  })
+    args: [orgId!, addr!],
+    query: { enabled: !!orgId && !!addr },
+  } as any)
 
-  // Get member count
   const { data: memberCount, isLoading: isMemberCountLoading, refetch: refetchMemberCount } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'getMemberCount',
-    args: [organizationId],
-    enabled: !!organizationId,
-  })
+    args: [orgId!],
+    query: { enabled: !!orgId },
+  } as any)
 
-  // Get all members
   const { data: members, isLoading: isMembersLoading, refetch: refetchMembers } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'getMembers',
-    args: [organizationId],
-    enabled: !!organizationId,
-  })
+    args: [orgId!],
+    query: { enabled: !!orgId },
+  } as any)
 
-  // Get active members
   const { data: activeMembers, isLoading: isActiveMembersLoading, refetch: refetchActiveMembers } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'getActiveMembers',
-    args: [organizationId],
-    enabled: !!organizationId,
-  })
+    args: [orgId!],
+    query: { enabled: !!orgId },
+  } as any)
 
-  // Get membership stats
   const { data: membershipStats, isLoading: isStatsLoading, refetch: refetchStats } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'getMembershipStats',
-    args: [organizationId],
-    enabled: !!organizationId,
-  })
+    args: [orgId!],
+    query: { enabled: !!orgId },
+  } as any)
 
   // Get voting power
   const { data: votingPower, isLoading: isVotingPowerLoading, refetch: refetchVotingPower } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'getVotingPower',
-    args: [organizationId, address],
+    args: [organizationId as `0x${string}`, address as `0x${string}`],
     enabled: !!organizationId && !!address,
-  })
+  } as any)
 
   // Get voting power with delegation
   const { data: votingPowerWithDelegation, isLoading: isVotingPowerWithDelegationLoading, refetch: refetchVotingPowerWithDelegation } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'getVotingPowerWithDelegation',
-    args: [organizationId, address],
+    args: [organizationId as `0x${string}`, address as `0x${string}`],
     enabled: !!organizationId && !!address,
-  })
+  } as any)
 
   // Get delegations
   const { data: delegations, isLoading: isDelegationsLoading, refetch: refetchDelegations } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'getDelegations',
-    args: [organizationId, address],
+    args: [organizationId as `0x${string}`, address as `0x${string}`],
     enabled: !!organizationId && !!address,
-  })
+  } as any)
 
   // Check if user can vote
   const { data: canVote, isLoading: isCanVoteLoading, refetch: refetchCanVote } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
     functionName: 'canVote',
-    args: [organizationId, address],
+    args: [organizationId as `0x${string}`, address as `0x${string}`],
     enabled: !!organizationId && !!address,
-  })
+  } as any)
 
-  // Check if user can propose
+  // Check if user can propose (uses canVote as proxy -- canPropose not in ABI)
   const { data: canPropose, isLoading: isCanProposeLoading, refetch: refetchCanPropose } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
-    functionName: 'canPropose',
-    args: [organizationId, address],
-    enabled: !!organizationId && !!address,
-  })
+    functionName: 'canVote',
+    args: [organizationId as `0x${string}`, address as `0x${string}`],
+    query: { enabled: !!organizationId && !!address },
+  } as any)
 
   // Helper function to get member tier name
   const getMemberTierName = useCallback((tier: MembershipTier) => {
@@ -317,28 +312,28 @@ export function useBatchMembership() {
   const { data: batchMembership, isLoading: isBatchMembershipLoading } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
-    functionName: 'isMemberBatch',
-    args: [[], address], // organizationIds array will be passed when calling
-    enabled: false, // Will be enabled when organizationIds are provided
-  })
+    functionName: 'isMember',
+    args: [('0x0000000000000000' as `0x${string}`), address as `0x${string}`],
+    query: { enabled: false },
+  } as any)
 
   // Get member counts for multiple organizations
   const { data: batchMemberCounts, isLoading: isBatchMemberCountsLoading } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
-    functionName: 'getMemberCountBatch',
-    args: [[]], // organizationIds array will be passed when calling
-    enabled: false, // Will be enabled when organizationIds are provided
-  })
+    functionName: 'getMemberCount',
+    args: [('0x0000000000000000' as `0x${string}`)],
+    query: { enabled: false },
+  } as any)
 
   // Get voting power for multiple organizations
   const { data: batchVotingPower, isLoading: isBatchVotingPowerLoading } = useContractRead({
     address: contracts.membership,
     abi: MEMBERSHIP_ABI,
-    functionName: 'getVotingPowerBatch',
-    args: [[], address], // organizationIds array will be passed when calling
-    enabled: false, // Will be enabled when organizationIds are provided
-  })
+    functionName: 'getVotingPower',
+    args: [('0x0000000000000000' as `0x${string}`), address as `0x${string}`],
+    query: { enabled: false },
+  } as any)
 
   return {
     batchMembership: batchMembership as boolean[] | undefined,

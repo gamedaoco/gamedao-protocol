@@ -85,7 +85,7 @@ export function PortfolioCard({ className }: PortfolioCardProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Total Value</span>
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="glass" className="text-xs">
               {portfolio.tokenCount} assets
             </Badge>
           </div>
