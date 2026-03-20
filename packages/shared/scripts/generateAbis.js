@@ -30,6 +30,16 @@ const contractMapping = {
 function generateAbis() {
   console.log('🔍 Generating ABIs from contract artifacts...');
 
+  if (!fs.existsSync(artifactsPath)) {
+    console.log('⚠️  Artifacts directory not found — using committed abis.ts');
+    if (fs.existsSync(outputPath)) {
+      console.log('✅ Existing abis.ts preserved');
+      return;
+    }
+    console.error('❌ No artifacts and no existing abis.ts — compile contracts first');
+    process.exit(1);
+  }
+
   let content = `import { Abi } from 'viem';
 
 // Auto-generated ABIs from contract compilation
@@ -67,39 +77,32 @@ function generateAbis() {
     }
   }
 
-  // Add contract names export
+  // Build CONTRACT_NAMES and ABIS only from successfully generated ABIs
+  const nameMap = {
+    REGISTRY_ABI: 'Registry', CONTROL_ABI: 'Control', FACTORY_ABI: 'Factory',
+    MEMBERSHIP_ABI: 'Membership', FLOW_ABI: 'Flow', SIGNAL_ABI: 'Signal',
+    SENSE_ABI: 'Sense', IDENTITY_ABI: 'Identity', STAKING_ABI: 'Staking',
+    TREASURY_ABI: 'Treasury', GAME_TOKEN_ABI: 'GameToken',
+    MOCK_GAME_TOKEN_ABI: 'MockGameToken', MOCK_USDC_ABI: 'MockUSDC',
+  };
+
+  const namesEntries = exportedAbis
+    .filter(name => nameMap[name])
+    .map(name => `  ${name.replace('_ABI', '')}: '${nameMap[name]}'`)
+    .join(',\n');
+
+  const abisEntries = exportedAbis
+    .map(name => `  ${name.replace('_ABI', '')}: ${name}`)
+    .join(',\n');
+
   content += `// Export contract names for convenience
 export const CONTRACT_NAMES = {
-  REGISTRY: 'Registry',
-  CONTROL: 'Control',
-  FACTORY: 'Factory',
-  MEMBERSHIP: 'Membership',
-  FLOW: 'Flow',
-  SIGNAL: 'Signal',
-  SENSE: 'Sense',
-  IDENTITY: 'Identity',
-  STAKING: 'Staking',
-  TREASURY: 'Treasury',
-  GAME_TOKEN: 'GameToken',
-  MOCK_GAME_TOKEN: 'MockGameToken',
-  MOCK_USDC: 'MockUSDC'
+${namesEntries}
 } as const;
 
 // Export all ABIs as a single object for convenience
 export const ABIS = {
-  REGISTRY: REGISTRY_ABI,
-  CONTROL: CONTROL_ABI,
-  FACTORY: FACTORY_ABI,
-  MEMBERSHIP: MEMBERSHIP_ABI,
-  FLOW: FLOW_ABI,
-  SIGNAL: SIGNAL_ABI,
-  SENSE: SENSE_ABI,
-  IDENTITY: IDENTITY_ABI,
-  STAKING: STAKING_ABI,
-  TREASURY: TREASURY_ABI,
-  GAME_TOKEN: GAME_TOKEN_ABI,
-  MOCK_GAME_TOKEN: MOCK_GAME_TOKEN_ABI,
-  MOCK_USDC: MOCK_USDC_ABI,
+${abisEntries}
 } as const;
 `;
 
