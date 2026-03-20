@@ -1,4 +1,4 @@
-# GameDAO Protocol - Comprehensive Build System
+# GameDAO Protocol - Build System
 # Author: GameDAO AG
 # Description: End-to-end build, test, and deployment automation
 
@@ -29,10 +29,10 @@ GRAPH_NODE_PORT?=8020
 IPFS_PORT?=5001
 POSTGRES_PORT?=5432
 
-.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy scaffold scaffold-copy scaffold-full scaffold-with-deploy scaffold-clean dev-reset
+.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy scaffold scaffold-copy scaffold-full scaffold-with-deploy scaffold-clean dev-reset generate-abis module-list module-enable module-disable grant-admin seed-account
 
 # Default target
-all: clean install build test
+# all: clean install build test
 
 # Help target
 help:
@@ -50,7 +50,9 @@ help:
 	@echo "  make docker-dev-reset Complete Docker environment reset"
 	@echo "  make docker-dev-stop  Stop Docker development environment"
 	@echo "  make docker-deploy    Deploy contracts to Docker environment"
+	@echo "  make docker-scaffold  Generate test data in Docker environment"
 	@echo "  make docker-status    Check Docker services status"
+	@echo "  make reset-node       Reset Hardhat node (clear pending txs/nonces)"
 	@echo "  make migrate-to-docker Migrate existing data to Docker structure"
 	@echo ""
 	@echo "$(GREEN)🏗️  Build & Compilation:$(NC)"
@@ -58,6 +60,7 @@ help:
 	@echo "  make build-contracts  Build smart contracts only"
 	@echo "  make build-frontend   Build frontend only"
 	@echo "  make build-subgraph   Build subgraph only"
+	@echo "  make generate-abis    Compile contracts and regenerate shared ABIs"
 	@echo ""
 	@echo "$(GREEN)🧪 Testing:$(NC)"
 	@echo "  make test             Run all tests"
@@ -90,6 +93,13 @@ help:
 	@echo "  make scaffold-clean   Clean scaffold data"
 	@echo "  make send-tokens      Send tokens to specific address"
 	@echo ""
+	@echo "$(GREEN)🔐 Protocol Admin & Modules:$(NC)"
+	@echo "  make module-list      List all modules and their status"
+	@echo "  make module-enable MODULE=CONTROL   Enable a module (or MODULE=all)"
+	@echo "  make module-disable MODULE=SIGNAL   Disable a module (or MODULE=all)"
+	@echo "  make grant-admin ACCOUNT=0x...      Grant admin roles to account"
+	@echo "  make seed-account ACCOUNT=0x...     Seed account with ETH/GAME/USDC"
+	@echo ""
 	@echo "$(GREEN)📚 Documentation & Quality:$(NC)"
 	@echo "  make docs             Generate documentation"
 	@echo "  make lint             Run linting"
@@ -101,6 +111,10 @@ help:
 	@echo "  make dev-reset        # Clean restart of development environment"
 	@echo "  make dev-full         # Start everything: contracts + graph + frontend"
 	@echo "  make send-tokens RECIPIENT=0x123... ETH=2.0 GAME=20000 USDC=10000"
+	@echo "  make module-enable MODULE=all     # Enable all modules after deploy"
+	@echo "  make module-disable MODULE=FLOW   # Disable a single module"
+	@echo "  make grant-admin ACCOUNT=0x123... # Grant admin to external account"
+	@echo "  make seed-account ACCOUNT=0x123...  ETH=5 GAME=50000 USDC=5000"
 
 # Installation targets
 install:
@@ -166,6 +180,16 @@ build-subgraph:
 	else \
 		echo "$(YELLOW)⚠️  Subgraph directory not found, skipping...$(NC)"; \
 	fi
+
+# Generate ABIs from compiled contracts into shared package
+generate-abis:
+	@echo "$(BLUE)📋 Compiling contracts and generating ABIs...$(NC)"
+	@cd $(CONTRACTS_DIR) && pnpm exec hardhat compile
+	@echo "$(CYAN)📋 Extracting ABIs into shared package...$(NC)"
+	@cd $(CONTRACTS_DIR) && node scripts/update-shared-package.js
+	@echo "$(CYAN)📋 Building shared package...$(NC)"
+	@cd $(SHARED_DIR) && pnpm run build
+	@echo "$(GREEN)✅ ABIs generated and shared package updated$(NC)"
 
 # Testing targets
 test: test-contracts
@@ -283,7 +307,16 @@ graph-status:
 
 # === DOCKER DEVELOPMENT ENVIRONMENT ===
 
-.PHONY: docker-dev docker-dev-stop docker-dev-reset docker-deploy docker-status migrate-to-docker
+.PHONY: docker-dev docker-dev-stop docker-dev-reset docker-deploy docker-scaffold docker-status migrate-to-docker reset-node
+
+# Reset Hardhat node state (clears pending txs and nonces)
+reset-node:
+	@echo "$(BLUE)🔄 Resetting Hardhat node state...$(NC)"
+	@curl -s -X POST -H "Content-Type: application/json" \
+		--data '{"jsonrpc":"2.0","method":"hardhat_reset","params":[],"id":1}' \
+		http://localhost:8545 > /dev/null && \
+		echo "$(GREEN)✅ Hardhat node reset successfully$(NC)" || \
+		echo "$(RED)❌ Failed to reset — is the node running?$(NC)"
 
 # Start dockerized development environment
 docker-dev:
@@ -343,6 +376,12 @@ docker-deploy:
 	@echo "$(GREEN)✅ Docker deployment complete!$(NC)"
 	@echo "$(CYAN)💡 Contract addresses available in: data/contracts/deployment-addresses.json$(NC)"
 
+# Run scaffold against dockerized environment
+docker-scaffold:
+	@echo "$(BLUE)🏗️  Generating test data (Docker)...$(NC)"
+	@cd $(CONTRACTS_DIR) && DOCKER_DEV_MODE=true pnpm run scaffold
+	@echo "$(GREEN)✅ Test data generated successfully$(NC)"
+
 # Check status of dockerized development environment
 docker-status:
 	@echo "$(BLUE)📊 Docker Development Environment Status$(NC)"
@@ -357,7 +396,7 @@ docker-status:
 	@echo -n "  IPFS: "
 	@curl -s http://localhost:5001/api/v0/version >/dev/null 2>&1 && echo "$(GREEN)✅ Running$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo -n "  PostgreSQL: "
-	@docker exec gamedao-postgres pg_isready -U graph-node >/dev/null 2>&1 && echo "$(GREEN)✅ Running$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@docker exec gamedao-db pg_isready -U graph-node >/dev/null 2>&1 && echo "$(GREEN)✅ Running$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo ""
 	@echo "$(CYAN)📁 Data Directories:$(NC)"
 	@echo "  - Hardhat Node: $(shell du -sh data/hardhat-node 2>/dev/null | cut -f1 || echo "0B")"
@@ -492,6 +531,58 @@ send-tokens:
 	@echo "$(YELLOW)⚠️  Ensure local node is running and contracts are deployed$(NC)"
 	@cd $(CONTRACTS_DIR) && RECIPIENT=$(RECIPIENT) ETH=$(or $(ETH),1.0) GAME=$(or $(GAME),10000) USDC=$(or $(USDC),5000) pnpm run send-tokens
 	@echo "$(GREEN)✅ Token transfer completed$(NC)"
+
+# === PROTOCOL ADMIN & MODULE MANAGEMENT ===
+
+# Docker-aware network flag
+DOCKER_ENV=$(if $(filter true,$(DOCKER)),DOCKER_DEV_MODE=true,)
+HH_NETWORK?=localhost
+
+# List all modules and their enabled/disabled status
+module-list:
+	@cd $(CONTRACTS_DIR) && $(DOCKER_ENV) pnpm exec hardhat module-list --network $(HH_NETWORK)
+
+# Enable a module: make module-enable MODULE=CONTROL  (or MODULE=all)
+module-enable:
+	@if [ -z "$(MODULE)" ]; then \
+		echo "$(RED)❌ MODULE is required$(NC)"; \
+		echo "$(YELLOW)Usage: make module-enable MODULE=CONTROL$(NC)"; \
+		echo "$(YELLOW)       make module-enable MODULE=all$(NC)"; \
+		echo "$(CYAN)Valid modules: CONTROL, FACTORY, FLOW, IDENTITY, MEMBERSHIP, SENSE, SIGNAL$(NC)"; \
+		exit 1; \
+	fi
+	@cd $(CONTRACTS_DIR) && $(DOCKER_ENV) pnpm exec hardhat module-enable $(MODULE) --network $(HH_NETWORK)
+
+# Disable a module: make module-disable MODULE=SIGNAL  (or MODULE=all)
+module-disable:
+	@if [ -z "$(MODULE)" ]; then \
+		echo "$(RED)❌ MODULE is required$(NC)"; \
+		echo "$(YELLOW)Usage: make module-disable MODULE=SIGNAL$(NC)"; \
+		echo "$(YELLOW)       make module-disable MODULE=all$(NC)"; \
+		echo "$(CYAN)Valid modules: CONTROL, FACTORY, FLOW, IDENTITY, MEMBERSHIP, SENSE, SIGNAL$(NC)"; \
+		exit 1; \
+	fi
+	@cd $(CONTRACTS_DIR) && $(DOCKER_ENV) pnpm exec hardhat module-disable $(MODULE) --network $(HH_NETWORK)
+
+# Grant protocol admin roles to an account
+grant-admin:
+	@if [ -z "$(ACCOUNT)" ]; then \
+		echo "$(RED)❌ ACCOUNT is required$(NC)"; \
+		echo "$(YELLOW)Usage: make grant-admin ACCOUNT=0x...$(NC)"; \
+		exit 1; \
+	fi
+	@cd $(CONTRACTS_DIR) && $(DOCKER_ENV) pnpm exec hardhat grant-admin $(ACCOUNT) --network $(HH_NETWORK)
+
+# Seed an account with ETH, GAME tokens, and USDC
+seed-account:
+	@if [ -z "$(ACCOUNT)" ]; then \
+		echo "$(RED)❌ ACCOUNT is required$(NC)"; \
+		echo "$(YELLOW)Usage: make seed-account ACCOUNT=0x... [ETH=10] [GAME=100000] [USDC=10000]$(NC)"; \
+		exit 1; \
+	fi
+	@cd $(CONTRACTS_DIR) && $(DOCKER_ENV) pnpm exec hardhat seed-account $(ACCOUNT) \
+		--eth $(or $(ETH),10.0) --game $(or $(GAME),100000) --usdc $(or $(USDC),10000) \
+		--network $(HH_NETWORK)
 
 # Documentation targets
 docs:
