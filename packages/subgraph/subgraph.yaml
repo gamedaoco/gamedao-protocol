@@ -7,7 +7,7 @@ dataSources:
     name: Registry
     network: localhost
     source:
-      address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+      address: "0x962c0940d72E7Db6c9a5F81f1cA87D8DB2B82A23"
       abi: Registry
       startBlock: 0
     mapping:
@@ -39,7 +39,7 @@ dataSources:
     name: GameToken
     network: localhost
     source:
-      address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+      address: "0xc01Ee7f10EA4aF4673cFff62710E1D7792aBa8f3"
       abi: GameToken
       startBlock: 0
     mapping:
@@ -70,7 +70,7 @@ dataSources:
     name: MockGameToken
     network: localhost
     source:
-      address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+      address: "0xc01Ee7f10EA4aF4673cFff62710E1D7792aBa8f3"
       abi: MockGameToken
       startBlock: 0
     mapping:
@@ -101,7 +101,7 @@ dataSources:
     name: MockUSDC
     network: localhost
     source:
-      address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+      address: "0x970951a12F975E6762482ACA81E57D5A2A4e73F4"
       abi: MockUSDC
       startBlock: 0
     mapping:
@@ -128,7 +128,7 @@ dataSources:
     name: Staking
     network: localhost
     source:
-      address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+      address: "0x970951a12F975E6762482ACA81E57D5A2A4e73F4"
       abi: Staking
       startBlock: 0
     mapping:
@@ -171,7 +171,7 @@ dataSources:
     name: StakingRewards
     network: localhost
     source:
-      address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+      address: "0x3ed62137c5DB927cb137c26455969116BF0c23Cb"
       abi: Staking
       startBlock: 0
     mapping:
@@ -214,7 +214,7 @@ dataSources:
     name: Identity
     network: localhost
     source:
-      address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+      address: "0x3ed62137c5DB927cb137c26455969116BF0c23Cb"
       abi: Identity
       startBlock: 0
     mapping:
@@ -247,7 +247,7 @@ dataSources:
     name: Membership
     network: localhost
     source:
-      address: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+      address: "0x5CC307268a1393AB9A764A20DACE848AB8275c46"
       abi: Membership
       startBlock: 0
     mapping:
@@ -285,7 +285,7 @@ dataSources:
     name: Control
     network: localhost
     source:
-      address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+      address: "0xeAB4eEBa1FF8504c124D031F6844AD98d07C318f"
       abi: Control
       startBlock: 0
     mapping:
@@ -315,7 +315,7 @@ dataSources:
     name: Factory
     network: localhost
     source:
-      address: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
+      address: "0x3469E1DaC06611030AEce8209F07501E9A7aCC69"
       abi: Factory
       startBlock: 0
     mapping:
@@ -332,7 +332,7 @@ dataSources:
         - name: Factory
           file: ./abis/Factory.json
       eventHandlers:
-        - event: OrganizationCreated(indexed bytes8,string,indexed address,indexed address,uint256)
+        - event: OrganizationCreated(indexed bytes8,string,string,indexed address,indexed address,uint256)
           handler: handleFactoryOrganizationCreated
       file: ./src/factory.ts
 
@@ -341,7 +341,7 @@ dataSources:
     name: Flow
     network: localhost
     source:
-      address: "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6"
+      address: "0x7d4567B7257cf869B01a47E8cf0EDB3814bDb963"
       abi: Flow
       startBlock: 0
     mapping:
@@ -379,7 +379,7 @@ dataSources:
     name: Signal
     network: localhost
     source:
-      address: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
+      address: "0x867fb76BA206040EA09e73f38EdA307413d4966F"
       abi: Signal
       startBlock: 0
     mapping:
@@ -417,7 +417,7 @@ dataSources:
   #   name: Sense
   #   network: localhost
   #   source:
-  #     address: "0x610178dA211FEF7D417bC0e6FeD39F05609AD788"
+  #     address: "0x9c1da847B31C0973F26b1a2A3d5c04365a867703"
   #     abi: Sense
   #     startBlock: 0
   #   mapping:

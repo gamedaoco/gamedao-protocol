@@ -1,20 +1,29 @@
-import { BigInt, BigDecimal } from "@graphprotocol/graph-ts"
+import { BigInt, BigDecimal, Address } from "@graphprotocol/graph-ts"
 import { OrganizationCreated } from "../generated/Factory/Factory"
 import { Organization, Treasury, User, GlobalStats, Transaction } from "../generated/schema"
 import { Treasury as TreasuryTemplate } from "../generated/templates"
 import { getOrganizationIdString } from "./utils/ids"
 import { updateIndexingStatus } from "./utils/indexing"
+import { Control } from "../generated/Control/Control"
+
+// Keep in sync with dataSources[name=Control].source.address in subgraph.yaml
+const CONTROL_ADDRESS = Address.fromString("0x5FC8d32690cc91D4c39d9d3abcBD16989F875707")
 
 export function handleFactoryOrganizationCreated(event: OrganizationCreated): void {
   updateIndexingStatus(event.block, 'Factory.OrganizationCreated')
 
   const organizationId = getOrganizationIdString(event.params.id)
 
-  // Create basic Organization from event (Control mapping will enrich via getOrganization)
+  // Create Organization from event
   let organization = new Organization(organizationId)
   organization.name = event.params.name
-  organization.metadataURI = ""
+  organization.metadataURI = event.params.metadataURI
   organization.creator = event.params.creator.toHex()
+  // Set required fields with safe defaults; Control mapping will enrich later
+  organization.prime = event.params.creator
+  organization.orgType = "INDIVIDUAL"
+  organization.accessModel = "OPEN"
+  organization.feeModel = "NONE"
   organization.treasuryAddress = event.params.treasury
   organization.memberLimit = BigInt.fromI32(0)
   organization.memberCount = BigInt.fromI32(1)
@@ -27,6 +36,19 @@ export function handleFactoryOrganizationCreated(event: OrganizationCreated): vo
   organization.updatedAt = event.params.timestamp
   organization.blockNumber = event.block.number
   organization.transaction = event.transaction.hash.toHex()
+  // Optional: still try to sync with on-chain state for robustness
+  const control = Control.bind(CONTROL_ADDRESS)
+  const orgResult = control.try_getOrganization(event.params.id)
+  if (!orgResult.reverted) {
+    const org = orgResult.value
+    if (org.metadataURI.length > 0) {
+      organization.metadataURI = org.metadataURI
+    }
+    if (org.name.length > 0) {
+      organization.name = org.name
+    }
+  }
+
   organization.save()
 
   // Treasury entity and template

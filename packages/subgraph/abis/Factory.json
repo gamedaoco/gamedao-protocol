@@ -80,6 +80,12 @@
           "type": "string"
         },
         {
+          "indexed": false,
+          "internalType": "string",
+          "name": "metadataURI",
+          "type": "string"
+        },
+        {
           "indexed": true,
           "internalType": "address",
           "name": "creator",

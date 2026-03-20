@@ -77,16 +77,20 @@ export class OrganizationCreated__Params {
     return this._event.parameters[1].value.toString();
   }
 
-  get creator(): Address {
-    return this._event.parameters[2].value.toAddress();
+  get metadataURI(): string {
+    return this._event.parameters[2].value.toString();
   }
 
-  get treasury(): Address {
+  get creator(): Address {
     return this._event.parameters[3].value.toAddress();
   }
 
+  get treasury(): Address {
+    return this._event.parameters[4].value.toAddress();
+  }
+
   get timestamp(): BigInt {
-    return this._event.parameters[4].value.toBigInt();
+    return this._event.parameters[5].value.toBigInt();
   }
 }
 
