@@ -1618,6 +1618,36 @@ export class RevokeRoleCall__Outputs {
   }
 }
 
+export class SetGameTokenCall extends ethereum.Call {
+  get inputs(): SetGameTokenCall__Inputs {
+    return new SetGameTokenCall__Inputs(this);
+  }
+
+  get outputs(): SetGameTokenCall__Outputs {
+    return new SetGameTokenCall__Outputs(this);
+  }
+}
+
+export class SetGameTokenCall__Inputs {
+  _call: SetGameTokenCall;
+
+  constructor(call: SetGameTokenCall) {
+    this._call = call;
+  }
+
+  get gameTokenAddress(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+}
+
+export class SetGameTokenCall__Outputs {
+  _call: SetGameTokenCall;
+
+  constructor(call: SetGameTokenCall) {
+    this._call = call;
+  }
+}
+
 export class UnpauseCall extends ethereum.Call {
   get inputs(): UnpauseCall__Inputs {
     return new UnpauseCall__Inputs(this);
