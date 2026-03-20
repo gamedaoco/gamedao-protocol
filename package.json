@@ -16,7 +16,7 @@
     "url": "https://github.com/gamedao/gamedao-protocol.git"
   },
   "license": "AGPL-3.0",
-  "author": "GameDAO AG",
+  "author": "Team GameDAO",
   "workspaces": [
     "packages/*",
     "apps/*"
