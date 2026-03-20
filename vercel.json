@@ -2,7 +2,7 @@
   "version": 2,
   "framework": "nextjs",
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter @gamedao/evm run build && pnpm --filter @gamedao/frontend exec next build",
+  "buildCommand": "cd packages/shared && pnpm run build && cd ../frontend && pnpm exec next build",
   "outputDirectory": "packages/frontend/.next",
   "regions": ["iad1"],
   "functions": {

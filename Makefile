@@ -29,7 +29,7 @@ GRAPH_NODE_PORT?=8020
 IPFS_PORT?=5001
 POSTGRES_PORT?=5432
 
-.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy scaffold scaffold-copy scaffold-full scaffold-with-deploy scaffold-clean dev-reset generate-abis module-list module-enable module-disable grant-admin seed-account
+.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy scaffold scaffold-copy scaffold-full scaffold-with-deploy scaffold-clean dev-reset generate-abis module-list module-enable module-disable grant-admin seed-account frontier-builder frontier-build frontier-rebuild frontier-up frontier-down frontier-logs
 
 # Default target
 # all: clean install build test
@@ -55,6 +55,14 @@ help:
 	@echo "  make reset-node       Reset Hardhat node (clear pending txs/nonces)"
 	@echo "  make migrate-to-docker Migrate existing data to Docker structure"
 	@echo ""
+	@echo "$(GREEN)🔨 Frontier Node Build:$(NC)"
+	@echo "  make frontier-builder Build Frontier builder image (one-time, ~5-10 min)"
+	@echo "  make frontier-build    Build Frontier node image (uses cached builder)"
+	@echo "  make frontier-rebuild  Rebuild both builder and node from scratch"
+	@echo "  make frontier-up       Start Frontier node service"
+	@echo "  make frontier-down     Stop Frontier node service"
+	@echo "  make frontier-logs     View Frontier node logs"
+	@echo ""
 	@echo "$(GREEN)🏗️  Build & Compilation:$(NC)"
 	@echo "  make build            Build all packages"
 	@echo "  make build-contracts  Build smart contracts only"
@@ -69,10 +77,12 @@ help:
 	@echo "  make test-gas         Run gas optimization tests"
 	@echo ""
 	@echo "$(GREEN)🚀 Deployment:$(NC)"
-	@echo "  make deploy           Deploy to localhost"
-	@echo "  make deploy-testnet   Deploy to testnet"
-	@echo "  make deploy-mainnet   Deploy to mainnet"
-	@echo "  make verify           Verify contracts on Etherscan"
+	@echo "  make deploy              Deploy to localhost"
+	@echo "  make deploy-local        Deploy to localhost (unified)"
+	@echo "  make deploy-local-frontier Deploy to Frontier node"
+	@echo "  make deploy-testnet     Deploy to testnet"
+	@echo "  make deploy-mainnet     Deploy to mainnet"
+	@echo "  make verify             Verify contracts on Etherscan"
 	@echo ""
 	@echo "$(GREEN)📊 Graph & Indexing:$(NC)"
 	@echo "  make graph-node       Start local Graph node"
@@ -307,7 +317,7 @@ graph-status:
 
 # === DOCKER DEVELOPMENT ENVIRONMENT ===
 
-.PHONY: docker-dev docker-dev-stop docker-dev-reset docker-deploy docker-scaffold docker-status migrate-to-docker reset-node
+.PHONY: docker-dev docker-dev-stop docker-dev-reset docker-deploy docker-deploy-all docker-scaffold docker-status migrate-to-docker reset-node
 
 # Reset Hardhat node state (clears pending txs and nonces)
 reset-node:
@@ -346,16 +356,18 @@ docker-dev-stop:
 docker-dev-reset:
 	@echo "$(BLUE)🔄 Resetting dockerized development environment...$(NC)"
 	@echo "$(CYAN)1️⃣  Stopping and removing containers...$(NC)"
-	@docker compose down -v --remove-orphans
-	@echo "$(CYAN)2️⃣  Cleaning up data directories...$(NC)"
-	@rm -rf data/hardhat-node/data/*
-	@rm -rf data/contracts/*
-	@rm -rf data/graph/data/*
-	@rm -rf data/ipfs/data/*
-	@rm -rf data/postgres/*
-	@rm -rf data/logs/*
+	@docker compose down -v --remove-orphans || true
+	@sleep 3
+	@echo "$(CYAN)2️⃣  Cleaning up data directories and lock files...$(NC)"
+	@rm -rf data/hardhat-node/data/* data/hardhat-node/logs/*
+	@rm -rf data/frontier-node
+	@rm -rf data/contracts
+	@rm -rf data/graph
+	@rm -rf data/postgres
+	@rm -rf data/logs
+
 	@echo "$(CYAN)3️⃣  Recreating directory structure...$(NC)"
-	@mkdir -p data/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres}
+	@mkdir -p data/{frontier-node,hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres}
 	@echo "$(CYAN)4️⃣  Starting fresh environment...$(NC)"
 	@make docker-dev
 	@echo "$(GREEN)✅ Docker development environment reset complete!$(NC)"
@@ -382,6 +394,12 @@ docker-scaffold:
 	@cd $(CONTRACTS_DIR) && DOCKER_DEV_MODE=true pnpm run scaffold
 	@echo "$(GREEN)✅ Test data generated successfully$(NC)"
 
+# One-line full redeploy: reset env, deploy, grant admin, fund default account
+docker-deploy-all: docker-dev-reset deploy-local
+	@echo "🏗️ Running full docker redeploy (deploy-local, grant-admin, send-tokens)..."
+	@$(MAKE) grant-admin
+	@$(MAKE) send-tokens RECIPIENT=$(or $(RECIPIENT),0xf0fe780c76ce610fc8df330971b99ba6f4429001) ETH=$(or $(ETH),1.0) GAME=$(or $(GAME),100000) USDC=$(or $(USDC),10000)
+
 # Check status of dockerized development environment
 docker-status:
 	@echo "$(BLUE)📊 Docker Development Environment Status$(NC)"
@@ -404,6 +422,48 @@ docker-status:
 	@echo "  - Graph Data: $(shell du -sh data/graph 2>/dev/null | cut -f1 || echo "0B")"
 	@echo "  - IPFS Data: $(shell du -sh data/ipfs 2>/dev/null | cut -f1 || echo "0B")"
 	@echo "  - PostgreSQL: $(shell du -sh data/postgres 2>/dev/null | cut -f1 || echo "0B")"
+	@echo "  - Frontier Node: $(shell du -sh data/frontier-node 2>/dev/null | cut -f1 || echo "0B")"
+
+# Frontier Node Build Targets
+frontier-builder:
+	@echo "$(CYAN)🔨 Building Frontier Builder Image$(NC)"
+	@echo "$(YELLOW)⏳ This may take 5-10 minutes (one-time setup)$(NC)"
+	@docker compose build frontier-builder
+	@echo "$(GREEN)✅ Frontier builder image ready!$(NC)"
+	@echo "$(CYAN)💡 Next: Run 'make frontier-build' to build the node$(NC)"
+
+frontier-build:
+	@echo "$(CYAN)🔨 Building Frontier Node Image$(NC)"
+	@if ! docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^gamedao-frontier-builder:latest$$"; then \
+		echo "$(YELLOW)⚠️  Builder image not found. Building it first...$(NC)"; \
+		$(MAKE) frontier-builder; \
+	fi
+	@echo "$(YELLOW)⏳ Building node (uses cached builder - much faster)$(NC)"
+	@docker compose build frontier-node
+	@echo "$(GREEN)✅ Frontier node image ready!$(NC)"
+	@echo "$(CYAN)💡 Run 'make frontier-up' to start the node$(NC)"
+
+frontier-rebuild:
+	@echo "$(CYAN)🔨 Rebuilding Frontier (Builder + Node) from Scratch$(NC)"
+	@echo "$(YELLOW)⏳ This will take 35-70 minutes...$(NC)"
+	@docker compose build --no-cache frontier-builder frontier-node
+	@echo "$(GREEN)✅ Frontier rebuild complete!$(NC)"
+
+frontier-up:
+	@echo "$(CYAN)🚀 Starting Frontier Node$(NC)"
+	@docker compose up -d frontier-node
+	@echo "$(GREEN)✅ Frontier node starting...$(NC)"
+	@echo "$(CYAN)💡 RPC available at http://localhost:8545$(NC)"
+	@echo "$(CYAN)💡 Run 'make frontier-logs' to view logs$(NC)"
+
+frontier-down:
+	@echo "$(CYAN)🛑 Stopping Frontier Node$(NC)"
+	@docker compose stop frontier-node
+	@echo "$(GREEN)✅ Frontier node stopped$(NC)"
+
+frontier-logs:
+	@echo "$(CYAN)📋 Frontier Node Logs (Ctrl+C to exit)$(NC)"
+	@docker compose logs -f frontier-node
 
 # Migrate existing development data to Docker structure
 migrate-to-docker:
@@ -495,6 +555,7 @@ scaffold:
 	@echo "$(YELLOW)⚠️  Ensure local node is running and contracts are deployed$(NC)"
 	@cd $(CONTRACTS_DIR) && pnpm run scaffold
 	@echo "$(GREEN)✅ Test data generated successfully$(NC)"
+
 
 scaffold-copy:
 	@echo "$(BLUE)📋 Copying scaffold data to frontend...$(NC)"
@@ -619,15 +680,17 @@ status:
 
 # === UNIFIED DEPLOYMENT STRATEGY ===
 
-.PHONY: deploy-local deploy-local-clean validate-addresses
+.PHONY: deploy-local deploy-local-frontier deploy-local-clean validate-addresses
 
-# Unified local deployment with automatic address synchronization
+# Unified local deployment with automatic address synchronization (Frontier node)
 deploy-local:
-	@echo "🚀 Starting unified deployment with address synchronization..."
-	@echo "📋 Phase 1: Deploying contracts..."
-	cd packages/contracts-solidity && pnpm run deploy:localhost
+	@echo "🚀 Starting unified deployment to Frontier node with address synchronization..."
+	@echo "📋 Phase 1: Deploying contracts to Frontier..."
+	cd packages/contracts-solidity && pnpm run deploy:frontier
 	@echo "📋 Phase 1.1: Updating shared addresses from deployment..."
 	cd packages/contracts-solidity && pnpm run update:shared && pnpm run build:shared
+	@echo "📋 Phase 1.2: Syncing ABIs to subgraph..."
+	@$(MAKE) sync-abis
 	@echo "📋 Phase 2: Updating shared package..."
 	cd packages/shared && pnpm run build
 	@echo "📋 Phase 3: Syncing subgraph addresses and deploying..."
@@ -635,7 +698,25 @@ deploy-local:
 	cd packages/subgraph && pnpm run deploy-local
 	@echo "📋 Phase 4: Validating address consistency..."
 	@$(MAKE) validate-addresses
-	@echo "✅ Unified deployment complete - all addresses synchronized!"
+	@echo "✅ Unified deployment to Frontier complete - all addresses synchronized!"
+
+# Explicit Frontier deployment task
+deploy-local-frontier:
+	@echo "🚀 Deploying contracts to Frontier node..."
+	@echo "📋 Phase 1: Deploying contracts to Frontier..."
+	cd packages/contracts-solidity && pnpm run deploy:frontier
+	@echo "📋 Phase 1.1: Updating shared addresses from deployment..."
+	cd packages/contracts-solidity && pnpm run update:shared && pnpm run build:shared
+	@echo "📋 Phase 1.2: Syncing ABIs to subgraph..."
+	@$(MAKE) sync-abis
+	@echo "📋 Phase 2: Updating shared package..."
+	cd packages/shared && pnpm run build
+	@echo "📋 Phase 3: Syncing subgraph addresses and deploying..."
+	cd packages/subgraph && pnpm run update-addresses && pnpm run build && pnpm run create-local || echo "⚠️  Subgraph may already exist, continuing to deploy"
+	cd packages/subgraph && pnpm run deploy-local
+	@echo "📋 Phase 4: Validating address consistency..."
+	@$(MAKE) validate-addresses
+	@echo "✅ Frontier deployment complete - all addresses synchronized!"
 
 # Clean deployment (stops services, redeploys everything)
 deploy-local-clean: stop-services
@@ -669,10 +750,12 @@ test-cycle:
 	@echo "✅ Test cycle complete!"
 
 # Full scaffold with deployment (for fresh setups)
-scaffold-with-deploy: deploy-local
+docker-deploy-all: docker-dev-reset deploy-local
 	@echo "🏗️ Running scaffold with synchronized addresses..."
 	@cd $(CONTRACTS_DIR) && pnpm run scaffold
 	@echo "✅ Full scaffold with deployment complete!"
+	@$(MAKE) send-tokens RECIPIENT=0xf0fe780c76ce610fc8df330971b99ba6f4429001 ETH=1.0 GAME=100000 USDC=10000
+	@$(MAKE) grant-admin --address=0xf0fe780c76ce610fc8df330971b99ba6f4429001
 
 # === VERCEL DEPLOYMENT ===
 
@@ -702,7 +785,40 @@ deploy-vercel-prod: deploy-vercel-check
 		echo "$(YELLOW)⚠️  Vercel production deployment cancelled$(NC)"; \
 	fi
 
+# GRANT ADMIN
+grant-admin:
+	@echo "$(BLUE)🔍 Granting admin...$(NC)"
+	@cd packages/contracts-solidity && ADDRESS=0xf0fe780c76ce610fc8df330971b99ba6f4429001 pnpm run grant-admin && cd ../../
+	@echo "$(GREEN)✅ Admin granted$(NC)"
+
+
 # Error handling
 .ONESHELL:
 .SHELLFLAGS = -e
 .DELETE_ON_ERROR:
+
+# === ABI SYNC (Contracts → Subgraph) ===
+.PHONY: sync-abis
+sync-abis:
+	@echo "📋 Syncing ABIs to subgraph/abis (copy only if newer)..."
+	@src="packages/contracts-solidity/artifacts/contracts/modules/Control/Factory.sol/Factory.json"; \
+	dst="packages/subgraph/abis/Factory.json"; \
+	if [ -f "$$src" ]; then \
+	  if [ ! -f "$$dst" ] || [ "$$src" -nt "$$dst" ]; then cp "$$src" "$$dst" && echo "  ✅ Factory.json"; else echo "  ↪ Factory.json up-to-date"; fi; \
+	else echo "  ⚠️  Missing $$src"; fi
+	@src="packages/contracts-solidity/artifacts/contracts/modules/Control/Control.sol/Control.json"; \
+	dst="packages/subgraph/abis/Control.json"; \
+	if [ -f "$$src" ]; then \
+	  if [ ! -f "$$dst" ] || [ "$$src" -nt "$$dst" ]; then cp "$$src" "$$dst" && echo "  ✅ Control.json"; else echo "  ↪ Control.json up-to-date"; fi; \
+	else echo "  ⚠️  Missing $$src"; fi
+	@src="packages/contracts-solidity/artifacts/contracts/modules/Flow/Flow.sol/Flow.json"; \
+	dst="packages/subgraph/abis/Flow.json"; \
+	if [ -f "$$src" ]; then \
+	  if [ ! -f "$$dst" ] || [ "$$src" -nt "$$dst" ]; then cp "$$src" "$$dst" && echo "  ✅ Flow.json"; else echo "  ↪ Flow.json up-to-date"; fi; \
+	else echo "  ⚠️  Missing $$src"; fi
+	@src="packages/contracts-solidity/artifacts/contracts/modules/Signal/Signal.sol/Signal.json"; \
+	dst="packages/subgraph/abis/Signal.json"; \
+	if [ -f "$$src" ]; then \
+	  if [ ! -f "$$dst" ] || [ "$$src" -nt "$$dst" ]; then cp "$$src" "$$dst" && echo "  ✅ Signal.json"; else echo "  ↪ Signal.json up-to-date"; fi; \
+	else echo "  ⚠️  Missing $$src"; fi
+	@echo "✅ ABI sync complete"
