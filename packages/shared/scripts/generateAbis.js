@@ -30,6 +30,8 @@ const contractMapping = {
 function generateAbis() {
   console.log('🔍 Generating ABIs from contract artifacts...');
 
+  const totalExpected = Object.keys(contractMapping).length;
+
   if (!fs.existsSync(artifactsPath)) {
     console.log('⚠️  Artifacts directory not found — using committed abis.ts');
     if (fs.existsSync(outputPath)) {
@@ -38,6 +40,15 @@ function generateAbis() {
     }
     console.error('❌ No artifacts and no existing abis.ts — compile contracts first');
     process.exit(1);
+  }
+
+  // Count available artifacts before deciding whether to regenerate
+  const availableCount = Object.keys(contractMapping)
+    .filter(p => fs.existsSync(path.join(artifactsPath, p))).length;
+
+  if (availableCount < totalExpected && fs.existsSync(outputPath)) {
+    console.log(`⚠️  Only ${availableCount}/${totalExpected} artifacts found — preserving committed abis.ts`);
+    return;
   }
 
   let content = `import { Abi } from 'viem';
