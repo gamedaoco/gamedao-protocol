@@ -22,14 +22,13 @@ cd gamedao-protocol
 # Install dependencies
 pnpm install
 
-# Start local blockchain
-make dev
+# Bring up the dockerized dev stack (Hardhat + graph-node + IPFS + postgres),
+# deploy contracts (with modules auto-enabled), grant admin, fund the default
+# account, and seed scaffold data.
+make docker-deploy-all
 
-# Deploy contracts (in new terminal)
-make deploy
-
-# Start frontend (in new terminal)
-make dev-frontend
+# Start frontend (in a new terminal)
+cd packages/frontend && pnpm run dev
 ```
 
 Visit `http://localhost:3002` to access the GameDAO frontend.
@@ -228,19 +227,19 @@ The repository includes a comprehensive Makefile for common operations:
 
 ### Core Development
 ```bash
-make dev              # Start local blockchain
-make deploy          # Deploy contracts
-make dev-frontend    # Start frontend development server
-make test            # Run all tests
-make build           # Build all packages
+make docker-dev          # Start dockerized dev stack (Hardhat + graph + IPFS + postgres)
+make docker-deploy-all   # One-shot: reset, deploy, enable modules, grant admin, fund, scaffold
+make test                # Run all tests
+make build               # Build all packages
 ```
 
 ### Smart Contracts
 ```bash
-make deploy-local    # Deploy to local network
-make deploy-testnet  # Deploy to Sepolia testnet
-make verify          # Verify contracts on Etherscan
-make scaffold        # Generate test data
+make deploy-local        # Unified local deploy (Hardhat) — used by docker-deploy-all
+make deploy-testnet      # Deploy to Polygon Amoy
+make deploy-mainnet      # Deploy to Polygon mainnet
+make verify              # Verify contracts on Polygonscan/Etherscan
+make scaffold            # Generate test data (DAOs/campaigns/proposals)
 ```
 
 ### Utilities
@@ -301,7 +300,7 @@ make test
 
 # Full system testing with scaffolding
 make scaffold
-make dev-frontend
+cd packages/frontend && pnpm run dev
 ```
 
 ### Test Coverage

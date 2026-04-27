@@ -29,7 +29,7 @@ GRAPH_NODE_PORT?=8020
 IPFS_PORT?=5001
 POSTGRES_PORT?=5432
 
-.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy scaffold scaffold-copy scaffold-full scaffold-with-deploy scaffold-clean dev-reset generate-abis module-list module-enable module-disable grant-admin seed-account frontier-builder frontier-build frontier-rebuild frontier-up frontier-down frontier-logs
+.PHONY: help install clean build test deploy verify docs lint format setup-env all graph-node graph-deploy scaffold scaffold-copy scaffold-full scaffold-with-deploy scaffold-clean generate-abis module-list module-enable module-disable grant-admin seed-account frontier-builder frontier-build frontier-rebuild frontier-up frontier-down frontier-logs
 
 # Default target
 # all: clean install build test
@@ -92,10 +92,6 @@ help:
 	@echo "  make graph-status     Check Graph services status"
 	@echo ""
 	@echo "$(GREEN)🔄 Development Workflows:$(NC)"
-	@echo "  make dev              Start development environment"
-	@echo "  make dev-reset        Reset development environment"
-	@echo "  make dev-full         Full dev environment (contracts + graph + frontend)"
-	@echo "  make dev-frontend     Start frontend development server"
 	@echo "  make scaffold         Generate test data (contracts must be deployed)"
 	@echo "  make scaffold-copy    Copy scaffold data to frontend"
 	@echo "  make scaffold-full    Generate test data + copy to frontend"
@@ -117,9 +113,9 @@ help:
 	@echo "  make status           Show project status"
 	@echo ""
 	@echo "$(YELLOW)📝 Examples:$(NC)"
-	@echo "  make deploy NETWORK=sepolia"
-	@echo "  make dev-reset        # Clean restart of development environment"
-	@echo "  make dev-full         # Start everything: contracts + graph + frontend"
+	@echo "  make docker-deploy-all          # One-shot: reset, deploy, enable, fund, scaffold"
+	@echo "  make docker-deploy-all SCAFFOLD=0  # Same, but skip scaffold step"
+	@echo "  make deploy NETWORK=amoy"
 	@echo "  make send-tokens RECIPIENT=0x123... ETH=2.0 GAME=20000 USDC=10000"
 	@echo "  make module-enable MODULE=all     # Enable all modules after deploy"
 	@echo "  make module-disable MODULE=FLOW   # Disable a single module"
@@ -393,12 +389,15 @@ docker-scaffold:
 	@cd $(CONTRACTS_DIR) && DOCKER_DEV_MODE=true pnpm run scaffold
 	@echo "$(GREEN)✅ Test data generated successfully$(NC)"
 
-# One-line full redeploy: reset env, deploy, grant admin, fund default account.
-# All inputs are overridable: ACCOUNT, RECIPIENT, ETH, GAME, USDC.
+# One-line full redeploy: reset env, deploy + auto-enable modules, grant admin,
+# fund default account, and scaffold dev data (DAOs, campaigns, proposals, etc.).
+# All inputs are overridable: ACCOUNT, RECIPIENT, ETH, GAME, USDC. Set
+# SCAFFOLD=0 to skip the scaffold step (e.g. for fast unit-test iteration).
 docker-deploy-all: docker-dev-reset deploy-local
-	@echo "🏗️ Running full docker redeploy (deploy-local, grant-admin, send-tokens)..."
+	@echo "🏗️ Running full docker redeploy (deploy-local, grant-admin, send-tokens, scaffold)..."
 	@$(MAKE) grant-admin ACCOUNT=$(or $(ACCOUNT),0xf0fe780c76ce610fc8df330971b99ba6f4429001)
 	@$(MAKE) send-tokens RECIPIENT=$(or $(RECIPIENT),0xf0fe780c76ce610fc8df330971b99ba6f4429001) ETH=$(or $(ETH),1.0) GAME=$(or $(GAME),100000) USDC=$(or $(USDC),10000)
+	@if [ "$(SCAFFOLD)" != "0" ]; then $(MAKE) scaffold; else echo "⏭  Skipping scaffold (SCAFFOLD=0)"; fi
 
 # Check status of dockerized development environment
 docker-status:
@@ -497,58 +496,6 @@ migrate-to-docker:
 	@echo "$(GREEN)✅ Migration to Docker structure complete!$(NC)"
 	@echo "$(YELLOW)💡 You can now use 'make docker-dev' to start the dockerized environment$(NC)"
 
-# Development workflow targets (Host-based - Legacy)
-dev-reset:
-	@echo "$(BLUE)🔄 Resetting development environment...$(NC)"
-	@echo "$(YELLOW)💡 Consider using 'make docker-dev-reset' for the new dockerized environment$(NC)"
-	@echo "$(CYAN)1️⃣  Stopping existing processes...$(NC)"
-	@-pkill -f "hardhat node" 2>/dev/null || true
-	@-pkill -f "node.*hardhat.*node" 2>/dev/null || true
-	@sleep 2
-	@echo "$(CYAN)2️⃣  Stopping Graph services...$(NC)"
-	@make graph-stop || true
-	@sleep 2
-	@echo "$(CYAN)3️⃣  Cleaning data...$(NC)"
-	@rm -rf $(DATA_DIR)/postgres
-	@make scaffold-clean
-	@sleep 2
-	@echo "$(CYAN)4️⃣  Starting Hardhat node...$(NC)"
-	@cd $(CONTRACTS_DIR) && pnpm run node &
-	@echo "$(YELLOW)⏳ Waiting for node to start...$(NC)"
-	@sleep 5
-	@echo "$(CYAN)5️⃣  Deploying contracts...$(NC)"
-	@cd $(CONTRACTS_DIR) && pnpm run deploy:localhost
-	@echo "$(CYAN)6️⃣  Starting Graph node...$(NC)"
-	@make graph-node
-	@echo "$(CYAN)7️⃣  Deploying subgraph...$(NC)"
-	@make graph-deploy
-	@echo "$(GREEN)✅ Development environment reset complete!$(NC)"
-	@echo "$(CYAN)💡 Ready for development with fresh blockchain and subgraph!$(NC)"
-
-dev-full:
-	@echo "$(BLUE)🚀 Starting complete development environment...$(NC)"
-	@make dev-reset
-	@echo "$(CYAN)8️⃣  Starting frontend...$(NC)"
-	@if [ -d "$(FRONTEND_DIR)" ]; then \
-		cd $(FRONTEND_DIR) && pnpm run dev & \
-	fi
-	@echo "$(GREEN)🎉 Complete development environment ready!$(NC)"
-	@echo "$(CYAN)📋 Services available:$(NC)"
-	@echo "  - Hardhat Node: http://localhost:8545"
-	@echo "  - Graph Node: http://localhost:8020"
-	@echo "  - Subgraph: http://localhost:8000/subgraphs/name/gamedao/protocol"
-	@echo "  - Frontend: http://localhost:3000"
-
-dev-frontend:
-	@echo "$(BLUE)🌐 Starting frontend development server...$(NC)"
-	@if [ -d "$(FRONTEND_DIR)" ]; then \
-		echo "$(CYAN)🚀 Starting Next.js development server...$(NC)"; \
-		cd $(FRONTEND_DIR) && pnpm run dev; \
-	else \
-		echo "$(RED)❌ Frontend directory not found: $(FRONTEND_DIR)$(NC)"; \
-		exit 1; \
-	fi
-
 # Scaffolding targets
 scaffold:
 	@echo "$(BLUE)🏗️  Generating test data...$(NC)"
@@ -609,7 +556,7 @@ module-enable:
 		echo "$(RED)❌ MODULE is required$(NC)"; \
 		echo "$(YELLOW)Usage: make module-enable MODULE=CONTROL$(NC)"; \
 		echo "$(YELLOW)       make module-enable MODULE=all$(NC)"; \
-		echo "$(CYAN)Valid modules: CONTROL, FACTORY, FLOW, IDENTITY, MEMBERSHIP, SENSE, SIGNAL$(NC)"; \
+		echo "$(CYAN)Valid modules: CONTROL, FLOW, IDENTITY, MEMBERSHIP, SENSE, SIGNAL$(NC)"; \
 		exit 1; \
 	fi
 	@cd $(CONTRACTS_DIR) && $(DOCKER_ENV) pnpm exec hardhat module-enable $(MODULE) --network $(HH_NETWORK)
@@ -620,7 +567,7 @@ module-disable:
 		echo "$(RED)❌ MODULE is required$(NC)"; \
 		echo "$(YELLOW)Usage: make module-disable MODULE=SIGNAL$(NC)"; \
 		echo "$(YELLOW)       make module-disable MODULE=all$(NC)"; \
-		echo "$(CYAN)Valid modules: CONTROL, FACTORY, FLOW, IDENTITY, MEMBERSHIP, SENSE, SIGNAL$(NC)"; \
+		echo "$(CYAN)Valid modules: CONTROL, FLOW, IDENTITY, MEMBERSHIP, SENSE, SIGNAL$(NC)"; \
 		exit 1; \
 	fi
 	@cd $(CONTRACTS_DIR) && $(DOCKER_ENV) pnpm exec hardhat module-disable $(MODULE) --network $(HH_NETWORK)

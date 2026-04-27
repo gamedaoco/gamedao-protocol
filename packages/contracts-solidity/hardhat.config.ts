@@ -161,7 +161,7 @@ task("module-list", "List all modules and their status")
   });
 
 task("module-enable", "Enable a module (or 'all')")
-  .addPositionalParam("name", "Module name (CONTROL, FACTORY, FLOW, IDENTITY, MEMBERSHIP, SENSE, SIGNAL, or 'all')")
+  .addPositionalParam("name", "Module name (CONTROL, FLOW, IDENTITY, MEMBERSHIP, SENSE, SIGNAL, or 'all')")
   .setAction(async (taskArgs, _hre) => {
     if (taskArgs.name.toLowerCase() === "all") {
       const { enableAllModules } = await import("./scripts/manageModules");
@@ -173,7 +173,7 @@ task("module-enable", "Enable a module (or 'all')")
   });
 
 task("module-disable", "Disable a module (or 'all')")
-  .addPositionalParam("name", "Module name (CONTROL, FACTORY, FLOW, IDENTITY, MEMBERSHIP, SENSE, SIGNAL, or 'all')")
+  .addPositionalParam("name", "Module name (CONTROL, FLOW, IDENTITY, MEMBERSHIP, SENSE, SIGNAL, or 'all')")
   .setAction(async (taskArgs, _hre) => {
     if (taskArgs.name.toLowerCase() === "all") {
       const { disableAllModules } = await import("./scripts/manageModules");

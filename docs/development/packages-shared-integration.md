@@ -174,7 +174,8 @@ cd packages/frontend
 npm run dev               # Uses shared package directly
 
 # Full development reset
-make dev-reset            # Deploys contracts + updates shared + starts services
+make docker-deploy-all    # Reset Docker stack, deploy contracts, enable modules,
+                          # grant admin, fund default account, scaffold dev data
 ```
 
 ## Status
@@ -186,7 +187,7 @@ make dev-reset            # Deploys contracts + updates shared + starts services
 - Documentation
 
 ### ✅ **Working**
-- `make dev-reset` command
+- `make docker-deploy-all` one-shot bootstrap
 - Automatic builds
 - Development workflow
 

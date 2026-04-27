@@ -2,7 +2,9 @@ import { ethers } from "hardhat";
 import fs from "fs";
 import path from "path";
 
-const MODULE_NAMES = ["CONTROL", "FACTORY", "FLOW", "IDENTITY", "MEMBERSHIP", "SENSE", "SIGNAL"] as const;
+// Modules registered in Registry. Factory is wired via control.setFactory(),
+// not via Registry, so it is not part of this list.
+const MODULE_NAMES = ["CONTROL", "FLOW", "IDENTITY", "MEMBERSHIP", "SENSE", "SIGNAL"] as const;
 type ModuleName = typeof MODULE_NAMES[number];
 
 function getRegistryAddress(): string {

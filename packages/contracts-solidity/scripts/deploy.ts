@@ -146,6 +146,23 @@ async function main() {
   console.log("✅ Sense module registered");
   console.log("");
 
+  // 10.1 Enable all registered modules so the protocol is operational by default.
+  console.log("🔌 Enabling modules in Registry...");
+  const enableEntries = [
+    { name: "Identity",   contract: identity },
+    { name: "Membership", contract: membership },
+    { name: "Control",    contract: control },
+    { name: "Flow",       contract: flow },
+    { name: "Signal",     contract: signal },
+    { name: "Sense",      contract: sense },
+  ] as const;
+  for (const { name, contract } of enableEntries) {
+    const id = await contract.moduleId();
+    await registry.enableModule(id);
+    console.log(`✅ ${name} enabled`);
+  }
+  console.log("");
+
   // 11.2 Ensure PROTOCOL_SUDO has ADMIN_ROLE and MODULE_MANAGER_ROLE
   const ADMIN_ROLE = await registry.ADMIN_ROLE();
   const MODULE_MANAGER_ROLE = await registry.MODULE_MANAGER_ROLE();

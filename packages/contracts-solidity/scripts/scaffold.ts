@@ -239,6 +239,7 @@ async function main() {
   console.log("\n🏛️  Creating DAOs...")
 
   // First, check if Factory is properly configured
+  let factory: any
   try {
     // Try to get the factory address from the Control contract
     const factoryAddress = await control.factory()
@@ -249,6 +250,7 @@ async function main() {
       console.log("💡 Skipping DAO creation - Factory setup required")
       return
     }
+    factory = await ethers.getContractAt("Factory", factoryAddress)
   } catch (error) {
     console.log("❌ Error checking Factory configuration:", error)
     console.log("💡 Skipping DAO creation - Factory setup required")
@@ -299,21 +301,25 @@ async function main() {
       const receipt = await tx.wait()
       if (!receipt) continue
 
-      // Parse event
+      // Parse OrganizationCreated event (emitted by Factory, not Control)
       const event = receipt.logs.find(log => {
         try {
-          const parsed = control.interface.parseLog(log as any)
+          const parsed = factory.interface.parseLog(log as any)
           return parsed?.name === 'OrganizationCreated'
         } catch {
           return false
         }
       })
 
-      if (!event) continue
+      if (!event) {
+        console.log(`    ❌ OrganizationCreated event not found in receipt`)
+        continue
+      }
 
-      const parsedEvent = control.interface.parseLog(event as any)
+      // OrganizationCreated(id, name, metadataURI, creator, treasury, timestamp)
+      const parsedEvent = factory.interface.parseLog(event as any)
       const orgId = parsedEvent?.args[0]
-      const treasuryAddress = parsedEvent?.args[3]
+      const treasuryAddress = parsedEvent?.args[4]
 
       // Add members
       const memberCount = Math.floor(Math.random() * 4) + 2
