@@ -78,8 +78,8 @@ help:
 	@echo ""
 	@echo "$(GREEN)🚀 Deployment:$(NC)"
 	@echo "  make deploy              Deploy to localhost"
-	@echo "  make deploy-local        Deploy to localhost (unified)"
-	@echo "  make deploy-local-frontier Deploy to Frontier node"
+	@echo "  make deploy-local        Deploy to localhost (Hardhat, unified)"
+	@echo "  make deploy-local-frontier Deploy to Frontier node (opt-in)"
 	@echo "  make deploy-testnet     Deploy to testnet"
 	@echo "  make deploy-mainnet     Deploy to mainnet"
 	@echo "  make verify             Verify contracts on Etherscan"
@@ -352,7 +352,8 @@ docker-dev-stop:
 	@docker compose down
 	@echo "$(GREEN)✅ Docker development environment stopped$(NC)"
 
-# Complete reset of dockerized development environment
+# Complete reset of dockerized Hardhat development environment.
+# Does not touch Frontier state — Frontier is opt-in (see frontier-* targets).
 docker-dev-reset:
 	@echo "$(BLUE)🔄 Resetting dockerized development environment...$(NC)"
 	@echo "$(CYAN)1️⃣  Stopping and removing containers...$(NC)"
@@ -360,14 +361,12 @@ docker-dev-reset:
 	@sleep 3
 	@echo "$(CYAN)2️⃣  Cleaning up data directories and lock files...$(NC)"
 	@rm -rf data/hardhat-node/data/* data/hardhat-node/logs/*
-	@rm -rf data/frontier-node
 	@rm -rf data/contracts
 	@rm -rf data/graph
 	@rm -rf data/postgres
 	@rm -rf data/logs
-
 	@echo "$(CYAN)3️⃣  Recreating directory structure...$(NC)"
-	@mkdir -p data/{frontier-node,hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres}
+	@mkdir -p data/{hardhat-node/{data,logs},contracts/{artifacts,cache,typechain-types},graph/data,ipfs/data,postgres}
 	@echo "$(CYAN)4️⃣  Starting fresh environment...$(NC)"
 	@make docker-dev
 	@echo "$(GREEN)✅ Docker development environment reset complete!$(NC)"
@@ -394,10 +393,11 @@ docker-scaffold:
 	@cd $(CONTRACTS_DIR) && DOCKER_DEV_MODE=true pnpm run scaffold
 	@echo "$(GREEN)✅ Test data generated successfully$(NC)"
 
-# One-line full redeploy: reset env, deploy, grant admin, fund default account
+# One-line full redeploy: reset env, deploy, grant admin, fund default account.
+# All inputs are overridable: ACCOUNT, RECIPIENT, ETH, GAME, USDC.
 docker-deploy-all: docker-dev-reset deploy-local
 	@echo "🏗️ Running full docker redeploy (deploy-local, grant-admin, send-tokens)..."
-	@$(MAKE) grant-admin
+	@$(MAKE) grant-admin ACCOUNT=$(or $(ACCOUNT),0xf0fe780c76ce610fc8df330971b99ba6f4429001)
 	@$(MAKE) send-tokens RECIPIENT=$(or $(RECIPIENT),0xf0fe780c76ce610fc8df330971b99ba6f4429001) ETH=$(or $(ETH),1.0) GAME=$(or $(GAME),100000) USDC=$(or $(USDC),10000)
 
 # Check status of dockerized development environment
@@ -682,11 +682,12 @@ status:
 
 .PHONY: deploy-local deploy-local-frontier deploy-local-clean validate-addresses
 
-# Unified local deployment with automatic address synchronization (Frontier node)
+# Unified local deployment with automatic address synchronization (Hardhat node).
+# Default localhost target. For Frontier use `make deploy-local-frontier`.
 deploy-local:
-	@echo "🚀 Starting unified deployment to Frontier node with address synchronization..."
-	@echo "📋 Phase 1: Deploying contracts to Frontier..."
-	cd packages/contracts-solidity && pnpm run deploy:frontier
+	@echo "🚀 Starting unified deployment to Hardhat node with address synchronization..."
+	@echo "📋 Phase 1: Deploying contracts to Hardhat localhost..."
+	cd packages/contracts-solidity && pnpm run deploy:localhost
 	@echo "📋 Phase 1.1: Updating shared addresses from deployment..."
 	cd packages/contracts-solidity && pnpm run update:shared && pnpm run build:shared
 	@echo "📋 Phase 1.2: Syncing ABIs to subgraph..."
@@ -698,7 +699,7 @@ deploy-local:
 	cd packages/subgraph && pnpm run deploy-local
 	@echo "📋 Phase 4: Validating address consistency..."
 	@$(MAKE) validate-addresses
-	@echo "✅ Unified deployment to Frontier complete - all addresses synchronized!"
+	@echo "✅ Unified deployment to Hardhat complete - all addresses synchronized!"
 
 # Explicit Frontier deployment task
 deploy-local-frontier:
@@ -749,14 +750,6 @@ test-cycle:
 	cd packages/contracts-solidity && npm test
 	@echo "✅ Test cycle complete!"
 
-# Full scaffold with deployment (for fresh setups)
-docker-deploy-all: docker-dev-reset deploy-local
-	@echo "🏗️ Running scaffold with synchronized addresses..."
-	@cd $(CONTRACTS_DIR) && pnpm run scaffold
-	@echo "✅ Full scaffold with deployment complete!"
-	@$(MAKE) send-tokens RECIPIENT=0xf0fe780c76ce610fc8df330971b99ba6f4429001 ETH=1.0 GAME=100000 USDC=10000
-	@$(MAKE) grant-admin --address=0xf0fe780c76ce610fc8df330971b99ba6f4429001
-
 # === VERCEL DEPLOYMENT ===
 
 .PHONY: deploy-vercel-check deploy-vercel-staging deploy-vercel-prod
@@ -784,13 +777,6 @@ deploy-vercel-prod: deploy-vercel-check
 	else \
 		echo "$(YELLOW)⚠️  Vercel production deployment cancelled$(NC)"; \
 	fi
-
-# GRANT ADMIN
-grant-admin:
-	@echo "$(BLUE)🔍 Granting admin...$(NC)"
-	@cd packages/contracts-solidity && ADDRESS=0xf0fe780c76ce610fc8df330971b99ba6f4429001 pnpm run grant-admin && cd ../../
-	@echo "$(GREEN)✅ Admin granted$(NC)"
-
 
 # Error handling
 .ONESHELL:

@@ -41,9 +41,11 @@ const HARDHAT_DEFAULT_ACCOUNTS = [
   "0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e",
 ];
 
+// localhost defaults to a host-or-Docker Hardhat node (chainId 31337).
+// Frontier is a separate named network — use `--network frontier` to target it.
 const localhostAccounts = process.env.PRIVATE_KEY
   ? [process.env.PRIVATE_KEY]
-  : (dockerMode ? HARDHAT_DEFAULT_ACCOUNTS : [FRONTIER_DEFAULT_KEY]);
+  : HARDHAT_DEFAULT_ACCOUNTS;
 
 // Determine paths based on environment
 const getPath = (relativePath: string) => {
@@ -84,7 +86,7 @@ const config: HardhatUserConfig = {
     },
     localhost: {
       url: "http://127.0.0.1:8545",
-      chainId: dockerMode ? 31337 : 42, // Hardhat (Docker) vs Frontier node
+      chainId: 31337, // Hardhat (host or Docker)
       accounts: localhostAccounts,
     },
     frontier: {

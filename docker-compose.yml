@@ -1,34 +1,58 @@
 services:
-  # Frontier Node (Polkadot-SDK based EVM-compatible node)
-  # Drop-in replacement for hardhat-node - uses same port 8545 and hostname alias
-  # Builder image (contains Rust toolchain and build dependencies)
-  # Build this once with: docker compose build frontier-builder
-  # Then it's cached and reused for all frontier-node builds (saves ~5-10 minutes per build)
+  # Dockerized Hardhat Node (default local chain — chainId 31337).
+  hardhat-node:
+    build:
+      context: .
+      dockerfile: ./docker/hardhat-node/Dockerfile
+    container_name: gamedao-node
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./data/hardhat-node:/app/data
+      - ./data/contracts:/app/contracts-output
+      - ./data/logs:/app/logs
+      # Mount source code for hot reload during development
+      - ./packages/contracts-solidity:/app/packages/contracts-solidity:delegated
+    networks:
+      - gamedao
+    environment:
+      - NODE_ENV=development
+      - DOCKER_DEV_MODE=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545", "-X", "POST", "-H", "Content-Type: application/json", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # Frontier Node (Polkadot-SDK based EVM-compatible node) — opt-in only.
+  # Activate with `docker compose --profile frontier up frontier-node`.
+  # NOTE: requires ./docker/frontier-node/ build context (not yet committed);
+  # see make frontier-builder / frontier-build helper targets.
   frontier-builder:
     build:
       context: .
       dockerfile: ./docker/frontier-node/Dockerfile.builder
     image: gamedao-frontier-builder:latest
-    # Don't start this as a service, it's just a build dependency
-    profiles:
-      - build-only
+    profiles: [frontier]
 
   frontier-node:
     build:
       context: .
       dockerfile: ./docker/frontier-node/Dockerfile
       args:
-        # Use the pre-built builder image (build frontier-builder first)
         BUILDER_IMAGE: gamedao-frontier-builder:latest
     container_name: gamedao-frontier
+    profiles: [frontier]
     ports:
-      - "8545:8545"   # Ethereum-compatible JSON-RPC (same port as hardhat)
+      - "8545:8545"
     volumes:
       - ./data/frontier-node:/data
     networks:
       gamedao:
         aliases:
-          - hardhat-node  # Network alias for drop-in replacement
+          - hardhat-node
     environment:
       - CHAIN=dev
       - SEALING=instant
@@ -47,33 +71,6 @@ services:
       start_period: 60s
     restart: unless-stopped
 
-  # Dockerized Hardhat Node (optional - can be disabled when using frontier-node)
-  # hardhat-node:
-  #   build:
-  #     context: .
-  #     dockerfile: ./docker/hardhat-node/Dockerfile
-  #   container_name: gamedao-node
-  #   ports:
-  #     - "8545:8545"
-  #   volumes:
-  #     - ./data/hardhat-node:/app/data
-  #     - ./data/contracts:/app/contracts-output
-  #     - ./data/logs:/app/logs
-  #     # Mount source code for hot reload during development
-  #     - ./packages/contracts-solidity:/app/packages/contracts-solidity:delegated
-  #   networks:
-  #     - gamedao
-  #   environment:
-  #     - NODE_ENV=development
-  #     - DOCKER_DEV_MODE=true
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8545", "-X", "POST", "-H", "Content-Type: application/json", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}']
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-  #     start_period: 30s
-  #   restart: unless-stopped
-
   # Graph Node for indexing
   graph-node:
     image: graphprotocol/graph-node:v0.33.0
@@ -86,7 +83,7 @@ services:
       - '8030:8030'  # Subgraph indexing status
       - '8040:8040'  # Prometheus metrics
     depends_on:
-      frontier-node:
+      hardhat-node:
         condition: service_healthy
       ipfs:
         condition: service_started

@@ -50,6 +50,8 @@ The logs are organized chronologically with the following naming convention:
 - `112-phase-1-section-2-completed.md`: Phase 1 section 2 completion
 - `113-url-structure-consolidation.md`: URL structure consolidation
 - `114-frontend-bug-fixes-and-cleanup.md`: Frontend bug fixes and cleanup
+- `115-deployment-stabilization.md`: Local deployment stabilization and module gating
+- `116-public-beta-deployment-plan.md`: Public beta plan — Polygon (Amoy → Mainnet), registry fixes, config service, deploy automation
 
 ### **Special Documents**
 - `contract-simplification-strategy.md`: Contract simplification strategy
