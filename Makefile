@@ -396,7 +396,7 @@ docker-scaffold:
 docker-deploy-all: docker-dev-reset deploy-local
 	@echo "🏗️ Running full docker redeploy (deploy-local, grant-admin, send-tokens, scaffold)..."
 	@$(MAKE) grant-admin ACCOUNT=$(or $(ACCOUNT),0xf0fe780c76ce610fc8df330971b99ba6f4429001)
-	@$(MAKE) send-tokens RECIPIENT=$(or $(RECIPIENT),0xf0fe780c76ce610fc8df330971b99ba6f4429001) ETH=$(or $(ETH),1.0) GAME=$(or $(GAME),100000) USDC=$(or $(USDC),10000)
+	@$(MAKE) send-tokens RECIPIENT=$(or $(RECIPIENT),0xf0fe780c76ce610fc8df330971b99ba6f4429001) ETH=$(or $(ETH),10.0) GAME=$(or $(GAME),100000) USDC=$(or $(USDC),10000)
 	@if [ "$(SCAFFOLD)" != "0" ]; then $(MAKE) scaffold; else echo "⏭  Skipping scaffold (SCAFFOLD=0)"; fi
 
 # Check status of dockerized development environment

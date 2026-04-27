@@ -1,67 +1,31 @@
-FROM node:20-slim
+# Minimal Hardhat node container.
+# Inspired by https://github.com/11notes/docker-hardhat — the chain is
+# independent of the workspace, so we don't mount source or run pnpm install.
+# The deploy script runs from the host and submits txs via JSON-RPC at :8545.
 
-# Install system dependencies needed for building native modules
-RUN apt-get update && apt-get install -y \
-    git \
-    python3 \
-    make \
-    g++ \
-    curl \
+FROM node:22-slim
+
+# curl is needed for the healthcheck below.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
-WORKDIR /app
+WORKDIR /hardhat
 
-# Create a non-root user for security
-RUN groupadd -r hardhat && useradd -r -g hardhat hardhat
+# Install hardhat globally (no workspace, no native build deps required).
+RUN npm install --no-audit --no-fund --silent hardhat@2.26.3
 
-# Install pnpm globally and gosu for user switching
-RUN npm install -g pnpm && \
-    apt-get update && \
-    apt-get install -y gosu && \
-    rm -rf /var/lib/apt/lists/*
+# Minimal config — chainId 31337 with auto-mining and the standard test accounts
+# (Hardhat's default mnemonic, same as packages/contracts-solidity/hardhat.config.ts).
+RUN printf 'module.exports={networks:{hardhat:{chainId:31337,mining:{auto:true}}}};\n' > hardhat.config.js
 
-# Copy only the contracts package for a lighter build
-COPY packages/contracts-solidity/package*.json ./packages/contracts-solidity/
-COPY packages/shared/package*.json ./packages/shared/
-
-# Copy workspace configuration
-COPY package*.json pnpm-workspace.yaml pnpm-lock.yaml ./
-
-# Copy the actual source code (only what we need)
-COPY packages/contracts-solidity ./packages/contracts-solidity
-COPY packages/shared ./packages/shared
-
-# Install dependencies with optimizations for Docker
-# - Include devDependencies since hardhat is needed for runtime
-# - Use --ignore-scripts to skip husky and other build scripts
-# - Use --frozen-lockfile for reproducible builds
-RUN pnpm install --frozen-lockfile --ignore-scripts && \
-    pnpm store prune && \
-    # Clean up unnecessary files to reduce image size
-    rm -rf /root/.cache /tmp/* /var/tmp/* /root/.npm
-
-# Set working directory to contracts
-WORKDIR /app/packages/contracts-solidity
-
-# Create data directories and set up proper permissions
-RUN mkdir -p /app/data /app/contracts-output /app/logs && \
-    mkdir -p /home/hardhat/.local/share/pnpm && \
-    mkdir -p /home/hardhat/.cache && \
-    chown -R hardhat:hardhat /app /home/hardhat
-
-# Copy entrypoint script
-COPY ../../docker/hardhat-node/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-# Expose Hardhat JSON-RPC port
 EXPOSE 8545
 
-# Health check to ensure the node is responsive
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8545 -X POST -H "Content-Type: application/json" \
         --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' || exit 1
 
-# Set entrypoint and default command
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["pnpm", "run", "node"]
+# `node` user comes baked into node:22-slim with uid/gid 1000.
+USER node
+
+CMD ["npx", "hardhat", "node", "--hostname", "0.0.0.0"]

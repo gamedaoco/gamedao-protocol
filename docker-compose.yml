@@ -1,5 +1,7 @@
 services:
   # Dockerized Hardhat Node (default local chain — chainId 31337).
+  # Self-contained: image runs hardhat node directly, no source mount.
+  # Deploys are submitted from the host via JSON-RPC at :8545.
   hardhat-node:
     build:
       context: .
@@ -7,17 +9,8 @@ services:
     container_name: gamedao-node
     ports:
       - "8545:8545"
-    volumes:
-      - ./data/hardhat-node:/app/data
-      - ./data/contracts:/app/contracts-output
-      - ./data/logs:/app/logs
-      # Mount source code for hot reload during development
-      - ./packages/contracts-solidity:/app/packages/contracts-solidity:delegated
     networks:
       - gamedao
-    environment:
-      - NODE_ENV=development
-      - DOCKER_DEV_MODE=true
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8545", "-X", "POST", "-H", "Content-Type: application/json", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}']
       interval: 30s

@@ -54,12 +54,15 @@ export default function AdminModulesPage() {
         }
         try {
           const { keccak256, stringToBytes } = require('viem') as typeof import('viem')
+          // Modules registered in Registry. Staking and Factory are standalone
+          // contracts (not Registry-managed Modules) — do not list here.
           const map: Record<string, string> = {
             [keccak256(stringToBytes('CONTROL'))]: 'CONTROL',
-            [keccak256(stringToBytes('SIGNAL'))]: 'SIGNAL',
-            [keccak256(stringToBytes('STAKING'))]: 'STAKING',
             [keccak256(stringToBytes('FLOW'))]: 'FLOW',
+            [keccak256(stringToBytes('IDENTITY'))]: 'IDENTITY',
+            [keccak256(stringToBytes('MEMBERSHIP'))]: 'MEMBERSHIP',
             [keccak256(stringToBytes('SENSE'))]: 'SENSE',
+            [keccak256(stringToBytes('SIGNAL'))]: 'SIGNAL',
           }
           return map[m.id] || m.id
         } catch {

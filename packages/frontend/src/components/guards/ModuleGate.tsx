@@ -5,7 +5,9 @@ import { useQuery } from '@apollo/client'
 import { GET_MODULES } from '@/lib/queries'
 import { keccak256, stringToBytes } from 'viem'
 
-type ModuleKey = 'CONTROL' | 'SIGNAL' | 'STAKING' | 'FLOW' | 'SENSE'
+// Modules registered in Registry. Staking and Factory are standalone
+// contracts (not Registry-managed Modules) and must not appear here.
+type ModuleKey = 'CONTROL' | 'FLOW' | 'IDENTITY' | 'MEMBERSHIP' | 'SENSE' | 'SIGNAL'
 
 export function ModuleGate({ module, children }: { module: ModuleKey, children: ReactNode }) {
   const { data, loading, error } = useQuery(GET_MODULES, { pollInterval: 5000, errorPolicy: 'ignore' })
