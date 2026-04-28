@@ -54,7 +54,7 @@ export default function CreateCampaignPage() {
   useEffect(() => {
     if (creationSuccess) {
       const timer = setTimeout(() => {
-        router.push('/flow')
+        router.push('/campaigns')
       }, 2000)
       return () => clearTimeout(timer)
     }
@@ -95,11 +95,11 @@ export default function CreateCampaignPage() {
           description="You need to be a member of an organization to create a campaign."
           primaryAction={{
             label: 'Browse Organizations',
-            onClick: () => router.push('/control')
+            onClick: () => router.push('/collectives')
           }}
           secondaryAction={{
             label: 'Create Organization',
-            onClick: () => router.push('/control/create')
+            onClick: () => router.push('/collectives/create')
           }}
         />
       </div>
@@ -165,14 +165,14 @@ export default function CreateCampaignPage() {
         successMessage="Campaign created successfully! Redirecting to campaigns page..."
         successAction={{
           label: 'View Campaigns',
-          onClick: () => router.push('/flow')
+          onClick: () => router.push('/campaigns')
         }}
       />
 
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link href="/flow">
+          <Link href="/campaigns">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Campaigns

@@ -56,7 +56,7 @@ export default function ControlPage() {
             Manage and participate in gaming collectives and DAOs
           </p>
         </div>
-        <Link href="/control/create">
+        <Link href="/collectives/create">
           <Button disabled={!isConnected} className="flex items-center space-x-2">
             <Plus className="h-4 w-4" />
             <span>Create Collective</span>
@@ -163,7 +163,7 @@ export default function ControlPage() {
             }
             primaryAction={{
               label: 'Create Collective',
-              onClick: () => router.push('/control/create')
+              onClick: () => router.push('/collectives/create')
             }}
             secondaryAction={{
               label: 'Clear Filter',
@@ -213,7 +213,7 @@ export default function ControlPage() {
                     `${org.totalCampaigns} Campaigns`,
                     `${org.totalProposals} Proposals`
                   ]}
-                  onClick={() => router.push(`/control/${org.id}`)}
+                  onClick={() => router.push(`/collectives/${org.id}`)}
                   variant="default"
                 />
               )

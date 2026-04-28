@@ -68,8 +68,8 @@ export default function CampaignDetailPage() {
       <DetailPageLayout
         title="Loading..."
         breadcrumbs={[
-          { label: 'Flow', href: '/flow' },
-          { label: 'Campaigns', href: '/flow' },
+          { label: 'Flow', href: '/campaigns' },
+          { label: 'Campaigns', href: '/campaigns' },
           { label: 'Loading...', current: true }
         ]}
         loading={true}
@@ -85,8 +85,8 @@ export default function CampaignDetailPage() {
       <DetailPageLayout
         title="Error"
         breadcrumbs={[
-          { label: 'Flow', href: '/flow' },
-          { label: 'Campaigns', href: '/flow' },
+          { label: 'Flow', href: '/campaigns' },
+          { label: 'Campaigns', href: '/campaigns' },
           { label: 'Error', current: true }
         ]}
       >
@@ -101,18 +101,18 @@ export default function CampaignDetailPage() {
       <DetailPageLayout
         title="Campaign Not Found"
         breadcrumbs={[
-          { label: 'Flow', href: '/flow' },
-          { label: 'Campaigns', href: '/flow' },
+          { label: 'Flow', href: '/campaigns' },
+          { label: 'Campaigns', href: '/campaigns' },
           { label: 'Not Found', current: true }
         ]}
-        backHref="/flow"
+        backHref="/campaigns"
       >
         <EmptyState
           title="Campaign not found"
           description="The campaign you're looking for doesn't exist or may have been removed."
           primaryAction={{
             label: 'Browse Campaigns',
-            onClick: () => window.location.href = '/flow'
+            onClick: () => window.location.href = '/campaigns'
           }}
         />
       </DetailPageLayout>
@@ -143,11 +143,11 @@ export default function CampaignDetailPage() {
         title={campaign.title || `Campaign ${campaign.id.slice(0, 8)}`}
         subtitle={campaign.description}
         breadcrumbs={[
-          { label: 'Flow', href: '/flow' },
-          { label: 'Campaigns', href: '/flow' },
+          { label: 'Flow', href: '/campaigns' },
+          { label: 'Campaigns', href: '/campaigns' },
           { label: campaign.title || 'Campaign', current: true }
         ]}
-        backHref="/flow"
+        backHref="/campaigns"
         status={status}
         metadata={[
           {
@@ -324,7 +324,7 @@ export default function CampaignDetailPage() {
                         </p>
                       </div>
                       <Button variant="outline" size="sm" className="w-full" asChild>
-                        <a href={`/control/${organization.id}`}>View Organization</a>
+                        <a href={`/collectives/${organization.id}`}>View Organization</a>
                       </Button>
                     </div>
                   </CardContent>

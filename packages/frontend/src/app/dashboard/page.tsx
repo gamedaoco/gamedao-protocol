@@ -114,7 +114,7 @@ export default function DashboardPage() {
           <CompactIndexingStatus />
           {isConnected && (
             <Button asChild>
-              <Link href="/control/create">
+              <Link href="/collectives/create">
                 Create Organization
               </Link>
             </Button>
@@ -209,7 +209,7 @@ export default function DashboardPage() {
             <Trophy className="h-5 w-5" />
             Recent Achievements
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/sense/${address}`)}>
+          <Button variant="ghost" size="sm" onClick={() => router.push(`/profiles/${address}`)}>
             <ExternalLink className="h-4 w-4 mr-1" />
             View All
           </Button>
@@ -237,7 +237,7 @@ export default function DashboardPage() {
               <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="mb-2">No achievements yet</p>
               <p className="text-sm">Create a profile to start earning achievements</p>
-              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push(`/sense/${address}`)}>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push(`/profiles/${address}`)}>
                 Create Profile
               </Button>
             </div>
@@ -252,7 +252,7 @@ export default function DashboardPage() {
             <Target className="h-5 w-5" />
             NFT Collectibles
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/sense/${address}`)}>
+          <Button variant="ghost" size="sm" onClick={() => router.push(`/profiles/${address}`)}>
             <ExternalLink className="h-4 w-4 mr-1" />
             View Collection
           </Button>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
               <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="mb-2">No collectibles yet</p>
               <p className="text-sm">Participate in GameDAO to earn NFT collectibles</p>
-              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push(`/sense/${address}`)}>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push(`/profiles/${address}`)}>
                 Create Profile
               </Button>
             </div>

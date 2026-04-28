@@ -116,8 +116,8 @@ export default function ProposalDetailPage() {
       <DetailPageLayout
         title="Loading..."
         breadcrumbs={[
-          { label: 'Signal', href: '/signal' },
-          { label: 'Proposals', href: '/signal' },
+          { label: 'Signal', href: '/governance' },
+          { label: 'Proposals', href: '/governance' },
           { label: 'Loading...', current: true }
         ]}
         loading={true}
@@ -133,8 +133,8 @@ export default function ProposalDetailPage() {
       <DetailPageLayout
         title="Error"
         breadcrumbs={[
-          { label: 'Signal', href: '/signal' },
-          { label: 'Proposals', href: '/signal' },
+          { label: 'Signal', href: '/governance' },
+          { label: 'Proposals', href: '/governance' },
           { label: 'Error', current: true }
         ]}
       >
@@ -149,18 +149,18 @@ export default function ProposalDetailPage() {
       <DetailPageLayout
         title="Proposal Not Found"
         breadcrumbs={[
-          { label: 'Signal', href: '/signal' },
-          { label: 'Proposals', href: '/signal' },
+          { label: 'Signal', href: '/governance' },
+          { label: 'Proposals', href: '/governance' },
           { label: 'Not Found', current: true }
         ]}
-        backHref="/signal"
+        backHref="/governance"
       >
         <EmptyState
           title="Proposal not found"
           description="The proposal you're looking for doesn't exist or may have been removed."
           primaryAction={{
             label: 'Browse Proposals',
-            onClick: () => window.location.href = '/signal'
+            onClick: () => window.location.href = '/governance'
           }}
         />
       </DetailPageLayout>
@@ -221,11 +221,11 @@ export default function ProposalDetailPage() {
         title={proposal.title || `Proposal ${proposal.id.slice(0, 8)}`}
         subtitle={proposal.description}
         breadcrumbs={[
-          { label: 'Signal', href: '/signal' },
-          { label: 'Proposals', href: '/signal' },
+          { label: 'Signal', href: '/governance' },
+          { label: 'Proposals', href: '/governance' },
           { label: proposal.title || 'Proposal', current: true }
         ]}
-        backHref="/signal"
+        backHref="/governance"
         status={status}
         metadata={[
           {

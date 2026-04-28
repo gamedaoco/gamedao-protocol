@@ -243,7 +243,7 @@ export function JoinOrganizationModal({
         successMessage={`Successfully ${mode === 'join' ? 'joined' : 'left'} ${organization.name}!`}
         successAction={{
           label: mode === 'join' ? 'View Organization' : 'View Organizations',
-          onClick: () => window.location.href = mode === 'join' ? `/control/${organization.id}` : '/control'
+          onClick: () => window.location.href = mode === 'join' ? `/collectives/${organization.id}` : '/collectives'
         }}
         showProgressBar={false}
       />

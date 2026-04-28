@@ -68,7 +68,7 @@ export default function DashboardOrganizationsPage() {
           description="You haven't joined any collectives yet."
           primaryAction={{
             label: 'Browse Collectives',
-            onClick: () => window.location.href = '/control'
+            onClick: () => window.location.href = '/collectives'
           }}
         />
       </div>
@@ -124,7 +124,7 @@ export default function DashboardOrganizationsPage() {
               </div>
               <div className="mt-4">
                 <Button asChild variant="outline" className="w-full">
-                  <Link href={`/control/${org.id}`}>View Collective</Link>
+                  <Link href={`/collectives/${org.id}`}>View Collective</Link>
                 </Button>
               </div>
             </CardContent>

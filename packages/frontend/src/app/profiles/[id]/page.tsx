@@ -220,7 +220,7 @@ export default function ProfilePage() {
       <DetailPageLayout
         title="Loading Profile"
         breadcrumbs={[
-          { label: 'Sense', href: '/sense' },
+          { label: 'Sense', href: '/profiles' },
           { label: 'Profile', current: true }
         ]}
         loading={true}
@@ -245,7 +245,7 @@ export default function ProfilePage() {
       <DetailPageLayout
         title="Profile Not Found"
         breadcrumbs={[
-          { label: 'Sense', href: '/sense' },
+          { label: 'Sense', href: '/profiles' },
           { label: 'Profile', current: true }
         ]}
       >
@@ -274,10 +274,10 @@ export default function ProfilePage() {
       subtitle={profileData.username && profileData.displayName ? `@${profileData.username}` : undefined}
       description={profileData.bio || undefined}
       breadcrumbs={[
-        { label: 'Sense', href: '/sense' },
+        { label: 'Sense', href: '/profiles' },
         { label: 'Profile', current: true }
       ]}
-      backHref="/sense"
+      backHref="/profiles"
       backLabel="Back to Profiles"
     >
       <div className="space-y-6">

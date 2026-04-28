@@ -54,12 +54,12 @@ export function TopBar() {
         {/* Navigation - Left aligned after logo */}
         <nav className="flex items-center space-x-6 text-sm mr-auto">
           {enabled.has(idHex('CONTROL')) && (
-            <Link href="/control" className={getNavClasses('/control')}>
+            <Link href="/collectives" className={getNavClasses('/collectives')}>
               Collectives
             </Link>
           )}
           {enabled.has(idHex('SIGNAL')) && (
-            <Link href="/signal" className={getNavClasses('/signal')}>
+            <Link href="/governance" className={getNavClasses('/governance')}>
               Governance
             </Link>
           )}
@@ -70,12 +70,12 @@ export function TopBar() {
             </Link>
           )}
           {enabled.has(idHex('FLOW')) && (
-            <Link href="/flow" className={getNavClasses('/flow')}>
+            <Link href="/campaigns" className={getNavClasses('/campaigns')}>
               Campaigns
             </Link>
           )}
           {enabled.has(idHex('SENSE')) && (
-            <Link href="/sense" className={getNavClasses('/sense')}>
+            <Link href="/profiles" className={getNavClasses('/profiles')}>
               Profiles
             </Link>
           )}

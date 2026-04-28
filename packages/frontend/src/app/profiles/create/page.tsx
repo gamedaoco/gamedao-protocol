@@ -72,7 +72,7 @@ export default function CreateProfilePage() {
   useEffect(() => {
     if (creationSuccess) {
       const timer = setTimeout(() => {
-        router.push('/sense')
+        router.push('/profiles')
       }, 2000)
       return () => clearTimeout(timer)
     }
@@ -154,14 +154,14 @@ export default function CreateProfilePage() {
         successMessage="Profile created successfully! Redirecting to profiles page..."
         successAction={{
           label: 'View Profiles',
-          onClick: () => router.push('/sense')
+          onClick: () => router.push('/profiles')
         }}
       />
 
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link href="/sense">
+          <Link href="/profiles">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Profiles

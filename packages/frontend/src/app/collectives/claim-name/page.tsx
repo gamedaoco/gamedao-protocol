@@ -10,10 +10,11 @@ import { NameClaimingModal } from '@/components/ui/name-claiming-modal'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useNameClaiming } from '@/hooks/useNameClaiming'
 import { useTokenBalances } from '@/hooks/useTokenBalances'
+import { useOrganizations } from '@/hooks/useOrganizations'
 import { useAccount } from 'wagmi'
 import { formatAddress } from '@/lib/utils'
 import {
-  User,
+  Building,
   Shield,
   Coins,
   Clock,
@@ -21,38 +22,42 @@ import {
   Plus,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Users
 } from 'lucide-react'
 
-export default function ClaimNamePage() {
+export default function ClaimOrganizationNamePage() {
   const router = useRouter()
   const { address, isConnected } = useAccount()
   const { networkName } = useGameDAO()
   const { gameBalance } = useTokenBalances()
     const { useGetUserNames, getStakingTiers, formatStakeDuration } = useNameClaiming()
+  const { organizations, isLoading: isLoadingOrgs } = useOrganizations()
 
   const [showClaimModal, setShowClaimModal] = useState(false)
-  const [userNames, setUserNames] = useState<string[]>([])
+  const [organizationNames, setOrganizationNames] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Get user's owned names
+  // Get user's owned names (filter for organization names)
   const { data: ownedNames, isLoading: isLoadingNames, refetch: refetchNames } = useGetUserNames()
 
   useEffect(() => {
     if (ownedNames) {
+      // Normalize to array and safely map to strings
       const items = Array.isArray(ownedNames) ? ownedNames : []
       const names = items
         .map((item: unknown) => {
           const str = typeof item === 'string' ? item : String(item ?? '')
           return str.replace(/\0/g, '').replace(/^0x/, '')
         })
-      setUserNames(names)
+      // TODO: Add logic to determine if name is for organization
+      setOrganizationNames(names)
     }
     setIsLoading(isLoadingNames)
   }, [ownedNames, isLoadingNames])
 
   const handleClaimSuccess = (name: string) => {
-    console.log('✅ Name claimed successfully:', name)
+    console.log('✅ Organization name claimed successfully:', name)
     setShowClaimModal(false)
 
     // Refresh user names
@@ -60,7 +65,7 @@ export default function ClaimNamePage() {
 
     // Show success message or redirect
     setTimeout(() => {
-      router.push('/sense')
+      router.push('/collectives')
     }, 1000)
   }
 
@@ -75,7 +80,7 @@ export default function ClaimNamePage() {
               <Shield className="h-12 w-12 text-muted-foreground mx-auto" />
               <h2 className="text-2xl font-bold">Connect Wallet Required</h2>
               <p className="text-muted-foreground">
-                Please connect your wallet to claim your personal name in the GameDAO ecosystem.
+                Please connect your wallet to claim organization names in the GameDAO ecosystem.
               </p>
             </div>
           </CardContent>
@@ -89,11 +94,11 @@ export default function ClaimNamePage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <User className="h-8 w-8 text-primary" />
+          <Building className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold">Claim Your Personal Name</h1>
+            <h1 className="text-3xl font-bold">Claim Organization Name</h1>
             <p className="text-muted-foreground">
-              Secure your unique 8-character identifier in the GameDAO ecosystem
+              Secure unique identifiers for your gaming organizations and DAOs
             </p>
           </div>
         </div>
@@ -118,16 +123,73 @@ export default function ClaimNamePage() {
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">
-        {/* Left Column - Your Names */}
+        {/* Left Column - Your Organizations & Names */}
         <div className="space-y-6">
+          {/* Your Organizations */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Your Names
+                <Users className="h-5 w-5" />
+                Your Collectives
               </CardTitle>
               <CardDescription>
-                Names you have claimed and their staking details
+                Collectives you have created or manage
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingOrgs ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : organizations.length > 0 ? (
+                <div className="space-y-3">
+                  {organizations.slice(0, 3).map((org, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{org.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {org.memberCount} members
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline">
+                        {org.id}
+                      </Badge>
+                    </div>
+                  ))}
+                  {organizations.length > 3 && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      +{organizations.length - 3} more collectives
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 space-y-3">
+                  <Building className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <p className="text-muted-foreground">No organizations found</p>
+                  <Button
+                    onClick={() => router.push('/collectives/create')}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Create Organization
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Claimed Names */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                Organization Names
+              </CardTitle>
+              <CardDescription>
+                Names you have claimed for organizations
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -135,16 +197,16 @@ export default function ClaimNamePage() {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              ) : userNames.length > 0 ? (
+              ) : organizationNames.length > 0 ? (
                 <div className="space-y-3">
-                  {userNames.map((name, index) => (
+                  {organizationNames.map((name, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center gap-3">
                         <Badge variant="outline" className="font-mono">
                           {name}
                         </Badge>
                         <div className="text-sm text-muted-foreground">
-                          Personal
+                          Organization
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -156,14 +218,14 @@ export default function ClaimNamePage() {
                 </div>
               ) : (
                 <div className="text-center py-8 space-y-3">
-                  <User className="h-12 w-12 text-muted-foreground mx-auto" />
-                  <p className="text-muted-foreground">No names claimed yet</p>
+                  <Building className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <p className="text-muted-foreground">No organization names claimed yet</p>
                   <Button
                     onClick={() => setShowClaimModal(true)}
                     className="mt-4"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Claim Your First Name
+                    Claim Organization Name
                   </Button>
                 </div>
               )}
@@ -171,13 +233,13 @@ export default function ClaimNamePage() {
           </Card>
 
           {/* Claim New Name Button */}
-          {userNames.length > 0 && (
+          {organizationNames.length > 0 && (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-4">
-                  <h3 className="text-lg font-semibold">Want Another Name?</h3>
+                  <h3 className="text-lg font-semibold">Need Another Name?</h3>
                   <p className="text-sm text-muted-foreground">
-                    You can claim multiple names with different staking tiers
+                    Claim additional names for different organizations or purposes
                   </p>
                   <Button
                     onClick={() => setShowClaimModal(true)}
@@ -198,10 +260,10 @@ export default function ClaimNamePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Coins className="h-5 w-5" />
-                Staking Tiers
+                Organization Staking Tiers
               </CardTitle>
               <CardDescription>
-                Choose your staking tier to unlock different benefits
+                Enhanced benefits for organization names
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -210,7 +272,7 @@ export default function ClaimNamePage() {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <div className={tier.color}>
-                        {tier.name === 'Basic' && <User className="h-4 w-4" />}
+                        {tier.name === 'Basic' && <Building className="h-4 w-4" />}
                         {tier.name === 'Premium' && <Star className="h-4 w-4" />}
                         {tier.name === 'Elite' && <Shield className="h-4 w-4" />}
                       </div>
@@ -245,45 +307,49 @@ export default function ClaimNamePage() {
             </CardContent>
           </Card>
 
-          {/* How It Works */}
+          {/* Organization Benefits */}
           <Card>
             <CardHeader>
-              <CardTitle>How It Works</CardTitle>
+              <CardTitle>Organization Name Benefits</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
-                    1
-                  </div>
+                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
                   <div>
-                    <p className="font-medium">Choose Your Name</p>
+                    <p className="font-medium">Brand Recognition</p>
                     <p className="text-sm text-muted-foreground">
-                      Select an 8-character alphanumeric name
+                      Establish a memorable identity for your organization
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
-                    2
-                  </div>
+                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
                   <div>
-                    <p className="font-medium">Stake GAME Tokens</p>
+                    <p className="font-medium">Member Trust</p>
                     <p className="text-sm text-muted-foreground">
-                      Choose a staking tier and duration
+                      Verified names increase member confidence
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
-                    3
-                  </div>
+                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
                   <div>
-                    <p className="font-medium">Claim & Use</p>
+                    <p className="font-medium">Enhanced Features</p>
                     <p className="text-sm text-muted-foreground">
-                      Your name is reserved and features unlocked
+                      Access to premium organization tools
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Governance Priority</p>
+                    <p className="text-sm text-muted-foreground">
+                      Higher weight in ecosystem decisions
                     </p>
                   </div>
                 </div>
@@ -292,12 +358,12 @@ export default function ClaimNamePage() {
               <Separator />
 
               <div className="space-y-2">
-                <h4 className="font-medium">Important Notes:</h4>
+                <h4 className="font-medium">Organization Requirements:</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Names are reserved for the staking duration</li>
-                  <li>• Tokens can be recovered after expiration</li>
-                  <li>• Higher tiers unlock premium features</li>
-                  <li>• Names must be exactly 8 characters (A-Z, 0-9)</li>
+                  <li>• Must own or manage an organization</li>
+                  <li>• Higher staking requirements than personal names</li>
+                  <li>• Names represent the organization publicly</li>
+                  <li>• Can be transferred between organization admins</li>
                 </ul>
               </div>
             </CardContent>
@@ -314,7 +380,7 @@ export default function ClaimNamePage() {
               <div>
                 <p className="font-medium text-destructive">Insufficient GAME Balance</p>
                 <p className="text-sm text-muted-foreground">
-                  You need at least 100 GAME tokens to claim a name with the Basic tier.
+                  You need at least 100 GAME tokens to claim an organization name with the Basic tier.
                 </p>
               </div>
             </div>
@@ -326,7 +392,7 @@ export default function ClaimNamePage() {
       <NameClaimingModal
         isOpen={showClaimModal}
         onClose={() => setShowClaimModal(false)}
-        type="personal"
+        type="organization"
         onSuccess={handleClaimSuccess}
       />
     </div>

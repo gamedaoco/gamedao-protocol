@@ -64,7 +64,7 @@ export default function CreateProposalPage() {
   useEffect(() => {
     if (currentStep === 'success') {
       // Redirect to proposals page after successful creation
-      router.push('/signal')
+      router.push('/governance')
     }
   }, [currentStep, router])
 
@@ -118,11 +118,11 @@ export default function CreateProposalPage() {
           description="You need to be a member of an organization to create a proposal."
           primaryAction={{
             label: 'Browse Organizations',
-            onClick: () => router.push('/control')
+            onClick: () => router.push('/collectives')
           }}
           secondaryAction={{
             label: 'Create Organization',
-            onClick: () => router.push('/control/create')
+            onClick: () => router.push('/collectives/create')
           }}
         />
       </div>
@@ -138,11 +138,11 @@ export default function CreateProposalPage() {
           description="You must be a member of this organization to create proposals."
           primaryAction={{
             label: 'Browse Organizations',
-            onClick: () => router.push('/control')
+            onClick: () => router.push('/collectives')
           }}
           secondaryAction={{
             label: 'Join Organization',
-            onClick: () => router.push(`/control/${preselectedOrgId}`)
+            onClick: () => router.push(`/collectives/${preselectedOrgId}`)
           }}
         />
       </div>
@@ -201,14 +201,14 @@ export default function CreateProposalPage() {
         successMessage="Proposal created successfully! Redirecting to proposals page..."
         successAction={{
           label: 'View Proposals',
-          onClick: () => router.push('/signal')
+          onClick: () => router.push('/governance')
         }}
       />
 
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link href="/signal">
+          <Link href="/governance">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Proposals

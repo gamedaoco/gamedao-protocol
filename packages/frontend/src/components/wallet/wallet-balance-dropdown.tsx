@@ -296,7 +296,7 @@ export function WalletBalanceDropdown() {
                 variant="ghost"
                 size="sm"
                 className="w-full justify-start text-xs"
-                onClick={() => router.push(`/sense/${address}`)}
+                onClick={() => router.push(`/profiles/${address}`)}
               >
                 <UserCircle className="h-4 w-4 mr-2" />
                 Profile

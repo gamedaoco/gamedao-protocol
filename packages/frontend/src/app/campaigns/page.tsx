@@ -120,7 +120,7 @@ export default function FlowPage() {
                   { label: 'Target', value: campaign.target },
                   { label: 'Contributors', value: campaign.contributorCount }
                 ]}
-                onClick={() => router.push(`/flow/${campaign.id}`)}
+                onClick={() => router.push(`/campaigns/${campaign.id}`)}
               />
             ))}
           </div>

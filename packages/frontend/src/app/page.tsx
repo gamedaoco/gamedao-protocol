@@ -133,7 +133,7 @@ export default function HomePage() {
           {/* Communities & Organizations */}
           <Card
             className="group hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-blue-300 dark:hover:border-blue-600 p-6"
-            onClick={() => handleNavigate('/control')}
+            onClick={() => handleNavigate('/collectives')}
           >
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between">
@@ -169,7 +169,7 @@ export default function HomePage() {
           {/* Fundraising & Publishing */}
           <Card
             className="group hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-green-300 dark:hover:border-green-600 p-6"
-            onClick={() => handleNavigate('/flow')}
+            onClick={() => handleNavigate('/campaigns')}
           >
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between">
@@ -205,7 +205,7 @@ export default function HomePage() {
           {/* Governance & Decisions */}
           <Card
             className="group hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-purple-300 dark:hover:border-purple-600 p-6"
-            onClick={() => handleNavigate('/signal')}
+            onClick={() => handleNavigate('/governance')}
           >
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between">

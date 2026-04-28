@@ -17,11 +17,11 @@ const navigation = [
     description: 'DAO Management',
     badge: 'Active',
     children: [
-      { name: 'All Organizations', href: '/control', icon: '🏢' },
-      { name: 'Create DAO', href: '/control/create', icon: '➕' },
-      { name: 'My Organizations', href: '/control/my-orgs', icon: '👥' },
-      { name: 'Claim Name', href: '/control/claim-name', icon: '🏷️' },
-      { name: 'Treasury', href: '/control/treasury', icon: '💰' },
+      { name: 'All Organizations', href: '/collectives', icon: '🏢' },
+      { name: 'Create DAO', href: '/collectives/create', icon: '➕' },
+      { name: 'My Organizations', href: '/collectives/my-orgs', icon: '👥' },
+      { name: 'Claim Name', href: '/collectives/claim-name', icon: '🏷️' },
+      { name: 'Treasury', href: '/collectives/treasury', icon: '💰' },
     ]
   },
   {
@@ -30,10 +30,10 @@ const navigation = [
     description: 'Proposals & Voting',
     badge: 'Active',
     children: [
-      { name: 'All Proposals', href: '/signal', icon: '📋' },
-      { name: 'Create Proposal', href: '/signal/create', icon: '✍️' },
-      { name: 'My Votes', href: '/signal/voting', icon: '🗳️' },
-      { name: 'Delegation', href: '/signal/delegation', icon: '🤝' },
+      { name: 'All Proposals', href: '/governance', icon: '📋' },
+      { name: 'Create Proposal', href: '/governance/create', icon: '✍️' },
+      { name: 'My Votes', href: '/governance/voting', icon: '🗳️' },
+      { name: 'Delegation', href: '/governance/delegation', icon: '🤝' },
     ]
   },
   {
@@ -54,10 +54,10 @@ const navigation = [
     description: 'Crowdfunding',
     badge: 'Active',
     children: [
-      { name: 'All Campaigns', href: '/flow', icon: '🎯' },
-      { name: 'Create Campaign', href: '/flow/create', icon: '🚀' },
-      { name: 'My Contributions', href: '/flow/contributions', icon: '💝' },
-      { name: 'Analytics', href: '/flow/analytics', icon: '📊' },
+      { name: 'All Campaigns', href: '/campaigns', icon: '🎯' },
+      { name: 'Create Campaign', href: '/campaigns/create', icon: '🚀' },
+      { name: 'My Contributions', href: '/campaigns/contributions', icon: '💝' },
+      { name: 'Analytics', href: '/campaigns/analytics', icon: '📊' },
     ]
   },
   {
@@ -66,11 +66,11 @@ const navigation = [
     description: 'Identity & Reputation',
     badge: 'Active',
     children: [
-      { name: 'My Profile', href: '/sense', icon: '🆔' },
-      { name: 'Create Profile', href: '/sense/create', icon: '➕' },
-      { name: 'Claim Name', href: '/sense/claim-name', icon: '🏷️' },
-      { name: 'Achievements', href: '/sense/achievements', icon: '🏆' },
-      { name: 'Reputation', href: '/sense/reputation', icon: '⭐' },
+      { name: 'My Profile', href: '/profiles', icon: '🆔' },
+      { name: 'Create Profile', href: '/profiles/create', icon: '➕' },
+      { name: 'Claim Name', href: '/profiles/claim-name', icon: '🏷️' },
+      { name: 'Achievements', href: '/profiles/achievements', icon: '🏆' },
+      { name: 'Reputation', href: '/profiles/reputation', icon: '⭐' },
     ]
   }
 ]

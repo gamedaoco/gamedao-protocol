@@ -102,7 +102,7 @@ export default function CreateOrganizationPage() {
   useEffect(() => {
     if (currentStep === 'success' && validOrgId && createdOrgQuery?.organization) {
       resetState()
-      router.push(`/control/${validOrgId}`)
+      router.push(`/collectives/${validOrgId}`)
     }
   }, [currentStep, validOrgId, createdOrgQuery?.organization, router, resetState])
 
@@ -112,9 +112,9 @@ export default function CreateOrganizationPage() {
       const fallbackTimer = setTimeout(() => {
         resetState()
         if (validOrgId) {
-          router.push(`/control/${validOrgId}`)
+          router.push(`/collectives/${validOrgId}`)
         } else {
-          router.push('/control')
+          router.push('/collectives')
         }
       }, 25000)
       return () => clearTimeout(fallbackTimer)
@@ -235,7 +235,7 @@ export default function CreateOrganizationPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link href="/control">
+          <Link href="/collectives">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Organizations
@@ -678,7 +678,7 @@ export default function CreateOrganizationPage() {
                 </>
               )}
             </Button>
-            <Link href="/control">
+            <Link href="/collectives">
               <Button
                 type="button"
                 variant="outline"

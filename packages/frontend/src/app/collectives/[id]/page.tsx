@@ -628,7 +628,7 @@ export default function OrganizationDetailPage() {
                               className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                               onClick={() => {
                                 logUserAction('proposal_clicked', { proposalId: proposal.id, organizationId: id })
-                                router.push(`/signal/${proposal.id}`)
+                                router.push(`/governance/${proposal.id}`)
                               }}
                             >
                               <div className="flex items-center gap-3 flex-1">
@@ -654,7 +654,7 @@ export default function OrganizationDetailPage() {
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     logUserAction('proposal_clicked', { proposalId: proposal.id, organizationId: id })
-                                    router.push(`/signal/${proposal.id}`)
+                                    router.push(`/governance/${proposal.id}`)
                                   }}
                                 >
                                   View Details
@@ -669,7 +669,7 @@ export default function OrganizationDetailPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/signal?org=${id}`)}
+                            onClick={() => router.push(`/governance?org=${id}`)}
                           >
                             View All {organization.totalProposals} Proposals
                           </Button>
@@ -684,7 +684,7 @@ export default function OrganizationDetailPage() {
                       primaryAction={
                         isMember ? {
                           label: 'Create Proposal',
-                          onClick: () => router.push(`/signal/create?org=${id}`)
+                          onClick: () => router.push(`/governance/create?org=${id}`)
                         } : undefined
                       }
                     />

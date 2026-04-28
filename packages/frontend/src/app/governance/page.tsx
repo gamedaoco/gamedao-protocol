@@ -38,7 +38,7 @@ export default function SignalPage() {
             </p>
           )}
         </div>
-        <Button disabled={!isConnected} className="flex items-center space-x-2" onClick={() => router.push('/signal/create')}>
+        <Button disabled={!isConnected} className="flex items-center space-x-2" onClick={() => router.push('/governance/create')}>
           <Plus className="h-4 w-4" />
           <span>Create Proposal</span>
         </Button>
@@ -242,7 +242,7 @@ export default function SignalPage() {
                         Abstain
                       </Button>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => router.push(`/signal/${proposal.id}`)}>
+                    <Button variant="ghost" size="sm" onClick={() => router.push(`/governance/${proposal.id}`)}>
                       View Details
                     </Button>
                   </div>
