@@ -24,9 +24,10 @@ specified in `119-did-game-method.md`.
 - No GameDAO-operated bundler or paymaster contract for the public
   beta. Use a hosted vendor (Pimlico is the lowest-friction; Alchemy is
   the alternative). Self-host post-beta if volume justifies it.
-- No abandonment of EOA wallet support. Power users who arrive with
-  MetaMask/Rabbit/Frame keep their direct-tx flow. Privy is *added*,
-  not *replacing*.
+- No EOA migration story. Project is **pre-live** as of 2026-04-28
+  (no production users) — we set the canonical flow now and don't
+  carry forward an EOA-first compatibility path. MetaMask / injected
+  wallets remain *optional* for power users but are not the default.
 - No EIP-712 batched settlement, no ERC-2771 forwarder, no custom
   meta-tx contract surface. Those paths are explicitly superseded.
 
@@ -171,8 +172,9 @@ verification checklist.
 - Expose Privy's wallet via wagmi adapter so existing hooks
   (`useAccount`, `useReadContract`, `useWriteContract`) keep working.
 - Replace WalletConnection component to surface Privy's modal.
-- Drop unused wagmi connectors (RainbowKit etc.) once Privy is the
-  default. Keep `injected` so MetaMask power-users still work.
+- Remove unused wagmi connectors (RainbowKit, injected, etc.). Privy
+  is the only path. Project is pre-live, no power-user EOA flow to
+  preserve.
 - Acceptance: a fresh user lands, signs in with email, sees an
   embedded wallet address, can call a read-only contract method.
 
@@ -184,10 +186,14 @@ verification checklist.
   flow.
 - Verify the smart account address on Polygon Amoy: should be a 4337
   account deployed lazily on first tx.
-- Update Membership/Identity tracking: profiles should key by smart
-  account address (which is what `msg.sender` resolves to inside
-  contract calls). Existing EOA-bound profiles need a migration path
-  (see Risk register).
+- Membership / Identity / Sense profiles key by `msg.sender` already,
+  which becomes the Kernel smart account address on every Privy-routed
+  call. No contract changes required, no migration shim — the project
+  is pre-live so smart-account `msg.sender` is the canonical identity
+  from day one.
+- Scaffold continues to use Hardhat default EOAs (private-key based)
+  for fixtures; that's a dev-only path and does not need to mirror
+  the prod Privy flow.
 - Acceptance: a Privy user can call `Identity.createProfile` from the
   embedded wallet, the profile is stored under their smart account
   address, the subgraph indexes it.
@@ -257,7 +263,7 @@ Spec lives in `119-did-game-method.md`. The integration touchpoints:
 | Pimlico outage stops governance ops | Frontend falls back to user-paid path automatically (still works, just costs gas). Document the failover. |
 | Paymaster wallet drains from unexpected volume | Per-user caps + global daily ceiling enforced server-side. Alert at 14-day burn runway. Hard cap on sponsorship pauses if violated. |
 | Privy outage blocks new logins | Existing users with cached sessions keep working. New-user onboarding falls back to wallet-injected (MetaMask) path. Communicate via status banner. |
-| AA smart account migration for existing EOA users | Stage 2 ships only for new users initially. Existing scaffold users on EOA continue with EOA. Migration tool added in a follow-up. |
+| ~~AA smart account migration for existing EOA users~~ | ~~Project is pre-live; no migration needed.~~ Removed 2026-04-28. |
 | Allowlist griefing (user spam-votes to drain paymaster) | Per-user/per-day caps. Wallet identity tied to Privy auth (email/social) so cost-of-Sybil is non-zero. Cap exceedance returns 429 to client. |
 | Paymaster vendor lock-in | Allowlist + caps are server-side, not vendor-side. Switch to Alchemy or self-hosted paymaster requires only changing the upstream call. |
 | Server compromise lets attacker abuse paymaster | Server can't sign UserOps without user's smart account signature. Worst case: attacker can approve sponsorship for ops the user already signed — same outcome as those txs happening anyway. |
@@ -306,12 +312,13 @@ Estimated complexity:
 
 - Treasury slice for paymaster funding: 5% of staking rewards is a
   guess. Real number depends on early sponsored-op volume.
-- EOA migration UI: opt-in "upgrade to smart account" flow vs forced
-  migration on next session. Lean **opt-in** to respect existing user
-  setups.
 - BFF tech stack — assumed Node/TypeScript with HTTP framework. If
   it's not, the `@privy-io/node` SDK choice may need to change. Track
   C agent must inspect the BFF tree before assuming.
+- Drop the wagmi `injected` connector entirely, or keep it as
+  power-user opt-in? Pre-live, the case for keeping it is weak
+  (every user starts with Privy). Lean: **drop** for v1; re-add only
+  if there's an actual user request.
 
 ### Status
 

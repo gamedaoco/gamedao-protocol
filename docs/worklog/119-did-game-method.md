@@ -237,12 +237,16 @@ metadata fragment.
 
 ### Migration cases
 
+Project is pre-live as of 2026-04-28 — there are no production users
+to migrate from EOA to smart account. Real users are smart-account
+from day one.
+
 | Scenario | DID outcome |
 | --- | --- |
 | User changes Privy login (e.g. swaps email) | DID unchanged; `alsoKnownAs` updated to new `did:privy:<new>` |
-| User upgrades from EOA to ERC-4337 smart account | New DID at the smart account address; old DID retired with a final VC linking to the new one |
 | Smart account is deployed on a different chain | Different DID per chain — `did:game:amoy:0x…` vs `did:game:polygon:0x…`. The user can include cross-chain `alsoKnownAs` to link them |
 | User abandons the platform | DID stays resolvable as `deactivated: true`. Past memberships and credits remain visible historically |
+| Hardhat dev fixtures (scaffold-generated EOAs) | Resolve as `did:game:localhost:<eoaAddress>`. Dev-only — production resolvers refuse `did:game:localhost:*` |
 
 ### Registration with W3C
 
