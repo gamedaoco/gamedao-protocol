@@ -78,17 +78,56 @@ specified in `119-did-game-method.md`.
 
 ### Server responsibilities (the line drawn at custody)
 
+The project has an existing BFF — Stage 3 lives there, not in
+Vercel functions. The BFF uses `@privy-io/node` (the supported
+server-side SDK; `@privy-io/server-auth` is deprecated).
+
 | Allowed (no custody) | Forbidden |
 | --- | --- |
 | Verify Privy JWT for read-only auth-gated APIs | Hold or sign with user keys |
 | Proxy paymaster API calls (hides API key) | Initiate a UserOp on the user's behalf |
-| Allowlist policy: "is this contract+selector sponsored for this user?" | Override the allowlist for any user |
-| Bundler proxy with rate-limits | Replace user-signed UserOp with another |
+| Forward UserOps to bundler with rate-limits | Replace user-signed UserOp with another |
 | Cache subgraph + IPFS reads | Mutate on-chain state |
+| Manage Privy policies (create / update / attach) on behalf of admins | Override an active policy for a specific user without an admin action |
 | Issue Verifiable Credentials about a user (with the user's signature on the request) | Issue VCs unilaterally |
 
 If we ever need to break this line, it's an architecture deviation
 that needs explicit design review.
+
+### Policy enforcement: lean on Privy's native engine
+
+Privy's policy primitives (`Rule`, `Condition`, `Aggregation`) handle
+exactly the constraints we need:
+
+- **Contract+selector allowlist** → `Condition` matching RPC method
+  + `to` address + `data` selector
+- **Per-user/per-day caps** → `Aggregation` tracks transaction count
+  per wallet over a rolling window
+- **Spend caps** for value-moving ops → `Aggregation` over `value`
+  field
+
+Policies are evaluated in Privy's secure enclaves at request time. We
+attach the policy at wallet creation via `policy_ids`, so every
+sponsored UserOp passes through the policy engine before reaching the
+bundler.
+
+The BFF's job becomes **policy management + paymaster proxy + JWT
+verification** rather than custom rate-limiting logic. Concretely:
+
+- BFF endpoint to **create / update policies** via Privy's API (admin
+  only, gated by JWT verification).
+- BFF endpoint to **proxy paymaster calls**, hiding the Pimlico API
+  key from the client, optionally adding additional throttles for
+  abuse-detection cases that Privy's per-wallet caps don't catch.
+- BFF endpoint to **return sponsorship metadata** to the frontend
+  (e.g., "this op will be free, this op needs gas") so the UI can
+  show accurate flow state before the user signs.
+
+Tradeoff: Privy's policy engine is vendor-coupled. If we ever swap
+Privy out, policies need to be re-implemented elsewhere. For the
+beta this is fine — Privy is the foundation. If we hit "should we
+self-host" later, the BFF wraps Privy's policy API behind an
+abstraction we already control.
 
 ### Sponsored-op allowlist (initial)
 
@@ -117,10 +156,18 @@ re-signing paymaster policy.
 
 #### Stage 1 — Privy SDK on the frontend
 
+Reference: `.claude/skills/privy/SKILL.md` is in-tree — agents
+running this stage should consult it for hook names, gotchas,
+verification checklist.
+
 - Add `@privy-io/react-auth` to `packages/frontend`.
 - Wrap app with `PrivyProvider` (login methods: email, Google, Apple,
   Discord; embedded wallet enabled with `noPromptOnSignature` for
   sponsored ops).
+- Wait for `usePrivy().ready` before consuming auth/wallet state
+  (common gotcha called out in the skill).
+- Add the production + dev origins to Dashboard → Settings → Domains
+  to avoid `invalid_origin` errors.
 - Expose Privy's wallet via wagmi adapter so existing hooks
   (`useAccount`, `useReadContract`, `useWriteContract`) keep working.
 - Replace WalletConnection component to surface Privy's modal.
@@ -132,8 +179,9 @@ re-signing paymaster policy.
 #### Stage 2 — ERC-4337 smart account via Privy AA
 
 - Configure Privy with `embeddedWallets: { ethereum: { useSmartWallets: true } }`.
-- Choose a smart account implementation. Privy supports Kernel, Safe
-  Smart, and Biconomy. Kernel v3 is the lowest-overhead option.
+- **Smart account: Kernel v3.** Locked decision (2026-04-28).
+  Lightest overhead, plugin-less default fits the simple paymaster
+  flow.
 - Verify the smart account address on Polygon Amoy: should be a 4337
   account deployed lazily on first tx.
 - Update Membership/Identity tracking: profiles should key by smart
@@ -144,22 +192,35 @@ re-signing paymaster policy.
   embedded wallet, the profile is stored under their smart account
   address, the subgraph indexes it.
 
-#### Stage 3 — Hosted paymaster + allowlist
+#### Stage 3 — Hosted paymaster + Privy policy + BFF proxy
 
-- Sign up with Pimlico (free tier is enough for beta).
-- Configure paymaster sponsorship policy via Pimlico dashboard:
-  allowlist by `(contract, selector)` pairs from the table above.
-- Server-side policy layer:
-  - New endpoint `POST /api/paymaster/sponsor` that takes a UserOp
-    candidate, validates contract+selector against our local
-    allowlist, validates per-user/per-day caps via Redis, forwards to
-    Pimlico, returns sponsorship signature.
-  - Frontend's UserOp builder calls `/api/paymaster/sponsor` instead
-    of Pimlico directly.
-- Acceptance: a user calls `Signal.castVote` from the frontend with no
-  gas in their wallet, the vote lands on chain, no gas prompt
-  appeared, server logs show the sponsorship was approved against the
-  allowlist.
+Lives in the existing BFF, not Vercel functions.
+
+- BFF adds `@privy-io/node` (note: `@privy-io/server-auth` is
+  deprecated, do not use).
+- Define one Privy `Policy` per environment with rules built from
+  `Condition`s for the contract+selector allowlist + `Aggregation`s
+  for the per-user/per-day caps. Attach to wallets at creation via
+  `policy_ids` so the policy engine guards every UserOp from these
+  wallets.
+- BFF endpoints:
+  - `POST /paymaster/sponsor` — proxies Pimlico's sponsor call,
+    hides the API key from the client. Returns sponsorship signature
+    for the UserOp. The BFF does NOT re-implement caps — Privy's
+    policy engine has already gated the UserOp by the time it
+    reaches the bundler.
+  - `POST /paymaster/policy` — admin-only (JWT-verified), creates or
+    updates the active Policy via Privy's API.
+  - `GET /paymaster/sponsorable` — returns whether a contract+
+    selector pair is currently sponsorable (lets the UI mark "free"
+    vs "user pays" in the action confirmation).
+- Sign up with Pimlico (free tier is enough for beta). Stage 3 keeps
+  Pimlico vendor-coupled but only via the BFF; swapping to Alchemy
+  or self-hosted is a one-file change.
+- Acceptance: a Privy-authed user calls `Signal.castVote` from the
+  frontend with zero balance in their wallet, the vote lands on
+  chain, no gas prompt, BFF logs show the policy approved + Pimlico
+  sponsored.
 
 #### Stage 4 — Treasury accounting + dashboard
 
@@ -212,7 +273,7 @@ Stage 1, three independent tracks:
 | --- | --- | --- | --- |
 | **A. Stage 1 foundation** | `packages/frontend/{providers,hooks,components/wallet}/*`, `package.json` | `general-purpose` (heavy frontend wiring) | Privy app id, login methods config |
 | **B. Stage 2 smart account** | `packages/frontend/hooks/useGameDAO.ts`, contract scripts in `packages/contracts-solidity/scripts/` for migration probes, subgraph mapping if address shape changes | `Plan` then `general-purpose` | Choice of Kernel vs Safe Smart vs Biconomy; Pimlico EntryPoint address per network |
-| **C. Stage 3 paymaster + server policy** | new server package (suggest `packages/relay/`), Pimlico API key config, server-side allowlist + caps | `general-purpose` (server bootstrap, Redis) | Pimlico API key (stagingvs prod), Redis URL, server hosting target (Vercel? Railway?) |
+| **C. Stage 3 paymaster + Privy policy + BFF proxy** | existing BFF (extend, don't fork), Pimlico API key config, Privy Policy attached at wallet-creation, BFF endpoints | `general-purpose` (BFF extension; uses `@privy-io/node`) | Pimlico API key (staging + prod), Privy app id (admin), BFF base URL |
 | **D. Stage 4 dashboard + alerting** | `packages/frontend/src/app/admin/paymaster/`, alerting integration (Slack webhook? email?) | `general-purpose` | Slack webhook URL, alerting target |
 | **E. `did:game` method spec + resolver** | `packages/frontend/src/app/.well-known/did/[id]/route.ts`, on-chain Identity DID Document support, VC tooling | independent `general-purpose` track, runs parallel to A–D | none — pure frontend + spec doc |
 
@@ -231,20 +292,26 @@ Estimated complexity:
 - D: low-medium (dashboard UI + alert webhook).
 - E: medium (DID method implementation; spec already exists by then).
 
+### Decisions locked (2026-04-28)
+
+- Smart account: **Kernel v3**.
+- Server: **existing BFF**, not Vercel functions. BFF uses
+  `@privy-io/node`.
+- Privy app id: provided by user out-of-band; agents assume two ids
+  (dev + prod) injected via env.
+- Policy enforcement: **Privy's native engine** for caps + allowlist,
+  not custom Redis logic.
+
 ### Open questions
 
-- Smart account implementation: Kernel v3 vs Safe Smart vs Biconomy.
-  Kernel is lightest, Safe Smart has the best ecosystem of plugins,
-  Biconomy is paymaster-coupled. Default to **Kernel v3** unless we
-  need a specific Safe-only feature.
-- Server hosting: Vercel functions (already used for frontend) or a
-  long-running container (Railway / Fly)? Vercel works for
-  policy-check; long-running needed if we ever batch UserOps.
 - Treasury slice for paymaster funding: 5% of staking rewards is a
   guess. Real number depends on early sponsored-op volume.
 - EOA migration UI: opt-in "upgrade to smart account" flow vs forced
   migration on next session. Lean **opt-in** to respect existing user
   setups.
+- BFF tech stack — assumed Node/TypeScript with HTTP framework. If
+  it's not, the `@privy-io/node` SDK choice may need to change. Track
+  C agent must inspect the BFF tree before assuming.
 
 ### Status
 
