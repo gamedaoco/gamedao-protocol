@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { createConfig, http } from 'wagmi'
 import { mainnet, sepolia, hardhat } from 'wagmi/chains'
 import { injected, metaMask, walletConnect } from 'wagmi/connectors'
-import { Loader } from '@/components/ui/loader'
+import { CreativeLoader } from '@/components/ui/loader'
 
 // Create the config on client side only - Web3 connections are inherently client-side
 // This avoids SSR issues with WalletConnect's indexedDB usage
@@ -72,7 +72,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
   if (!config) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader size="lg" text="Initializing Web3..." />
+        <CreativeLoader size="lg" />
       </div>
     )
   }
