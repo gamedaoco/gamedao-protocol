@@ -177,6 +177,74 @@ contract Membership is Module, IMembership {
     }
 
     /**
+     * @dev Self-join an organization. Only works for AccessModel.Open.
+     * Voting / Invite access models still require an org manager (or a
+     * governance proposal) to add the member.
+     */
+    function joinOrganization(bytes8 organizationId)
+        external
+        onlyActiveOrganization(organizationId)
+        onlyNonExistingMember(organizationId, msg.sender)
+        returns (bool)
+    {
+        require(address(controlContract) != address(0), "Control contract not set");
+        IControl.Organization memory org = controlContract.getOrganization(organizationId);
+        require(
+            org.accessModel == IControl.AccessModel.Open,
+            "Organization is not open for self-join"
+        );
+        require(
+            _organizationMembers[organizationId].length() < org.memberLimit,
+            "Organization member limit reached"
+        );
+
+        Member storage memberData = _members[organizationId][msg.sender];
+        memberData.account = msg.sender;
+        memberData.tier = MembershipTier.BRONZE;
+        memberData.state = MemberState.ACTIVE;
+        memberData.joinedAt = block.timestamp;
+        memberData.canVote = true;
+        memberData.canPropose = true;
+        memberData.canDelegate = true;
+        memberData.votingPower = _calculateVotingPower(MembershipTier.BRONZE);
+
+        _organizationMembers[organizationId].add(msg.sender);
+        _membersByTier[organizationId][MembershipTier.BRONZE].add(msg.sender);
+        _membersByState[organizationId][MemberState.ACTIVE].add(msg.sender);
+
+        _updateMembershipStats(organizationId);
+
+        emit MemberAdded(organizationId, msg.sender, MembershipTier.BRONZE, block.timestamp);
+        return true;
+    }
+
+    /**
+     * @dev Self-leave an organization. msg.sender removes themselves
+     * regardless of the organization's access model.
+     */
+    function leaveOrganization(bytes8 organizationId)
+        external
+        onlyActiveOrganization(organizationId)
+        onlyExistingMember(organizationId, msg.sender)
+        returns (bool)
+    {
+        Member storage memberData = _members[organizationId][msg.sender];
+
+        _organizationMembers[organizationId].remove(msg.sender);
+        _membersByTier[organizationId][memberData.tier].remove(msg.sender);
+        _membersByState[organizationId][memberData.state].remove(msg.sender);
+
+        _cleanupDelegations(organizationId, msg.sender);
+
+        delete _members[organizationId][msg.sender];
+
+        _updateMembershipStats(organizationId);
+
+        emit MemberRemoved(organizationId, msg.sender, block.timestamp);
+        return true;
+    }
+
+    /**
      * @dev Update member tier
      */
     function updateMemberTier(

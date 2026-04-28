@@ -273,11 +273,15 @@ async function main() {
 
                   console.log(`    Creating organization...`)
 
+      // AccessModel: Open (0) for the first three orgs so any wallet can
+      // self-join via Membership.joinOrganization for testing. Remaining
+      // orgs use Invite (2) to exercise the manager-only flow.
+      const accessModel = i < 3 ? 0 : 2
       const tx = await control.connect(creator).createOrganization(
         template.name,
-        `ipfs://QmOrg${i}${template.name}`, // metadataURI instead of description
+        `ipfs://QmOrg${i}${template.name}`,
         0, // orgType
-        2, // accessModel: Voting
+        accessModel,
         0, // feeModel
         20, // memberLimit
         0, // membershipFee
@@ -348,6 +352,19 @@ async function main() {
           console.log(`    ✅ Added member: ${member.address.slice(0, 8)}...`)
         } catch (error) {
           console.log(`    ❌ Failed to add member: ${member.address.slice(0, 8)}...`)
+        }
+      }
+
+      // Add PROTOCOL_SUDO to the first two organizations so the dev wallet
+      // has memberships immediately on a fresh scaffold.
+      const SUDO = (process.env.PROTOCOL_SUDO || "0xf0FE780c76ce610FC8DF330971b99Ba6f4429001").toLowerCase()
+      if (i < 2 && !members.map(m => m.toLowerCase()).includes(SUDO)) {
+        try {
+          await membership.connect(creator).addMember(orgId, SUDO, 1) // SILVER tier
+          members.push(SUDO)
+          console.log(`    ✅ Added PROTOCOL_SUDO ${SUDO.slice(0, 10)}... to ${template.name}`)
+        } catch (error: any) {
+          console.log(`    ❌ Failed to add PROTOCOL_SUDO: ${error.message?.slice(0, 80)}`)
         }
       }
 

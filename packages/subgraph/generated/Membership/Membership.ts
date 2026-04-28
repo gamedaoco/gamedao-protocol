@@ -1197,6 +1197,52 @@ export class Membership extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
+  joinOrganization(organizationId: Bytes): boolean {
+    let result = super.call(
+      "joinOrganization",
+      "joinOrganization(bytes8):(bool)",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+
+    return result[0].toBoolean();
+  }
+
+  try_joinOrganization(organizationId: Bytes): ethereum.CallResult<boolean> {
+    let result = super.tryCall(
+      "joinOrganization",
+      "joinOrganization(bytes8):(bool)",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
+  leaveOrganization(organizationId: Bytes): boolean {
+    let result = super.call(
+      "leaveOrganization",
+      "leaveOrganization(bytes8):(bool)",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+
+    return result[0].toBoolean();
+  }
+
+  try_leaveOrganization(organizationId: Bytes): ethereum.CallResult<boolean> {
+    let result = super.tryCall(
+      "leaveOrganization",
+      "leaveOrganization(bytes8):(bool)",
+      [ethereum.Value.fromFixedBytes(organizationId)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
   moduleId(): Bytes {
     let result = super.call("moduleId", "moduleId():(bytes32)", []);
 
@@ -1760,6 +1806,74 @@ export class InitializeCall__Outputs {
 
   constructor(call: InitializeCall) {
     this._call = call;
+  }
+}
+
+export class JoinOrganizationCall extends ethereum.Call {
+  get inputs(): JoinOrganizationCall__Inputs {
+    return new JoinOrganizationCall__Inputs(this);
+  }
+
+  get outputs(): JoinOrganizationCall__Outputs {
+    return new JoinOrganizationCall__Outputs(this);
+  }
+}
+
+export class JoinOrganizationCall__Inputs {
+  _call: JoinOrganizationCall;
+
+  constructor(call: JoinOrganizationCall) {
+    this._call = call;
+  }
+
+  get organizationId(): Bytes {
+    return this._call.inputValues[0].value.toBytes();
+  }
+}
+
+export class JoinOrganizationCall__Outputs {
+  _call: JoinOrganizationCall;
+
+  constructor(call: JoinOrganizationCall) {
+    this._call = call;
+  }
+
+  get value0(): boolean {
+    return this._call.outputValues[0].value.toBoolean();
+  }
+}
+
+export class LeaveOrganizationCall extends ethereum.Call {
+  get inputs(): LeaveOrganizationCall__Inputs {
+    return new LeaveOrganizationCall__Inputs(this);
+  }
+
+  get outputs(): LeaveOrganizationCall__Outputs {
+    return new LeaveOrganizationCall__Outputs(this);
+  }
+}
+
+export class LeaveOrganizationCall__Inputs {
+  _call: LeaveOrganizationCall;
+
+  constructor(call: LeaveOrganizationCall) {
+    this._call = call;
+  }
+
+  get organizationId(): Bytes {
+    return this._call.inputValues[0].value.toBytes();
+  }
+}
+
+export class LeaveOrganizationCall__Outputs {
+  _call: LeaveOrganizationCall;
+
+  constructor(call: LeaveOrganizationCall) {
+    this._call = call;
+  }
+
+  get value0(): boolean {
+    return this._call.outputValues[0].value.toBoolean();
   }
 }
 
