@@ -72,9 +72,12 @@ interface CreativeLoaderProps {
 }
 
 export function CreativeLoader({ size = 'lg', className, intervalMs = 1800 }: CreativeLoaderProps) {
-  const [index, setIndex] = useState(() => Math.floor(Math.random() * CREATIVE_MESSAGES.length))
+  // Start at index 0 so SSR and the first client render match. After mount,
+  // jump to a random message and rotate from there.
+  const [index, setIndex] = useState(0)
 
   useEffect(() => {
+    setIndex(Math.floor(Math.random() * CREATIVE_MESSAGES.length))
     const id = setInterval(() => {
       setIndex((i) => (i + 1) % CREATIVE_MESSAGES.length)
     }, intervalMs)
