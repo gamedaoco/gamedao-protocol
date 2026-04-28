@@ -218,14 +218,72 @@ async function main() {
   console.log("✅ Staking (Rewards) deployed to:", stakingRewardsAddress);
   console.log("");
 
-  // Save deployment addresses
-  const deploymentInfo = {
-    network: "localhost",
-    timestamp: new Date().toISOString(),
+  // Build the per-network deployment manifest. Each entry captures the
+  // deployBlock so the subgraph can use it as startBlock and avoid scanning
+  // pre-deploy history. txHash and gasUsed are best-effort.
+  const path = require("path");
+  const fs = require("fs");
+
+  async function record(name: string, contract: any) {
+    const address: string = await contract.getAddress();
+    const tx = contract.deploymentTransaction();
+    const receipt = tx ? await tx.wait() : null;
+    return {
+      name,
+      record: {
+        address,
+        deployBlock: receipt?.blockNumber ?? 0,
+        ...(tx?.hash ? { txHash: tx.hash as string } : {}),
+        ...(receipt?.gasUsed ? { gasUsed: receipt.gasUsed.toString() } : {}),
+      },
+    };
+  }
+
+  const entries = await Promise.all([
+    record("GameToken", gameToken),
+    record("MockUSDC", usdc),
+    record("Staking", staking),
+    record("Registry", registry),
+    record("Identity", identity),
+    record("Membership", membership),
+    record("Control", control),
+    record("Factory", factory),
+    record("Flow", flow),
+    record("Signal", signal),
+    record("Sense", sense),
+    record("StakingRewards", stakingRewards),
+  ]);
+
+  const contracts: Record<string, { address: string; deployBlock: number; txHash?: string; gasUsed?: string }> = {};
+  for (const { name, record: r } of entries) contracts[name] = r;
+
+  const manifest = {
+    network: network.name === "hardhat" ? "localhost" : network.name,
+    chainId: Number(network.chainId),
+    deployedAt: new Date().toISOString(),
     deployer: deployer.address,
+    contracts,
+  };
+
+  // Canonical write — per-network manifest in @gamedao/evm.
+  const manifestPath = path.join(
+    __dirname,
+    "..", "..", "shared", "src", "deployments",
+    `${manifest.network}.json`,
+  );
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+  console.log(`📄 Manifest saved to ${path.relative(process.cwd(), manifestPath)}`);
+
+  // Legacy compat — flat map kept for scripts (manageModules / scaffold /
+  // grantProtocolAdmin / seedAccount / send-tokens) that haven't migrated yet.
+  // Slated for removal once those scripts read from @gamedao/evm.
+  const legacy = {
+    network: manifest.network,
+    timestamp: manifest.deployedAt,
+    deployer: manifest.deployer,
     contracts: {
       GameToken: gameTokenAddress,
-      MockGameToken: gameTokenAddress, // Alias for backward compatibility
+      MockGameToken: gameTokenAddress,
       MockUSDC: usdcAddress,
       Staking: stakingAddress,
       Registry: registryAddress,
@@ -236,13 +294,11 @@ async function main() {
       Flow: flowAddress,
       Signal: signalAddress,
       Sense: senseAddress,
-      StakingRewards: stakingRewardsAddress
-    }
+      StakingRewards: stakingRewardsAddress,
+    },
   };
-
-  const fs = require("fs");
-  fs.writeFileSync("deployment-addresses.json", JSON.stringify(deploymentInfo, null, 2));
-  console.log("📄 Deployment addresses saved to deployment-addresses.json");
+  fs.writeFileSync("deployment-addresses.json", JSON.stringify(legacy, null, 2));
+  console.log("📄 Legacy deployment-addresses.json kept for unmigrated scripts");
   console.log("");
 
   // Display summary

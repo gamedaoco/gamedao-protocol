@@ -187,13 +187,11 @@ build-subgraph:
 		echo "$(YELLOW)⚠️  Subgraph directory not found, skipping...$(NC)"; \
 	fi
 
-# Generate ABIs from compiled contracts into shared package
+# Compile contracts and rebuild the shared package (regenerates abis.ts +
+# deployments.ts and emits dist/).
 generate-abis:
-	@echo "$(BLUE)📋 Compiling contracts and generating ABIs...$(NC)"
+	@echo "$(BLUE)📋 Compiling contracts and rebuilding shared package...$(NC)"
 	@cd $(CONTRACTS_DIR) && pnpm exec hardhat compile
-	@echo "$(CYAN)📋 Extracting ABIs into shared package...$(NC)"
-	@cd $(CONTRACTS_DIR) && node scripts/update-shared-package.js
-	@echo "$(CYAN)📋 Building shared package...$(NC)"
 	@cd $(SHARED_DIR) && pnpm run build
 	@echo "$(GREEN)✅ ABIs generated and shared package updated$(NC)"
 
@@ -227,17 +225,17 @@ deploy-localhost:
 	@echo "$(GREEN)✅ Local deployment complete$(NC)"
 
 deploy-testnet:
-	@echo "$(BLUE)🚀 Deploying to testnet...$(NC)"
-	@cd $(CONTRACTS_DIR) && pnpm run deploy:testnet
-	@echo "$(GREEN)✅ Testnet deployment complete$(NC)"
+	@echo "$(BLUE)🚀 Deploying to Polygon Amoy...$(NC)"
+	@cd $(CONTRACTS_DIR) && pnpm run deploy:amoy
+	@echo "$(GREEN)✅ Amoy deployment complete$(NC)"
 
 deploy-mainnet:
-	@echo "$(RED)🚨 MAINNET DEPLOYMENT - ARE YOU SURE? (y/N)$(NC)"
+	@echo "$(RED)🚨 POLYGON MAINNET DEPLOYMENT - ARE YOU SURE? (y/N)$(NC)"
 	@read -r REPLY; \
 	if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
-		echo "$(BLUE)🚀 Deploying to mainnet...$(NC)"; \
-		cd $(CONTRACTS_DIR) && pnpm run deploy:mainnet; \
-		echo "$(GREEN)✅ Mainnet deployment complete$(NC)"; \
+		echo "$(BLUE)🚀 Deploying to Polygon mainnet...$(NC)"; \
+		cd $(CONTRACTS_DIR) && pnpm run deploy:polygon; \
+		echo "$(GREEN)✅ Polygon mainnet deployment complete$(NC)"; \
 	else \
 		echo "$(YELLOW)⚠️  Mainnet deployment cancelled$(NC)"; \
 	fi
@@ -629,42 +627,35 @@ status:
 
 .PHONY: deploy-local deploy-local-frontier deploy-local-clean validate-addresses
 
-# Unified local deployment with automatic address synchronization (Hardhat node).
-# Default localhost target. For Frontier use `make deploy-local-frontier`.
+# Unified local deployment (Hardhat node). For Frontier use deploy-local-frontier.
+# deploy.ts writes the per-network manifest into @gamedao/evm; we then rebuild
+# the shared package, sync ABIs into the subgraph workspace, regenerate
+# subgraph.yaml from the manifest, and deploy the subgraph.
 deploy-local:
-	@echo "🚀 Starting unified deployment to Hardhat node with address synchronization..."
+	@echo "🚀 Starting unified deployment to Hardhat node..."
 	@echo "📋 Phase 1: Deploying contracts to Hardhat localhost..."
 	cd packages/contracts-solidity && pnpm run deploy:localhost
-	@echo "📋 Phase 1.1: Updating shared addresses from deployment..."
-	cd packages/contracts-solidity && pnpm run update:shared && pnpm run build:shared
-	@echo "📋 Phase 1.2: Syncing ABIs to subgraph..."
+	@echo "📋 Phase 2: Syncing ABIs and rebuilding shared package..."
 	@$(MAKE) sync-abis
-	@echo "📋 Phase 2: Updating shared package..."
 	cd packages/shared && pnpm run build
-	@echo "📋 Phase 3: Syncing subgraph addresses and deploying..."
-	cd packages/subgraph && pnpm run update-addresses && pnpm run build && pnpm run create-local || echo "⚠️  Subgraph may already exist, continuing to deploy"
+	@echo "📋 Phase 3: Updating subgraph addresses and deploying..."
+	cd packages/subgraph && HARDHAT_NETWORK=localhost pnpm run update-addresses && pnpm run build && pnpm run create-local || echo "⚠️  Subgraph may already exist, continuing to deploy"
 	cd packages/subgraph && pnpm run deploy-local
 	@echo "📋 Phase 4: Validating address consistency..."
 	@$(MAKE) validate-addresses
-	@echo "✅ Unified deployment to Hardhat complete - all addresses synchronized!"
+	@echo "✅ Unified deployment to Hardhat complete!"
 
-# Explicit Frontier deployment task
+# Explicit Frontier deployment task. Writes the same localhost manifest entry
+# (Frontier and Hardhat share the chain layout via the @gamedao/evm shim).
 deploy-local-frontier:
 	@echo "🚀 Deploying contracts to Frontier node..."
-	@echo "📋 Phase 1: Deploying contracts to Frontier..."
 	cd packages/contracts-solidity && pnpm run deploy:frontier
-	@echo "📋 Phase 1.1: Updating shared addresses from deployment..."
-	cd packages/contracts-solidity && pnpm run update:shared && pnpm run build:shared
-	@echo "📋 Phase 1.2: Syncing ABIs to subgraph..."
 	@$(MAKE) sync-abis
-	@echo "📋 Phase 2: Updating shared package..."
 	cd packages/shared && pnpm run build
-	@echo "📋 Phase 3: Syncing subgraph addresses and deploying..."
-	cd packages/subgraph && pnpm run update-addresses && pnpm run build && pnpm run create-local || echo "⚠️  Subgraph may already exist, continuing to deploy"
+	cd packages/subgraph && HARDHAT_NETWORK=localhost pnpm run update-addresses && pnpm run build && pnpm run create-local || echo "⚠️  Subgraph may already exist, continuing to deploy"
 	cd packages/subgraph && pnpm run deploy-local
-	@echo "📋 Phase 4: Validating address consistency..."
 	@$(MAKE) validate-addresses
-	@echo "✅ Frontier deployment complete - all addresses synchronized!"
+	@echo "✅ Frontier deployment complete!"
 
 # Clean deployment (stops services, redeploys everything)
 deploy-local-clean: stop-services
@@ -678,14 +669,17 @@ deploy-local-clean: stop-services
 validate-addresses:
 	@echo "🔍 Validating address consistency across components..."
 	@node -e " \
-		const deploymentAddresses = require('./packages/contracts-solidity/deployment-addresses.json'); \
-		const shared = require('./packages/shared/dist/index.js'); \
 		const fs = require('fs'); \
+		const manifest = require('./packages/shared/src/deployments/localhost.json'); \
+		const shared = require('./packages/shared/dist/index.js'); \
 		const subgraphYaml = fs.readFileSync('./packages/subgraph/subgraph.yaml', 'utf8'); \
-		console.log('📍 Deployment addresses loaded:', Object.keys(deploymentAddresses).length, 'contracts'); \
-		console.log('📍 Shared package addresses (LOCAL):', shared.LOCAL_ADDRESSES ? Object.keys(shared.LOCAL_ADDRESSES).length : 0); \
-		console.log('📍 Subgraph YAML loaded'); \
-		console.log('✅ Address validation passed (detailed validation TODO)'); \
+		const cfg = shared.getConfig(31337); \
+		const registryAddr = manifest.contracts.Registry.address; \
+		console.log('📍 Manifest contracts:', Object.keys(manifest.contracts).length); \
+		console.log('📍 getConfig(31337) Registry:', cfg.deployment.contracts.Registry.address); \
+		if (cfg.deployment.contracts.Registry.address !== registryAddr) { console.error('❌ shared dist out of sync with manifest'); process.exit(1); } \
+		if (!subgraphYaml.includes(registryAddr)) { console.error('❌ subgraph.yaml does not contain Registry', registryAddr); process.exit(1); } \
+		console.log('✅ Manifest, shared dist, and subgraph.yaml all reference the same Registry'); \
 	"
 
 # === DEVELOPMENT WORKFLOW IMPROVEMENTS ===

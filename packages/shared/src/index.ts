@@ -1,11 +1,12 @@
-// Export all ABIs
-export * from './abis';
+// New API — prefer these in new code.
+export * from './config';
+export * from './chains';
+export * from './deployments';
 
-// Export contract addresses
+// Back-compat shims (LOCAL_ADDRESSES, getAddressesForNetwork, etc.).
 export * from './addresses';
 
-// Export types
+// ABIs and shared constants/types.
+export * from './abis';
 export * from './types';
-
-// Export constants
 export * from './constants';

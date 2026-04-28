@@ -9,11 +9,11 @@
   ],
   "scripts": {
     "generate-abis": "node scripts/generateAbis.js",
-    "update-addresses": "node scripts/updateAddresses.js",
-    "build": "node scripts/generateAbis.js && node scripts/updateAddresses.js && tsc",
-    "dev": "node scripts/generateAbis.js && node scripts/updateAddresses.js && tsc --watch",
+    "generate-deployments": "node scripts/generateDeployments.js",
+    "build": "node scripts/generateAbis.js && node scripts/generateDeployments.js && tsc",
+    "dev": "node scripts/generateAbis.js && node scripts/generateDeployments.js && tsc --watch",
     "clean": "rm -rf dist",
-    "prepare": "node scripts/generateAbis.js && node scripts/updateAddresses.js && tsc"
+    "prepare": "node scripts/generateAbis.js && node scripts/generateDeployments.js && tsc"
   },
   "dependencies": {
     "viem": "^2.0.0"
