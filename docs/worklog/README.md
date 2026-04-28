@@ -52,7 +52,9 @@ The logs are organized chronologically with the following naming convention:
 - `114-frontend-bug-fixes-and-cleanup.md`: Frontend bug fixes and cleanup
 - `115-deployment-stabilization.md`: Local deployment stabilization and module gating
 - `116-public-beta-deployment-plan.md`: Public beta plan — Polygon (Amoy → Mainnet), registry fixes, config service, deploy automation
-- `117-signing-vs-onchain-ops.md`: Plan to migrate governance ops (votes, joins, profiles) from fee-paying tx to EIP-712 / meta-tx / 4337 patterns
+- `117-signing-vs-onchain-ops.md`: Plan to migrate governance ops (votes, joins, profiles) from fee-paying tx to EIP-712 / meta-tx / 4337 patterns *(superseded by 118)*
+- `118-privy-paymaster-integration.md`: Frontend-resident Privy + ERC-4337 + hosted paymaster; supersedes 117. Stages, server policy/relay split, multi-agent exec breakdown
+- `119-did-game-method.md`: `did:game` DID method spec — self-sovereign identifier anchored on the Identity contract, links optionally to `did:privy:` for recovery
 
 ### **Special Documents**
 - `contract-simplification-strategy.md`: Contract simplification strategy

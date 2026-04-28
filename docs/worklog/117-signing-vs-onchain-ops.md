@@ -124,5 +124,33 @@ demonstrate user appetite.
   current voting path triggers a real fee-paying tx (compounded by a
   zero-address call when the user's wallet is on a chainId without a
   Signal deployment — see the fix in this same session).
-- Next: Phase A scoping (contract function signatures + relayer
-  protocol) when the public beta blockers settle.
+- 2026-04-28: **Superseded by `118-privy-paymaster-integration.md`**.
+  See decision below.
+
+### Decision (2026-04-28): superseded by Privy + paymaster
+
+After scoping the EIP-712 (Phase A) and ERC-2771 (Phase B) paths against
+the actual onboarding plan — embedded wallets via Privy — those phases
+became the wrong layer. ERC-4337 with a hosted paymaster (originally
+deferred as Phase C) is now the canonical direction:
+
+- Privy's SDK creates an embedded wallet for every user (email/social
+  login, no MetaMask). That wallet is a 4337 smart account out of the
+  box. Calling `castVote`, `joinOrganization`, etc. through the smart
+  account routes through a paymaster — gasless to the user, no custom
+  contracts, no relayer infra to maintain.
+- Per-vote gas on Polygon Amoy/PoS is fractions of a cent. The "save
+  gas by batching off-chain sigs" win evaporates when treasury already
+  pays sponsored gas via paymaster.
+- EIP-712 batched settlement adds: a custom `castVoteBySig` contract
+  surface, replay-nonce mappings, settlement timing logic, a relayer
+  service, and a divergence between on-chain and subgraph timestamps.
+  None of this exists in the paymaster path — every op is a normal tx
+  emitting normal events.
+- ERC-2771 forwarders (Phase B) are similarly subsumed: 4337 smart
+  account is *the* msg.sender, no `_msgSender()` overrides needed.
+
+Phases A and B remain in this document as historical scoping. The
+active plan is in `118-privy-paymaster-integration.md`. The
+`did:game` identifier method that anchors profiles in this new world is
+specified in `119-did-game-method.md`.
