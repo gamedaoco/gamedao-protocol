@@ -9,7 +9,7 @@ import {
   Organization,
   Member,
 } from '../generated/schema'
-import { getOrganizationIdString } from './utils/ids'
+import { getOrCreateUser, getOrganizationIdString } from './utils/ids'
 
 /**
  * Convert bytes8 profile ID to string for use as entity ID
@@ -52,8 +52,14 @@ export function handleProfileCreated(event: ProfileCreated): void {
     username = metadata
   }
 
+  // Profile.user references a User entity (keyed by address), not Member
+  // (which is keyed by `<orgId>-<address>`). Wiring the wrong id here is
+  // what caused the GraphQL "Null value resolved for non-null field user"
+  // errors on profile lookups.
+  let user = getOrCreateUser(event.params.owner)
+
   // Set profile data according to schema
-  profile.user = memberId
+  profile.user = user.id
   profile.organization = organizationId
   profile.metadata = metadata
   profile.createdAt = event.params.timestamp
