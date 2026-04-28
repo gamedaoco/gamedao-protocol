@@ -27,9 +27,9 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState({
     username: 'cryptogamer',
     displayName: 'Crypto Gamer',
-    bio: 'Passionate about blockchain gaming and DAOs',
+    bio: 'Building things with the people I care about.',
     avatar: '',
-    interests: ['Game Development', 'DeFi', 'NFT Gaming']
+    interests: ['Game Development', 'Music', 'Indie Publishing']
   })
 
   // Redirect to home if not connected
@@ -198,9 +198,9 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">DAO Proposals</p>
+                      <p className="font-medium">Collective proposals</p>
                       <p className="text-sm text-muted-foreground">
-                        Get notified when new proposals are created in your DAOs
+                        Get notified when new proposals open up in your collectives
                       </p>
                     </div>
                     <Button variant="outline" size="sm">

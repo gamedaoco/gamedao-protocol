@@ -33,7 +33,7 @@ export function Footer() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Decentralized Autonomous Organizations for Gaming Communities
+              GameDAO — for creative communities making things together.
             </p>
           </div>
 
@@ -172,10 +172,10 @@ export function Footer() {
 
         <div className="flex flex-col sm:flex-row justify-between items-center text-sm text-muted-foreground">
           <div>
-            © {currentYear} GameDAO Protocol. Built for Gaming Communities.
+            © {currentYear} GameDAO. Built for the people making the next thing.
           </div>
           <div className="flex items-center space-x-4 mt-2 sm:mt-0">
-            <span>Made with ❤️ for Gamers</span>
+            <span>Made with ❤️ for builders</span>
             <Badge variant="outline" className="text-xs">
               v0.1.0
             </Badge>

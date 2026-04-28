@@ -8,7 +8,7 @@ const serif = Instrument_Serif({ subsets: ['latin'], weight: '400', style: ['nor
 
 export const metadata: Metadata = {
   title: 'GameDAO Protocol',
-  description: 'Decentralized gaming ecosystem with DAOs, campaigns, and governance',
+  description: 'Form a collective, fund the work, ship together. Kickstarter for the long haul, paired with a place to put everything you have ever made.',
 }
 
 export default function RootLayout({

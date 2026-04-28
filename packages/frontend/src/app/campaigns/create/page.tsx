@@ -158,7 +158,7 @@ export default function CreateCampaignPage() {
       <TransactionOverlay
         isVisible={isCreating || creationSuccess}
         title="Creating Campaign"
-        description="Please wait while we create your campaign on the blockchain."
+        description="Please wait while we set up your campaign."
         currentStep={creationSuccess ? 'success' : isCreating ? 'creating' : 'idle'}
         error={creationError}
         onRetry={resetCreation}

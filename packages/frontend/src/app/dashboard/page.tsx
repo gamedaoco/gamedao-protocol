@@ -23,14 +23,14 @@ export default function DashboardPage() {
 
   // Mock achievements and collectibles data - replace with actual NFT contract calls
   const userAchievements = [
-    { id: 1, name: 'First DAO Creator', icon: '🏛️', rarity: 'common', earned: true },
+    { id: 1, name: 'First Collective', icon: '🏛️', rarity: 'common', earned: true },
     { id: 2, name: 'Campaign Master', icon: '🎯', rarity: 'rare', earned: true },
     { id: 3, name: 'Community Builder', icon: '👥', rarity: 'epic', earned: false },
-    { id: 4, name: 'Governance Expert', icon: '🗳️', rarity: 'legendary', earned: true },
+    { id: 4, name: 'Long-haul Shipper', icon: '🚀', rarity: 'legendary', earned: true },
   ]
 
   const userCollectibles = [
-    { id: 1, name: 'Genesis DAO Badge', image: '🏆', collection: 'GameDAO Genesis', tokenId: '#001' },
+    { id: 1, name: 'Genesis Badge', image: '🏆', collection: 'GameDAO Genesis', tokenId: '#001' },
     { id: 2, name: 'Alpha Tester', image: '🧪', collection: 'GameDAO Beta', tokenId: '#042' },
     { id: 3, name: 'Community Champion', image: '⭐', collection: 'GameDAO Honors', tokenId: '#123' },
   ]
@@ -51,7 +51,7 @@ export default function DashboardPage() {
         <div className="text-center py-12">
           <h1 className="text-3xl font-bold mb-4">Welcome to GameDAO</h1>
           <p className="text-muted-foreground mb-6">
-            Connect your wallet to access your dashboard and start participating in the GameDAO ecosystem.
+            Connect your wallet to see your collectives, campaigns, and what your community is shipping next.
           </p>
           <Button size="lg">
             Connect Wallet

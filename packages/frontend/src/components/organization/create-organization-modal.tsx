@@ -191,7 +191,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
       const metadataResult = await uploadOrganizationMetadata(metadata)
       console.log('✅ Metadata uploaded:', metadataResult)
 
-      setUploadProgress('Creating organization on blockchain...')
+      setUploadProgress('Deploying your collective…')
 
       const contractParams = {
         name: formData.name,
@@ -899,7 +899,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
                   <span className="text-sm text-blue-800">
                     {currentStep === 'uploading' && 'Uploading metadata to IPFS...'}
                     {currentStep === 'approving' && 'Requesting GAME token approval...'}
-                    {currentStep === 'creating' && 'Creating organization on blockchain...'}
+                    {currentStep === 'creating' && 'Deploying your collective…'}
                     {currentStep === 'confirming' && 'Waiting for transaction confirmation...'}
                     {!['uploading', 'approving', 'creating', 'confirming'].includes(currentStep) && 'Processing...'}
                   </span>

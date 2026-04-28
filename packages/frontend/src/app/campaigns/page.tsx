@@ -101,7 +101,7 @@ export default function FlowPage() {
             </p>
             <ul className="text-sm text-muted-foreground mb-4 space-y-1">
               <li>• The subgraph is deployed and running</li>
-              <li>• The local blockchain has campaign data</li>
+              <li>• Theres actually campaign data to load</li>
               <li>• The GraphQL endpoint is accessible</li>
             </ul>
             <Button onClick={() => window.location.reload()}>

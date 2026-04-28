@@ -29,12 +29,12 @@ const POOL_CONFIGS = {
     ]
   },
   DAO_CREATION: {
-    title: "DAO Creation Pool",
-    description: "Stake tokens to create and manage DAOs within the GameDAO ecosystem",
+    title: "Collective Creation Pool",
+    description: "Stake tokens to spin up and run collectives on GameDAO",
     color: "bg-green-500",
     icon: TrendingUp,
     benefits: [
-      "Create unlimited DAOs",
+      "Spin up unlimited collectives",
       "Access premium features",
       "Higher reward multiplier",
       "Community recognition"

@@ -122,7 +122,7 @@ export default function SensePage() {
                 </p>
                 <ul className="text-sm text-muted-foreground mb-4 space-y-1">
                   <li>• The subgraph is deployed and running</li>
-                  <li>• The local blockchain has profile data</li>
+                  <li>• Theres actually profile data to load</li>
                   <li>• The GraphQL endpoint is accessible</li>
                 </ul>
                 <Button onClick={() => window.location.reload()}>

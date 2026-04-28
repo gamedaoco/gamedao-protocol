@@ -147,7 +147,7 @@ export default function CreateProfilePage() {
       <TransactionOverlay
         isVisible={isCreating || creationSuccess}
         title="Creating Profile"
-        description="Please wait while we create your profile on the blockchain."
+        description="Please wait while we set up your profile."
         currentStep={creationSuccess ? 'success' : isCreating ? 'creating' : 'idle'}
         error={creationError}
         onRetry={resetCreation}

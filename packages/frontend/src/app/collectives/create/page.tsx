@@ -267,7 +267,7 @@ export default function CreateOrganizationPage() {
                     style={{
                       width: uploadProgress.includes('Redirecting') ? '100%' :
                              uploadProgress.includes('confirmation') ? '95%' :
-                             uploadProgress.includes('blockchain') ? '85%' :
+                             uploadProgress.includes('Deploying') ? '85%' :
                              uploadProgress.includes('Approving') ? '80%' :
                              uploadProgress.includes('metadata') ? '75%' :
                              uploadProgress.includes('banner') ? '50%' :

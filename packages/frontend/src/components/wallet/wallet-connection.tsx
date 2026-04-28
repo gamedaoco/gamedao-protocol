@@ -146,7 +146,7 @@ export function WalletConnection({ children, className }: WalletConnectionProps)
 
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Shield className="h-4 w-4" />
-              <span>Secure connection via blockchain</span>
+              <span>Secure wallet sign-in</span>
             </div>
           </div>
 

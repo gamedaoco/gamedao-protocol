@@ -193,7 +193,7 @@ export default function CreateProposalPage() {
       <TransactionOverlay
         isVisible={isProcessing}
         title="Creating Proposal"
-        description="Please wait while we create your proposal on the blockchain."
+        description="Please wait while we set up your proposal."
         currentStep={currentStep}
         progress={progress}
         error={creationError}

@@ -474,7 +474,7 @@ export function NameClaimingModal({
                 <p className="text-sm text-muted-foreground">
                   {claimProgress < 25 && 'Preparing transaction...'}
                   {claimProgress >= 25 && claimProgress < 50 && 'Approving GAME tokens...'}
-                  {claimProgress >= 50 && claimProgress < 75 && 'Claiming name on blockchain...'}
+                  {claimProgress >= 50 && claimProgress < 75 && 'Securing your name…'}
                   {claimProgress >= 75 && claimProgress < 100 && 'Waiting for confirmation...'}
                 </p>
               </div>
