@@ -177,16 +177,27 @@ abstract contract Module is IModule, AccessControl, Pausable, ReentrancyGuard {
     function _onInitialize() internal virtual {}
 
     /**
-     * @dev Internal hook called when the module is enabled
-     * Override this in derived contracts to add custom enable logic
+     * @dev Internal hook called when the module is enabled.
+     * Default: unpause the module so its whenNotPaused functions become callable.
+     * Idempotent — first enable on a fresh module is a no-op (already unpaused).
+     * Override in derived contracts to add custom enable logic; remember to
+     * call super._onModuleEnabled() (or replicate the unpause).
      */
-    function _onModuleEnabled() internal virtual {}
+    function _onModuleEnabled() internal virtual {
+        if (paused()) _unpause();
+    }
 
     /**
-     * @dev Internal hook called when the module is disabled
-     * Override this in derived contracts to add custom disable logic
+     * @dev Internal hook called when the module is disabled.
+     * Default: pause the module so its whenNotPaused functions revert. This
+     * is what gives the Registry's enable/disable mechanism real teeth — every
+     * state-changing function on a module is decorated with whenNotPaused.
+     * Idempotent. Override in derived contracts to add custom disable logic;
+     * remember to call super._onModuleDisabled() (or replicate the pause).
      */
-    function _onModuleDisabled() internal virtual {}
+    function _onModuleDisabled() internal virtual {
+        if (!paused()) _pause();
+    }
 
     /**
      * @dev Internal function to update the module version
