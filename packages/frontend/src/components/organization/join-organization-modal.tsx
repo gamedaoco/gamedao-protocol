@@ -110,31 +110,25 @@ export function JoinOrganizationModal({
 
   const proceedWithJoin = async () => {
     try {
-      // TODO: Implement proper joining through Membership contract
       console.log('🔍 Attempting to join organization:', organization.id)
+      if (!contracts.MEMBERSHIP || contracts.MEMBERSHIP === '0x0000000000000000000000000000000000000000') {
+        throw new Error('Membership contract not deployed on this network. Switch to a supported chain.')
+      }
 
-      // For now, show an informative error
-      throw new Error('Collective joining functionality is currently being updated. Please try again later or contact support.')
-
-      /*
-      // This is the correct approach that needs to be implemented:
       await joinOrganization({
         address: contracts.MEMBERSHIP,
         abi: ABIS.MEMBERSHIP,
-        functionName: 'addMember',
-        args: [toContractId(organization.id), address, MembershipTier.Basic],
+        functionName: 'joinOrganization',
+        args: [toContractId(organization.id)],
       })
-      */
 
       setJoinSuccess(true)
       console.log('✅ Join transaction submitted')
 
-      // Auto-close modal after success
       setTimeout(() => {
         handleClose()
         if (onSuccess) onSuccess()
       }, 2000)
-
     } catch (error) {
       console.error('❌ Join transaction failed:', error)
       setJoinError(error instanceof Error ? error.message : 'Failed to join collective')
@@ -151,9 +145,20 @@ export function JoinOrganizationModal({
     setLeaveError(null)
 
     try {
-      // TODO: Implement proper leaving through Membership contract
-      throw new Error('Collective leaving functionality is currently being updated. Please try again later or contact support.')
-
+      if (!contracts.MEMBERSHIP || contracts.MEMBERSHIP === '0x0000000000000000000000000000000000000000') {
+        throw new Error('Membership contract not deployed on this network. Switch to a supported chain.')
+      }
+      await leaveOrganization({
+        address: contracts.MEMBERSHIP,
+        abi: ABIS.MEMBERSHIP,
+        functionName: 'leaveOrganization',
+        args: [toContractId(organization.id)],
+      })
+      setLeaveSuccess(true)
+      setTimeout(() => {
+        handleClose()
+        if (onSuccess) onSuccess()
+      }, 2000)
     } catch (error) {
       console.error('❌ Failed to leave organization:', error)
       setLeaveError(error instanceof Error ? error.message : 'Failed to leave collective')
