@@ -639,12 +639,28 @@ deploy-local:
 	@echo "📋 Phase 2: Syncing ABIs and rebuilding shared package..."
 	@$(MAKE) sync-abis
 	cd packages/shared && pnpm run build
-	@echo "📋 Phase 3: Updating subgraph addresses and deploying..."
+	@echo "📋 Phase 3: Waiting for graph-node JSON-RPC at :8020..."
+	@$(MAKE) wait-graph-node
+	@echo "📋 Phase 3.1: Updating subgraph addresses and deploying..."
 	cd packages/subgraph && HARDHAT_NETWORK=localhost pnpm run update-addresses && pnpm run build && pnpm run create-local || echo "⚠️  Subgraph may already exist, continuing to deploy"
 	cd packages/subgraph && pnpm run deploy-local
 	@echo "📋 Phase 4: Validating address consistency..."
 	@$(MAKE) validate-addresses
 	@echo "✅ Unified deployment to Hardhat complete!"
+
+# Poll graph-node until JSON-RPC responds. Fresh-postgres docker-dev starts can
+# take 30s+ for graph-node to come up; the docker-dev recipe's 15s sleep is not
+# always enough.
+.PHONY: wait-graph-node
+wait-graph-node:
+	@i=0; while ! curl -s -o /dev/null -X POST -H "Content-Type: application/json" \
+	    --data '{"jsonrpc":"2.0","method":"subgraph_list","params":[],"id":1}' \
+	    http://localhost:8020/ 2>/dev/null; do \
+	    i=$$((i+1)); \
+	    if [ $$i -gt 60 ]; then echo "$(RED)❌ graph-node never came up at :8020$(NC)"; exit 1; fi; \
+	    sleep 2; \
+	done; \
+	echo "$(GREEN)✅ graph-node responsive$(NC)"
 
 # Explicit Frontier deployment task. Writes the same localhost manifest entry
 # (Frontier and Hardhat share the chain layout via the @gamedao/evm shim).
