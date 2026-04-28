@@ -52,6 +52,7 @@ The logs are organized chronologically with the following naming convention:
 - `114-frontend-bug-fixes-and-cleanup.md`: Frontend bug fixes and cleanup
 - `115-deployment-stabilization.md`: Local deployment stabilization and module gating
 - `116-public-beta-deployment-plan.md`: Public beta plan — Polygon (Amoy → Mainnet), registry fixes, config service, deploy automation
+- `117-signing-vs-onchain-ops.md`: Plan to migrate governance ops (votes, joins, profiles) from fee-paying tx to EIP-712 / meta-tx / 4337 patterns
 
 ### **Special Documents**
 - `contract-simplification-strategy.md`: Contract simplification strategy

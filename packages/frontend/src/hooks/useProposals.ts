@@ -212,6 +212,9 @@ export function useProposals(organizationId?: string) {
     if (!isConnected || !address) {
       throw new Error('Wallet not connected')
     }
+    if (!contracts.SIGNAL || contracts.SIGNAL === '0x0000000000000000000000000000000000000000') {
+      throw new Error('Signal contract not deployed on this network. Switch to a supported chain (chainId 31337 / 80002 / 137).')
+    }
 
     try {
       console.log('🗳️ Casting vote:', { proposalId, choice, reason })
@@ -468,6 +471,9 @@ export function useProposals(organizationId?: string) {
   const castVoteWithConviction = async (proposalId: string, choice: 0 | 1 | 2, convictionTime: number, reason?: string) => {
     if (!isConnected || !address) {
       throw new Error('Wallet not connected')
+    }
+    if (!contracts.SIGNAL || contracts.SIGNAL === '0x0000000000000000000000000000000000000000') {
+      throw new Error('Signal contract not deployed on this network. Switch to a supported chain (chainId 31337 / 80002 / 137).')
     }
 
     try {
