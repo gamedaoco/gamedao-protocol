@@ -518,6 +518,7 @@ scaffold-clean:
 	@rm -f $(CONTRACTS_DIR)/deployment-addresses.json
 	@rm -f $(FRONTEND_DIR)/public/scaffold-data.json
 	@rm -f $(FRONTEND_DIR)/src/lib/scaffold-data.ts
+	@echo "$(YELLOW)ℹ️  per-network manifests under packages/shared/src/deployments/ are not touched.$(NC)"
 	@echo "$(GREEN)✅ Scaffold data cleaned$(NC)"
 
 # Token transfer targets

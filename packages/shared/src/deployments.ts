@@ -28,7 +28,7 @@ export const DEPLOYMENTS: Record<number, DeploymentManifest> = {
   31337: {
     "network": "localhost",
     "chainId": 31337,
-    "deployedAt": "2026-04-28T06:21:38.947Z",
+    "deployedAt": "2026-04-28T06:36:01.220Z",
     "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "contracts": {
       "GameToken": {

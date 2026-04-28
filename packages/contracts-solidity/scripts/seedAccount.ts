@@ -1,14 +1,5 @@
 import { ethers } from "hardhat";
-import fs from "fs";
-import path from "path";
-
-function getDeployment(): any {
-  const deploymentPath = path.join(__dirname, "../deployment-addresses.json");
-  if (!fs.existsSync(deploymentPath)) {
-    throw new Error("deployment-addresses.json not found. Deploy contracts first.");
-  }
-  return JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
-}
+import { getDeployment } from "./lib/deployment";
 
 export async function seedAccount(
   recipient: string,
@@ -20,7 +11,7 @@ export async function seedAccount(
     throw new Error(`Invalid address: ${recipient}`);
   }
 
-  const deployment = getDeployment();
+  const deployment = await getDeployment();
   const [deployer] = await ethers.getSigners();
 
   console.log(`\n💰 Seeding account ${recipient}`);
@@ -34,7 +25,7 @@ export async function seedAccount(
   console.log(`  ETH:  ${ethAmount} ✅`);
 
   // Send GAME tokens
-  const gameTokenAddress = deployment.contracts.GameToken || deployment.contracts.MockGameToken;
+  const gameTokenAddress = deployment.contracts.GameToken?.address;
   if (gameTokenAddress) {
     const gameToken = await ethers.getContractAt("MockGameToken", gameTokenAddress);
     const gameWei = ethers.parseEther(gameAmount);
@@ -51,7 +42,7 @@ export async function seedAccount(
   }
 
   // Send USDC
-  const usdcAddress = deployment.contracts.MockUSDC;
+  const usdcAddress = deployment.contracts.MockUSDC?.address;
   if (usdcAddress) {
     const usdc = await ethers.getContractAt("MockUSDC", usdcAddress);
     const usdcWei = ethers.parseUnits(usdcAmount, 6);

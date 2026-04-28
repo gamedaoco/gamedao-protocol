@@ -52,6 +52,10 @@ typechain-types/
 scaffold-output.json
 coverage.json
 .openzeppelin/
+# Retired in favour of the per-network manifests under
+# packages/shared/src/deployments/<network>.json. Some legacy debug scripts
+# may still write this file; ignore so it doesn't churn the working tree.
+packages/contracts-solidity/deployment-addresses.json
 
 # Graph Protocol
 subgraph/build/

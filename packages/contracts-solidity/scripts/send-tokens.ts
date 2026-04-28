@@ -1,21 +1,17 @@
 import { ethers } from "hardhat"
 import { parseEther, parseUnits } from "ethers"
-import * as fs from "fs"
-import * as path from "path"
+import { getDeployment } from "./lib/deployment"
 
-// Load addresses from deployment file
-function loadDeploymentAddresses() {
-  try {
-    const deploymentPath = path.join(__dirname, '..', 'deployment-addresses.json')
-    if (!fs.existsSync(deploymentPath)) {
-      throw new Error(`Deployment addresses file not found at: ${deploymentPath}`)
-    }
-    const deploymentData = JSON.parse(fs.readFileSync(deploymentPath, 'utf8'))
-    return deploymentData.contracts || {}
-  } catch (error) {
-    console.error("❌ Error loading deployment addresses:", error)
-    throw error
+// Load addresses from the per-network manifest in @gamedao/evm. Returns
+// a flat { GameToken: address, MockUSDC: address, ... } map for the rest
+// of this script which expects that shape.
+async function loadDeploymentAddresses(): Promise<Record<string, string>> {
+  const manifest = await getDeployment()
+  const flat: Record<string, string> = {}
+  for (const [name, entry] of Object.entries(manifest.contracts)) {
+    if (entry?.address) flat[name] = entry.address
   }
+  return flat
 }
 
 async function sendTokens() {
@@ -53,7 +49,7 @@ async function sendTokens() {
     console.log(`💼 Using deployer account: ${deployer.address}`)
 
     // Load addresses from deployment file
-    const addresses = loadDeploymentAddresses()
+    const addresses = await loadDeploymentAddresses()
 
     // Validate token addresses
     if (!addresses.GameToken || addresses.GameToken === "") {

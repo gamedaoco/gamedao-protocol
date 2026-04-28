@@ -1,6 +1,7 @@
 import { ethers } from "hardhat"
 import fs from "fs"
 import path from "path"
+import { getDeployment } from "./lib/deployment"
 
 // ID conversion utilities (matching frontend utils)
 function bytes8ToAlphanumericString(bytes8Hex: string): string {
@@ -87,40 +88,25 @@ async function main() {
 
   const [deployer, ...accounts] = await ethers.getSigners()
 
-    // Check if contracts are deployed
+  // Resolve contracts via the per-network manifest in @gamedao/evm.
+  // REGISTRY_ADDRESS env var still wins for ad-hoc overrides.
   let registryAddress = process.env.REGISTRY_ADDRESS
-  let deploymentData: any = null
+  let deploymentData: Awaited<ReturnType<typeof getDeployment>> | null = null
 
-  // If not set via environment, try to read from deployment file
   if (!registryAddress) {
-    console.log("🔍 REGISTRY_ADDRESS not set, checking deployment file...")
-
+    console.log("🔍 REGISTRY_ADDRESS not set, reading deployment manifest...")
     try {
-      const fs = require('fs')
-      const path = require('path')
-      const deploymentFile = path.join(__dirname, '..', 'deployment-addresses.json')
-
-      if (fs.existsSync(deploymentFile)) {
-        deploymentData = JSON.parse(fs.readFileSync(deploymentFile, 'utf8'))
-        registryAddress = deploymentData.contracts?.Registry
-
-        if (registryAddress) {
-          console.log(`✅ Found registry address from deployment file: ${registryAddress}`)
-        } else {
-          throw new Error("Registry address not found in deployment file")
-        }
-      } else {
-        throw new Error("Deployment file not found")
-      }
-    } catch (error) {
-      console.log("❌ Could not load deployment addresses.")
-      console.log("💡 Please run deployment first:")
-      console.log("   cd packages/contracts-solidity")
-      console.log("   npm run deploy:localhost")
-      console.log("   # Or use the integrated command:")
-      console.log("   make dev-scaffold")
+      deploymentData = await getDeployment()
+      registryAddress = deploymentData.contracts.Registry?.address
+      if (!registryAddress) throw new Error("Registry not in manifest")
+      console.log(`✅ Found registry address from manifest: ${registryAddress}`)
+    } catch (error: any) {
+      console.log(`❌ Could not load deployment manifest: ${error.message}`)
+      console.log("💡 Run a deploy first: make deploy-local (or make docker-deploy-all)")
       process.exit(1)
     }
+  } else {
+    deploymentData = await getDeployment()
   }
 
   console.log(`📋 Using Registry: ${registryAddress}`)
@@ -145,17 +131,17 @@ async function main() {
 
   const control = await ethers.getContractAt("Control", controlAddress)
   const flow = await ethers.getContractAt("Flow", flowAddress)
-  // Try using Signal address directly from deployment file instead of registry
-  const signalAddressFromDeployment = deploymentData.contracts?.Signal
+  // Use the manifest's Signal address directly rather than going through Registry.
+  const signalAddressFromDeployment = deploymentData!.contracts.Signal?.address
   const signal = await ethers.getContractAt("Signal", signalAddressFromDeployment)
   const sense = await ethers.getContractAt("Sense", senseAddress)
   const identity = await ethers.getContractAt("Identity", identityAddress)
   const membership = await ethers.getContractAt("Membership", membershipAddress)
 
-  // Get token contracts from deployment
-  const gameTokenAddress = deploymentData.contracts?.GameToken
-  const usdcAddress = deploymentData.contracts?.MockUSDC
-  const stakingAddress = deploymentData.contracts?.Staking
+  // Get token + staking addresses from the manifest.
+  const gameTokenAddress = deploymentData!.contracts.GameToken?.address
+  const usdcAddress = deploymentData!.contracts.MockUSDC?.address
+  const stakingAddress = deploymentData!.contracts.Staking?.address
   const gameToken = await ethers.getContractAt("MockGameToken", gameTokenAddress)
   const usdc = await ethers.getContractAt("MockUSDC", usdcAddress)
   const staking = await ethers.getContractAt("Staking", stakingAddress)

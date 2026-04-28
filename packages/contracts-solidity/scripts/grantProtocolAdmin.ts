@@ -1,22 +1,12 @@
 import { ethers } from "hardhat";
-import fs from "fs";
-import path from "path";
-
-function getRegistryAddress(): string {
-  const deploymentPath = path.join(__dirname, "../deployment-addresses.json");
-  if (!fs.existsSync(deploymentPath)) {
-    throw new Error("deployment-addresses.json not found. Deploy contracts first.");
-  }
-  const data = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
-  return data.contracts.Registry;
-}
+import { getContractAddress } from "./lib/deployment";
 
 export async function grantProtocolAdmin(account: string) {
   if (!ethers.isAddress(account)) {
     throw new Error(`Invalid address: ${account}`);
   }
 
-  const registryAddress = getRegistryAddress();
+  const registryAddress = await getContractAddress("Registry");
   const registry = await ethers.getContractAt("Registry", registryAddress);
 
   const ADMIN_ROLE = await registry.ADMIN_ROLE();

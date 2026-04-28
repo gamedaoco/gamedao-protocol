@@ -1,19 +1,13 @@
 import { ethers } from "hardhat";
-import fs from "fs";
-import path from "path";
+import { getContractAddress } from "./lib/deployment";
 
 // Modules registered in Registry. Factory is wired via control.setFactory(),
 // not via Registry, so it is not part of this list.
 const MODULE_NAMES = ["CONTROL", "FLOW", "IDENTITY", "MEMBERSHIP", "SENSE", "SIGNAL"] as const;
 type ModuleName = typeof MODULE_NAMES[number];
 
-function getRegistryAddress(): string {
-  const deploymentPath = path.join(__dirname, "../deployment-addresses.json");
-  if (!fs.existsSync(deploymentPath)) {
-    throw new Error("deployment-addresses.json not found. Deploy contracts first.");
-  }
-  const data = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
-  return data.contracts.Registry;
+async function getRegistryAddress(): Promise<string> {
+  return getContractAddress("Registry");
 }
 
 function moduleId(name: string): string {
@@ -21,7 +15,7 @@ function moduleId(name: string): string {
 }
 
 export async function listModules() {
-  const registryAddress = getRegistryAddress();
+  const registryAddress = await getRegistryAddress();
   const registry = await ethers.getContractAt("Registry", registryAddress);
 
   console.log(`\n📋 Registry: ${registryAddress}`);
@@ -47,7 +41,7 @@ export async function enableModule(name: string) {
     throw new Error(`Unknown module: ${name}. Valid: ${MODULE_NAMES.join(", ")}`);
   }
 
-  const registryAddress = getRegistryAddress();
+  const registryAddress = await getRegistryAddress();
   const registry = await ethers.getContractAt("Registry", registryAddress);
   const id = moduleId(upper);
 
@@ -69,7 +63,7 @@ export async function disableModule(name: string) {
     throw new Error(`Unknown module: ${name}. Valid: ${MODULE_NAMES.join(", ")}`);
   }
 
-  const registryAddress = getRegistryAddress();
+  const registryAddress = await getRegistryAddress();
   const registry = await ethers.getContractAt("Registry", registryAddress);
   const id = moduleId(upper);
 
@@ -86,7 +80,7 @@ export async function disableModule(name: string) {
 }
 
 export async function enableAllModules() {
-  const registryAddress = getRegistryAddress();
+  const registryAddress = await getRegistryAddress();
   const registry = await ethers.getContractAt("Registry", registryAddress);
 
   console.log("🔧 Enabling all modules...");
@@ -109,7 +103,7 @@ export async function enableAllModules() {
 }
 
 export async function disableAllModules() {
-  const registryAddress = getRegistryAddress();
+  const registryAddress = await getRegistryAddress();
   const registry = await ethers.getContractAt("Registry", registryAddress);
 
   console.log("🔧 Disabling all modules...");

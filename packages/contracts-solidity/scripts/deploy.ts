@@ -265,7 +265,9 @@ async function main() {
     contracts,
   };
 
-  // Canonical write — per-network manifest in @gamedao/evm.
+  // Per-network manifest in @gamedao/evm — sole source of deployment truth
+  // for downstream scripts (manageModules, scaffold, send-tokens, ...) and
+  // for the subgraph address-sync.
   const manifestPath = path.join(
     __dirname,
     "..", "..", "shared", "src", "deployments",
@@ -273,32 +275,6 @@ async function main() {
   );
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
   console.log(`📄 Manifest saved to ${path.relative(process.cwd(), manifestPath)}`);
-
-  // Legacy compat — flat map kept for scripts (manageModules / scaffold /
-  // grantProtocolAdmin / seedAccount / send-tokens) that haven't migrated yet.
-  // Slated for removal once those scripts read from @gamedao/evm.
-  const legacy = {
-    network: manifest.network,
-    timestamp: manifest.deployedAt,
-    deployer: manifest.deployer,
-    contracts: {
-      GameToken: gameTokenAddress,
-      MockGameToken: gameTokenAddress,
-      MockUSDC: usdcAddress,
-      Staking: stakingAddress,
-      Registry: registryAddress,
-      Identity: identityAddress,
-      Membership: membershipAddress,
-      Control: controlAddress,
-      Factory: factoryAddress,
-      Flow: flowAddress,
-      Signal: signalAddress,
-      Sense: senseAddress,
-      StakingRewards: stakingRewardsAddress,
-    },
-  };
-  fs.writeFileSync("deployment-addresses.json", JSON.stringify(legacy, null, 2));
-  console.log("📄 Legacy deployment-addresses.json kept for unmigrated scripts");
   console.log("");
 
   // Display summary
