@@ -14,7 +14,7 @@ import { ABIS } from '@/lib/abis'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useGameTokenApproval } from '@/hooks/useGameTokenApproval'
 import { useToast } from '@/hooks/useToast'
-import { useMembership } from '@/hooks/useMembership'
+import { useMembership, useMembershipQueries } from '@/hooks/useMembership'
 import { toContractId } from '@/lib/id-utils'
 import { AlertCircle, Shield, CreditCard, CheckCircle, Clock, UserPlus, UserMinus } from 'lucide-react'
 
@@ -38,8 +38,10 @@ export function JoinOrganizationModal({
   const { refetch } = useOrganizations()
   const toast = useToast()
 
-  // TODO: Fix membership checking after contract integration is resolved
-  const isMember = false // Temporarily disabled
+  const { isMember: contractIsMember, refetchMembership } = useMembershipQueries(
+    organization ? toContractId(organization.id) : undefined,
+  )
+  const isMember = Boolean(contractIsMember)
 
   const [isJoining, setIsJoining] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
