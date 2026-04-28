@@ -33,7 +33,9 @@ const subgraphYamlPath = path.join(__dirname, '..', 'subgraph.yaml');
 let subgraphYaml = fs.readFileSync(subgraphYamlPath, 'utf8');
 
 // Subgraph data source name -> manifest contract name. Some sources share an
-// underlying contract (e.g. GameToken/MockGameToken alias).
+// underlying contract (e.g. GameToken/MockGameToken alias). The Sense data
+// source is intentionally commented out in subgraph.yaml today (schema is
+// being reworked) — re-add it here when re-enabled.
 const sourceMap = {
   Registry: 'Registry',
   Control: 'Control',
@@ -41,7 +43,6 @@ const sourceMap = {
   Membership: 'Membership',
   Flow: 'Flow',
   Signal: 'Signal',
-  Sense: 'Sense',
   Identity: 'Identity',
   Staking: 'Staking',
   StakingRewards: 'StakingRewards',
@@ -50,6 +51,12 @@ const sourceMap = {
   MockUSDC: 'MockUSDC',
 };
 
+// Anchor the patterns on the data-source indent level (4 spaces for `name:`,
+// 6 spaces for `address:` and `startBlock:`). The abis block under each data
+// source uses `        - name: ...` at indent 8 — those lines must NOT be
+// matched, otherwise the lazy `[\s\S]*?` cascades into the next data source
+// and clobbers its address. The previous regex was unscoped and produced
+// scrambled YAML on every run.
 let updated = 0;
 let skipped = 0;
 for (const [sourceName, manifestName] of Object.entries(sourceMap)) {
@@ -59,13 +66,23 @@ for (const [sourceName, manifestName] of Object.entries(sourceMap)) {
     skipped += 1;
     continue;
   }
-  // Update both the address and the startBlock for this source. Block 0 is
-  // fine for localhost; for live chains the deploy script writes the actual
-  // deploy block so the subgraph doesn't waste time scanning history.
   const startBlock = typeof c.deployBlock === 'number' ? c.deployBlock : 0;
-  const addrPattern = new RegExp(`(name: ${sourceName}[\\s\\S]*?address: ")([^"]*)"`, 'g');
-  const startPattern = new RegExp(`(name: ${sourceName}[\\s\\S]*?startBlock:\\s*)\\d+`, 'g');
-  subgraphYaml = subgraphYaml.replace(addrPattern, `$1${c.address}"`);
+  // Match: data-source-level `    name: <X>` then any content up to the
+  // first 6-space-indented `      address: "..."` (which is inside `source:`).
+  const addrPattern = new RegExp(
+    `(^    name: ${sourceName}\\n[\\s\\S]*?^      address: ")[^"]*(")`,
+    'm',
+  );
+  const startPattern = new RegExp(
+    `(^    name: ${sourceName}\\n[\\s\\S]*?^      startBlock:\\s*)\\d+`,
+    'm',
+  );
+  if (!addrPattern.test(subgraphYaml)) {
+    console.log(`⚠️  ${sourceName}: data source not found in subgraph.yaml — skipped`);
+    skipped += 1;
+    continue;
+  }
+  subgraphYaml = subgraphYaml.replace(addrPattern, `$1${c.address}$2`);
   subgraphYaml = subgraphYaml.replace(startPattern, `$1${startBlock}`);
   console.log(`✅ ${sourceName} -> ${c.address} (startBlock ${startBlock})`);
   updated += 1;
