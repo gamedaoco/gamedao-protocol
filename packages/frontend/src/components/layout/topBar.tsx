@@ -13,7 +13,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell'
 import { Button } from '@/components/ui/button'
 
 export function TopBar() {
-  const { isConnected } = useGameDAO()
+  const { isConnected, contracts } = useGameDAO()
   const { data: modulesData, refetch } = useQuery(GET_MODULES, { pollInterval: 5000, errorPolicy: 'ignore' })
   const enabled = new Set<string>((modulesData?.modules || [])
     .filter((m: any) => m.enabled)
@@ -63,7 +63,8 @@ export function TopBar() {
               Governance
             </Link>
           )}
-          {enabled.has(idHex('STAKING')) && (
+          {/* Staking is a standalone contract, not a Registry-managed module — always shown when deployed. */}
+          {contracts.STAKING && (
             <Link href="/staking" className={getNavClasses('/staking')}>
               Staking
             </Link>

@@ -112,25 +112,40 @@ export function useTokenBalances() {
   }
 }
 
-// Hook to get Sense username for an address
+// Hook to get the first name claimed by an address from Identity.
+// Identity stores names as bytes8 alphanumeric IDs; we decode the first one
+// as ASCII for display. Fails fast (no retries) — most addresses have no
+// claimed name and we don't want the dropdown to hang on misses.
 export function useSenseUsername(address?: string) {
   const { contracts } = useGameDAO()
 
-  const { data: profile, isLoading } = useReadContract({
+  const { data: nameIds, isLoading } = useReadContract({
     address: contracts.IDENTITY,
     abi: ABIS.IDENTITY,
-    functionName: 'getProfile',
+    functionName: 'getNamesOwnedBy',
     args: address ? [address as `0x${string}`] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!address && !!contracts.IDENTITY,
+      retry: false,
+      staleTime: 60_000,
     },
   })
 
-  // Extract username from profile data
-  const username = profile && Array.isArray(profile) && profile.length > 3 ? profile[3] : null
+  const username = (() => {
+    if (!nameIds || !Array.isArray(nameIds) || nameIds.length === 0) return null
+    const hex = String(nameIds[0]).replace(/^0x/, '')
+    if (!hex || hex === '0000000000000000') return null
+    let str = ''
+    for (let i = 0; i < hex.length; i += 2) {
+      const byte = parseInt(hex.substr(i, 2), 16)
+      if (byte === 0) break
+      str += String.fromCharCode(byte)
+    }
+    return str.trim() || null
+  })()
 
   return {
-    username: username && username.length > 0 ? username : null,
+    username,
     isLoading,
     hasProfile: !!username,
   }

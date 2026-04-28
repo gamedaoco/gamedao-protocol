@@ -117,7 +117,8 @@ export function Footer() {
                   )}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className={`h-2 w-2 rounded-full ${enabled.has(idHex('STAKING')) ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  {/* Staking is a standalone contract, not a Registry-managed module — green when deployed. */}
+                  <div className={`h-2 w-2 rounded-full ${contracts.STAKING ? 'bg-green-500' : 'bg-red-500'}`}></div>
                   <span>🪙 Staking</span>
                   {blockExplorer && (
                     <a

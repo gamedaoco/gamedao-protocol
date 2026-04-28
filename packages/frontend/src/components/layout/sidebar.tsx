@@ -84,11 +84,11 @@ export function Sidebar() {
     .filter((m: any) => m.enabled)
     .map((m: any) => m.id))
 
-  // Map module sections to module IDs in Registry (keccak256 of names)
+  // Map nav sections to Registry-managed module IDs. Sections not in this map
+  // default to enabled (e.g. Staking is a standalone contract, not a module).
   const sectionToModuleId: Record<string, string> = {
     'Organizations': keccak256(stringToBytes('CONTROL')),
     'Governance': keccak256(stringToBytes('SIGNAL')),
-    'Staking': keccak256(stringToBytes('STAKING')),
     'Campaigns': keccak256(stringToBytes('FLOW')),
     'Profiles': keccak256(stringToBytes('SENSE')),
   }
