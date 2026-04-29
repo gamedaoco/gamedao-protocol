@@ -51,6 +51,23 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       }),
   )
 
+  // Privy v2 throws on empty appId at render time. Rather than crash
+  // (which surfaces as "Fast Refresh had to perform a full reload"),
+  // render a clear instruction page when the env var is missing in dev.
+  // Children call usePrivy() so we can't simply skip the provider —
+  // pausing the whole app is correct behaviour.
+  const inDev = process.env.NODE_ENV !== 'production'
+  if (!PRIVY_APP_ID && inDev) {
+    return (
+      <div style={{ padding: '2rem', fontFamily: 'ui-monospace, monospace', maxWidth: 720, margin: '0 auto', lineHeight: 1.6 }}>
+        <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Privy app id not configured</h1>
+        <p>Set <code>NEXT_PUBLIC_PRIVY_APP_ID</code> in <code>.env.local</code> with your app id from the <a href="https://dashboard.privy.io" target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>Privy Dashboard</a>.</p>
+        <p>Then add the dev origin (e.g. <code>http://localhost:3000</code>) to <em>Dashboard → Settings → Domains</em> so the SDK accepts requests.</p>
+        <p>Restart the dev server after editing <code>.env.local</code>.</p>
+      </div>
+    )
+  }
+
   return (
     <PrivyProvider
       appId={PRIVY_APP_ID}
