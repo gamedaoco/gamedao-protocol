@@ -51,10 +51,9 @@ export function WalletBalanceDropdown() {
     try { disconnect() } catch {}
   }
   const router = useRouter()
-  const { balances, isLoading, ethBalance, gameBalance, usdcBalance } = useTokenBalances()
-  const { username: senseUsername, isLoading: usernameLoading } = useSenseUsername(address)
+  const { isLoading, ethBalance, gameBalance, usdcBalance } = useTokenBalances()
+  const { username: senseUsername } = useSenseUsername(address)
   const userEmail = user?.email?.address ?? null
-  const [copied, setCopied] = useState(false)
   const [balanceView, setBalanceView] = useState<BalanceView>('total')
 
   // Cycle order: username (if set) → email (if set) → address. The starting
@@ -106,8 +105,6 @@ export function WalletBalanceDropdown() {
   const copyAddress = async () => {
     if (address) {
       await navigator.clipboard.writeText(address)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     }
   }
 
