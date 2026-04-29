@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useDisconnect } from 'wagmi'
 import { usePrivy } from '@privy-io/react-auth'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,6 +35,9 @@ interface WalletConnectionProps {
 export function WalletConnection({ children, className }: WalletConnectionProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { ready, authenticated, login, logout, user } = usePrivy()
+  // wagmi disconnect handles legacy/injected sessions that Privy's logout
+  // doesn't know about — see comment in wallet-balance-dropdown.
+  const { disconnect } = useDisconnect()
 
   // Privy initialises async; consuming auth state before `ready` flickers
   // and can race with login. The skill flags this as the most common
@@ -55,12 +59,9 @@ export function WalletConnection({ children, className }: WalletConnectionProps)
   }
 
   const handleLogout = async () => {
-    try {
-      await logout()
-      setIsOpen(false)
-    } catch (err) {
-      console.error('Privy logout failed:', err)
-    }
+    try { await logout() } catch (err) { console.error('Privy logout failed:', err) }
+    try { disconnect() } catch (err) { console.error('wagmi disconnect failed:', err) }
+    setIsOpen(false)
   }
 
   // Authenticated → trigger opens a small status dialog with a logout
