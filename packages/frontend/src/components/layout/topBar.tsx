@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useModules } from '@/hooks/useModules'
 import { keccak256, stringToBytes } from 'viem'
-import { ModeToggle } from '@/components/mode-toggle'
 import { WalletConnection } from '@/components/wallet/wallet-connection'
 import { WalletBalanceDropdown } from '@/components/wallet/wallet-balance-dropdown'
 import { NotificationBell } from '@/components/notifications/notification-bell'
@@ -43,7 +42,7 @@ export function TopBar() {
               alt="GameDAO Logo"
               className="h-8 w-8"
             />
-            <span className="font-bold">GameDAO</span>
+            <span className="font-bold hidden sm:inline">GameDAO</span>
           </Link>
         </div>
 
@@ -105,9 +104,6 @@ export function TopBar() {
               </Button>
             </WalletConnection>
           )}
-
-          {/* Theme Toggle */}
-          <ModeToggle />
         </div>
       </div>
     </header>

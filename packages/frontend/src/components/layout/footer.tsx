@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useModules } from '@/hooks/useModules'
 import { keccak256, stringToBytes } from 'viem'
+import { ModeToggle } from '@/components/mode-toggle'
 
 export function Footer() {
   const { contracts, networkName, blockExplorer } = useGameDAO()
@@ -25,7 +26,7 @@ export function Footer() {
                 className="h-6 w-6"
               />
               <div className="text-lg font-bold text-primary">
-                GameDAO Protocol
+                GameDAO
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -175,6 +176,7 @@ export function Footer() {
             <Badge variant="outline" className="text-xs">
               v0.1.0
             </Badge>
+            <ModeToggle />
           </div>
         </div>
       </div>
