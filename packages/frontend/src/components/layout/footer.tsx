@@ -17,12 +17,12 @@ export function Footer() {
   return (
     <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
           {/* Brand */}
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <img
-                src="/gamedao-color-square.svg"
+                src="/g-icon-1024-trans.png"
                 alt="GameDAO"
                 className="h-6 w-6"
               />

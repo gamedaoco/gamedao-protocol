@@ -38,7 +38,7 @@ export function TopBar() {
         <div className="mr-6 flex items-center">
           <Link href="/" className="flex items-center space-x-2">
             <img
-              src="/gamedao-color-square.svg"
+              src="/g-icon-1024-trans.png"
               alt="GameDAO Logo"
               className="h-8 w-8"
             />
