@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/providers/themeProvider'
 import { ApolloProviderWrapper } from '@/providers/apolloProvider'
 import { ToastProvider } from '@/providers/toastProvider'
 import { AppLayout } from '@/components/layout/appLayout'
+import { ModulesProvider } from '@/hooks/useModules'
 
 interface ProvidersProps {
   children: React.ReactNode
@@ -19,12 +20,14 @@ export function Providers({ children }: ProvidersProps) {
       disableTransitionOnChange
     >
       <ApolloProviderWrapper>
-        <Web3Provider>
-          <AppLayout>
-            {children}
-          </AppLayout>
-          <ToastProvider />
-        </Web3Provider>
+        <ModulesProvider>
+          <Web3Provider>
+            <AppLayout>
+              {children}
+            </AppLayout>
+            <ToastProvider />
+          </Web3Provider>
+        </ModulesProvider>
       </ApolloProviderWrapper>
     </ThemeProvider>
   )

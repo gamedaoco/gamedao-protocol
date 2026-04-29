@@ -5,8 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useGameDAO } from '@/hooks/useGameDAO'
-import { useQuery } from '@apollo/client'
-import { GET_MODULES } from '@/lib/queries'
+import { useModules } from '@/hooks/useModules'
 import { keccak256, stringToBytes } from 'viem'
 import { cn } from '@/lib/utils'
 
@@ -78,11 +77,7 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname()
   const { isConnected } = useGameDAO()
-  const { data: modulesData } = useQuery(GET_MODULES, { pollInterval: 5000, errorPolicy: 'ignore' })
-
-  const enabled = new Set<string>((modulesData?.modules || [])
-    .filter((m: any) => m.enabled)
-    .map((m: any) => m.id))
+  const { enabled } = useModules()
 
   // Map nav sections to Registry-managed module IDs. Sections not in this map
   // default to enabled (e.g. Staking is a standalone contract, not a module).

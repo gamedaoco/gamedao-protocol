@@ -3,17 +3,13 @@
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { useGameDAO } from '@/hooks/useGameDAO'
-import { useQuery } from '@apollo/client'
-import { GET_MODULES } from '@/lib/queries'
+import { useModules } from '@/hooks/useModules'
 import { keccak256, stringToBytes } from 'viem'
 
 export function Footer() {
   const { contracts, networkName, blockExplorer } = useGameDAO()
   const currentYear = new Date().getFullYear()
-  const { data: modulesData } = useQuery(GET_MODULES, { pollInterval: 5000, errorPolicy: 'ignore' })
-  const enabled = new Set<string>((modulesData?.modules || [])
-    .filter((m: any) => m.enabled)
-    .map((m: any) => m.id))
+  const { enabled } = useModules()
   const idHex = (name: string) => keccak256(stringToBytes(name))
 
   return (

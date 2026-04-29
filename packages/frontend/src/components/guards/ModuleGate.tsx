@@ -1,8 +1,7 @@
 'use client'
 
 import { ReactNode, useMemo } from 'react'
-import { useQuery } from '@apollo/client'
-import { GET_MODULES } from '@/lib/queries'
+import { useModules } from '@/hooks/useModules'
 import { keccak256, stringToBytes } from 'viem'
 
 // Modules registered in Registry. Staking and Factory are standalone
@@ -10,14 +9,10 @@ import { keccak256, stringToBytes } from 'viem'
 type ModuleKey = 'CONTROL' | 'FLOW' | 'IDENTITY' | 'MEMBERSHIP' | 'SENSE' | 'SIGNAL'
 
 export function ModuleGate({ module, children }: { module: ModuleKey, children: ReactNode }) {
-  const { data, loading, error } = useQuery(GET_MODULES, { pollInterval: 5000, errorPolicy: 'ignore' })
+  const { enabled: enabledIds, loading, error } = useModules()
 
   const moduleId = useMemo(() => keccak256(stringToBytes(module)), [module])
-  const enabled = useMemo(() => {
-    const list = (data?.modules || []) as Array<{ id: string, enabled: boolean }>
-    const m = list.find((x) => x.id === moduleId)
-    return Boolean(m?.enabled)
-  }, [data, moduleId])
+  const enabled = enabledIds.has(moduleId)
 
   if (loading) {
     return (
