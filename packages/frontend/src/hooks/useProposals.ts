@@ -115,7 +115,6 @@ export function useProposals(organizationId?: string) {
   // Auto-refetch data after successful vote
   useEffect(() => {
     if (voteSuccess) {
-      console.log('✅ Vote confirmed - refreshing data')
       refetch()
       setTimeout(() => refetch(), 3000) // Refetch again after 3 seconds for subgraph indexing
     }
@@ -217,8 +216,6 @@ export function useProposals(organizationId?: string) {
     }
 
     try {
-      console.log('🗳️ Casting vote:', { proposalId, choice, reason })
-
       // Reset any previous vote errors
       resetVote()
 
@@ -231,8 +228,6 @@ export function useProposals(organizationId?: string) {
         args: [proposalId, choice, reason || ''],
         nonce: nonce as any,
       })
-
-      console.log('✅ Vote transaction submitted')
 
     } catch (error) {
       console.error('❌ Error casting vote:', error)
@@ -257,16 +252,8 @@ export function useProposals(organizationId?: string) {
     }
 
     try {
-      console.log('🔍 Creating proposal with GAME token approval:', {
-        organizationId: proposalData.organizationId,
-        title: proposalData.title,
-        gameDeposit: proposalData.gameDeposit
-      })
-
       // Handle GAME token approval for proposal deposits if needed
       if (proposalData.gameDeposit && parseFloat(proposalData.gameDeposit) > 0) {
-        console.log('🔍 GAME token deposit required for proposal:', proposalData.gameDeposit)
-
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
           spender: contracts.SIGNAL,
@@ -324,15 +311,7 @@ export function useProposals(organizationId?: string) {
     }
 
     try {
-      console.log('🔍 Creating proposal V2 with hierarchical ID:', {
-        organizationId: proposalData.organizationId,
-        title: proposalData.title,
-        gameDeposit: proposalData.gameDeposit
-      })
-
       if (proposalData.gameDeposit && parseFloat(proposalData.gameDeposit) > 0) {
-        console.log('🔍 GAME token deposit required for proposal:', proposalData.gameDeposit)
-
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
           spender: contracts.SIGNAL as `0x${string}`,
@@ -477,13 +456,6 @@ export function useProposals(organizationId?: string) {
     }
 
     try {
-      console.log('🔍 Casting conviction vote:', {
-        proposalId,
-        choice,
-        convictionTime,
-        reason
-      })
-
       const nonce = await getNextNonce().catch(() => undefined)
       await writeVote({
         address: contracts.SIGNAL,

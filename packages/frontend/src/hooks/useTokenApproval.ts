@@ -103,8 +103,6 @@ export function useTokenApproval() {
     if (amountBigInt === BigInt(0)) return false
 
     try {
-      console.log('🔍 Checking approval needed for:', { token, spender, amount: amountBigInt.toString() })
-
       // Check if we have a public client available
       if (!publicClient) {
         console.warn('No public client available, assuming approval needed')
@@ -119,22 +117,8 @@ export function useTokenApproval() {
         args: [address as `0x${string}`, spender as `0x${string}`],
       }) as bigint
 
-      console.log('🔍 Current allowance:', {
-        token,
-        spender,
-        currentAllowance: currentAllowance.toString(),
-        requiredAmount: amountBigInt.toString(),
-        needsApproval: currentAllowance < amountBigInt
-      })
-
       // Check if current allowance is sufficient
       const needsApproval = currentAllowance < amountBigInt
-
-      if (!needsApproval) {
-        console.log(`✅ ${token} token allowance already sufficient: ${currentAllowance.toString()} >= ${amountBigInt.toString()}`)
-      } else {
-        console.log(`❌ ${token} token approval needed: ${currentAllowance.toString()} < ${amountBigInt.toString()}`)
-      }
 
       return needsApproval
     } catch (error) {
@@ -163,13 +147,6 @@ export function useTokenApproval() {
       throw new Error('Amount must be greater than 0')
     }
 
-    console.log('🔍 Requesting token approval:', {
-      token,
-      spender,
-      amount: amountBigInt.toString(),
-      purpose
-    })
-
     try {
       toast.loading(`Requesting ${token} token approval for ${purpose}...`)
 
@@ -182,7 +159,6 @@ export function useTokenApproval() {
         nonce: nonce as any,
       })
 
-      console.log('🎉 Token approval transaction submitted:', result)
       setPendingApproval(params)
       return result
     } catch (error) {
@@ -201,7 +177,6 @@ export function useTokenApproval() {
       const needsApproval = await checkApprovalNeeded(token, spender, amount)
 
       if (!needsApproval) {
-        console.log(`✅ ${token} token allowance already sufficient`)
         return true
       }
 
@@ -217,7 +192,6 @@ export function useTokenApproval() {
   // Handle approval success
   useEffect(() => {
     if (approvalSuccess && pendingApproval) {
-      console.log('✅ Token approval confirmed for:', pendingApproval.purpose)
       toast.dismiss()
       toast.success(`${pendingApproval.token} ${pendingApproval.purpose} approval confirmed!`)
       setPendingApproval(null)

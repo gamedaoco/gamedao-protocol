@@ -72,7 +72,6 @@ export function useOrganizationCreation() {
   // Handle approval success
   useEffect(() => {
     if (approvalSuccess && !approvalCompleted && pendingCreation) {
-      console.log('✅ GAME token approval confirmed! Proceeding with organization creation...')
       setApprovalCompleted(true)
 
       setState(prev => ({
@@ -83,7 +82,6 @@ export function useOrganizationCreation() {
 
       createOrganization(pendingCreation)
         .then(() => {
-          console.log('✅ Organization creation initiated after approval')
           setState(prev => ({
             ...prev,
             currentStep: 'confirming',
@@ -105,8 +103,6 @@ export function useOrganizationCreation() {
       // Handle creation success
   useEffect(() => {
     if (createSuccess && createdOrgId && address) {
-      console.log('🎉 Organization created successfully! ID:', createdOrgId)
-
       setState(prev => ({
         ...prev,
         currentStep: 'success',
@@ -156,9 +152,6 @@ export function useOrganizationCreation() {
       throw new Error('Wallet not connected or contracts not loaded')
     }
 
-    console.log('🚀 Starting organization creation process...')
-    console.log('📋 Parameters:', params)
-
     // Reset state
     resetState()
 
@@ -176,26 +169,22 @@ export function useOrganizationCreation() {
 
       if (params.profileImage) {
         setState(prev => ({ ...prev, progress: 'Uploading profile image to IPFS...' }))
-        console.log('📤 Uploading profile image...')
 
         const result = await uploadFileToIPFS(params.profileImage, {
           name: `${params.name} Profile Image`,
           description: `Profile image for ${params.name} organization`
         })
         profileImageUrl = result.url
-        console.log('✅ Profile image uploaded:', result.url)
       }
 
       if (params.bannerImage) {
         setState(prev => ({ ...prev, progress: 'Uploading banner image to IPFS...' }))
-        console.log('📤 Uploading banner image...')
 
         const result = await uploadFileToIPFS(params.bannerImage, {
           name: `${params.name} Banner Image`,
           description: `Banner image for ${params.name} organization`
         })
         bannerImageUrl = result.url
-        console.log('✅ Banner image uploaded:', result.url)
       }
 
       // Create metadata object
@@ -214,14 +203,10 @@ export function useOrganizationCreation() {
         tags: params.tags ? params.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []
       }
 
-      console.log('📋 Created metadata object:', metadata)
-
       // Upload metadata to IPFS
       setState(prev => ({ ...prev, progress: 'Uploading metadata to IPFS...' }))
-      console.log('📤 Uploading metadata to IPFS...')
 
       const metadataResult = await uploadOrganizationMetadata(metadata)
-      console.log('✅ Metadata uploaded:', metadataResult.url)
 
       // Prepare contract parameters
       const contractParams = {
@@ -235,8 +220,6 @@ export function useOrganizationCreation() {
         gameStakeRequired: params.stakeAmount,
       }
 
-      console.log('📋 Final contract parameters:', contractParams)
-
       // Check if GAME token approval is needed
       const stakeAmount = parseFloat(params.stakeAmount)
       const membershipFee = parseFloat(params.membershipFee)
@@ -249,12 +232,6 @@ export function useOrganizationCreation() {
           progress: 'Requesting GAME token approval...'
         }))
 
-        console.log('📤 Requesting GAME token approval for total amount:', {
-          stakeAmount: params.stakeAmount,
-          membershipFee: params.membershipFee,
-          totalAmount: totalAmount.toString()
-        })
-
         // Store the organization parameters to create after approval
         setPendingCreation(contractParams)
 
@@ -264,7 +241,6 @@ export function useOrganizationCreation() {
             amount: totalAmount.toString(),
             purpose: 'organization creation'
           })
-          console.log('✅ GAME token approval requested!')
           // Organization creation will continue in the approval success effect
         } catch (error) {
           console.error('❌ GAME token approval failed:', error)
@@ -279,7 +255,6 @@ export function useOrganizationCreation() {
         }))
 
         await createOrganization(contractParams)
-        console.log('✅ createOrganization call completed!')
 
         setState(prev => ({
           ...prev,

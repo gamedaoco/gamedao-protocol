@@ -131,17 +131,9 @@ export function useOrganizations() {
 
   // Transform user organizations data
   const userOrganizations: Organization[] = useMemo(() => {
-    console.log('🔍 useOrganizations userOrgsData:', {
-      userOrgsData,
-      members: userOrgsData?.members,
-      membersLength: userOrgsData?.members?.length,
-      address
-    })
-
     if (!userOrgsData?.members) return []
 
     const activeMembers = userOrgsData.members.filter((member: any) => member.state === 'ACTIVE')
-    console.log('🔍 Active members:', activeMembers)
 
     return activeMembers.map((member: any) => {
       const org = member.organization
@@ -174,13 +166,6 @@ export function useOrganizations() {
   } = useWriteContract()
   const { getNextNonce } = useNonce()
 
-  console.log('🔍 Transaction state:', {
-    isCreating,
-    createTxHash,
-    createError: createError?.message,
-    hasCreateTxHash: !!createTxHash
-  })
-
   // Wait for create transaction confirmation
   const {
     isLoading: isConfirming,
@@ -191,23 +176,12 @@ export function useOrganizations() {
     hash: createTxHash,
   })
 
-  console.log('🔍 Transaction confirmation state:', {
-    isConfirming,
-    createSuccess,
-    confirmError: confirmError?.message,
-    txHash: createTxHash,
-    hasReceipt: !!transactionReceipt
-  })
-
   // Extract organization ID from transaction receipt
   const [createdOrgId, setCreatedOrgId] = useState<string | null>(null)
 
   useEffect(() => {
     if (createSuccess && transactionReceipt) {
       try {
-        console.log('🔍 Parsing transaction receipt for organization ID...')
-        console.log('🔍 Transaction logs:', transactionReceipt.logs.length)
-
         // Try to extract the organization ID from logs (topic-based or viem decode)
         if (contracts.FACTORY) {
           let orgId = extractOrganizationIdFromLogs(transactionReceipt.logs, contracts.FACTORY)
@@ -215,7 +189,6 @@ export function useOrganizations() {
             orgId = extractOrganizationIdFromLogsViem(transactionReceipt.logs, ABIS.FACTORY as any)
           }
           if (orgId) {
-            console.log('🎉 Found organization ID:', orgId)
             setCreatedOrgId(orgId)
             return
           }
@@ -225,7 +198,6 @@ export function useOrganizations() {
 
         // Set a fallback ID to prevent hanging - use transaction hash as identifier
         const fallbackId = `ORG_${transactionReceipt.transactionHash.slice(2, 10).toUpperCase()}`
-        console.log('🔄 Using fallback organization ID:', fallbackId)
         setCreatedOrgId(fallbackId)
 
       } catch (error) {
@@ -233,7 +205,6 @@ export function useOrganizations() {
 
         // Even if parsing fails, don't let the transaction hang
         const fallbackId = `ORG_${transactionReceipt.transactionHash.slice(2, 10).toUpperCase()}`
-        console.log('🔄 Using fallback organization ID after error:', fallbackId)
         setCreatedOrgId(fallbackId)
       }
     }
@@ -267,8 +238,6 @@ export function useOrganizations() {
       return parseTokenAmount(value, 'GAME', fallback)
     }
 
-    console.log('🔍 Creating organization with params:', params)
-
     try {
       const nonce = await getNextNonce().catch(() => undefined)
       const result = await createOrg({
@@ -288,7 +257,6 @@ export function useOrganizations() {
         nonce: nonce as any,
       })
 
-      console.log('🎉 Organization creation transaction submitted:', result)
       toast.loading('Creating organization...')
       return result
     } catch (error) {
@@ -306,7 +274,6 @@ export function useOrganizations() {
   // Refetch data after successful transactions
   useEffect(() => {
     if (createSuccess) {
-      console.log('🎉 Organization created successfully!')
       // Dismiss any loading toasts
       toast.dismiss()
       // Refetch data to show the new organization

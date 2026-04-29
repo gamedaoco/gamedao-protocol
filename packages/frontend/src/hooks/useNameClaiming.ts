@@ -153,8 +153,6 @@ export function useNameClaiming() {
     }
 
     try {
-      console.log('🔍 Claiming name:', params)
-
       // Validate parameters
       if (!validateNameFormat(params.name)) {
         throw new Error('Invalid name format')
@@ -192,8 +190,6 @@ export function useNameClaiming() {
     }
 
     try {
-      console.log('🔍 Releasing name:', name)
-
       // Convert name to bytes8
       const nameBytes8 = stringToBytes8(name)
 

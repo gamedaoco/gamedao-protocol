@@ -176,7 +176,6 @@ export default function CampaignDetailPage() {
             label: 'Contribute Now',
             onClick: () => {
               // TODO: Implement contribution modal
-              console.log('Contribute to campaign:', campaign.id)
             }
           } : undefined
         }

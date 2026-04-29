@@ -56,8 +56,7 @@ export default function ClaimOrganizationNamePage() {
     setIsLoading(isLoadingNames)
   }, [ownedNames, isLoadingNames])
 
-  const handleClaimSuccess = (name: string) => {
-    console.log('✅ Organization name claimed successfully:', name)
+  const handleClaimSuccess = (_name: string) => {
     setShowClaimModal(false)
 
     // Refresh user names

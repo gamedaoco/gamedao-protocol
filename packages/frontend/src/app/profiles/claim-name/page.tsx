@@ -51,8 +51,7 @@ export default function ClaimNamePage() {
     setIsLoading(isLoadingNames)
   }, [ownedNames, isLoadingNames])
 
-  const handleClaimSuccess = (name: string) => {
-    console.log('✅ Name claimed successfully:', name)
+  const handleClaimSuccess = (_name: string) => {
     setShowClaimModal(false)
 
     // Refresh user names

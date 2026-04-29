@@ -74,8 +74,6 @@ export function useGameTokenApproval() {
     if (amountBigInt === BigInt(0)) return false
 
     try {
-      console.log('🔍 Checking approval needed for:', { spender, amount: amountBigInt.toString() })
-
       // Check if we have a public client available
       if (!publicClient) {
         console.warn('No public client available, assuming approval needed')
@@ -90,21 +88,8 @@ export function useGameTokenApproval() {
         args: [address as `0x${string}`, spender],
       }) as bigint
 
-      console.log('🔍 Current GAME allowance:', {
-        spender,
-        currentAllowance: currentAllowance.toString(),
-        requiredAmount: amountBigInt.toString(),
-        needsApproval: currentAllowance < amountBigInt
-      })
-
       // Check if current allowance is sufficient
       const needsApproval = currentAllowance < amountBigInt
-
-      if (!needsApproval) {
-        console.log(`✅ GAME token allowance already sufficient: ${currentAllowance.toString()} >= ${amountBigInt.toString()}`)
-      } else {
-        console.log(`❌ GAME token approval needed: ${currentAllowance.toString()} < ${amountBigInt.toString()}`)
-      }
 
       return needsApproval
     } catch (error) {
@@ -126,12 +111,6 @@ export function useGameTokenApproval() {
       throw new Error('Amount must be greater than 0')
     }
 
-    console.log('🔍 Requesting GAME token approval:', {
-      spender,
-      amount: amountBigInt.toString(),
-      purpose
-    })
-
     try {
       toast.loading(`Requesting GAME token approval for ${purpose}...`)
 
@@ -142,7 +121,6 @@ export function useGameTokenApproval() {
         args: [spender, amountBigInt],
       })
 
-      console.log('🎉 GAME token approval transaction submitted:', result)
       setPendingApproval(params)
       return result
     } catch (error) {
@@ -161,7 +139,6 @@ export function useGameTokenApproval() {
       const needsApproval = await checkApprovalNeeded(spender, amount)
 
       if (!needsApproval) {
-        console.log('✅ GAME token allowance already sufficient')
         return true
       }
 
@@ -177,7 +154,6 @@ export function useGameTokenApproval() {
   // Handle approval success
   useEffect(() => {
     if (approvalSuccess && pendingApproval) {
-      console.log('✅ GAME token approval confirmed for:', pendingApproval.purpose)
       toast.dismiss()
       toast.success(`${pendingApproval.purpose} approval confirmed!`)
       setPendingApproval(null)

@@ -117,15 +117,6 @@ export function getContractAddresses(chainId: number): ContractAddresses {
     // Try to get addresses from shared package first
     const sharedAddresses = getAddressesForNetwork(chainId)
 
-    console.log('🔗 Contract addresses loaded:', {
-      chainId,
-      source: 'shared-package',
-      registry: sharedAddresses.REGISTRY,
-      control: sharedAddresses.CONTROL,
-      factory: sharedAddresses.FACTORY,
-      staking: sharedAddresses.STAKING,
-    })
-
     // Map from shared package format to frontend format
     return {
       REGISTRY: sharedAddresses.REGISTRY as Address,
@@ -146,12 +137,6 @@ export function getContractAddresses(chainId: number): ContractAddresses {
 
     // Fallback to localhost hardcoded addresses for development
     if (chainId === 31337) {
-      console.log('🔗 Contract addresses loaded:', {
-        chainId,
-        source: 'localhost-fallback',
-        registry: LOCALHOST_ADDRESSES.REGISTRY,
-        control: LOCALHOST_ADDRESSES.CONTROL,
-      })
       return LOCALHOST_ADDRESSES
     }
   }
@@ -200,14 +185,6 @@ export function getContractAddresses(chainId: number): ContractAddresses {
       : DEFAULT_ADDRESSES.USDC_TOKEN,
   }
 
-  // Log the addresses being used for debugging
-  console.log('🔗 Contract addresses loaded:', {
-    chainId,
-    source: 'environment',
-    registry: addresses.REGISTRY,
-    control: addresses.CONTROL,
-  })
-
   return addresses
 }
 
@@ -233,20 +210,6 @@ export function validateContractAddresses(addresses: ContractAddresses): boolean
 export function logContractConfiguration(chainId: number): void {
   const addresses = getContractAddresses(chainId)
   const isValid = validateContractAddresses(addresses)
-
-  console.log(`🔧 Contract Configuration for Chain ${chainId}:`)
-  console.log(`   Valid: ${isValid ? '✅' : '❌'}`)
-  console.log(`   REGISTRY: ${addresses.REGISTRY}`)
-  console.log(`   CONTROL:  ${addresses.CONTROL}`)
-  console.log(`   FLOW:     ${addresses.FLOW}`)
-  console.log(`   SIGNAL:   ${addresses.SIGNAL}`)
-  console.log(`   SENSE:    ${addresses.SENSE}`)
-  console.log(`   IDENTITY: ${addresses.IDENTITY}`)
-  console.log(`   MEMBERSHIP: ${addresses.MEMBERSHIP}`)
-  console.log(`   STAKING:  ${addresses.STAKING}`)
-  console.log(`   TREASURY: ${addresses.TREASURY}`)
-  console.log(`   GAME_TOKEN: ${addresses.GAME_TOKEN}`)
-  console.log(`   USDC_TOKEN: ${addresses.USDC_TOKEN}`)
 
   if (!isValid) {
     console.warn('⚠️  Some contract addresses are missing. Please check your environment variables or deployment.')

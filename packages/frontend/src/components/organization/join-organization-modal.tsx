@@ -75,18 +75,8 @@ export function JoinOrganizationModal({
     setJoinError(null)
 
     try {
-      console.log('🚀 Joining organization:', {
-        organizationId: organization.id,
-        organizationName: organization.name,
-        userAddress: address,
-        contractAddress: contracts.CONTROL,
-        membershipFee
-      })
-
       // If there's a membership fee, handle GAME token approval first
       if (membershipFee > 0) {
-        console.log('🔍 Membership fee detected:', membershipFee)
-
         const approvalNeeded = await handleApproval({
           spender: contracts.STAKING,
           amount: membershipFee,
@@ -112,7 +102,6 @@ export function JoinOrganizationModal({
 
   const proceedWithJoin = async () => {
     try {
-      console.log('🔍 Attempting to join organization:', organization.id)
       if (!contracts.MEMBERSHIP || contracts.MEMBERSHIP === '0x0000000000000000000000000000000000000000') {
         throw new Error('Membership contract not deployed on this network. Switch to a supported chain.')
       }
@@ -125,7 +114,6 @@ export function JoinOrganizationModal({
       })
 
       setJoinSuccess(true)
-      console.log('✅ Join transaction submitted')
 
       setTimeout(() => {
         handleClose()
@@ -193,7 +181,6 @@ export function JoinOrganizationModal({
   // Handle approval success
   useEffect(() => {
     if (approvalSuccess && pendingJoin) {
-      console.log('✅ Approval successful, proceeding with join')
       proceedWithJoin()
     }
   }, [approvalSuccess, pendingJoin])

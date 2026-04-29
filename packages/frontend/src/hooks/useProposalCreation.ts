@@ -59,7 +59,6 @@ export function useProposalCreation() {
   // Handle approval success
   useEffect(() => {
     if (approvalSuccess && !approvalCompleted && pendingCreation) {
-      console.log('✅ GAME token approval confirmed! Proceeding with proposal creation...')
       setApprovalCompleted(true)
 
       setState(prev => ({
@@ -79,7 +78,6 @@ export function useProposalCreation() {
         gameDeposit: pendingCreation.gameDeposit
       })
         .then(() => {
-          console.log('✅ Proposal creation initiated after approval')
           setState(prev => ({
             ...prev,
             currentStep: 'confirming',
@@ -101,7 +99,6 @@ export function useProposalCreation() {
   // Handle proposal creation success
   useEffect(() => {
     if (createSuccess && state.currentStep === 'confirming') {
-      console.log('🎉 Proposal created successfully!')
       setState(prev => ({
         ...prev,
         currentStep: 'success',
@@ -150,9 +147,6 @@ export function useProposalCreation() {
       throw new Error('Wallet not connected or contracts not loaded')
     }
 
-    console.log('🚀 Starting proposal creation process...')
-    console.log('📋 Parameters:', params)
-
     // Reset state
     resetState()
 
@@ -174,11 +168,6 @@ export function useProposalCreation() {
           progress: 'Requesting GAME token approval...'
         }))
 
-        console.log('📤 Requesting GAME token approval for proposal creation:', {
-          gameDeposit: params.gameDeposit,
-          spender: contracts.SIGNAL
-        })
-
         // Store the proposal parameters to create after approval
         setPendingCreation(params)
 
@@ -188,7 +177,6 @@ export function useProposalCreation() {
             amount: params.gameDeposit,
             purpose: 'proposal creation'
           })
-          console.log('✅ GAME token approval requested!')
           // Proposal creation will continue in the approval success effect
         } catch (error) {
           console.error('❌ GAME token approval failed:', error)
@@ -211,8 +199,6 @@ export function useProposalCreation() {
           votingPeriod: params.votingPeriod,
           gameDeposit: params.gameDeposit
         })
-
-        console.log('✅ createProposal call completed!')
 
         setState(prev => ({
           ...prev,

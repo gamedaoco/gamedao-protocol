@@ -87,20 +87,9 @@ export default function CreateProfilePage() {
     setCreationSuccess(false)
 
     try {
-      const metadata = JSON.stringify({
-        username: formData.username,
-        bio: formData.bio,
-        avatar: formData.avatar,
-        interests: formData.interests,
-        location: formData.location,
-        website: formData.website,
-        twitter: formData.twitter,
-        github: formData.github,
-        createdAt: Date.now()
-      })
-
       // For now, just show success message since we need to implement proper contract integration
-      console.log('Creating profile with metadata:', metadata)
+      // Metadata payload (to be sent to contract once integrated):
+      // { username, bio, avatar, interests, location, website, twitter, github, createdAt }
 
       // Simulate transaction delay
       await new Promise(resolve => setTimeout(resolve, 2000))

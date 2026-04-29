@@ -117,16 +117,8 @@ export function useCampaigns() {
     }
 
     try {
-      console.log('🔍 Creating campaign with GAME token approval:', {
-        organizationId: params.organizationId,
-        title: params.title,
-        gameDeposit: params.gameDeposit
-      })
-
       // Handle GAME token approval first if needed
       if (params.gameDeposit && parseFloat(params.gameDeposit) > 0) {
-        console.log('🔍 GAME token deposit required:', params.gameDeposit)
-
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
           spender: contracts.FLOW,
@@ -175,12 +167,6 @@ export function useCampaigns() {
     }
 
     try {
-      console.log('🔍 Contributing to campaign with token approval:', {
-        campaignId,
-        amount,
-        token
-      })
-
       // Handle token approval first
       const approvalNeeded = await handleTokenApproval({
         token,

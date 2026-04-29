@@ -183,13 +183,9 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
       }
 
-      console.log('📋 Created metadata object:', metadata)
-
       // Upload metadata to IPFS
       setUploadProgress('Uploading metadata to IPFS...')
-      console.log('📤 Uploading metadata to IPFS...')
       const metadataResult = await uploadOrganizationMetadata(metadata)
-      console.log('✅ Metadata uploaded:', metadataResult)
 
       setUploadProgress('Deploying your collective…')
 
@@ -203,8 +199,6 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         membershipFee: formData.membershipFee,
         gameStakeRequired: formData.gameStakeRequired,
       }
-
-      console.log('📋 Final contract parameters:', contractParams)
 
       await createOrganizationWithApproval({
         name: formData.name,
@@ -225,7 +219,6 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
         bannerImage: bannerImage || undefined
       })
 
-      console.log('✅ Organization creation transaction submitted')
       setUploadProgress('')
 
     } catch (error) {
@@ -234,11 +227,9 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
 
       // Show user-friendly error message
       if (error instanceof Error) {
-        if (error.message.includes('user rejected')) {
-          console.log('User cancelled the transaction')
-        } else if (error.message.includes('insufficient funds')) {
+        if (error.message.includes('insufficient funds')) {
           console.error('Insufficient funds for transaction')
-        } else {
+        } else if (!error.message.includes('user rejected')) {
           console.error('Transaction error:', error.message)
         }
       }
@@ -249,7 +240,6 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
   useEffect(() => {
     if (createSuccess && !successHandledRef.current) {
       successHandledRef.current = true
-      console.log('🎉 Organization created successfully!')
 
       // Refetch organizations data
       refetch()
@@ -279,13 +269,6 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
 
   // Handle error state change - only during actual transaction attempts
   useEffect(() => {
-    console.log('🔍 Error state check:', {
-      createError: !!createError,
-      isCreating,
-      step,
-      errorMessage: createError
-    })
-
     // Only show toast errors during actual transaction attempts
     if (createError && isCreating) {
       console.error('❌ Organization creation failed:', createError)
@@ -301,26 +284,8 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
       } else {
         toast.error('Failed to create organization. Please try again.')
       }
-    } else if (createError && !isCreating) {
-      // Log but don't show toast for stale errors
-      console.log('🔍 Stale error detected (not during creation):', createError)
     }
   }, [createError, isCreating, step])
-
-  // Debug form data when entering review step
-  useEffect(() => {
-    if (step === 'review') {
-      console.log('🔍 Review step - Form data:', formData)
-      console.log('🔍 Review step - Validation:', {
-        hasName: formData.name.trim().length > 0,
-        hasDescription: formData.description.trim().length > 0,
-        memberLimit: formData.memberLimit,
-        isConnected,
-        ethBalance: ethBalance.balance,
-        gameBalance: gameBalance.balance,
-      })
-    }
-  }, [step, formData, isConnected, ethBalance, gameBalance])
 
   // Reset any previous errors when opening the modal
   useEffect(() => {

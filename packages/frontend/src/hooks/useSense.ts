@@ -79,16 +79,8 @@ export function useSense() {
     }
 
     try {
-      console.log('🔍 Creating profile with Identity module:', {
-        organizationId: params.organizationId,
-        metadata: params.metadata,
-        gameDeposit: params.gameDeposit
-      })
-
       // Handle GAME token approval for profile creation if needed
       if (params.gameDeposit && parseFloat(params.gameDeposit) > 0) {
-        console.log('🔍 GAME token deposit required for profile creation:', params.gameDeposit)
-
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
           spender: contracts.IDENTITY,
@@ -131,17 +123,8 @@ export function useSense() {
     }
 
     try {
-      console.log('🔍 Claiming name with Identity module:', {
-        name: params.name,
-        stakeAmount: params.stakeAmount,
-        stakeDuration: params.stakeDuration,
-        nameType: params.nameType
-      })
-
       // Handle GAME token approval for name claiming
       if (params.stakeAmount && parseFloat(params.stakeAmount) > 0) {
-        console.log('🔍 GAME token deposit required for name claiming:', params.stakeAmount)
-
         const approvalNeeded = await handleTokenApproval({
           token: 'GAME',
           spender: contracts.IDENTITY,

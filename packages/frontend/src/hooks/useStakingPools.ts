@@ -222,11 +222,6 @@ export function useStakingPools() {
     }
 
     try {
-      console.log('🔍 Staking GAME tokens with approval:', {
-        poolId,
-        amount
-      })
-
       // Handle GAME token approval first
       const approvalNeeded = await handleTokenApproval({
         token: 'GAME',

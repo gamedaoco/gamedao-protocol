@@ -74,7 +74,6 @@ export function useUserRegistration() {
 
     try {
       // TODO: Implement user registration via contract
-      console.log('Registering user:', profileData)
       // await registerUserProfile(address, profileData)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to register user')

@@ -168,11 +168,6 @@ export { ABIS } from './abis'
  */
 export function logActiveChainConfiguration(chainId: number) {
   if (process.env.NODE_ENV === 'development') {
-    const chainConfig = getChainConfig(chainId)
-    console.log(`🔧 Active Chain Configuration (${chainId}):`)
-    console.log(`  Network: ${chainConfig.name}`)
-    console.log(`  Supported: ${isSupportedNetwork(chainId) ? '✅' : '❌'}`)
-
     // Log contract configuration for the active chain only
     logContractConfiguration(chainId)
   }

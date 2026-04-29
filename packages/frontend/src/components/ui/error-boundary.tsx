@@ -76,19 +76,7 @@ function ErrorFallback({
     console.error('Error reported by user:', error)
 
     // Could integrate with services like Sentry, LogRocket, etc.
-    if (typeof window !== 'undefined') {
-      const errorReport = {
-        message: error.message,
-        stack: error.stack,
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-        timestamp: new Date().toISOString()
-      }
-
-      // Example: Send to error reporting service
-      // errorReportingService.report(errorReport)
-      console.log('Error report:', errorReport)
-    }
+    // Example: errorReportingService.report({ message: error.message, stack: error.stack, ... })
   }
 
   return (

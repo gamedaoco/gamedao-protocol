@@ -153,11 +153,11 @@ export function EmptyState({
   const finalDescription = description || config?.description
   const finalPrimaryAction = primaryAction || (config && 'primaryAction' in config && config.primaryAction ? {
     ...config.primaryAction,
-    onClick: () => console.log('Primary action clicked')
+    onClick: () => {}
   } : undefined)
   const finalSecondaryAction = secondaryAction || (config && 'secondaryAction' in config && config.secondaryAction ? {
     ...config.secondaryAction,
-    onClick: () => console.log('Secondary action clicked')
+    onClick: () => {}
   } : undefined)
 
   const content = (

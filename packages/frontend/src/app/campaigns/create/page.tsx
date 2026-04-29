@@ -116,13 +116,11 @@ export default function CreateCampaignPage() {
 
     try {
       // TODO: Implement actual campaign creation with proper transaction handling
-      console.log('Creating campaign with data:', formData)
 
       // Simulate transaction delay
       await new Promise(resolve => setTimeout(resolve, 3000))
 
       // For now, just show success message
-      console.log('Campaign creation will be implemented with contract integration')
       setCreationSuccess(true)
 
     } catch (error) {

@@ -104,22 +104,17 @@ export default function CreateOrganizationPage() {
   }, [currentStep, validOrgId, router, resetState])
 
   const handleImageUpload = (file: File, type: 'profile' | 'banner') => {
-    console.log('🖼️ Image upload triggered:', { fileName: file.name, fileSize: file.size, type })
-
     if (file) {
       const reader = new FileReader()
       reader.onload = (e) => {
         const preview = e.target?.result as string
-        console.log('🖼️ Image preview generated:', { type, previewLength: preview.length })
 
         if (type === 'profile') {
           setProfileImage(file)
           setProfileImagePreview(preview)
-          console.log('🖼️ Profile image set:', { hasFile: !!file, hasPreview: !!preview })
         } else {
           setBannerImage(file)
           setBannerImagePreview(preview)
-          console.log('🖼️ Banner image set:', { hasFile: !!file, hasPreview: !!preview })
         }
       }
       reader.onerror = (error) => {
@@ -131,8 +126,6 @@ export default function CreateOrganizationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('📝 Form submitted!')
-    console.log('📋 Form data:', formData)
 
     if (!isConnected || !contracts) {
       console.error('❌ Prerequisites not met:', { isConnected, contracts })
@@ -425,13 +418,9 @@ export default function CreateOrganizationPage() {
                                 accept="image/*"
                                 className="hidden"
                                 onChange={(e) => {
-                                  console.log('📁 Profile image input changed:', e.target.files)
                                   const file = e.target.files?.[0]
                                   if (file) {
-                                    console.log('📁 Profile image file selected:', { name: file.name, size: file.size, type: file.type })
                                     handleImageUpload(file, 'profile')
-                                  } else {
-                                    console.log('📁 No profile image file selected')
                                   }
                                 }}
                               />
@@ -488,13 +477,9 @@ export default function CreateOrganizationPage() {
                                 accept="image/*"
                                 className="hidden"
                                 onChange={(e) => {
-                                  console.log('📁 Banner image input changed:', e.target.files)
                                   const file = e.target.files?.[0]
                                   if (file) {
-                                    console.log('📁 Banner image file selected:', { name: file.name, size: file.size, type: file.type })
                                     handleImageUpload(file, 'banner')
-                                  } else {
-                                    console.log('📁 No banner image file selected')
                                   }
                                 }}
                               />
