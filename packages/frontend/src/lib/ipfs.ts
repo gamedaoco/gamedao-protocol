@@ -272,11 +272,29 @@ export async function uploadFileToIPFS(
 // Domain-specific metadata helpers moved to lib/ipfsMetadata.ts to keep concerns separated
 
 /**
+ * Cheap CID-shape heuristic. A real CID is alphanumeric (base58 v0 / base32
+ * v1 — no spaces, no punctuation) and at least 46 chars (length of a v0
+ * `Qm…`). We deliberately skip a full CID library — this is just enough to
+ * stop the gateway from receiving obviously-malformed IDs (e.g. scaffold
+ * placeholder strings like `QmOrg1Esports Alliance`).
+ */
+export function isPlausibleCID(hash: string): boolean {
+  return typeof hash === 'string' && /^[A-Za-z0-9]{46,}$/.test(hash)
+}
+
+/**
  * Retrieve content from IPFS
  */
 export async function getFromIPFS(hashOrUrl: string): Promise<any> {
   try {
     const hash = extractIPFSHash(hashOrUrl)
+
+    if (!isPlausibleCID(hash)) {
+      // Don't even try — this avoids 400 spam in the console for orgs/
+      // profiles/campaigns whose metadataURI is a placeholder or other
+      // non-CID string. Treat as "no metadata available".
+      throw new Error(`IPFS retrieval skipped: not a plausible CID (${hash})`)
+    }
 
     // For development, retrieve from localStorage
     if (typeof window !== 'undefined') {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { getFromIPFS, uploadFileToIPFS, uploadJSONToIPFS, getIPFSUrl, getIPFSGatewayCandidates } from '@/lib/ipfs'
+import { getFromIPFS, uploadFileToIPFS, uploadJSONToIPFS, getIPFSUrl, getIPFSGatewayCandidates, isPlausibleCID } from '@/lib/ipfs'
 import { useIPFSLogger } from './useLogger'
 
 // Define the upload result type locally since it's not exported
@@ -370,6 +370,15 @@ export function useIPFSImage(
 
   const loadImage = useCallback(async () => {
     if (!hash) {
+      setImageUrl(fallbackUrl)
+      setIsLoading(false)
+      return
+    }
+
+    // Cheap guard against scaffold placeholders or other malformed URIs.
+    // Without this, every malformed CID generates 400s on every gateway.
+    const sanitisedHash = hash.replace(/^ipfs:\/\//, '')
+    if (!isPlausibleCID(sanitisedHash)) {
       setImageUrl(fallbackUrl)
       setIsLoading(false)
       return
