@@ -1,3 +1,4 @@
+name: gamedao
 services:
   # Dockerized Hardhat Node (default local chain — chainId 31337).
   # Self-contained: image runs hardhat node directly, no source mount.

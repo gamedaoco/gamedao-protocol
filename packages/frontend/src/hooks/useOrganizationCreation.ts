@@ -78,7 +78,7 @@ export function useOrganizationCreation() {
       setState(prev => ({
         ...prev,
         currentStep: 'creating',
-        progress: 'Creating organization on blockchain...'
+        progress: 'Deploying your collective…'
       }))
 
       createOrganization(pendingCreation)
@@ -275,7 +275,7 @@ export function useOrganizationCreation() {
         setState(prev => ({
           ...prev,
           currentStep: 'creating',
-          progress: 'Creating organization on blockchain...'
+          progress: 'Deploying your collective…'
         }))
 
         await createOrganization(contractParams)

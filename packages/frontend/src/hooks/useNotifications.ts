@@ -103,7 +103,7 @@ export function useNotifications() {
         timestamp: Date.now() - 3600000, // 1 hour ago
         read: false,
         entityId: 'org123',
-        actionUrl: '/control/org123'
+        actionUrl: '/collectives/org123'
       },
       {
         id: '2',
@@ -114,7 +114,7 @@ export function useNotifications() {
         read: false,
         urgent: true,
         entityId: 'camp456',
-        actionUrl: '/flow/camp456'
+        actionUrl: '/campaigns/camp456'
       },
       {
         id: '3',
@@ -124,7 +124,7 @@ export function useNotifications() {
         timestamp: Date.now() - 14400000, // 4 hours ago
         read: true,
         entityId: 'prop789',
-        actionUrl: '/signal/prop789'
+        actionUrl: '/governance/prop789'
       },
       {
         id: '4',
