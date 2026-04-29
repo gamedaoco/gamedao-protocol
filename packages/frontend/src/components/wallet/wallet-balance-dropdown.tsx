@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAccount, useDisconnect } from 'wagmi'
 import { usePrivy } from '@privy-io/react-auth'
 import { useRouter } from 'next/navigation'
@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 
 type BalanceView = 'total' | 'network' | 'tokens'
+type IdentityView = 'username' | 'email' | 'address'
 
 export function WalletBalanceDropdown() {
   const { address, isConnected } = useAccount()
@@ -43,7 +44,7 @@ export function WalletBalanceDropdown() {
   //    state from before the Privy migration).
   // Calling both is safe — each is a no-op if the corresponding session
   // doesn't exist. Calling only one leaves the other stuck.
-  const { logout } = usePrivy()
+  const { logout, user } = usePrivy()
   const { disconnect } = useDisconnect()
   const handleDisconnect = async () => {
     try { await logout() } catch {}
@@ -52,8 +53,29 @@ export function WalletBalanceDropdown() {
   const router = useRouter()
   const { balances, isLoading, ethBalance, gameBalance, usdcBalance } = useTokenBalances()
   const { username: senseUsername, isLoading: usernameLoading } = useSenseUsername(address)
+  const userEmail = user?.email?.address ?? null
   const [copied, setCopied] = useState(false)
   const [balanceView, setBalanceView] = useState<BalanceView>('total')
+
+  // Cycle order: username (if set) → email (if set) → address. The starting
+  // view is the first one that has a value, so users who never set a Sense
+  // name still see something meaningful (their email) instead of a hex blob.
+  const identityCycle = useMemo<IdentityView[]>(() => {
+    const cycle: IdentityView[] = []
+    if (senseUsername) cycle.push('username')
+    if (userEmail) cycle.push('email')
+    cycle.push('address')
+    return cycle
+  }, [senseUsername, userEmail])
+  const [identityIndex, setIdentityIndex] = useState(0)
+  // Reset to the first available view whenever the cycle composition
+  // changes (e.g. user just registered a username, or signed in fresh).
+  useEffect(() => { setIdentityIndex(0) }, [identityCycle.length])
+  const identityView = identityCycle[identityIndex % identityCycle.length]
+  const cycleIdentity = () => {
+    if (identityCycle.length <= 1) return
+    setIdentityIndex(i => (i + 1) % identityCycle.length)
+  }
 
   // Format numbers with compact notation (k, m) and 2 decimal places
   const formatCompactNumber = (value: number): string => {
@@ -163,16 +185,20 @@ export function WalletBalanceDropdown() {
     <div className="flex items-center gap-2">
       {/* Interactive wallet info - completely separate from dropdown */}
       <div className="flex flex-col items-start gap-0.5 min-w-[140px]">
-        {/* Top line: Username or Address - Copy on click */}
+        {/* Top line: identity view — click cycles between username (if set),
+            email (if set), and the connected address. Copy moved to the
+            dropdown so the click action stays predictable. */}
         <button
-          onClick={copyAddress}
-          className="text-sm font-medium hover:text-primary transition-colors text-left flex items-center gap-1"
+          onClick={cycleIdentity}
+          className="text-sm font-medium hover:text-primary transition-colors text-left flex items-center gap-1 max-w-[200px]"
+          title={identityCycle.length > 1 ? 'Click to cycle identity' : undefined}
         >
-          <span>
-            {senseUsername ? `@${senseUsername}` : formatAddress(address)}
-            {copied && <span className="text-xs text-green-600 ml-1">✓</span>}
+          <span className="truncate">
+            {identityView === 'username' && senseUsername && `@${senseUsername}`}
+            {identityView === 'email' && userEmail}
+            {identityView === 'address' && formatAddress(address)}
           </span>
-          {senseUsername && (
+          {identityView === 'username' && senseUsername && (
             <Shield className="h-3 w-3 text-green-600 flex-shrink-0" />
           )}
         </button>
