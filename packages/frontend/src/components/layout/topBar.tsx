@@ -11,8 +11,8 @@ import { NotificationBell } from '@/components/notifications/notification-bell'
 import { Button } from '@/components/ui/button'
 
 export function TopBar() {
-  const { isConnected, contracts } = useGameDAO()
-  const { enabled, loading: modulesLoading } = useModules()
+  const { isConnected } = useGameDAO()
+  const { enabled } = useModules()
 
   const idHex = (name: string) => keccak256(stringToBytes(name))
   const pathname = usePathname()
@@ -46,25 +46,12 @@ export function TopBar() {
           </Link>
         </div>
 
-        {/* Navigation - Left aligned after logo */}
+        {/* Navigation - slimmed to the three primary surfaces. Governance,
+            Staking, Dashboard, etc. live in the footer's full nav column. */}
         <nav className="flex items-center space-x-6 text-sm mr-auto">
           {enabled.has(idHex('CONTROL')) && (
             <Link href="/collectives" className={getNavClasses('/collectives')}>
               Collectives
-            </Link>
-          )}
-          {enabled.has(idHex('SIGNAL')) && (
-            <Link href="/governance" className={getNavClasses('/governance')}>
-              Governance
-            </Link>
-          )}
-          {/* Staking is a standalone contract, not a Registry-managed module.
-              We still gate it on `!modulesLoading` so all nav items resolve in
-              the same tick — otherwise Staking flashes alone while the modules
-              query is in flight. */}
-          {!modulesLoading && contracts.STAKING && (
-            <Link href="/staking" className={getNavClasses('/staking')}>
-              Staking
             </Link>
           )}
           {enabled.has(idHex('FLOW')) && (

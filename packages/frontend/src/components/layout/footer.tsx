@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { useGameDAO } from '@/hooks/useGameDAO'
@@ -16,7 +17,7 @@ export function Footer() {
   return (
     <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {/* Brand */}
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
@@ -34,7 +35,30 @@ export function Footer() {
             </p>
           </div>
 
-
+          {/* Navigation — full nav surfaces, gated on module enabled state.
+              The TopBar carries only the three primary surfaces
+              (Collectives / Campaigns / Profiles); everything else lives
+              here for discoverability. */}
+          <div className="space-y-2">
+            <h4 className="font-medium">Navigation</h4>
+            <div className="space-y-1 text-sm text-muted-foreground">
+              {enabled.has(idHex('CONTROL')) && (
+                <Link href="/collectives" className="block hover:underline">Collectives</Link>
+              )}
+              {enabled.has(idHex('SIGNAL')) && (
+                <Link href="/governance" className="block hover:underline">Governance</Link>
+              )}
+              {contracts.STAKING && (
+                <Link href="/staking" className="block hover:underline">Staking</Link>
+              )}
+              {enabled.has(idHex('FLOW')) && (
+                <Link href="/campaigns" className="block hover:underline">Campaigns</Link>
+              )}
+              {enabled.has(idHex('SENSE')) && (
+                <Link href="/profiles" className="block hover:underline">Profiles</Link>
+              )}
+            </div>
+          </div>
 
           {/* Resources */}
           <div className="space-y-2">
