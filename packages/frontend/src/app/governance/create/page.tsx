@@ -95,20 +95,6 @@ export default function CreateProposalPage() {
     )
   }
 
-  // Debug logging (can be removed in production)
-  console.log('🔍 Proposal creation debug:', {
-    userOrganizations: userOrganizations,
-    userOrganizationsLength: userOrganizations.length,
-    preselectedOrgId,
-    address,
-    isConnected,
-    isMember,
-    memberData,
-    membershipLoading,
-    currentStep,
-    isProcessing
-  })
-
   // Check if user has organizations
   if (userOrganizations.length === 0) {
     return (

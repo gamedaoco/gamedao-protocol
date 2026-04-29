@@ -80,24 +80,6 @@ export default function CreateOrganizationPage() {
   const isApprovalConfirming = isApproving
   const createSuccess = currentStep === 'success'
 
-  console.log('🔍 Create page state:', {
-    isConnected,
-    contracts,
-    contractsValid,
-    chainId,
-    isCreating,
-    currentStep,
-    creationError: creationError,
-    createdOrgId,
-    isApproving,
-    progress,
-    profileImagePreview: !!profileImagePreview,
-    bannerImagePreview: !!bannerImagePreview,
-    profileImageLength: profileImagePreview?.length || 0,
-    bannerImageLength: bannerImagePreview?.length || 0,
-    renderTime: new Date().toISOString()
-  })
-
   // Redirect when the newly created organization is indexed and query returns it
   useEffect(() => {
     if (currentStep === 'success' && validOrgId && createdOrgQuery?.organization) {
