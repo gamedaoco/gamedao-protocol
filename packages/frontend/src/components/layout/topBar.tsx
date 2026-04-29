@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 
 export function TopBar() {
   const { isConnected, contracts } = useGameDAO()
-  const { enabled } = useModules()
+  const { enabled, loading: modulesLoading } = useModules()
 
   const idHex = (name: string) => keccak256(stringToBytes(name))
   const pathname = usePathname()
@@ -59,8 +59,11 @@ export function TopBar() {
               Governance
             </Link>
           )}
-          {/* Staking is a standalone contract, not a Registry-managed module — always shown when deployed. */}
-          {contracts.STAKING && (
+          {/* Staking is a standalone contract, not a Registry-managed module.
+              We still gate it on `!modulesLoading` so all nav items resolve in
+              the same tick — otherwise Staking flashes alone while the modules
+              query is in flight. */}
+          {!modulesLoading && contracts.STAKING && (
             <Link href="/staking" className={getNavClasses('/staking')}>
               Staking
             </Link>
