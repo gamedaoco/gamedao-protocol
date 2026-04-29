@@ -1,6 +1,4 @@
-import { http, createConfig } from 'wagmi'
 import { mainnet, sepolia, hardhat, polygon } from 'wagmi/chains'
-import { injected, metaMask } from 'wagmi/connectors'
 import { getContractAddresses, logContractConfiguration, type ContractAddresses } from './contracts'
 
 // Window type extension for Talisman

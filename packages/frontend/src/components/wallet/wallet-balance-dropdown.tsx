@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount, useDisconnect } from 'wagmi'
+import { useAccount } from 'wagmi'
+import { usePrivy } from '@privy-io/react-auth'
 import { useRouter } from 'next/navigation'
 import { useTokenBalances, useSenseUsername } from '@/hooks/useTokenBalances'
 import { formatAddress } from '@/lib/utils'
@@ -36,7 +37,10 @@ type BalanceView = 'total' | 'network' | 'tokens'
 
 export function WalletBalanceDropdown() {
   const { address, isConnected } = useAccount()
-  const { disconnect } = useDisconnect()
+  // Disconnect routes through Privy's `logout` so the embedded-wallet
+  // session ends. wagmi's useDisconnect alone would only drop the wagmi
+  // connector and leave the Privy session live.
+  const { logout } = usePrivy()
   const router = useRouter()
   const { balances, isLoading, ethBalance, gameBalance, usdcBalance } = useTokenBalances()
   const { username: senseUsername, isLoading: usernameLoading } = useSenseUsername(address)
@@ -316,7 +320,7 @@ export function WalletBalanceDropdown() {
           <DropdownMenuSeparator />
 
           {/* Disconnect */}
-          <DropdownMenuItem onClick={() => disconnect()} className="text-red-600 focus:text-red-600">
+          <DropdownMenuItem onClick={() => logout()} className="text-red-600 focus:text-red-600">
             <LogOut className="h-4 w-4 mr-2" />
             Disconnect Wallet
           </DropdownMenuItem>
