@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { http } from 'wagmi'
 import { hardhat, polygon, polygonAmoy } from 'wagmi/chains'
 import { PrivyProvider } from '@privy-io/react-auth'
+import { SmartWalletsProvider } from '@privy-io/react-auth/smart-wallets'
 import { WagmiProvider, createConfig } from '@privy-io/wagmi'
 
 // Privy app id is provided at runtime via env. We surface a clear console
@@ -91,16 +92,27 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
           showWalletLoginFirst: false,
         },
         embeddedWallets: {
-          // Provision an embedded wallet for users who sign in without one.
-          // Stage 2 will flip this over to ERC-4337 smart accounts via
-          // `embeddedWallets.ethereum.useSmartWallets = true` once the
-          // smart-account flow is implemented.
+          // Provision an embedded EOA for users who sign in without one.
+          // Smart-account behaviour layers on top of this EOA via
+          // `<SmartWalletsProvider>` — the EOA is the *signer*; the Kernel
+          // smart account (configured in Privy dashboard) is the address
+          // users actually transact from once Phase 2 routes wagmi writes
+          // through it.
           createOnLogin: 'users-without-wallets',
         },
       }}
     >
       <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={wagmiConfig}>{children}</WagmiProvider>
+        <WagmiProvider config={wagmiConfig}>
+          {/* SmartWalletsProvider provisions a Kernel smart account for the
+              embedded EOA on first login. Smart-account type + bundler /
+              paymaster URLs are configured per-network in the Privy
+              dashboard; this provider just makes `useSmartWallets()`
+              available. Phase 2 wires wagmi writes to route through the
+              smart account so paymaster sponsorship kicks in for every
+              `useWriteContract` call site. */}
+          <SmartWalletsProvider>{children}</SmartWalletsProvider>
+        </WagmiProvider>
       </QueryClientProvider>
     </PrivyProvider>
   )
