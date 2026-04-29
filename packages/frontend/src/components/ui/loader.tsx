@@ -72,17 +72,21 @@ interface CreativeLoaderProps {
 }
 
 export function CreativeLoader({ size = 'lg', className, intervalMs = 1800 }: CreativeLoaderProps) {
-  // Start at index 0 so SSR and the first client render match. After mount,
-  // jump to a random message and rotate from there.
-  const [index, setIndex] = useState(0)
+  // SSR and first hydrate render the spinner with no text — both sides agree.
+  // After mount we pick a random message and start rotating. This avoids the
+  // hydration mismatch *and* makes the message vary across page loads (the
+  // earlier "always start at index 0" approach defeated the rotation when
+  // the loader unmounts within a few ms of mount, which is the common case
+  // for the boot loader).
+  const [index, setIndex] = useState<number | null>(null)
 
   useEffect(() => {
     setIndex(Math.floor(Math.random() * CREATIVE_MESSAGES.length))
     const id = setInterval(() => {
-      setIndex((i) => (i + 1) % CREATIVE_MESSAGES.length)
+      setIndex((i) => ((i ?? 0) + 1) % CREATIVE_MESSAGES.length)
     }, intervalMs)
     return () => clearInterval(id)
   }, [intervalMs])
 
-  return <Loader size={size} text={CREATIVE_MESSAGES[index]} className={className} />
+  return <Loader size={size} text={index === null ? undefined : CREATIVE_MESSAGES[index]} className={className} />
 }
