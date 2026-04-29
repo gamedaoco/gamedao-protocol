@@ -330,7 +330,7 @@ export function WalletBalanceDropdown() {
           {/* Disconnect */}
           <DropdownMenuItem onClick={handleDisconnect} className="text-red-600 focus:text-red-600">
             <LogOut className="h-4 w-4 mr-2" />
-            Disconnect Wallet
+            Sign out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

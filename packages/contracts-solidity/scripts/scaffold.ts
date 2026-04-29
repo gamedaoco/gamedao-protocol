@@ -3,6 +3,38 @@ import fs from "fs"
 import path from "path"
 import { getDeployment } from "./lib/deployment"
 
+// Local Kubo HTTP API — provided by docker-compose's `ipfs` service.
+// Override via env when running scaffold against a non-default IPFS.
+const IPFS_API = process.env.IPFS_API || "http://localhost:5001/api/v0"
+
+// Upload arbitrary JSON to local IPFS. Returns the CID. Hard error on failure
+// — scaffold must not produce fake CIDs that break the live app (see
+// docs/feedback_quality_bar). Cache by stringified payload so re-running
+// scaffold doesn't re-upload identical metadata.
+const ipfsCache = new Map<string, string>()
+async function uploadToIPFS(payload: unknown): Promise<string> {
+  const json = JSON.stringify(payload)
+  const cached = ipfsCache.get(json)
+  if (cached) return cached
+
+  const body = new FormData()
+  body.append(
+    "file",
+    new Blob([json], { type: "application/json" }),
+    "metadata.json",
+  )
+  const res = await fetch(`${IPFS_API}/add?pin=true`, { method: "POST", body })
+  if (!res.ok) {
+    throw new Error(
+      `IPFS upload failed (${res.status}): ${await res.text()}\n` +
+        `Is the local Kubo running? \`docker compose up -d ipfs\``,
+    )
+  }
+  const { Hash } = (await res.json()) as { Hash: string }
+  ipfsCache.set(json, Hash)
+  return Hash
+}
+
 // ID conversion utilities (matching frontend utils)
 function bytes8ToAlphanumericString(bytes8Hex: string): string {
   // Remove 0x prefix if present
@@ -277,9 +309,17 @@ async function main() {
       // self-join via Membership.joinOrganization for testing. Remaining
       // orgs use Invite (2) to exercise the manager-only flow.
       const accessModel = i < 3 ? 0 : 2
+      const orgMetaCid = await uploadToIPFS({
+        type: "gamedao.org",
+        version: 1,
+        name: template.name,
+        description: template.desc,
+        tags: ["scaffold"],
+        createdAt: new Date().toISOString(),
+      })
       const tx = await control.connect(creator).createOrganization(
         template.name,
-        `ipfs://QmOrg${i}${template.name}`,
+        `ipfs://${orgMetaCid}`,
         0, // orgType
         accessModel,
         0, // feeModel
@@ -413,9 +453,17 @@ async function main() {
     const orgId = userOrg ? userOrg.id : (result.daos[0]?.id || "0x0000000000000000")
 
     try {
+      const profileCid = await uploadToIPFS({
+        type: "gamedao.profile",
+        version: 1,
+        displayName: profile.name,
+        role: profile.role,
+        avatar: profile.avatar,
+        createdAt: new Date().toISOString(),
+      })
       const tx = await identity.connect(user).createProfile(
         orgId,
-        `ipfs://QmProfile${i}` // Mock IPFS metadata URI
+        `ipfs://${profileCid}`,
       )
 
       const receipt = await tx.wait()
@@ -452,7 +500,7 @@ async function main() {
         organizationId: orgId,
         address: user.address,
         name: profile.name,
-        metadata: `ipfs://QmProfile${i}`,
+        metadata: `ipfs://${profileCid}`,
         experiencePoints,
         reputationPoints,
       })
@@ -481,11 +529,20 @@ async function main() {
       const minAmount = ethers.parseUnits("100", 6) // 100 USDC minimum
       const maxAmount = targetAmount * 2n // Set max to double the target
 
+      const campaignCid = await uploadToIPFS({
+        type: "gamedao.campaign",
+        version: 1,
+        title: template.title,
+        description: `Description for ${template.title}`,
+        target: template.target,
+        durationDays: 30,
+        createdAt: new Date().toISOString(),
+      })
       const tx = await flow.connect(creator).createCampaign(
         dao.id,
         template.title,
         `Description for ${template.title}`,
-        `ipfs://QmHash${i}`,
+        `ipfs://${campaignCid}`,
         1, // flowType: Raise
         usdcAddress, // USDC token
         targetAmount,
@@ -595,11 +652,18 @@ async function main() {
 
                   console.log(`  Creating: ${title}`)
 
+      const proposalCid = await uploadToIPFS({
+        type: "gamedao.proposal",
+        version: 1,
+        title,
+        description: `Description for ${title}`,
+        createdAt: new Date().toISOString(),
+      })
       const tx = await signal.connect(proposer).createProposal(
         dao.id,
         title,
         `Description for ${title}`,
-        `ipfs://QmProposal${i}`,
+        `ipfs://${proposalCid}`,
         0, // Simple proposal
         0, // Relative voting (0, not 1)
         0, // Democratic power
