@@ -145,7 +145,7 @@ export default function SignalPage() {
               <div className="text-center py-8">
                 <p className="text-muted-foreground">No proposals found</p>
                 <p className="text-sm text-muted-foreground">
-                  {isConnected ? 'Create the first proposal!' : 'Connect your wallet to see proposals'}
+                  {isConnected ? 'Create the first proposal!' : 'Sign in to see proposals'}
                 </p>
               </div>
             ) : (
@@ -255,7 +255,7 @@ export default function SignalPage() {
           {!isConnected && (
             <div className="text-center py-8 border-t mt-6">
               <p className="text-muted-foreground mb-4">
-                Connect your wallet to participate in governance and vote on proposals
+                Sign in to participate in governance and vote on proposals
               </p>
             </div>
           )}

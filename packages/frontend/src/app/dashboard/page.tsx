@@ -51,10 +51,10 @@ export default function DashboardPage() {
         <div className="text-center py-12">
           <h1 className="text-3xl font-bold mb-4">Welcome to GameDAO</h1>
           <p className="text-muted-foreground mb-6">
-            Connect your wallet to see your collectives, campaigns, and what your community is shipping next.
+            Sign in to see your collectives, campaigns, and what your community is shipping next.
           </p>
           <Button size="lg">
-            Connect Wallet
+            Sign in
           </Button>
         </div>
 

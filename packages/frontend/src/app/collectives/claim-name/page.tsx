@@ -78,9 +78,9 @@ export default function ClaimOrganizationNamePage() {
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
               <Shield className="h-12 w-12 text-muted-foreground mx-auto" />
-              <h2 className="text-2xl font-bold">Connect Wallet Required</h2>
+              <h2 className="text-2xl font-bold">Sign in required</h2>
               <p className="text-muted-foreground">
-                Please connect your wallet to claim organization names in the GameDAO ecosystem.
+                Please sign in to claim organization names in the GameDAO ecosystem.
               </p>
             </div>
           </CardContent>

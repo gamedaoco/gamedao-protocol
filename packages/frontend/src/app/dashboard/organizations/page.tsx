@@ -22,9 +22,9 @@ export default function DashboardOrganizationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">Connect Wallet Required</h2>
+              <h2 className="text-2xl font-bold mb-4">Sign in required</h2>
               <p className="text-muted-foreground">
-                Please connect your wallet to view your collectives.
+                Please sign in to view your collectives.
               </p>
             </div>
           </CardContent>

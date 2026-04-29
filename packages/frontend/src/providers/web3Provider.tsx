@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { http } from 'wagmi'
-import { mainnet, sepolia, hardhat } from 'wagmi/chains'
+import { hardhat, polygon, polygonAmoy } from 'wagmi/chains'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { WagmiProvider, createConfig } from '@privy-io/wagmi'
 
@@ -26,12 +26,17 @@ if (typeof window !== 'undefined' && !PRIVY_APP_ID) {
 // connector via @privy-io/wagmi's <WagmiProvider>. We only declare chains
 // + transports so existing hooks (`useReadContract`, `useBalance`, etc.)
 // keep working unchanged.
+//
+// Supported chains match docs/worklog/116: Hardhat dev + Polygon Amoy +
+// Polygon mainnet. Ethereum mainnet / Sepolia removed — wagmi's default
+// `http()` for them targets eth.merkle.io which blocks browser CORS, so
+// even unused chains spam the console with CORS failures at boot.
 const wagmiConfig = createConfig({
-  chains: [hardhat, sepolia, mainnet],
+  chains: [hardhat, polygonAmoy, polygon],
   transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
     [hardhat.id]: http('http://127.0.0.1:8545'),
+    [polygonAmoy.id]: http(process.env.NEXT_PUBLIC_POLYGON_AMOY_URL || 'https://rpc-amoy.polygon.technology'),
+    [polygon.id]: http(process.env.NEXT_PUBLIC_POLYGON_URL || 'https://polygon-rpc.com'),
   },
   ssr: true,
 })
