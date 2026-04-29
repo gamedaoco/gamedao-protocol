@@ -1,7 +1,7 @@
 {
   "network": "localhost",
   "chainId": 31337,
-  "deployedAt": "2026-04-28T06:36:01.220Z",
+  "deployedAt": "2026-04-29T10:37:45.682Z",
   "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
   "contracts": {
     "GameToken": {
@@ -25,55 +25,55 @@
     "Registry": {
       "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
       "deployBlock": 4,
-      "txHash": "0x8308ef2a3bbaceb8de7918e1a9b29894d120422fb022c5224d8fcb0700582231",
-      "gasUsed": "2166315"
+      "txHash": "0xd3a0a88a8ce34c1e3f69e110f95215472fba83bae460f849dfc1fe27f1740d4b",
+      "gasUsed": "2166087"
     },
     "Identity": {
       "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
       "deployBlock": 5,
-      "txHash": "0x6e5a305f9584685d2910d959e978aa1e1ff6b7bf9ab9ebb10d4ecac4c5505203",
-      "gasUsed": "3629966"
+      "txHash": "0x26cbcec263336db5e3f3a657d6c9e4326c2a58d3e654cc948a7dcfa222039d6f",
+      "gasUsed": "3640148"
     },
     "Membership": {
       "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
       "deployBlock": 6,
-      "txHash": "0xb459fb7bc2de4617918a1e7c043ca925dac090af29d2ad6bcf9c8fc6f77a0cd2",
-      "gasUsed": "3421045"
+      "txHash": "0x587aabddc8257b881a8e2efbb2490f931a1ffee7d91948628cbc3bd02438136a",
+      "gasUsed": "3786766"
     },
     "Control": {
       "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
       "deployBlock": 7,
-      "txHash": "0x313f60597066d68f53bf503f23cae1f885b156e3f9833b6a1ebbe3174b227bf4",
-      "gasUsed": "3031604"
+      "txHash": "0xcbd10908934fc253006ae7c13fd8809670176d0db7cb91637dc249138481dd72",
+      "gasUsed": "3041768"
     },
     "Factory": {
       "address": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
       "deployBlock": 8,
-      "txHash": "0x649c248959ad6d2f690b196307f0a811181f7d68312a71c603478d989f17bcac",
-      "gasUsed": "4692280"
+      "txHash": "0x898f141e198f169c95c7e49eb5b40c9c158ff07f6302d9abeffa87ad6a475aa0",
+      "gasUsed": "4722128"
     },
     "Flow": {
       "address": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
       "deployBlock": 9,
-      "txHash": "0x25b98f4966ec379fcd66b00cbac239ab7f9f616d846ecefe7eb12c5141125f52",
-      "gasUsed": "5301726"
+      "txHash": "0xc3ca4bf1cef21578a8c3023ba6da2892e9f405e4dcb9b7b6370d8fb8472a591e",
+      "gasUsed": "5311924"
     },
     "Signal": {
       "address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
       "deployBlock": 10,
-      "txHash": "0x43d1c89d8936c7196f9fa90be574d46f6236fa84ee7e7902464e2e177dc14cfd",
-      "gasUsed": "5079961"
+      "txHash": "0x7d2ffdf3526a717ce350efbf8605980b1fa9e0d4e19f297c467b0eedc7253a00",
+      "gasUsed": "5089868"
     },
     "Sense": {
       "address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
       "deployBlock": 11,
-      "txHash": "0x46d4bf66ffb3fbdc45a2fff40bfbb1fb61090cac3c7c209de4e7a1e0241f8f81",
-      "gasUsed": "2982148"
+      "txHash": "0xcbb6d75befe733e09609df7aad8056ad2ae8bb7dfc24056dfdcdc719906ada20",
+      "gasUsed": "2991878"
     },
     "StakingRewards": {
-      "address": "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E",
-      "deployBlock": 31,
-      "txHash": "0x2385bae6b5721426d9361eda8f4741b679186e9d5a74f3a42e73dd9bc4ad8b89",
+      "address": "0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690",
+      "deployBlock": 32,
+      "txHash": "0x11814a34f01703fc7dbafcdaa765c7815307e3d703ef6b34fff2a11b8ec71fd1",
       "gasUsed": "4009707"
     }
   }

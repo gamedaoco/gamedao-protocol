@@ -171,9 +171,9 @@ dataSources:
     name: StakingRewards
     network: localhost
     source:
-      address: "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E"
+      address: "0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690"
       abi: Staking
-      startBlock: 31
+      startBlock: 32
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

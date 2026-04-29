@@ -3874,6 +3874,44 @@ export const MEMBERSHIP_ABI = [
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes8",
+        "name": "organizationId",
+        "type": "bytes8"
+      }
+    ],
+    "name": "joinOrganization",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes8",
+        "name": "organizationId",
+        "type": "bytes8"
+      }
+    ],
+    "name": "leaveOrganization",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "moduleId",
     "outputs": [
