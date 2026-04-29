@@ -182,6 +182,9 @@ async function main() {
   await factory.setRegistry(controlAddress);
   console.log("✅ Factory registry set to:", controlAddress);
 
+  await factory.setMembership(membershipAddress);
+  console.log("✅ Factory membership set to:", membershipAddress);
+
   await control.setFactory(factoryAddress);
   console.log("✅ Control factory set to:", factoryAddress);
 

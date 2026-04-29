@@ -151,22 +151,25 @@ contract Factory is Module {
         // Register organization with registry
         IControl(organizationRegistry).registerOrganization(orgId, newOrg);
 
-        // Optionally activate organization and add creator as first member in membership module
-        if (address(membershipContract) != address(0)) {
-            // Best-effort: ignore failures to avoid blocking org creation
-            try membershipContract.activateOrganization(orgId) {
-            } catch {}
-            // Add creator as initial member with a baseline tier (BRONZE)
-            try membershipContract.addMember(
-                orgId,
-                user,
-                IMembership.MembershipTier.BRONZE
-            ) {
-            } catch {}
-        }
-
+        // Emit OrganizationCreated *before* the membership wiring so the
+        // subgraph sees the org entity in its log stream before any
+        // MemberAdded event from the same tx — otherwise the membership
+        // mapping has to create a stub Organization, which used to fail
+        // because the schema requires non-null `prime`.
         emit OrganizationCreated(orgId, name, metadataURI, user, address(treasury), block.timestamp);
 
+        // Activate organization and add creator as the first member. These
+        // calls are mandatory — silently swallowing them with try/catch
+        // hid a real misconfiguration (Factory.setMembership not called)
+        // that left every newly-created collective without its creator as
+        // a member. If the wiring is wrong, fail loud.
+        require(address(membershipContract) != address(0), "Factory: membership not set");
+        membershipContract.activateOrganization(orgId);
+        membershipContract.addMember(
+            orgId,
+            user,
+            IMembership.MembershipTier.BRONZE
+        );
         return orgId;
     }
 }

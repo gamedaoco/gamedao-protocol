@@ -76,6 +76,12 @@ export function getOrCreateOrganization(orgId: Bytes): Organization {
     org.name = ""
     org.metadataURI = ""
     org.creator = ""
+    // `prime` is non-nullable in schema. When MemberAdded arrives before
+    // OrganizationCreated within the same tx (Factory sequence pre-fix),
+    // the stub was missing this field and indexing halted. Default to the
+    // zero address; the real prime is written when OrganizationCreated
+    // lands in handleFactoryOrganizationCreated / handleOrganizationCreated.
+    org.prime = Bytes.fromHexString("0x0000000000000000000000000000000000000000")
     org.treasuryAddress = Bytes.fromHexString("0x0000000000000000000000000000000000000000")
     org.orgType = "INDIVIDUAL"
     org.accessModel = "OPEN"
