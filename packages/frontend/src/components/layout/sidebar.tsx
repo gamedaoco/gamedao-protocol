@@ -161,7 +161,7 @@ export function Sidebar() {
                   <div className="h-2 w-2 bg-gray-400 rounded-full"></div>
                   <span>Not Connected</span>
                 </div>
-                <div>Connect wallet to access modules</div>
+                <div>Sign in to access modules</div>
               </div>
             )}
           </div>

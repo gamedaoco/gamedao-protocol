@@ -92,7 +92,7 @@ export default function SignalPage() {
           <CardContent>
             <div className="text-2xl font-bold">{isConnected ? stats.userVotes : '0'}</div>
             <p className="text-xs text-muted-foreground">
-              {isConnected ? 'Votes cast' : 'Connect wallet to see'}
+              {isConnected ? 'Votes cast' : 'Sign in to see'}
             </p>
           </CardContent>
         </Card>

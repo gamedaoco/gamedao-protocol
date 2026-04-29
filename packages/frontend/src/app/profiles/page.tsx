@@ -94,7 +94,7 @@ export default function SensePage() {
               {isConnected ? (userProfile ? userProfile.reputation : '0') : '0'}
             </div>
             <p className="text-xs text-muted-foreground">
-              {isConnected ? (userProfile ? 'Your score' : 'No profile yet') : 'Connect wallet to see'}
+              {isConnected ? (userProfile ? 'Your score' : 'No profile yet') : 'Sign in to see'}
             </p>
           </CardContent>
         </Card>

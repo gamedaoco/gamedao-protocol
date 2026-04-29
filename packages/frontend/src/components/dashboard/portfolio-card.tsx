@@ -52,7 +52,7 @@ export function PortfolioCard({ className }: PortfolioCardProps) {
             {error ? (
               <p className="text-sm text-center">{error}</p>
             ) : (
-              <p className="text-sm">Connect wallet to view portfolio</p>
+              <p className="text-sm">Sign in to view portfolio</p>
             )}
           </div>
         </CardContent>
