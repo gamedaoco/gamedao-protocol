@@ -31,6 +31,11 @@ if (typeof window !== 'undefined' && !PRIVY_APP_ID) {
 // Polygon mainnet. Ethereum mainnet / Sepolia removed — wagmi's default
 // `http()` for them targets eth.merkle.io which blocks browser CORS, so
 // even unused chains spam the console with CORS failures at boot.
+// `ssr: true` is deliberately omitted. With Privy's wagmi bridge, the
+// embedded connector attaches only on the client, so wagmi's <Hydrate>
+// step (which only runs when ssr is on) consistently mismatches against
+// the server tree. Without it wagmi just initialises client-side and
+// the hooks return their safe defaults during SSR.
 const wagmiConfig = createConfig({
   chains: [hardhat, polygonAmoy, polygon],
   transports: {
@@ -38,7 +43,6 @@ const wagmiConfig = createConfig({
     [polygonAmoy.id]: http(process.env.NEXT_PUBLIC_POLYGON_AMOY_URL || 'https://rpc-amoy.polygon.technology'),
     [polygon.id]: http(process.env.NEXT_PUBLIC_POLYGON_URL || 'https://polygon-rpc.com'),
   },
-  ssr: true,
 })
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
