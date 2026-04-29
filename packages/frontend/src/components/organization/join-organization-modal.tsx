@@ -215,7 +215,7 @@ export function JoinOrganizationModal({
           <DialogHeader>
             <DialogTitle>Wallet Not Connected</DialogTitle>
             <DialogDescription>
-              Please connect your wallet to {mode} this organization.
+              Please sign in to {mode} this organization.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center py-6">

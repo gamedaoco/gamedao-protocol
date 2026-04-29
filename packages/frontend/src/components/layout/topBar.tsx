@@ -102,7 +102,7 @@ export function TopBar() {
           ) : (
             <WalletConnection>
               <Button variant="glass" size="sm">
-                Connect Wallet
+                Sign in
               </Button>
             </WalletConnection>
           )}

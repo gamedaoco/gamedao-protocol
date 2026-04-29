@@ -928,7 +928,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSuccess }: CreateOr
           <DialogHeader>
             <DialogTitle>Wallet Not Connected</DialogTitle>
             <DialogDescription>
-              Please connect your wallet to create an organization.
+              Please sign in to create an organization.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center py-6">
