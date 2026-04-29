@@ -51,8 +51,11 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
+            // No global refetchInterval — every wagmi hook (useReadContract,
+            // useBalance, useAccount, …) is a TanStack query, so a global
+            // poll fires N×period requests per minute and floods devtools.
+            // Hooks that genuinely need polling set their own interval.
             staleTime: 5 * 60 * 1000,
-            refetchInterval: 30 * 1000,
             retry: 3,
             refetchOnWindowFocus: false,
           },
