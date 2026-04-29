@@ -7,6 +7,13 @@ import { Button } from '@/components/ui/button'
 
 export function ModeToggle() {
   const { theme, setTheme } = useTheme()
+  // next-themes resolves the active theme only on the client (it reads
+  // localStorage / `prefers-color-scheme`). Rendering theme-dependent
+  // attributes (title, icon) before that resolves makes the server tree
+  // disagree with the client tree and triggers a hydration mismatch on
+  // every page load. Render a stable placeholder until mounted.
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => setMounted(true), [])
 
   const cycleTheme = () => {
     switch (theme) {
@@ -44,6 +51,15 @@ export function ModeToggle() {
       case 'system': return 'System'
       default: return 'System'
     }
+  }
+
+  if (!mounted) {
+    return (
+      <Button variant="outline" size="icon" aria-label="Toggle theme" suppressHydrationWarning>
+        <Monitor className="h-[1.2rem] w-[1.2rem]" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    )
   }
 
   return (
