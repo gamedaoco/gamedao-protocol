@@ -310,26 +310,40 @@ export function useProposals(organizationId?: string) {
         }
       }
 
-      // Proceed with proposal creation
-      const nonce = await getNextNonce().catch(() => undefined)
-      await writeCreateProposal({
-        address: contracts.SIGNAL,
-        abi: ABIS.SIGNAL,
-        functionName: 'createProposal',
-        args: [
-          toContractId(proposalData.organizationId),
-          proposalData.title,
-          proposalData.description,
-          '',
-          proposalData.proposalType,
-          proposalData.votingType,
-          1,
-          BigInt(proposalData.votingPeriod),
-          '0x' as `0x${string}`,
-          '0x0000000000000000000000000000000000000000' as `0x${string}`,
-        ],
-        nonce: nonce as any,
-      })
+      // Proceed with proposal creation. Smart-account path is preferred
+      // — gas sponsored by the bundler/paymaster (per the new "every tx
+      // is gas-free; fees captured via in-token protocol fee" model).
+      // EOA fallback covers pre-sign-in / power-user wagmi connectors.
+      const args = [
+        toContractId(proposalData.organizationId),
+        proposalData.title,
+        proposalData.description,
+        '',
+        proposalData.proposalType,
+        proposalData.votingType,
+        1,
+        BigInt(proposalData.votingPeriod),
+        '0x' as `0x${string}`,
+        '0x0000000000000000000000000000000000000000' as `0x${string}`,
+      ] as const
+
+      if (smartTx.ready) {
+        await smartTx.writeContract({
+          address: contracts.SIGNAL,
+          abi: ABIS.SIGNAL,
+          functionName: 'createProposal',
+          args,
+        })
+      } else {
+        const nonce = await getNextNonce().catch(() => undefined)
+        await writeCreateProposal({
+          address: contracts.SIGNAL,
+          abi: ABIS.SIGNAL,
+          functionName: 'createProposal',
+          args,
+          nonce: nonce as any,
+        })
+      }
 
       refetch()
       refetchCount()
@@ -367,25 +381,37 @@ export function useProposals(organizationId?: string) {
         }
       }
 
-      const nonce2 = await getNextNonce().catch(() => undefined)
-      await writeCreateProposal({
-        address: contracts.SIGNAL,
-        abi: ABIS.SIGNAL,
-        functionName: 'createProposal',
-        args: [
-          toContractId(proposalData.organizationId),
-          proposalData.title,
-          proposalData.description,
-          '',
-          proposalData.proposalType,
-          proposalData.votingType,
-          1,
-          BigInt(proposalData.votingPeriod),
-          '0x' as `0x${string}`,
-          '0x0000000000000000000000000000000000000000' as `0x${string}`,
-        ],
-        nonce: nonce2 as any,
-      })
+      // Same smart-tx-preferred / EOA-fallback pattern as createProposal.
+      const args = [
+        toContractId(proposalData.organizationId),
+        proposalData.title,
+        proposalData.description,
+        '',
+        proposalData.proposalType,
+        proposalData.votingType,
+        1,
+        BigInt(proposalData.votingPeriod),
+        '0x' as `0x${string}`,
+        '0x0000000000000000000000000000000000000000' as `0x${string}`,
+      ] as const
+
+      if (smartTx.ready) {
+        await smartTx.writeContract({
+          address: contracts.SIGNAL,
+          abi: ABIS.SIGNAL,
+          functionName: 'createProposal',
+          args,
+        })
+      } else {
+        const nonce2 = await getNextNonce().catch(() => undefined)
+        await writeCreateProposal({
+          address: contracts.SIGNAL,
+          abi: ABIS.SIGNAL,
+          functionName: 'createProposal',
+          args,
+          nonce: nonce2 as any,
+        })
+      }
 
       refetch()
       refetchCount()
