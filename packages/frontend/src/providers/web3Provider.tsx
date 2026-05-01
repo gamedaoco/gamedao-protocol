@@ -46,6 +46,20 @@ const wagmiConfig = createConfig({
   },
 })
 
+// Resolve the default chain from env so Privy's tx-signing modal opens
+// on the right network without the user fiddling with chain switchers.
+//   NEXT_PUBLIC_GAMEDAO_NETWORK = 'hardhat' | 'amoy' | 'polygon'
+//   (falls back to hardhat in dev, polygon in prod).
+function resolveDefaultChain() {
+  const env = (process.env.NEXT_PUBLIC_GAMEDAO_NETWORK || '').toLowerCase()
+  if (env === 'polygon') return polygon
+  if (env === 'amoy' || env === 'polygonamoy' || env === 'polygon-amoy') return polygonAmoy
+  if (env === 'hardhat' || env === 'localhost' || env === 'local') return hardhat
+  // Unset → choose by NODE_ENV so dev defaults to hardhat, prod to polygon.
+  return process.env.NODE_ENV === 'production' ? polygon : hardhat
+}
+const defaultChain = resolveDefaultChain()
+
 export function Web3Provider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -86,6 +100,12 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       appId={PRIVY_APP_ID}
       config={{
         loginMethods: ['email', 'google', 'apple', 'discord'],
+        // Surface the same three chains the wagmi config exposes, with the
+        // env-resolved one preselected. Without this the Privy tx-signing
+        // modal opens on its built-in default (mainnet) and the user has
+        // to switch every time.
+        defaultChain,
+        supportedChains: [hardhat, polygonAmoy, polygon],
         appearance: {
           theme: 'light',
           accentColor: '#676FFF',
