@@ -10,6 +10,7 @@ import { useAccount } from 'wagmi'
 import { useToast } from './useToast'
 import { toContractId } from '@/lib/id-utils'
 import { useTokenApproval } from './useTokenApproval'
+import { useSmartTx } from './useSmartTx'
 
 export interface Campaign {
   id: string
@@ -94,7 +95,7 @@ export function useCampaigns() {
     hash: createTxHash,
   })
 
-  // Contract write for contributing to campaign
+  // Contract write for contributing to campaign (EOA fallback path).
   const {
     writeContract: contributeToCampaign,
     isPending: isContributing,
@@ -102,6 +103,7 @@ export function useCampaigns() {
     error: contributeError,
     reset: resetContribute
   } = useWriteContract()
+  const smartTx = useSmartTx()
 
   // Wait for contribute transaction confirmation
   const {
@@ -181,16 +183,28 @@ export function useCampaigns() {
         return
       }
 
-      // Proceed with contribution
-      const result = await contributeToCampaign({
+      // Proceed with contribution. Smart-account path is preferred —
+      // gas is sponsored by the bundler/paymaster (per the new "every
+      // tx is gas-free; fees captured via in-token protocol fee" model).
+      // EOA fallback covers pre-sign-in / power-user wagmi connectors.
+      const args = [campaignId as `0x${string}`, safeBigInt(amount), '' as `0x${string}`] as const
+      toast.loading('Contributing to campaign...')
+
+      if (smartTx.ready) {
+        return await smartTx.writeContract({
+          address: contracts.FLOW,
+          abi: ABIS.FLOW,
+          functionName: 'contribute',
+          args,
+        })
+      }
+
+      return await contributeToCampaign({
         address: contracts.FLOW,
         abi: ABIS.FLOW,
         functionName: 'contribute',
-        args: [campaignId as `0x${string}`, safeBigInt(amount), '' as `0x${string}`],
+        args,
       })
-
-      toast.loading('Contributing to campaign...')
-      return result
     } catch (error) {
       console.error('❌ Failed to contribute:', error)
       toast.error('Failed to contribute')
