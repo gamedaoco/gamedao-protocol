@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,11 +10,31 @@ import { useGameDAO } from '@/hooks/useGameDAO'
 import { useReputation } from '@/hooks/useReputation'
 import { dicebearAvatar } from '@/lib/placeholder'
 
+type SortMode = 'recent' | 'reputation' | 'alpha'
+
 export default function SensePage() {
   const { isConnected } = useGameDAO()
-  const { stats, isLoading, error, userProfile, getTopProfiles } = useReputation()
+  const { profiles, stats, isLoading, error, userProfile } = useReputation()
 
-  const topProfiles = getTopProfiles(5)
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<SortMode>('recent')
+
+  const filteredProfiles = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const filtered = q
+      ? profiles.filter(p =>
+          p.username.toLowerCase().includes(q) ||
+          p.owner.address.toLowerCase().includes(q) ||
+          p.organization?.name?.toLowerCase().includes(q),
+        )
+      : profiles
+
+    const sorted = [...filtered]
+    if (sort === 'reputation') sorted.sort((a, b) => b.reputation - a.reputation)
+    else if (sort === 'alpha') sorted.sort((a, b) => a.username.localeCompare(b.username))
+    else sorted.sort((a, b) => b.createdAt - a.createdAt)
+    return sorted
+  }, [profiles, search, sort])
 
   return (
     <div className="space-y-6">
@@ -34,6 +55,8 @@ export default function SensePage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="pl-10 pr-4 py-2 border rounded-lg bg-background text-sm"
               placeholder="Search profiles..."
             />
@@ -101,84 +124,78 @@ export default function SensePage() {
         </Card>
       </div>
 
-      {/* Reputation Leaderboard */}
+      {/* Profiles list — every public profile, filterable by the search
+          input above and re-sortable via the toggle below. Replaces the
+          static top-5 leaderboard so users can actually find each other. */}
       <Card>
-        <CardHeader>
-          <CardTitle>Reputation Leaderboard</CardTitle>
-          <CardDescription>
-            Top contributors in the GameDAO ecosystem
-          </CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <CardTitle>Profiles</CardTitle>
+            <CardDescription>
+              {search
+                ? `${filteredProfiles.length} matching “${search}”`
+                : `${profiles.length} profiles in the network`}
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <span className="text-muted-foreground mr-1">Sort:</span>
+            {(['recent', 'reputation', 'alpha'] as const).map((mode) => (
+              <Button
+                key={mode}
+                variant={sort === mode ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 px-2"
+                onClick={() => setSort(mode)}
+              >
+                {mode === 'recent' ? 'Newest' : mode === 'reputation' ? 'Reputation' : 'A–Z'}
+              </Button>
+            ))}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {isLoading ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Loading profiles...</p>
-              </div>
+              <div className="text-center py-8 text-muted-foreground">Loading profiles…</div>
             ) : error ? (
               <div className="text-center py-12">
                 <h3 className="text-lg font-medium mb-2">Unable to load profiles</h3>
-                <p className="text-muted-foreground mb-4">
-                  There was an error connecting to the subgraph. Please check that:
-                </p>
-                <ul className="text-sm text-muted-foreground mb-4 space-y-1">
-                  <li>• The subgraph is deployed and running</li>
-                  <li>• Theres actually profile data to load</li>
-                  <li>• The GraphQL endpoint is accessible</li>
-                </ul>
-                <Button onClick={() => window.location.reload()}>
-                  Retry
-                </Button>
+                <p className="text-muted-foreground mb-4">Could not reach the subgraph. Check that it’s deployed and indexing.</p>
+                <Button onClick={() => window.location.reload()}>Retry</Button>
               </div>
-            ) : topProfiles.length > 0 ? (
-              topProfiles.map((profile, index) => (
-                <div key={profile.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                        index === 0 ? 'bg-yellow-500 text-white' :
-                        index === 1 ? 'bg-gray-400 text-white' :
-                        index === 2 ? 'bg-amber-600 text-white' :
-                        'bg-muted text-muted-foreground'
-                      }`}>
-                        #{index + 1}
-                      </div>
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={profile.avatar || dicebearAvatar(profile.id)} />
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {profile.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-
-                    <div>
-                      <h3 className="font-medium">{profile.username}</h3>
-                      <p className="text-sm text-muted-foreground">{profile.owner.address.slice(0, 6)}...{profile.owner.address.slice(-4)}</p>
-                      <div className="flex items-center space-x-4 mt-1">
-                        <Badge variant="secondary" className="text-xs">Level {profile.verificationLevel}</Badge>
-                        <span className="text-xs text-muted-foreground">{profile.achievementCount} achievements</span>
-                        <span className="text-xs text-muted-foreground">{profile.organization.name}</span>
+            ) : filteredProfiles.length > 0 ? (
+              filteredProfiles.map((profile) => (
+                <a
+                  key={profile.id}
+                  href={`/profiles/${profile.id}`}
+                  className="flex items-center justify-between gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="w-10 h-10 flex-shrink-0">
+                      <AvatarImage src={profile.avatar || dicebearAvatar(profile.id)} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {profile.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{profile.username}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {profile.owner.address.slice(0, 6)}…{profile.owner.address.slice(-4)}
+                        {profile.organization?.name && ` · ${profile.organization.name}`}
                       </div>
                     </div>
                   </div>
-
-                  <div className="text-right">
-                    <div className="flex items-center space-x-1">
-                      <Star className="h-4 w-4 text-yellow-500" />
-                      <span className="font-bold">{profile.reputation.toLocaleString()}</span>
-                    </div>
-                    <Button variant="ghost" size="sm" className="mt-2" asChild>
-                      <a href={`/profiles/${profile.id}`}>View Profile</a>
-                    </Button>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+                    <Star className="h-3 w-3 text-yellow-500" />
+                    <span>{profile.reputation.toLocaleString()}</span>
                   </div>
-                </div>
+                </a>
               ))
+            ) : search ? (
+              <div className="text-center py-8 text-muted-foreground">No profiles match “{search}”.</div>
             ) : (
               <div className="text-center py-8">
                 <h3 className="text-lg font-medium mb-2">No profiles found</h3>
-                <p className="text-muted-foreground mb-4">
-                  No user profiles have been created yet. Be the first to create your profile!
-                </p>
+                <p className="text-muted-foreground mb-4">No user profiles have been created yet. Be the first to create your profile.</p>
                 <Button disabled={!isConnected} className="flex items-center space-x-2">
                   <Plus className="h-4 w-4" />
                   <span>Create Profile</span>
