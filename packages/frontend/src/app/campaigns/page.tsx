@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { EntityCard } from '@/components/ui/entity-card'
 import { useCampaigns } from '@/hooks/useCampaigns'
+import { useGameDAO } from '@/hooks/useGameDAO'
+import { formatTokenAmount } from '@/lib/tokens'
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { useAccount } from 'wagmi'
@@ -12,6 +14,7 @@ import { useRouter } from 'next/navigation'
 export default function FlowPage() {
   const { campaigns, isLoading, error } = useCampaigns()
   const { isConnected } = useAccount()
+  const { contracts } = useGameDAO()
   const router = useRouter()
 
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
@@ -117,7 +120,7 @@ export default function FlowPage() {
                 title={campaign.title}
                 description={campaign.description}
                 secondaryMetrics={[
-                  { label: 'Target', value: campaign.target },
+                  { label: 'Target', value: formatTokenAmount(campaign.target, campaign.paymentToken, contracts) },
                   { label: 'Contributors', value: campaign.contributorCount }
                 ]}
                 onClick={() => router.push(`/campaigns/${campaign.id}`)}

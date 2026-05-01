@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { useCampaigns } from '@/hooks/useCampaigns'
 import { useOrganizations } from '@/hooks/useOrganizations'
+import { useGameDAO } from '@/hooks/useGameDAO'
+import { formatTokenAmount } from '@/lib/tokens'
 import { Target, Users, Calendar, Coins, Share2, Heart, MessageCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -46,6 +48,7 @@ function useCampaign(id: string) {
 
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { contracts } = useGameDAO()
   const {
     campaign,
     organization,
@@ -217,11 +220,11 @@ export default function CampaignDetailPage() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">Raised</p>
-                      <p className="text-2xl font-bold">${formatAmount(campaign.raised)}</p>
+                      <p className="text-2xl font-bold">{formatTokenAmount(campaign.raised, campaign.paymentToken, contracts)}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Target</p>
-                      <p className="text-2xl font-bold">${formatAmount(campaign.target)}</p>
+                      <p className="text-2xl font-bold">{formatTokenAmount(campaign.target, campaign.paymentToken, contracts)}</p>
                     </div>
                   </div>
 

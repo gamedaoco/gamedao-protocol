@@ -20,6 +20,7 @@ export interface Campaign {
   creator: string
   title: string
   description: string
+  paymentToken: string
   target: string
   raised: string
   contributorCount: number
@@ -229,6 +230,7 @@ export function useCampaigns() {
     creator: campaign.creator,
     title: campaign.title,
     description: campaign.description,
+    paymentToken: campaign.paymentToken,
     target: campaign.target,
     raised: campaign.raised,
     contributorCount: parseInt(campaign.contributorCount) || 0,
@@ -246,6 +248,7 @@ export function useCampaigns() {
     creator: campaign.creator,
     title: campaign.title,
     description: campaign.description,
+    paymentToken: campaign.paymentToken,
     target: campaign.target,
     raised: campaign.raised,
     contributorCount: parseInt(campaign.contributorCount) || 0,
