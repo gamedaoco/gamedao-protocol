@@ -45,11 +45,20 @@ const nextConfig = {
   },
   // Remove legacy experimental flags incompatible with Next 15 defaults
   webpack: (config) => {
-    // Stub React Native AsyncStorage for web builds (used by MetaMask SDK)
+    // Stub modules we don't need but that get pulled transitively. The
+    // baseline Privy + wagmi tree drags in ~9MB of external-wallet
+    // integrations (`@reown/appkit` is WalletConnect v2; `@base-org/account`
+    // is Coinbase Smart Wallet) even when our `loginMethods` only uses
+    // email + Google + Apple + Discord. Aliasing these to `false` makes
+    // webpack treat them as empty modules — fine because we never call
+    // into them at runtime, and dramatically cuts dev cold-start time.
     config.resolve = config.resolve || {}
     config.resolve.alias = {
       ...config.resolve.alias,
       '@react-native-async-storage/async-storage': false,
+      '@reown/appkit': false,
+      '@reown/appkit-scaffold-ui': false,
+      '@base-org/account': false,
     }
 
     return config
