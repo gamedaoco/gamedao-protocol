@@ -15,6 +15,7 @@ import { useGameDAO } from '@/hooks/useGameDAO'
 import { useGameTokenApproval } from '@/hooks/useGameTokenApproval'
 import { useToast } from '@/hooks/useToast'
 import { useMembership, useMembershipQueries } from '@/hooks/useMembership'
+import { useSmartTx } from '@/hooks/useSmartTx'
 import { toContractId } from '@/lib/id-utils'
 import { AlertCircle, Shield, CreditCard, CheckCircle, Clock, UserPlus, UserMinus } from 'lucide-react'
 
@@ -61,9 +62,12 @@ export function JoinOrganizationModal({
     handleApproval
   } = useGameTokenApproval()
 
-  // Organization joining/leaving contract calls
+  // Organization join/leave. EOA path is wagmi useWriteContract; smart-
+  // account path is useSmartTx. Sponsored writes through the bundler are
+  // preferred when the smart wallet is provisioned (gas-free for the user).
   const { writeContract: joinOrganization, isPending: isJoinPending } = useWriteContract()
   const { writeContract: leaveOrganization, isPending: isLeavePending } = useWriteContract()
+  const smartTx = useSmartTx()
 
   const membershipFee = organization.membershipFee || 0
   const isProcessing = isJoining || isLeaving || isApproving || isApprovalConfirming
@@ -106,12 +110,21 @@ export function JoinOrganizationModal({
         throw new Error('Membership contract not deployed on this network. Switch to a supported chain.')
       }
 
-      await joinOrganization({
-        address: contracts.MEMBERSHIP,
-        abi: ABIS.MEMBERSHIP,
-        functionName: 'joinOrganization',
-        args: [toContractId(organization.id)],
-      })
+      if (smartTx.ready) {
+        await smartTx.writeContract({
+          address: contracts.MEMBERSHIP,
+          abi: ABIS.MEMBERSHIP,
+          functionName: 'joinOrganization',
+          args: [toContractId(organization.id)],
+        })
+      } else {
+        await joinOrganization({
+          address: contracts.MEMBERSHIP,
+          abi: ABIS.MEMBERSHIP,
+          functionName: 'joinOrganization',
+          args: [toContractId(organization.id)],
+        })
+      }
 
       setJoinSuccess(true)
 
@@ -138,12 +151,21 @@ export function JoinOrganizationModal({
       if (!contracts.MEMBERSHIP || contracts.MEMBERSHIP === '0x0000000000000000000000000000000000000000') {
         throw new Error('Membership contract not deployed on this network. Switch to a supported chain.')
       }
-      await leaveOrganization({
-        address: contracts.MEMBERSHIP,
-        abi: ABIS.MEMBERSHIP,
-        functionName: 'leaveOrganization',
-        args: [toContractId(organization.id)],
-      })
+      if (smartTx.ready) {
+        await smartTx.writeContract({
+          address: contracts.MEMBERSHIP,
+          abi: ABIS.MEMBERSHIP,
+          functionName: 'leaveOrganization',
+          args: [toContractId(organization.id)],
+        })
+      } else {
+        await leaveOrganization({
+          address: contracts.MEMBERSHIP,
+          abi: ABIS.MEMBERSHIP,
+          functionName: 'leaveOrganization',
+          args: [toContractId(organization.id)],
+        })
+      }
       setLeaveSuccess(true)
       setTimeout(() => {
         handleClose()
