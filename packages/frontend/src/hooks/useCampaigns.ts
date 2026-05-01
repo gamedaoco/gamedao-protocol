@@ -135,28 +135,39 @@ export function useCampaigns() {
         }
       }
 
-      // Proceed with campaign creation
-      const result = await createCampaign({
+      // Proceed with campaign creation. Same "smart-tx preferred, EOA
+      // fallback" pattern as contribute — gas sponsored by paymaster,
+      // future protocol fee (#81) charged in USDC at the contract layer.
+      const args = [
+        toContractId(params.organizationId),
+        params.title,
+        params.description || '',
+        params.metadataURI || '',
+        params.flowType,
+        params.paymentToken,
+        safeBigInt(params.target),
+        safeBigInt(params.min),
+        safeBigInt(params.max),
+        BigInt(params.duration),
+        params.autoFinalize,
+      ] as const
+      toast.loading('Creating campaign...')
+
+      if (smartTx.ready) {
+        return await smartTx.writeContract({
+          address: contracts.FLOW,
+          abi: ABIS.FLOW,
+          functionName: 'createCampaign',
+          args,
+        })
+      }
+
+      return await createCampaign({
         address: contracts.FLOW,
         abi: ABIS.FLOW,
         functionName: 'createCampaign',
-        args: [
-          toContractId(params.organizationId),
-          params.title,
-          params.description || '',
-          params.metadataURI || '',
-          params.flowType,
-          params.paymentToken,
-          safeBigInt(params.target),
-          safeBigInt(params.min),
-          safeBigInt(params.max),
-          BigInt(params.duration),
-          params.autoFinalize,
-        ],
+        args,
       })
-
-      toast.loading('Creating campaign...')
-      return result
     } catch (error) {
       console.error('❌ Failed to create campaign:', error)
       toast.error('Failed to create campaign')
