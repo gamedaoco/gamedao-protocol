@@ -11,7 +11,8 @@ import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { dicebearAvatar } from '@/lib/placeholder'
 import {
   User,
   Shield,
@@ -285,6 +286,7 @@ export default function ProfilePage() {
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             <Avatar className="h-20 w-20">
+              <AvatarImage src={dicebearAvatar(profileData.address || profileData.username || 'profile')} />
               <AvatarFallback className="text-xl">
                 {profileData.displayName ?
                   profileData.displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase() :

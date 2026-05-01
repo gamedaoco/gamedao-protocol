@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Search, Users, Trophy, Star, Plus } from 'lucide-react'
 import { useGameDAO } from '@/hooks/useGameDAO'
 import { useReputation } from '@/hooks/useReputation'
+import { dicebearAvatar } from '@/lib/placeholder'
 
 export default function SensePage() {
   const { isConnected } = useGameDAO()
@@ -143,7 +144,7 @@ export default function SensePage() {
                         #{index + 1}
                       </div>
                       <Avatar className="w-12 h-12">
-                        <AvatarImage src={profile.avatar || undefined} />
+                        <AvatarImage src={profile.avatar || dicebearAvatar(profile.id)} />
                         <AvatarFallback className="bg-primary text-primary-foreground">
                           {profile.username.charAt(0).toUpperCase()}
                         </AvatarFallback>
