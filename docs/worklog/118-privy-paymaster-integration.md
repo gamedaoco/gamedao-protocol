@@ -130,28 +130,63 @@ beta this is fine — Privy is the foundation. If we hit "should we
 self-host" later, the BFF wraps Privy's policy API behind an
 abstraction we already control.
 
-### Sponsored-op allowlist (initial)
+### Token roles (canonical, 2026-05-01)
 
-Per the goal "free for governance, user-paid for value":
+The original draft of this section gated some ops with GAME stakes /
+fees and routed others through native gas. That's been superseded by a
+cleaner three-token model:
 
-| Contract | Selector | Sponsored | Cap |
+| Token | Role | Used for |
+| --- | --- | --- |
+| **Gas (MATIC)** | Sponsored | Every tx — paymaster pays; never user-facing |
+| **GAME** | Governance + bond | Voting weight, conviction stake, proposal deposits, staking rewards. **Not a payment rail.** |
+| **USDC** | Default value rail | Campaign funding, contributions, protocol fees |
+| **Other stables** (EURAU, …) | Optional value rails | Per-campaign opt-in; v1 ships USDC-only with config-open registry |
+
+Implications:
+- No "buy GAME to use the protocol" gating anywhere.
+- No GAME-denominated protocol fees.
+- No native-token UX requirement — users never need MATIC.
+
+### Gas + fee policy (replaces the old sponsored allowlist)
+
+Every tx is gas-sponsored. Revenue is captured via an **in-token
+protocol fee** charged at the contract layer for value-moving ops, NOT
+via gas costs or GAME stakes.
+
+| Contract | Selector | Gas | Protocol fee (v1 placeholder) |
 | --- | --- | --- | --- |
-| `Membership.joinOrganization(bytes8)` | `0x...` | yes | 10/user/day |
-| `Membership.leaveOrganization(bytes8)` | `0x...` | yes | 10/user/day |
-| `Signal.castVote(bytes32,uint8,string)` | `0x...` | yes | 50/user/day |
-| `Signal.castVoteWithConviction(bytes32,uint8,uint256,string)` | `0x...` | yes | 50/user/day |
-| `Identity.createProfile(bytes8,string)` | `0x...` | yes | 5/user/day |
-| `Sense.updateReputation(bytes8,uint8,int256,bytes32)` | `0x...` | yes (admin only) | 1000/admin/day |
-| `Flow.contribute(...)` | — | **no** | n/a (user pays) |
-| `Treasury.*` | — | **no** | n/a |
-| `Staking.stake / unstake` | — | **no** | n/a |
-| `Identity.claimName(...)` | — | **no** (consumes GAME) | n/a |
-| `Control.createOrganization(...)` | — | **no** (consumes GAME stake) | n/a |
-| `Signal.createProposal(...)` | — | maybe (low frequency, evaluate) | TBD |
+| `Membership.joinOrganization(bytes8)` | — | sponsored | none |
+| `Membership.leaveOrganization(bytes8)` | — | sponsored | none |
+| `Signal.castVote(bytes32,uint8,string)` | — | sponsored | none |
+| `Signal.castVoteWithConviction(bytes32,uint8,uint256,string)` | — | sponsored | none |
+| `Identity.createProfile(bytes8,string)` | — | sponsored | none |
+| `Identity.claimName(...)` | — | sponsored | TBD |
+| `Sense.updateReputation(...)` | — | sponsored | none (admin only) |
+| `Treasury.*` | — | sponsored | none (handled by access control) |
+| `Staking.stake / unstake / claim` | — | sponsored | none (handled by stake mechanics) |
+| `Control.createOrganization(...)` | — | sponsored | **11 USDC flat** |
+| `Flow.createCampaign(...)` | — | sponsored | **11 USDC flat** |
+| `Flow.contribute(...)` | — | sponsored | **100 BPS (1%) of contribution** |
+| `Signal.createProposal(...)` | — | sponsored | TBD (no fee for v1) |
 
-Per-day caps are enforced by the **server policy layer**, not by the
-paymaster vendor. This keeps caps adjustable without re-deploying or
-re-signing paymaster policy.
+Fees are read from an admin-gated `FeeRegistry` contract (tracked as
+task #81). v1 admin = protocol sudo; later admin transitions to a
+DAO-controlled multisig elected via Signal. Each value-moving op
+queries the registry pre-execution and transfers the fee to the
+protocol treasury before performing the main op.
+
+Fee currency follows the value-token: a USDC contribution carries a
+USDC fee, an EURAU contribution would carry an EURAU fee, etc. This
+avoids any cross-currency price-feed dependency at tx time.
+
+Per-user / per-day caps that previously lived on the sponsored
+allowlist are **gone** — every tx is sponsored, and abuse is bounded
+by:
+1. The protocol fee on value-moving ops (creates economic friction).
+2. Privy's native policy engine for per-app rate limits (e.g. "no more
+   than 50 user-ops per IP per minute") to bound burst attacks on
+   gas sponsorship itself.
 
 ### Stages
 
@@ -325,5 +360,13 @@ Estimated complexity:
 - 2026-04-28: plan drafted following user pivot from EIP-712/ERC-2771
   to Privy + paymaster. Self-sovereignty model anchored on
   frontend-resident keys with server limited to policy + relay.
-- Next: review of stage-1 scope + smart-account choice, then spawn
-  Track A.
+- 2026-04-29: Track A landed (`<PrivyProvider>` + `@privy-io/wagmi`).
+- 2026-04-30: Track B Phase 1 landed (`<SmartWalletsProvider>`,
+  Kernel smart accounts provisioned). Track B Phase 2 hybrid landed
+  (`useSmartTx` hook).
+- 2026-05-01: economic model rewrite. Sponsored allowlist replaced by
+  the gas+fee policy table above. Stream 1 write-path migrations
+  shipped (vote, createOrganization, join/leave, contribute,
+  createCampaign, createProposal). FeeRegistry contract spec'd as #81.
+- Next: FeeRegistry implementation, test harness (#73), ProfileSBT
+  (#75).
