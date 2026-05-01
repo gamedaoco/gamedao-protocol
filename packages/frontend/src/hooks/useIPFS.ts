@@ -648,15 +648,30 @@ export function useIPFSBatch(
   const [results, setResults] = useState<Record<string, UseIPFSResult>>({})
   const [isLoading, setIsLoading] = useState(false)
 
+  // Callers commonly pass a freshly-built `hashes` array and a fresh
+  // `options` object on every render. If we put either into a useCallback
+  // dep array directly, the callback identity churns each render — and
+  // since the consuming `useEffect` depends on the callback, we get an
+  // infinite render loop (Maximum update depth exceeded).
+  //
+  // Stabilise by:
+  //  1. Joining `hashes` into a string key for dep comparison.
+  //  2. Reading `batchSize` and `ipfsOptions` through a ref so the
+  //     callback doesn't need them in its deps at all.
+  const hashesKey = hashes.join(',')
+  const optionsRef = useRef({ batchSize, ipfsOptions })
+  optionsRef.current = { batchSize, ipfsOptions }
+
   const processHashes = useCallback(async () => {
     if (hashes.length === 0) return
 
+    const { batchSize: bs, ipfsOptions: opts } = optionsRef.current
     setIsLoading(true)
     const newResults: Record<string, UseIPFSResult> = {}
 
     // Process hashes in batches to avoid overwhelming the queue
-    for (let i = 0; i < hashes.length; i += batchSize) {
-      const batch = hashes.slice(i, i + batchSize)
+    for (let i = 0; i < hashes.length; i += bs) {
+      const batch = hashes.slice(i, i + bs)
 
       const batchPromises = batch.map(async (hash) => {
         const cacheKey = hash
@@ -670,14 +685,14 @@ export function useIPFSBatch(
         try {
                      const data = await ipfsQueue.enqueue(
              () => getFromIPFS(hash),
-             ipfsOptions.priority || 0
+             opts.priority || 0
            )
 
           // Cache the result
           ipfsCache.set(cacheKey, {
             data,
             timestamp: Date.now(),
-            ttl: ipfsOptions.cacheTTL || 5 * 60 * 1000
+            ttl: opts.cacheTTL || 5 * 60 * 1000
           })
 
           return { hash, data, error: null }
@@ -709,14 +724,18 @@ export function useIPFSBatch(
       })
 
       // Small delay between batches to avoid overwhelming the queue
-      if (i + batchSize < hashes.length) {
+      if (i + bs < hashes.length) {
         await new Promise(resolve => setTimeout(resolve, 100))
       }
     }
 
     setResults(newResults)
     setIsLoading(false)
-  }, [hashes, batchSize, ipfsOptions])
+    // Deliberately omit `hashes` (we already split it into `hashesKey`),
+    // and omit options (read via ref). Eslint will complain; the deps
+    // here are correct for the desired behaviour.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hashesKey])
 
   const retry = useCallback(() => {
     processHashes()
