@@ -2,6 +2,8 @@
 
 import { useQuery } from '@apollo/client'
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { useSmartTx } from './useSmartTx'
+import type { Hash } from 'viem'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_ORGANIZATIONS, GET_USER_ORGANIZATIONS } from '@/lib/queries'
@@ -156,7 +158,7 @@ export function useOrganizations() {
     })
   }, [userOrgsData?.members, address])
 
-  // Contract write for creating organization
+  // Contract write for creating organization (EOA fallback path).
   const {
     writeContract: createOrg,
     isPending: isCreating,
@@ -166,15 +168,36 @@ export function useOrganizations() {
   } = useWriteContract()
   const { getNextNonce } = useNonce()
 
-  // Wait for create transaction confirmation
+  // Smart-account path. When Privy provisioned a Kernel account, the
+  // create-org tx is sent via the bundler (paymaster sponsors gas);
+  // otherwise we fall back to the wagmi EOA write above. Both paths feed
+  // into the same useWaitForTransactionReceipt below — receipt parsing
+  // (OrganizationCreated event) works identically because the smart
+  // account is `msg.sender` from the contract's perspective when this
+  // path is taken, and the Factory emits the same event regardless.
+  const smartTx = useSmartTx()
+  const [smartCreateHash, setSmartCreateHash] = useState<Hash | undefined>(undefined)
+  const [isSmartCreating, setIsSmartCreating] = useState(false)
+  const [smartCreateError, setSmartCreateError] = useState<Error | undefined>(undefined)
+
+  // Wait for create transaction confirmation. Smart-tx hash takes
+  // precedence when set; falls back to the wagmi tx hash.
+  const activeCreateHash = smartCreateHash ?? createTxHash
   const {
     isLoading: isConfirming,
     isSuccess: createSuccess,
     error: confirmError,
     data: transactionReceipt
   } = useWaitForTransactionReceipt({
-    hash: createTxHash,
+    hash: activeCreateHash,
   })
+
+  const resetCreateState = () => {
+    resetCreate()
+    setSmartCreateHash(undefined)
+    setSmartCreateError(undefined)
+    setIsSmartCreating(false)
+  }
 
   // Extract organization ID from transaction receipt
   const [createdOrgId, setCreatedOrgId] = useState<string | null>(null)
@@ -238,22 +261,42 @@ export function useOrganizations() {
       return parseTokenAmount(value, 'GAME', fallback)
     }
 
+    const args = [
+      params.name,
+      params.metadataURI || '',
+      params.orgType,
+      params.accessModel,
+      params.feeModel,
+      BigInt(params.memberLimit),
+      safeBigInt(params.membershipFee),
+      safeBigInt(params.gameStakeRequired),
+    ] as const
+
     try {
+      resetCreateState()
+
+      if (smartTx.ready) {
+        setIsSmartCreating(true)
+        toast.loading('Creating organization...')
+        const hash = await smartTx.writeContract({
+          address: contracts.CONTROL,
+          abi: ABIS.CONTROL,
+          functionName: 'createOrganization',
+          args,
+        })
+        setSmartCreateHash(hash)
+        setIsSmartCreating(false)
+        return hash
+      }
+
+      // EOA fallback. Manual nonce — wagmi races otherwise when several
+      // writes interleave (the Factory has had revert paths on bad nonces).
       const nonce = await getNextNonce().catch(() => undefined)
       const result = await createOrg({
         address: contracts.CONTROL,
         abi: ABIS.CONTROL,
         functionName: 'createOrganization',
-        args: [
-          params.name,
-          params.metadataURI || '',
-          params.orgType,
-          params.accessModel,
-          params.feeModel,
-          BigInt(params.memberLimit),
-          safeBigInt(params.membershipFee),
-          safeBigInt(params.gameStakeRequired),
-        ],
+        args,
         nonce: nonce as any,
       })
 
@@ -261,6 +304,7 @@ export function useOrganizations() {
       return result
     } catch (error) {
       console.error('❌ Failed to create organization:', error)
+      setSmartCreateError(error instanceof Error ? error : new Error(String(error)))
       toast.error('Failed to create organization')
       throw error
     }
@@ -281,11 +325,11 @@ export function useOrganizations() {
       if (address) {
         refetchUserOrgs()
       }
-      // Reset the transaction state
-      setTimeout(() => resetCreate(), 1000)
+      // Reset the transaction state (covers both wagmi + smart-tx paths)
+      setTimeout(() => resetCreateState(), 1000)
       toast.success('Organization created successfully!')
     }
-  }, [createSuccess, refetch, refetchUserOrgs, address, resetCreate])
+  }, [createSuccess, refetch, refetchUserOrgs, address])
 
   useEffect(() => {
     if (joinSuccess) {
@@ -323,11 +367,13 @@ export function useOrganizations() {
     refetchUserOrgs,
     stats,
 
-    // Organization creation
+    // Organization creation. `isCreating` and `createError` now span both
+    // the wagmi EOA path and the smart-account path so callers don't need
+    // to know which one is active.
     createOrganization,
-    isCreating: isCreating || isConfirming,
+    isCreating: isCreating || isSmartCreating || isConfirming,
     createSuccess,
-    createError: createError || confirmError,
+    createError: createError || confirmError || smartCreateError,
     createdOrgId,
 
     // Organization joining
