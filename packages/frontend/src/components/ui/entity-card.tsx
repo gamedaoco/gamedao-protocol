@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { gradientBanner } from "@/lib/placeholder"
 import {
   Users,
   Target,
@@ -129,24 +130,24 @@ export function EntityCard({
 
   return (
     <Card className={cardClasses} onClick={onClick}>
-      {/* Banner Background */}
+      {/* Banner Background. When the entity has no banner of its own we
+          fall back to a deterministic CSS gradient seeded by the entity id,
+          so every card has a coloured backdrop without hitting the network. */}
       <div className={cn(
         "relative overflow-hidden",
         aspectRatioClasses[aspectRatio]
       )}>
-        {banner && (
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url(${banner})` }}
-          />
-        )}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: banner ? `url(${banner})` : gradientBanner(id) }}
+        />
 
-        {/* Overlay */}
+        {/* Overlay — gradients get a softer overlay so the colours still
+            come through; real banners get the heavier scrim so text
+            remains legible on photo content. */}
         <div className={cn(
           "absolute inset-0",
-          banner
-            ? "bg-black/40"
-            : "bg-secondary"
+          banner ? "bg-black/40" : "bg-black/25"
         )} />
 
         {/* Header Content */}
