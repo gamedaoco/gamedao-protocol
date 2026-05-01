@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery } from '@apollo/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,18 @@ import { Plus, ArrowLeft, Upload, Image as ImageIcon, FileText, Loader2 } from '
 import Link from 'next/link'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
+
+// Helper that renders an overlay in a body-level portal so it's not
+// trapped by ancestor `transform` / `filter` / `contain` styles. Without
+// this the create-org loader was getting positioned relative to the
+// nearest transformed ancestor instead of the viewport, drifting off
+// screen on long pages.
+function ViewportOverlay({ active, children }: { active: boolean, children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  if (!active || !mounted) return null
+  return createPortal(children, document.body)
+}
 
 
 // Dynamically import markdown editor to avoid SSR issues
@@ -181,8 +194,9 @@ export default function CreateOrganizationPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 relative">
-      {/* Fullscreen dimmed overlay during creation process */}
-      {(isCreating || isApproving || isApprovalConfirming || currentStep === 'success') && (
+      {/* Fullscreen dimmed overlay during creation process. Portaled to
+          body so it can't be displaced by ancestor transforms. */}
+      <ViewportOverlay active={isCreating || isApproving || isApprovalConfirming || currentStep === 'success'}>
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
             <div className="text-center">
@@ -205,7 +219,7 @@ export default function CreateOrganizationPage() {
             </div>
           </div>
         </div>
-      )}
+      </ViewportOverlay>
 
       <div className="max-w-4xl mx-auto">
         {/* Header */}
@@ -224,8 +238,8 @@ export default function CreateOrganizationPage() {
           </div>
         </div>
 
-        {/* Loading Overlay */}
-        {(isCreating || isApproving || isApprovalConfirming) && (
+        {/* Loading Overlay (portaled — see ViewportOverlay) */}
+        <ViewportOverlay active={isCreating || isApproving || isApprovalConfirming}>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
               <div className="flex flex-col items-center space-y-4">
@@ -253,10 +267,10 @@ export default function CreateOrganizationPage() {
               </div>
             </div>
           </div>
-        )}
+        </ViewportOverlay>
 
-        {/* Success Overlay */}
-        {createSuccess && (
+        {/* Success Overlay (portaled — see ViewportOverlay) */}
+        <ViewportOverlay active={createSuccess}>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
               <div className="flex flex-col items-center space-y-4">
@@ -277,7 +291,7 @@ export default function CreateOrganizationPage() {
               </div>
             </div>
           </div>
-        )}
+        </ViewportOverlay>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Dimmed overlay for form during transaction */}
