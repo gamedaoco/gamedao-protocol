@@ -6,11 +6,13 @@ import { useAccount } from 'wagmi'
 import { useGameDAO } from './useGameDAO'
 import { ABIS } from '@/lib/abis'
 import { GET_PROPOSALS, GET_PROPOSAL_BY_ID, GET_USER_VOTES } from '@/lib/queries'
-import { useMemo, useEffect } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { useTokenApproval } from './useTokenApproval'
 import { toContractId } from '@/lib/id-utils'
 import { useToast } from './useToast'
 import { useNonce } from './useNonce'
+import { useSmartTx } from './useSmartTx'
+import type { Hash } from 'viem'
 
 
 export interface Proposal {
@@ -75,7 +77,7 @@ export function useProposals(organizationId?: string) {
     hash: createTxHash,
   })
 
-  // Contract write for voting
+  // Contract write for voting (EOA fallback path).
   const {
     writeContract: writeVote,
     isPending: isVotePending,
@@ -84,26 +86,48 @@ export function useProposals(organizationId?: string) {
     reset: resetVote
   } = useWriteContract()
 
-  // Wait for vote transaction confirmation
+  // Smart-account path. When the Privy smart wallet is provisioned, the
+  // vote tx is sent via the bundler (paymaster-sponsored, gas-free for
+  // the user). The returned hash lives in local state and feeds the same
+  // useWaitForTransactionReceipt downstream — receipt waiting works
+  // identically for both code paths.
+  const smartTx = useSmartTx()
+  const [smartVoteHash, setSmartVoteHash] = useState<Hash | undefined>(undefined)
+  const [isSmartVoteSubmitting, setIsSmartVoteSubmitting] = useState(false)
+  const [smartVoteError, setSmartVoteError] = useState<Error | undefined>(undefined)
+
+  // Wait for vote transaction confirmation. Smart-tx hash takes precedence
+  // when the smart-account path was used; otherwise we wait on the wagmi
+  // EOA hash.
+  const activeVoteHash = smartVoteHash ?? voteTxHash
   const {
     isLoading: isVoteConfirming,
     isSuccess: voteSuccess,
     error: voteConfirmError,
   } = useWaitForTransactionReceipt({
-    hash: voteTxHash,
+    hash: activeVoteHash,
   })
 
-  // Auto-reset voting state after timeout to prevent UI locking
+  const resetVoteState = () => {
+    resetVote()
+    setSmartVoteHash(undefined)
+    setSmartVoteError(undefined)
+    setIsSmartVoteSubmitting(false)
+  }
+
+  // Auto-reset voting state after timeout to prevent UI locking. The
+  // pending check now spans both EOA (`isVotePending`) and smart-account
+  // (`isSmartVoteSubmitting`) paths.
   useEffect(() => {
-    if (isVotePending || isVoteConfirming) {
+    if (isVotePending || isSmartVoteSubmitting || isVoteConfirming) {
       const timeout = setTimeout(() => {
         console.warn('⚠️ Vote transaction timeout - resetting state to unlock UI')
-        resetVote()
+        resetVoteState()
       }, 60000) // 60 second timeout
 
       return () => clearTimeout(timeout)
     }
-  }, [isVotePending, isVoteConfirming, resetVote])
+  }, [isVotePending, isSmartVoteSubmitting, isVoteConfirming, resetVote])
 
   // Fetch proposals from subgraph (declare before effects that use `refetch`)
   const { data, loading, error, refetch } = useQuery(GET_PROPOSALS, {
@@ -142,16 +166,17 @@ export function useProposals(organizationId?: string) {
     if (voteSuccess) {
       toast.success('Vote cast successfully!')
       refetch()
-      resetVote()
+      resetVoteState()
     }
-  }, [voteSuccess, refetch, resetVote])
+  }, [voteSuccess, refetch])
 
-  // Handle vote error
+  // Handle vote error — surface either the wagmi-side or the smart-tx-side
+  // failure to the user.
   useEffect(() => {
-    if (voteError) {
+    if (voteError || smartVoteError) {
       toast.error('Failed to cast vote. Please try again.')
     }
-  }, [voteError])
+  }, [voteError, smartVoteError])
 
   // Transform subgraph data to match our interface
   const proposals: Proposal[] = data?.proposals?.map((prop: any) => ({
@@ -206,7 +231,11 @@ export function useProposals(organizationId?: string) {
     }
   }, [filteredProposals, userVotes])
 
-  // Cast vote function with hierarchical IDs
+  // Cast vote with hierarchical IDs. Routes through the Privy smart
+  // account (sponsored by the paymaster configured in Privy dashboard)
+  // when one is provisioned; falls back to the EOA via wagmi otherwise,
+  // so the flow keeps working pre-sign-in or for power users on
+  // injected wallets.
   const castVote = async (proposalId: string, choice: 0 | 1 | 2, reason?: string) => {
     if (!isConnected || !address) {
       throw new Error('Wallet not connected')
@@ -216,10 +245,24 @@ export function useProposals(organizationId?: string) {
     }
 
     try {
-      // Reset any previous vote errors
-      resetVote()
+      resetVoteState()
 
-      // Use hierarchical ID directly (no conversion needed)
+      if (smartTx.ready) {
+        setIsSmartVoteSubmitting(true)
+        const hash = await smartTx.writeContract({
+          address: contracts.SIGNAL,
+          abi: ABIS.SIGNAL,
+          functionName: 'castVote',
+          args: [proposalId, choice, reason || ''],
+        })
+        setSmartVoteHash(hash)
+        setIsSmartVoteSubmitting(false)
+        return
+      }
+
+      // EOA fallback. Use the manual nonce — wagmi can race when several
+      // writes interleave, and the Signal module has had reverts when
+      // the nonce is wrong.
       const nonce = await getNextNonce().catch(() => undefined)
       await writeVote({
         address: contracts.SIGNAL,
@@ -231,8 +274,8 @@ export function useProposals(organizationId?: string) {
 
     } catch (error) {
       console.error('❌ Error casting vote:', error)
-      // Reset vote state on error to unlock UI
-      resetVote()
+      setSmartVoteError(error instanceof Error ? error : new Error(String(error)))
+      resetVoteState()
       throw error
     }
   }
@@ -537,9 +580,9 @@ export function useProposals(organizationId?: string) {
     // Status
     isLoading: loading && filteredProposals.length === 0,
     isLoadingUserVotes: userVotesLoading,
-    isVoting: isVotePending || isVoteConfirming,
+    isVoting: isVotePending || isSmartVoteSubmitting || isVoteConfirming,
     voteSuccess,
-    voteError: voteError || voteConfirmError,
+    voteError: voteError || voteConfirmError || smartVoteError,
     isCreatingProposal: isCreating || isCreateConfirming || isTokenApproving || isTokenApprovalConfirming,
     createSuccess,
     createError: createError || createConfirmError,
