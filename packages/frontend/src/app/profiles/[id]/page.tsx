@@ -1,650 +1,312 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import { DetailPageLayout } from '@/components/layout/detailPageLayout'
+import Link from 'next/link'
+import { useQuery } from '@apollo/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useReputation } from '@/hooks/useReputation'
+import { useUserActivity } from '@/hooks/useUserProfile'
+import { useGameDAO } from '@/hooks/useGameDAO'
 import { dicebearAvatar } from '@/lib/placeholder'
+import { formatTokenAmount } from '@/lib/tokens'
+import { formatAddress } from '@/lib/utils'
+import { GET_PROFILES } from '@/lib/queries'
 import {
-  User,
   Shield,
-  Trophy,
-  Star,
-  TrendingUp,
-  Heart,
-  Award,
-  Target,
-  Edit,
-  Save,
-  X,
   Copy,
   ExternalLink,
-  MessageCircle,
-  UserPlus,
+  Users,
+  Heart,
+  Vote,
+  FileText,
   Calendar,
-  MapPin,
-  Link,
-  Github,
-  Twitter
+  Wallet,
 } from 'lucide-react'
-import { formatAddress } from '@/lib/utils'
 
-interface ProfileData {
-  address: string
-  username: string | null
-  displayName: string | null
-  bio: string | null
-  location: string | null
-  website: string | null
-  twitter: string | null
-  github: string | null
-  verified: boolean
-  xp: number
-  level: number
-  reputation: number
-  trust: number
-  followers: number
-  following: number
-  joinedAt: string | null
-  profileCreated: boolean
-}
+// Profile detail page — read-only aggregate view of a user's on-chain
+// activity. Identifier in the URL can be either an EVM address (`0x…`)
+// or an 8-char Sense profile id; the page resolves the address from
+// the profile registry when it isn't an address. Edit flow is a
+// follow-up; this rewrite is purely about surfacing what the user has
+// done across the protocol so the page stops feeling empty.
+
+const isHexAddress = (s: string) => /^0x[a-fA-F0-9]{40}$/.test(s)
 
 export default function ProfilePage() {
   const { id } = useParams<{ id: string }>()
-
   const { address: connectedAddress } = useAccount()
-  const [isEditing, setIsEditing] = useState(false)
-  const [profileData, setProfileData] = useState<ProfileData | null>(null)
-  const [editData, setEditData] = useState<Partial<ProfileData>>({})
-  const [isLoading, setIsLoading] = useState(true)
+  const { contracts, blockExplorer } = useGameDAO()
+  const { profiles, isLoading: profilesLoading } = useReputation()
   const [copied, setCopied] = useState(false)
 
-  // Determine if the ID is an address or username
-  const isAddress = id.startsWith('0x') && id.length === 42
-  const profileAddress = isAddress ? id : null
-
-  // Check if connected user owns this profile
-  const isOwner = connectedAddress && (
-    connectedAddress.toLowerCase() === profileAddress?.toLowerCase() ||
-    connectedAddress.toLowerCase() === profileData?.address?.toLowerCase()
-  )
-
-  // Load profile data
-  useEffect(() => {
-    const resolveProfile = async (identifier: string) => {
-      // TODO: Replace with actual contract calls
-      const mockProfiles: { [key: string]: ProfileData } = {
-        'alice_gamer': {
-          address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-          username: 'alice_gamer',
-          displayName: 'Alice Cooper',
-          bio: 'Ships with bands, studios, and a couple of mod squads. Loves RPGs, strategy games, and making things people actually want.',
-          location: 'San Francisco, CA',
-          website: 'https://alice-gaming.com',
-          twitter: 'alice_gamer',
-          github: 'alice-cooper',
-          verified: true,
-          xp: 2450,
-          level: 12,
-          reputation: 89,
-          trust: 94,
-          followers: 156,
-          following: 89,
-          joinedAt: '2024-01-15',
-          profileCreated: true,
-        },
-        '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266': {
-          address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-          username: 'alice_gamer',
-          displayName: 'Alice Cooper',
-          bio: 'Ships with bands, studios, and a couple of mod squads. Loves RPGs, strategy games, and making things people actually want.',
-          location: 'San Francisco, CA',
-          website: 'https://alice-gaming.com',
-          twitter: 'alice_gamer',
-          github: 'alice-cooper',
-          verified: true,
-          xp: 2450,
-          level: 12,
-          reputation: 89,
-          trust: 94,
-          followers: 156,
-          following: 89,
-          joinedAt: '2024-01-15',
-          profileCreated: true,
-        }
-      }
-
-      // Default profile for any address
-      const defaultProfile: ProfileData = {
-        address: isAddress ? identifier : connectedAddress || '0x0000000000000000000000000000000000000000',
-        username: null,
-        displayName: null,
-        bio: null,
-        location: null,
-        website: null,
-        twitter: null,
-        github: null,
-        verified: false,
-        xp: 0,
-        level: 1,
-        reputation: 0,
-        trust: 0,
-        followers: 0,
-        following: 0,
-        joinedAt: null,
-        profileCreated: false,
-      }
-
-      return mockProfiles[identifier] || defaultProfile
+  // Resolve the URL identifier to a canonical address. If the id is an
+  // 0x-address we use it directly; otherwise look up the profile by its
+  // id in the subgraph and use the owner address. We rely on the
+  // profile list already loaded by useReputation rather than firing a
+  // dedicated query, so this is a free join.
+  const resolved = useMemo(() => {
+    if (isHexAddress(id)) {
+      const match = profiles.find(p => p.owner.address.toLowerCase() === id.toLowerCase())
+      return { address: id.toLowerCase(), profile: match || null }
     }
-
-    const loadProfile = async () => {
-      setIsLoading(true)
-      try {
-        const profile = await resolveProfile(id)
-        setProfileData(profile)
-        setEditData(profile)
-      } catch (error) {
-        console.error('Failed to load profile:', error)
-      } finally {
-        setIsLoading(false)
-      }
+    const match = profiles.find(p => p.id === id || p.username === id)
+    if (match) {
+      return { address: match.owner.address.toLowerCase(), profile: match }
     }
+    return { address: null as string | null, profile: null }
+  }, [id, profiles])
 
-    loadProfile()
-  }, [id, isAddress, connectedAddress])
+  // Fall back to a direct subgraph lookup when the profile list hasn't
+  // loaded yet — useReputation has its own pollInterval, so first paint
+  // can race the URL navigation.
+  const { data: directProfileData } = useQuery(GET_PROFILES, {
+    variables: { first: 1, skip: 0 },
+    skip: !!resolved.address || profilesLoading,
+    errorPolicy: 'ignore',
+  })
 
-  // Mock achievements and collectibles
-  const achievements = [
-    { id: 1, name: 'First DAO Creator', description: 'Created your first organization', icon: '🏛️', rarity: 'common', earned: true },
-    { id: 2, name: 'Campaign Master', description: 'Successfully funded 5 campaigns', icon: '🎯', rarity: 'rare', earned: true },
-    { id: 3, name: 'Community Builder', description: 'Gained 100+ followers', icon: '👥', rarity: 'epic', earned: (profileData?.followers || 0) >= 100 },
-    { id: 4, name: 'Governance Expert', description: 'Voted on 50+ proposals', icon: '🗳️', rarity: 'legendary', earned: true },
-    { id: 5, name: 'Early Adopter', description: 'Joined in the first month', icon: '⚡', rarity: 'rare', earned: false },
-    { id: 6, name: 'Social Butterfly', description: 'Connected with 50+ users', icon: '🦋', rarity: 'common', earned: false },
-  ]
+  const targetAddress = resolved.address || (directProfileData?.profiles?.[0]?.user?.address as string | undefined)
+  const profile = resolved.profile
 
-  const collectibles = [
-    { id: 1, name: 'Genesis DAO Badge', description: 'Early adopter NFT', image: '🏆', collection: 'GameDAO Genesis', tokenId: '#001' },
-    { id: 2, name: 'Alpha Tester', description: 'Participated in alpha testing', image: '🧪', collection: 'GameDAO Beta', tokenId: '#042' },
-    { id: 3, name: 'Community Champion', description: 'Outstanding community contribution', image: '⭐', collection: 'GameDAO Honors', tokenId: '#123' },
-    { id: 4, name: 'Governance Guru', description: 'Active in protocol governance', image: '🗳️', collection: 'GameDAO Governance', tokenId: '#456' },
-  ]
+  const { userActivity, isLoading: activityLoading } = useUserActivity(targetAddress)
 
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case 'common': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-      case 'rare': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-      case 'epic': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-      case 'legendary': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-    }
-  }
+  const isOwner = !!connectedAddress && !!targetAddress &&
+    connectedAddress.toLowerCase() === targetAddress.toLowerCase()
+
+  const memberships = userActivity?.memberships || []
+  const contributions = userActivity?.contributions || []
+  const proposals = userActivity?.proposals || []
+  const votes = userActivity?.votes || []
+
+  const headerName = profile?.username || (targetAddress ? formatAddress(targetAddress) : id)
+  const avatarSeed = profile?.id || targetAddress || id
 
   const copyAddress = async () => {
-    if (profileData?.address) {
-      await navigator.clipboard.writeText(profileData.address)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
+    if (!targetAddress) return
+    await navigator.clipboard.writeText(targetAddress)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
   }
 
-  const handleSaveProfile = async () => {
-    try {
-      // TODO: Implement profile update logic with contract calls
-      if (profileData) {
-        setProfileData({ ...profileData, ...editData, profileCreated: true })
-      }
-      setIsEditing(false)
-    } catch (error) {
-      console.error('Failed to save profile:', error)
-    }
-  }
-
-  const handleCancelEdit = () => {
-    if (profileData) {
-      setEditData(profileData)
-    }
-    setIsEditing(false)
-  }
-
-  if (isLoading) {
+  // Loading skeleton — drops in for the whole page while we don't have
+  // an address yet. Avoids flashing 'No profile' for users that exist
+  // but whose reputation list is still in flight.
+  if (!targetAddress && (profilesLoading || activityLoading)) {
     return (
-      <DetailPageLayout
-        title="Loading Profile"
-        breadcrumbs={[
-          { label: 'Sense', href: '/profiles' },
-          { label: 'Profile', current: true }
-        ]}
-        loading={true}
-      >
-        <div className="space-y-6">
-          <div className="animate-pulse">
-            <div className="h-8 bg-muted rounded w-64 mb-4"></div>
-            <div className="h-4 bg-muted rounded w-96"></div>
-          </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-32 bg-muted rounded animate-pulse"></div>
-            ))}
+      <div className="container py-8 space-y-6">
+        <div className="flex gap-4 items-start">
+          <Skeleton className="h-20 w-20 rounded-full" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-32" />
           </div>
         </div>
-      </DetailPageLayout>
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
     )
   }
 
-  if (!profileData) {
+  if (!targetAddress) {
     return (
-      <DetailPageLayout
-        title="Profile Not Found"
-        breadcrumbs={[
-          { label: 'Sense', href: '/profiles' },
-          { label: 'Profile', current: true }
-        ]}
-      >
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Profile Not Found</h3>
-                <p className="text-muted-foreground">
-                  The profile you&apos;re looking for doesn&apos;t exist or hasn&apos;t been claimed yet.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </DetailPageLayout>
+      <div className="container py-12">
+        <Card>
+          <CardContent className="text-center py-12">
+            <h1 className="text-xl font-semibold mb-2">Profile not found</h1>
+            <p className="text-muted-foreground mb-4">No profile or address matches “{id}”.</p>
+            <Button asChild variant="outline">
+              <Link href="/profiles">Back to profiles</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
   return (
-    <DetailPageLayout
-      title={profileData.displayName ||
-             (profileData.username ? `@${profileData.username}` : formatAddress(profileData.address))
-            }
-      subtitle={profileData.username && profileData.displayName ? `@${profileData.username}` : undefined}
-      description={profileData.bio || undefined}
-      breadcrumbs={[
-        { label: 'Sense', href: '/profiles' },
-        { label: 'Profile', current: true }
-      ]}
-      backHref="/profiles"
-      backLabel="Back to Profiles"
-    >
-      <div className="space-y-6">
-        {/* Profile Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={dicebearAvatar(profileData.address || profileData.username || 'profile')} />
-              <AvatarFallback className="text-xl">
-                {profileData.displayName ?
-                  profileData.displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase() :
-                  profileData.username ?
-                    profileData.username[0].toUpperCase() :
-                    formatAddress(profileData.address)[0]
-                }
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-3xl font-bold">
-                  {profileData.displayName ||
-                   (profileData.username ? `@${profileData.username}` : formatAddress(profileData.address))
-                  }
-                </h1>
-                {profileData.verified && <Shield className="h-6 w-6 text-green-600" />}
-              </div>
-
-              {profileData.username && profileData.displayName && (
-                <p className="text-lg text-muted-foreground mb-2">@{profileData.username}</p>
-              )}
-
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                <button
-                  onClick={copyAddress}
-                  className="flex items-center gap-1 hover:text-foreground transition-colors"
-                >
-                  <code>{formatAddress(profileData.address)}</code>
-                  <Copy className="h-3 w-3" />
-                  {copied && <span className="text-green-600">✓</span>}
-                </button>
-                <Button variant="ghost" size="sm" className="p-0 h-auto" onClick={() => window.open(`https://etherscan.io/address/${profileData.address}`, '_blank')}>
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              </div>
-
-              {profileData.bio && (
-                <p className="text-muted-foreground max-w-2xl mb-3">{profileData.bio}</p>
-              )}
-
-              {/* Profile Details */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                {profileData.location && (
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    <span>{profileData.location}</span>
-                  </div>
-                )}
-                {profileData.website && (
-                  <div className="flex items-center gap-1">
-                    <Link className="h-4 w-4" />
-                    <a href={profileData.website} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
-                      {profileData.website.replace('https://', '')}
-                    </a>
-                  </div>
-                )}
-                {profileData.twitter && (
-                  <div className="flex items-center gap-1">
-                    <Twitter className="h-4 w-4" />
-                    <a href={`https://twitter.com/${profileData.twitter}`} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
-                      @{profileData.twitter}
-                    </a>
-                  </div>
-                )}
-                {profileData.github && (
-                  <div className="flex items-center gap-1">
-                    <Github className="h-4 w-4" />
-                    <a href={`https://github.com/${profileData.github}`} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
-                      {profileData.github}
-                    </a>
-                  </div>
-                )}
-                {profileData.joinedAt && (
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>Joined {new Date(profileData.joinedAt).toLocaleDateString()}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-4 mt-3 text-sm">
-                <span><strong>{profileData.followers}</strong> followers</span>
-                <span><strong>{profileData.following}</strong> following</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            {isOwner ? (
-              <>
-                {isEditing ? (
-                  <>
-                    <Button variant="outline" onClick={handleCancelEdit}>
-                      <X className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSaveProfile}>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Profile
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={() => setIsEditing(true)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    {profileData.profileCreated ? 'Edit Profile' : 'Create Profile'}
-                  </Button>
-                )}
-              </>
-            ) : (
-              <>
-                <Button variant="outline" size="sm">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Message
-                </Button>
-                <Button variant="outline" size="sm">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Follow
-                </Button>
-              </>
+    <div className="container py-8 space-y-6">
+      {/* Identity header — username (or short address) is the primary
+          surface; the wallet address is intentionally NOT shown here.
+          It lives in the dedicated 'Connected wallet' card below. */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <Avatar className="h-20 w-20">
+          <AvatarImage src={dicebearAvatar(avatarSeed)} />
+          <AvatarFallback className="text-xl">
+            {headerName.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h1 className="text-3xl font-bold truncate">
+              {profile?.username ? `@${profile.username}` : headerName}
+            </h1>
+            {profile?.id && (
+              <Badge variant="secondary" className="font-mono text-xs">
+                {profile.id}
+              </Badge>
             )}
+            {isOwner && <Badge variant="outline">You</Badge>}
           </div>
+          <p className="text-sm text-muted-foreground">
+            {profile?.organization?.name
+              ? `Member of ${profile.organization.name}`
+              : `${memberships.length} ${memberships.length === 1 ? 'membership' : 'memberships'}`}
+          </p>
         </div>
-
-        {/* Profile Creation/Edit Form (only for owners) */}
-        {isOwner && isEditing && (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {profileData.profileCreated ? 'Edit Profile' : 'Create Your Profile'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="edit-displayName">Display Name</Label>
-                  <Input
-                    id="edit-displayName"
-                    value={editData.displayName || ''}
-                    onChange={(e) => setEditData({ ...editData, displayName: e.target.value })}
-                    placeholder="Your full name"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-username">Username</Label>
-                  <Input
-                    id="edit-username"
-                    value={editData.username || ''}
-                    onChange={(e) => setEditData({ ...editData, username: e.target.value })}
-                    placeholder="your_username"
-                    disabled={!!profileData.username} // Can't change once set
-                  />
-                  {profileData.username && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Username cannot be changed once claimed
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="edit-bio">Bio</Label>
-                <Textarea
-                  id="edit-bio"
-                  value={editData.bio || ''}
-                  onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                  placeholder="Tell us about yourself..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="edit-location">Location</Label>
-                  <Input
-                    id="edit-location"
-                    value={editData.location || ''}
-                    onChange={(e) => setEditData({ ...editData, location: e.target.value })}
-                    placeholder="City, Country"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-website">Website</Label>
-                  <Input
-                    id="edit-website"
-                    value={editData.website || ''}
-                    onChange={(e) => setEditData({ ...editData, website: e.target.value })}
-                    placeholder="https://your-website.com"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="edit-twitter">Twitter</Label>
-                  <Input
-                    id="edit-twitter"
-                    value={editData.twitter || ''}
-                    onChange={(e) => setEditData({ ...editData, twitter: e.target.value })}
-                    placeholder="username"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-github">GitHub</Label>
-                  <Input
-                    id="edit-github"
-                    value={editData.github || ''}
-                    onChange={(e) => setEditData({ ...editData, github: e.target.value })}
-                    placeholder="username"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Show profile content only if profile exists or is being created */}
-        {(profileData.profileCreated || (isOwner && isEditing)) && (
-          <>
-            {/* Stats Overview */}
-            <div className="grid gap-6 md:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Level</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{profileData.level}</div>
-                  <p className="text-xs text-muted-foreground">{profileData.xp.toLocaleString()} XP</p>
-                  <Progress value={(profileData.xp % 250) / 250 * 100} className="mt-2" />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Reputation</CardTitle>
-                  <Star className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{profileData.reputation}</div>
-                  <p className="text-xs text-muted-foreground">Out of 100</p>
-                  <Progress value={profileData.reputation} className="mt-2" />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Trust Score</CardTitle>
-                  <Heart className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{profileData.trust}</div>
-                  <p className="text-xs text-muted-foreground">Community rating</p>
-                  <Progress value={profileData.trust} className="mt-2" />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Achievements</CardTitle>
-                  <Trophy className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{achievements.filter(a => a.earned).length}</div>
-                  <p className="text-xs text-muted-foreground">Unlocked</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Achievements */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5" />
-                  Achievements
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {achievements.map((achievement) => (
-                    <div
-                      key={achievement.id}
-                      className={`p-4 rounded-lg border ${
-                        achievement.earned ? 'bg-background' : 'bg-muted/50 opacity-60'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="text-2xl">{achievement.icon}</div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{achievement.name}</h4>
-                            <Badge className={getRarityColor(achievement.rarity)} variant="secondary">
-                              {achievement.rarity}
-                            </Badge>
-                            {achievement.earned && <Award className="h-4 w-4 text-yellow-500" />}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {achievement.description}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Collectibles */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  NFT Collectibles
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-3">
-                  {collectibles.map((collectible) => (
-                    <div key={collectible.id} className="p-4 rounded-lg border bg-background">
-                      <div className="text-center">
-                        <div className="text-4xl mb-2">{collectible.image}</div>
-                        <h4 className="font-medium">{collectible.name}</h4>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          {collectible.collection}
-                        </p>
-                        <Badge variant="outline" className="text-xs">
-                          {collectible.tokenId}
-                        </Badge>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {collectible.description}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {/* Profile Not Created State */}
-        {!profileData.profileCreated && !isOwner && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Profile Not Created</h3>
-                <p className="text-muted-foreground">
-                  This user hasn&apos;t created their profile yet.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
-    </DetailPageLayout>
+
+      {/* Activity stats — quick read on what this user has done across
+          the protocol. Numbers come from the User entity in the
+          subgraph (see useUserActivity). */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard icon={<Users className="h-4 w-4" />} label="Memberships" value={memberships.length} />
+        <StatCard icon={<Heart className="h-4 w-4" />} label="Contributions" value={contributions.length} />
+        <StatCard icon={<Vote className="h-4 w-4" />} label="Votes cast" value={votes.length} />
+        <StatCard icon={<FileText className="h-4 w-4" />} label="Proposals" value={proposals.length} />
+      </div>
+
+      {/* Memberships */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-4 w-4" /> Memberships
+          </CardTitle>
+          <CardDescription>
+            Collectives this profile belongs to.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {memberships.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">No memberships yet.</p>
+          ) : (
+            <ul className="divide-y">
+              {memberships.map((m: any) => (
+                <li key={m.organization.id} className="flex items-center justify-between py-2">
+                  <Link href={`/collectives/${m.organization.id}`} className="hover:underline">
+                    {m.organization.name}
+                  </Link>
+                  <Badge variant={m.role === 'PRIME' ? 'default' : 'secondary'} className="text-xs">
+                    {m.role?.toLowerCase() || 'member'}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Contributions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Heart className="h-4 w-4" /> Contributions
+          </CardTitle>
+          <CardDescription>
+            Campaigns this profile has backed.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {contributions.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">No contributions yet.</p>
+          ) : (
+            <ul className="divide-y">
+              {contributions.map((c: any) => (
+                <li key={c.id} className="flex items-center justify-between gap-3 py-2">
+                  <Link href={`/campaigns/${c.campaign.id}`} className="hover:underline truncate">
+                    {c.campaign.title}
+                    <span className="text-xs text-muted-foreground ml-2">· {c.campaign.organization?.name}</span>
+                  </Link>
+                  <span className="text-sm font-mono whitespace-nowrap">
+                    {formatTokenAmount(c.amount, c.campaign.paymentToken, contracts)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Proposals authored */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-4 w-4" /> Proposals
+          </CardTitle>
+          <CardDescription>
+            Governance proposals this profile authored.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {proposals.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">No proposals authored.</p>
+          ) : (
+            <ul className="divide-y">
+              {proposals.map((p: any) => (
+                <li key={p.id} className="flex items-center justify-between gap-3 py-2">
+                  <Link href={`/governance/${p.id}`} className="hover:underline truncate">
+                    {p.title}
+                    <span className="text-xs text-muted-foreground ml-2">· {p.organization?.name}</span>
+                  </Link>
+                  <Badge variant="outline" className="text-xs">{p.state?.toLowerCase()}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Connected wallet — the wallet address lives here only,
+          intentionally de-emphasised so it isn't the user's identity.
+          This card pairs with future profile-visibility controls
+          (#77) so the owner can hide it entirely. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="h-4 w-4" /> Connected wallet
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-3">
+            <code className="text-xs bg-muted px-2 py-1 rounded font-mono break-all">
+              {targetAddress}
+            </code>
+            <div className="flex gap-1 flex-shrink-0">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={copyAddress} title="Copy address">
+                <Copy className="h-3 w-3" />
+                {copied && <span className="sr-only">Copied</span>}
+              </Button>
+              {blockExplorer && (
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild title="View on explorer">
+                  <a href={`${blockExplorer}/address/${targetAddress}`} target="_blank" rel="noreferrer">
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+          {copied && <p className="text-xs text-green-600 mt-2">Address copied.</p>}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: number }) {
+  return (
+    <Card>
+      <CardContent className="pt-4">
+        <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+          {icon}
+          <span>{label}</span>
+        </div>
+        <div className="text-2xl font-bold">{value}</div>
+      </CardContent>
+    </Card>
   )
 }
