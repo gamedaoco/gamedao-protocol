@@ -312,83 +312,46 @@ export const GET_STAKING_STATS = gql`
 
 // Profile/Sense Queries
 export const GET_PROFILES = gql`
+  # Profile entity in subgraph has: id, user (User!), organization (Organization!),
+  # metadata (String — IPFS CID with the rich JSON payload), createdAt.
+  # Extra display fields (username, bio, avatar, reputation, …) live in IPFS
+  # and are resolved client-side; on-chain reputation lookups happen via
+  # contract reads when needed. Querying ghost fields here used to silently
+  # return empty profiles because Apollo runs with errorPolicy: 'ignore'.
   query GetProfiles($first: Int = 100, $skip: Int = 0) {
-    profiles(first: $first, skip: $skip, orderBy: reputation, orderDirection: desc) {
+    profiles(first: $first, skip: $skip, orderBy: createdAt, orderDirection: desc) {
       id
       organization {
         id
         name
       }
-      owner {
+      user {
         id
         address
       }
-      username
-      bio
-      avatar
-      website
-      verificationLevel
-      experience
-      reputation
-      trustScore
-      convictionScore
-      achievementCount
-      feedbackCount
-      positiveFeedbacks
-      negativeFeedbacks
+      metadata
       createdAt
-      updatedAt
     }
   }
 `
 
 export const GET_PROFILE_BY_ID = gql`
   query GetProfileById($id: ID!) {
+    # Same trim as GET_PROFILES above — ask only what the subgraph schema
+    # actually has. Achievements/feedbacks are separate entities; query them
+    # in their own hooks once we wire those views.
     profile(id: $id) {
       id
       organization {
         id
         name
       }
-      owner {
+      user {
         id
         address
       }
-      username
-      bio
-      avatar
-      website
-      verificationLevel
-      experience
-      reputation
-      trustScore
-      convictionScore
-      achievementCount
-      feedbackCount
-      positiveFeedbacks
-      negativeFeedbacks
+      metadata
       createdAt
-      updatedAt
-      achievements {
-        id
-        achievementId
-        title
-        description
-        category
-        points
-        timestamp
-      }
-      feedbacksReceived {
-        id
-        author {
-          id
-          username
-        }
-        feedbackType
-        rating
-        comment
-        timestamp
-      }
     }
   }
 `

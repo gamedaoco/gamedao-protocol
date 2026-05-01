@@ -50,26 +50,33 @@ export function useReputation() {
     errorPolicy: 'ignore',
   })
 
-  // Transform profiles data
+  // The subgraph Profile entity is intentionally minimal — it stores
+  // identity, the parent org, an IPFS metadata CID and a timestamp. The
+  // rich display fields (username, bio, avatar, …) come from the IPFS
+  // payload and are resolved by `useOrganizationsMetadata` / per-profile
+  // IPFS hooks. Reputation/trust/feedback live in their own subgraph
+  // entities that we can query separately when those views are wired.
+  // Here we map the lean payload into the legacy `Profile` shape with
+  // sensible defaults so the existing UI keeps working.
   const profiles: Profile[] = profilesData?.profiles?.map((profile: any) => ({
     id: profile.id,
     organization: profile.organization,
-    owner: profile.owner,
-    username: profile.username,
-    bio: profile.bio,
-    avatar: profile.avatar,
-    website: profile.website,
-    verificationLevel: parseInt(profile.verificationLevel),
-    experience: parseInt(profile.experience),
-    reputation: parseInt(profile.reputation),
-    trustScore: parseInt(profile.trustScore),
-    convictionScore: parseInt(profile.convictionScore),
-    achievementCount: parseInt(profile.achievementCount),
-    feedbackCount: parseInt(profile.feedbackCount),
-    positiveFeedbacks: parseInt(profile.positiveFeedbacks),
-    negativeFeedbacks: parseInt(profile.negativeFeedbacks),
-    createdAt: parseInt(profile.createdAt),
-    updatedAt: parseInt(profile.updatedAt),
+    owner: profile.user, // subgraph field is `user`; UI still calls it `owner`
+    username: profile.id,
+    bio: '',
+    avatar: '',
+    website: '',
+    verificationLevel: 0,
+    experience: 0,
+    reputation: 0,
+    trustScore: 0,
+    convictionScore: 0,
+    achievementCount: 0,
+    feedbackCount: 0,
+    positiveFeedbacks: 0,
+    negativeFeedbacks: 0,
+    createdAt: parseInt(profile.createdAt) || 0,
+    updatedAt: parseInt(profile.createdAt) || 0,
   })) || []
 
   // Calculate reputation stats with default values
