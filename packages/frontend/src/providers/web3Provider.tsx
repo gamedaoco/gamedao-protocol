@@ -7,7 +7,6 @@ import { hardhat, polygon, polygonAmoy } from 'wagmi/chains'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { SmartWalletsProvider } from '@privy-io/react-auth/smart-wallets'
 import { WagmiProvider, createConfig } from '@privy-io/wagmi'
-import { useHardhatDevFund } from '@/hooks/useHardhatDevFund'
 
 // Privy app id is provided at runtime via env. We surface a clear console
 // warning if it is missing so the dev/operator immediately knows what to
@@ -60,13 +59,6 @@ function resolveDefaultChain() {
   return process.env.NODE_ENV === 'production' ? polygon : hardhat
 }
 const defaultChain = resolveDefaultChain()
-
-// Inert component that just runs the dev-only Hardhat funder hook.
-// Lives inside the wagmi tree so the hook can use useAccount / useBalance.
-function DevAutoFund() {
-  useHardhatDevFund()
-  return null
-}
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -139,10 +131,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
               available. Phase 2 wires wagmi writes to route through the
               smart account so paymaster sponsorship kicks in for every
               `useWriteContract` call site. */}
-          <SmartWalletsProvider>
-            <DevAutoFund />
-            {children}
-          </SmartWalletsProvider>
+          <SmartWalletsProvider>{children}</SmartWalletsProvider>
         </WagmiProvider>
       </QueryClientProvider>
     </PrivyProvider>
