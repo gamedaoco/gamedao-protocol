@@ -99,15 +99,27 @@ export function WalletConnection({ children, className }: WalletConnectionProps)
   }
 
   // Not authenticated → trigger fires Privy's hosted modal directly.
+  // Using a <span role="button"> instead of <button> because callers
+  // typically pass a shadcn <Button> as children, which is itself a
+  // <button> and would nest invalidly. The inner Button stays the
+  // keyboard-accessible interactive element; this wrapper just bubbles
+  // clicks into handleLogin via the surrounding span.
   return (
-    <button
-      type="button"
+    <span
+      role="button"
+      tabIndex={0}
       className={className}
       onClick={handleLogin}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleLogin()
+        }
+      }}
       aria-label="Sign in to GameDAO"
     >
       {children}
-    </button>
+    </span>
   )
 }
 
